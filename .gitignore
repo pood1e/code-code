@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+.turbo
+coverage
+packages/backend/.env
+packages/backend/prisma/dev.db
+packages/backend/prisma/dev.db-journal
+*.tsbuildinfo
