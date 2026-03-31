@@ -1,0 +1,303 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common';
+import {
+  profileItemsPayloadSchema,
+  mcpConfigOverrideSchema,
+  mcpContentSchema,
+  type McpConfigOverrideInput,
+  type McpContentInput
+} from '@agent-workbench/shared';
+import { Prisma } from '@prisma/client';
+import { dump } from 'js-yaml';
+
+import {
+  asPlainObject,
+  sanitizeJson,
+  toNullableInputJson
+} from '../../common/json.utils';
+import {
+  ProfileMutationDto,
+  UpdateProfileItemsDto
+} from '../../dto/profile.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+
+@Injectable()
+export class ProfilesService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  list() {
+    return this.prisma.profile.findMany({
+      orderBy: { updatedAt: 'desc' }
+    });
+  }
+
+  async getById(id: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id },
+      include: {
+        skills: {
+          include: { skill: true },
+          orderBy: { order: 'asc' }
+        },
+        mcps: {
+          include: { mcp: true },
+          orderBy: { order: 'asc' }
+        },
+        rules: {
+          include: { rule: true },
+          orderBy: { order: 'asc' }
+        }
+      }
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+
+    return {
+      id: profile.id,
+      name: profile.name,
+      description: profile.description,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+      skills: profile.skills.map((item) =>
+        this.toSkillResolvedItem(item.skill, item.order)
+      ),
+      mcps: profile.mcps.map((item) =>
+        this.toMcpResolvedItem(item.mcp, item.order, item.configOverride)
+      ),
+      rules: profile.rules.map((item) =>
+        this.toRuleResolvedItem(item.rule, item.order)
+      )
+    };
+  }
+
+  create(dto: ProfileMutationDto) {
+    return this.prisma.profile.create({
+      data: {
+        name: dto.name,
+        description: dto.description ?? null
+      }
+    });
+  }
+
+  async update(id: string, dto: ProfileMutationDto) {
+    await this.ensureProfile(id);
+
+    return this.prisma.profile.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        description: dto.description ?? null
+      }
+    });
+  }
+
+  async remove(id: string) {
+    await this.ensureProfile(id);
+    await this.prisma.profile.delete({ where: { id } });
+    return null;
+  }
+
+  async replaceItems(id: string, dto: UpdateProfileItemsDto) {
+    await this.ensureProfile(id);
+    const parsedItems = profileItemsPayloadSchema.safeParse(dto);
+    if (!parsedItems.success) {
+      throw new BadRequestException(
+        parsedItems.error.issues[0]?.message ?? 'Invalid profile items payload'
+      );
+    }
+
+    await this.assertResourceIdsExist(
+      'skill',
+      parsedItems.data.skills.map((item) => item.resourceId)
+    );
+    await this.assertResourceIdsExist(
+      'mCP',
+      parsedItems.data.mcps.map((item) => item.resourceId)
+    );
+    await this.assertResourceIdsExist(
+      'rule',
+      parsedItems.data.rules.map((item) => item.resourceId)
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.profileSkill.deleteMany({ where: { profileId: id } });
+      await tx.profileMCP.deleteMany({ where: { profileId: id } });
+      await tx.profileRule.deleteMany({ where: { profileId: id } });
+
+      if (parsedItems.data.skills.length > 0) {
+        await tx.profileSkill.createMany({
+          data: parsedItems.data.skills.map((item) => ({
+            profileId: id,
+            skillId: item.resourceId,
+            order: item.order
+          }))
+        });
+      }
+
+      if (parsedItems.data.mcps.length > 0) {
+        await tx.profileMCP.createMany({
+          data: parsedItems.data.mcps.map((item) => ({
+            profileId: id,
+            mcpId: item.resourceId,
+            order: item.order,
+            configOverride: toNullableInputJson(item.configOverride)
+          }))
+        });
+      }
+
+      if (parsedItems.data.rules.length > 0) {
+        await tx.profileRule.createMany({
+          data: parsedItems.data.rules.map((item) => ({
+            profileId: id,
+            ruleId: item.resourceId,
+            order: item.order
+          }))
+        });
+      }
+    });
+
+    return this.getById(id);
+  }
+
+  async render(id: string) {
+    const detail = await this.getById(id);
+
+    return {
+      id: detail.id,
+      name: detail.name,
+      description: detail.description,
+      skills: detail.skills,
+      mcps: detail.mcps,
+      rules: detail.rules
+    };
+  }
+
+  async export(id: string, format: 'json' | 'yaml' = 'json') {
+    const rendered = sanitizeJson(await this.render(id));
+
+    if (format === 'yaml') {
+      return dump(rendered, { noRefs: true });
+    }
+
+    return JSON.stringify(rendered, null, 2);
+  }
+
+  private async ensureProfile(id: string) {
+    const profile = await this.prisma.profile.findUnique({ where: { id } });
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    return profile;
+  }
+
+  private async assertResourceIdsExist(
+    type: 'skill' | 'mCP' | 'rule',
+    ids: string[]
+  ) {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const uniqueIds = Array.from(new Set(ids));
+    const existing =
+      type === 'skill'
+        ? await this.prisma.skill.findMany({
+            where: { id: { in: uniqueIds } },
+            select: { id: true }
+          })
+        : type === 'mCP'
+          ? await this.prisma.mCP.findMany({
+              where: { id: { in: uniqueIds } },
+              select: { id: true }
+            })
+          : await this.prisma.rule.findMany({
+              where: { id: { in: uniqueIds } },
+              select: { id: true }
+            });
+    const existingIds = new Set(existing.map((item) => item.id));
+    const missing = uniqueIds.filter((id) => !existingIds.has(id));
+
+    if (missing.length > 0) {
+      throw new NotFoundException(
+        `Referenced resources not found: ${missing.join(', ')}`
+      );
+    }
+  }
+
+  private toSkillResolvedItem(
+    resource: {
+      id: string;
+      name: string;
+      description: string | null;
+      content: string;
+    },
+    order: number
+  ) {
+    return {
+      id: resource.id,
+      name: resource.name,
+      description: resource.description,
+      content: resource.content,
+      resolved: resource.content,
+      order
+    };
+  }
+
+  private toRuleResolvedItem(
+    resource: {
+      id: string;
+      name: string;
+      description: string | null;
+      content: string;
+    },
+    order: number
+  ) {
+    return {
+      id: resource.id,
+      name: resource.name,
+      description: resource.description,
+      content: resource.content,
+      resolved: resource.content,
+      order
+    };
+  }
+
+  private toMcpResolvedItem(
+    resource: {
+      id: string;
+      name: string;
+      description: string | null;
+      content: Prisma.JsonValue;
+    },
+    order: number,
+    configOverride: Prisma.JsonValue | null
+  ) {
+    const content = this.parseMcpContent(resource.content);
+    const override = this.parseMcpOverride(configOverride);
+
+    return {
+      id: resource.id,
+      name: resource.name,
+      description: resource.description,
+      content,
+      configOverride: override,
+      resolved: Object.assign({}, content, override),
+      order
+    };
+  }
+
+  private parseMcpContent(value: Prisma.JsonValue): McpContentInput {
+    return mcpContentSchema.parse(sanitizeJson(value));
+  }
+
+  private parseMcpOverride(
+    value: Prisma.JsonValue | null
+  ): McpConfigOverrideInput {
+    return mcpConfigOverrideSchema.parse(sanitizeJson(asPlainObject(value)));
+  }
+}

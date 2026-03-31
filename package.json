@@ -8,15 +8,18 @@
     "dev": "pnpm --parallel --filter @agent-workbench/shared --filter @agent-workbench/backend --filter @agent-workbench/frontend dev",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "format:write": "prettier --write ."
+    "format:write": "prettier --write .",
+    "db:migrate": "pnpm --filter @agent-workbench/backend prisma migrate dev",
+    "db:seed": "pnpm --filter @agent-workbench/backend prisma db seed"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "eslint": "^9.39.4",
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^16.5.0",
-    "prettier": "^3.8.1",
-    "typescript-eslint": "^8.58.0"
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.46.2"
   }
 }
-
