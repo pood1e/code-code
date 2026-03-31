@@ -101,6 +101,109 @@ body {
   padding: 24px;
 }
 
+.profile-editor__form {
+  margin-bottom: 24px;
+}
+
+.profile-editor__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.profile-editor__sections {
+  display: grid;
+  gap: 20px;
+}
+
+.profile-editor__section-card .ant-card-body {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-editor__section-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.profile-editor__panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(22, 33, 62, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.profile-editor__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-editor__panel-header .ant-typography {
+  margin: 0;
+}
+
+.profile-editor__available-list,
+.profile-editor__selected-list {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-editor__available-item,
+.profile-editor__selected-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(22, 33, 62, 0.08);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.profile-editor__selected-item--dragging {
+  box-shadow: 0 16px 40px rgba(31, 60, 136, 0.14);
+}
+
+.profile-editor__selected-item-main {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+}
+
+.profile-editor__available-copy,
+.profile-editor__selected-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-editor__drag-handle {
+  margin-top: 2px;
+  cursor: grab;
+}
+
+.profile-editor__item-description {
+  margin: 8px 0 0;
+  color: rgba(22, 33, 62, 0.72);
+}
+
+.profile-editor__override {
+  margin-top: 8px;
+}
+
+.profile-editor__override-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-editor__hint {
+  margin: 0;
+  color: rgba(22, 33, 62, 0.72);
+}
+
 @media (max-width: 900px) {
   .app-shell__content {
     padding: 16px;
@@ -109,5 +212,10 @@ body {
   .page-card__header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .profile-editor__form-grid,
+  .profile-editor__section-grid {
+    grid-template-columns: 1fr;
   }
 }
