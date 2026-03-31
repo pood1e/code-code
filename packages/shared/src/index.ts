@@ -1,5 +1,3 @@
-export type WorkspacePackageName =
-  | '@agent-workbench/backend'
-  | '@agent-workbench/frontend'
-  | '@agent-workbench/shared';
-
+export * from './schemas/resources';
+export * from './types/api';
+export * from './types/resources';

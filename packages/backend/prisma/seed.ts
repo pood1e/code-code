@@ -1,0 +1,279 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const skillA = await prisma.skill.upsert({
+    where: { id: 'skill_web_search' },
+    update: {
+      name: 'Web Search',
+      description: 'Browse the public web for recent information.',
+      content:
+        '## Web Search\n\nUse web search when recent information is required.'
+    },
+    create: {
+      id: 'skill_web_search',
+      name: 'Web Search',
+      description: 'Browse the public web for recent information.',
+      content:
+        '## Web Search\n\nUse web search when recent information is required.'
+    }
+  });
+
+  const skillB = await prisma.skill.upsert({
+    where: { id: 'skill_summarize' },
+    update: {
+      name: 'Summarize',
+      description: 'Summarize long documents into concise output.',
+      content:
+        '## Summarize\n\nReturn concise bullet points for long documents.'
+    },
+    create: {
+      id: 'skill_summarize',
+      name: 'Summarize',
+      description: 'Summarize long documents into concise output.',
+      content:
+        '## Summarize\n\nReturn concise bullet points for long documents.'
+    }
+  });
+
+  await prisma.skill.upsert({
+    where: { id: 'skill_code_review' },
+    update: {
+      name: 'Code Review',
+      description: 'Review code for defects and missing tests.',
+      content:
+        '## Code Review\n\nReview for bugs, regressions, and missing tests. Include file references.'
+    },
+    create: {
+      id: 'skill_code_review',
+      name: 'Code Review',
+      description: 'Review code for defects and missing tests.',
+      content:
+        '## Code Review\n\nReview for bugs, regressions, and missing tests. Include file references.'
+    }
+  });
+
+  const mcpA = await prisma.mCP.upsert({
+    where: { id: 'mcp_docs' },
+    update: {
+      name: 'Docs MCP',
+      description: 'Read local markdown documents.',
+      content: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-filesystem', './docs'],
+        env: {
+          LOG_LEVEL: 'info'
+        }
+      }
+    },
+    create: {
+      id: 'mcp_docs',
+      name: 'Docs MCP',
+      description: 'Read local markdown documents.',
+      content: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-filesystem', './docs'],
+        env: {
+          LOG_LEVEL: 'info'
+        }
+      }
+    }
+  });
+
+  const mcpB = await prisma.mCP.upsert({
+    where: { id: 'mcp_github' },
+    update: {
+      name: 'GitHub MCP',
+      description: 'Query GitHub repositories and issues.',
+      content: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-github'],
+        env: {
+          GITHUB_TOKEN: 'demo-token'
+        }
+      }
+    },
+    create: {
+      id: 'mcp_github',
+      name: 'GitHub MCP',
+      description: 'Query GitHub repositories and issues.',
+      content: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-github'],
+        env: {
+          GITHUB_TOKEN: 'demo-token'
+        }
+      }
+    }
+  });
+
+  await prisma.mCP.upsert({
+    where: { id: 'mcp_shell' },
+    update: {
+      name: 'Shell MCP',
+      description: 'Run local shell commands.',
+      content: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-shell'],
+        env: {
+          SANDBOX: 'workspace-write'
+        }
+      }
+    },
+    create: {
+      id: 'mcp_shell',
+      name: 'Shell MCP',
+      description: 'Run local shell commands.',
+      content: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-shell'],
+        env: {
+          SANDBOX: 'workspace-write'
+        }
+      }
+    }
+  });
+
+  const ruleA = await prisma.rule.upsert({
+    where: { id: 'rule_concise' },
+    update: {
+      name: 'Concise Reply',
+      description: 'Prefer concise and direct answers.',
+      content: '## Concise Reply\n\nPrefer short, direct answers.'
+    },
+    create: {
+      id: 'rule_concise',
+      name: 'Concise Reply',
+      description: 'Prefer concise and direct answers.',
+      content: '## Concise Reply\n\nPrefer short, direct answers.'
+    }
+  });
+
+  await prisma.rule.upsert({
+    where: { id: 'rule_cite' },
+    update: {
+      name: 'Cite Sources',
+      description: 'Attach sources for claims that need verification.',
+      content:
+        '## Cite Sources\n\nAttach sources for claims that need verification.'
+    },
+    create: {
+      id: 'rule_cite',
+      name: 'Cite Sources',
+      description: 'Attach sources for claims that need verification.',
+      content:
+        '## Cite Sources\n\nAttach sources for claims that need verification.'
+    }
+  });
+
+  const ruleC = await prisma.rule.upsert({
+    where: { id: 'rule_no_guessing' },
+    update: {
+      name: 'No Guessing',
+      description: 'Check environment before making assumptions.',
+      content:
+        '## No Guessing\n\nInspect the environment before making assumptions.'
+    },
+    create: {
+      id: 'rule_no_guessing',
+      name: 'No Guessing',
+      description: 'Check environment before making assumptions.',
+      content:
+        '## No Guessing\n\nInspect the environment before making assumptions.'
+    }
+  });
+
+  const profile = await prisma.profile.upsert({
+    where: { id: 'profile_default' },
+    update: {
+      name: 'Default Assistant',
+      description: 'Balanced default profile for everyday work.'
+    },
+    create: {
+      id: 'profile_default',
+      name: 'Default Assistant',
+      description: 'Balanced default profile for everyday work.'
+    }
+  });
+
+  await prisma.$transaction([
+    prisma.profileSkill.deleteMany({ where: { profileId: profile.id } }),
+    prisma.profileMCP.deleteMany({ where: { profileId: profile.id } }),
+    prisma.profileRule.deleteMany({ where: { profileId: profile.id } })
+  ]);
+
+  await prisma.profileSkill.createMany({
+    data: [
+      {
+        profileId: profile.id,
+        skillId: skillA.id,
+        order: 0
+      },
+      {
+        profileId: profile.id,
+        skillId: skillB.id,
+        order: 1
+      }
+    ]
+  });
+
+  await prisma.profileMCP.createMany({
+    data: [
+      {
+        profileId: profile.id,
+        mcpId: mcpA.id,
+        order: 0,
+        configOverride: {
+          args: [
+            '-y',
+            '@modelcontextprotocol/server-filesystem',
+            './docs/resource'
+          ]
+        }
+      },
+      {
+        profileId: profile.id,
+        mcpId: mcpB.id,
+        order: 1,
+        configOverride: {
+          env: {
+            GITHUB_TOKEN: 'profile-token'
+          }
+        }
+      }
+    ]
+  });
+
+  await prisma.profileRule.createMany({
+    data: [
+      {
+        profileId: profile.id,
+        ruleId: ruleA.id,
+        order: 0
+      },
+      {
+        profileId: profile.id,
+        ruleId: ruleC.id,
+        order: 1
+      }
+    ]
+  });
+
+  console.log('Seed completed');
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

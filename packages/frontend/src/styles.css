@@ -5,11 +5,7 @@ body {
   background: #f3f5fb;
   color: #16213e;
   font-family:
-    'Iowan Old Style',
-    'Palatino Linotype',
-    'Book Antiqua',
-    Palatino,
-    serif;
+    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
 }
 
 #root {
@@ -20,15 +16,98 @@ body {
   min-height: 100vh;
 }
 
+.app-shell__sider {
+  background:
+    linear-gradient(180deg, rgba(16, 35, 84, 0.98), rgba(29, 53, 87, 0.94)),
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 35%);
+}
+
+.app-shell__brand {
+  padding: 24px 20px 8px;
+  color: #f7f9ff;
+}
+
+.app-shell__brand h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.app-shell__brand p {
+  margin: 8px 0 0;
+  color: rgba(247, 249, 255, 0.72);
+  line-height: 1.5;
+  font-size: 12px;
+}
+
 .app-shell__content {
-  display: grid;
-  place-items: center;
-  min-height: 100vh;
   padding: 24px;
 }
 
-.hero-card {
-  width: min(560px, 100%);
+.content-switcher {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid rgba(22, 33, 62, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 12px 32px rgba(31, 60, 136, 0.07);
+}
+
+.content-switcher__label {
+  margin-bottom: 12px;
+  color: rgba(22, 33, 62, 0.68);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-card {
   border: 1px solid rgba(22, 33, 62, 0.08);
   box-shadow: 0 18px 50px rgba(31, 60, 136, 0.08);
+}
+
+.page-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-card__title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.page-card__description {
+  margin: 8px 0 0;
+  color: rgba(22, 33, 62, 0.72);
+}
+
+.editor-shell {
+  border: 1px solid #d9dbe8;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.editor-shell .cm-editor {
+  min-height: 260px;
+}
+
+.json-editor-fallback {
+  padding: 24px;
+}
+
+@media (max-width: 900px) {
+  .app-shell__content {
+    padding: 16px;
+  }
+
+  .page-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
