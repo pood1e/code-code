@@ -11,12 +11,12 @@ import {
   Typography
 } from 'antd';
 import type { Profile } from '@agent-workbench/shared';
+import { useNavigate } from 'react-router-dom';
 
 import {
   createProfile,
   deleteProfile,
-  listProfiles,
-  updateProfile
+  listProfiles
 } from '../../api/profiles';
 import { useErrorMessage } from '../../api/client';
 import { profileInputSchema } from '@agent-workbench/shared';
@@ -27,12 +27,12 @@ type ProfileFormValues = {
 };
 
 export function ProfilesPage() {
+  const navigate = useNavigate();
   const handleError = useErrorMessage();
   const [form] = Form.useForm<ProfileFormValues>();
   const [items, setItems] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Profile | null>(null);
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
@@ -62,17 +62,7 @@ export function ProfilesPage() {
   }, [fetchProfiles]);
 
   const openCreateModal = () => {
-    setEditing(null);
     form.resetFields();
-    setOpen(true);
-  };
-
-  const openEditModal = (profile: Profile) => {
-    setEditing(profile);
-    form.setFieldsValue({
-      name: profile.name,
-      description: profile.description ?? ''
-    });
     setOpen(true);
   };
 
@@ -93,13 +83,10 @@ export function ProfilesPage() {
     }
 
     try {
-      if (editing) {
-        await updateProfile(editing.id, parsed.data);
-      } else {
-        await createProfile(parsed.data);
-      }
+      const created = await createProfile(parsed.data);
       setOpen(false);
-      await fetchProfiles();
+      form.resetFields();
+      void navigate(`/profiles/${created.id}/edit`);
     } catch (error) {
       handleError(error);
     }
@@ -148,7 +135,9 @@ export function ProfilesPage() {
             key: 'actions',
             render: (_, record) => (
               <Space>
-                <Button onClick={() => openEditModal(record)}>Edit</Button>
+                <Button onClick={() => void navigate(`/profiles/${record.id}/edit`)}>
+                  Edit
+                </Button>
                 <Button
                   danger
                   onClick={() => {
@@ -171,11 +160,11 @@ export function ProfilesPage() {
       />
 
       <Modal
-        title={editing ? 'Edit Profile' : 'Create Profile'}
+        title="New Profile"
         open={open}
         onCancel={() => setOpen(false)}
         onOk={() => void submit()}
-        okText="Save"
+        okText="Create"
       >
         <Form<ProfileFormValues> layout="vertical" form={form}>
           <Form.Item

@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppLayout } from './layout/AppLayout';
+import { ProfileEditorPage } from './pages/profiles/ProfileEditorPage';
 import { ProfilesPage } from './pages/profiles/ProfilesPage';
 import { ResourceEditPage } from './pages/resources/ResourceEditPage';
 import { ResourceListPage } from './pages/resources/ResourceListPage';
@@ -29,6 +30,7 @@ export function App() {
           </Fragment>
         ))}
         <Route path="/profiles" element={<ProfilesPage />} />
+        <Route path="/profiles/:id/edit" element={<ProfileEditorPage />} />
       </Route>
     </Routes>
   );
