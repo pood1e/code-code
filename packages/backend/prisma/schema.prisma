@@ -7,3 +7,82 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Skill {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  content     String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  profileLinks ProfileSkill[]
+}
+
+model MCP {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  /// MCP server config following the stdio server protocol shape.
+  /// type: transport type, fixed to "stdio" in this phase.
+  /// command: executable command to launch the MCP server process.
+  /// args: ordered command-line arguments passed to the process.
+  /// env: optional string map of environment variables for the process.
+  content     Json
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  profileLinks ProfileMCP[]
+}
+
+model Rule {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  content     String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  profileLinks ProfileRule[]
+}
+
+model Profile {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  skills      ProfileSkill[]
+  mcps        ProfileMCP[]
+  rules       ProfileRule[]
+}
+
+model ProfileSkill {
+  id             String   @id @default(cuid())
+  profileId      String
+  skillId        String
+  order          Int
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  skill          Skill    @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([profileId, skillId])
+}
+
+model ProfileMCP {
+  id             String   @id @default(cuid())
+  profileId      String
+  mcpId          String
+  order          Int
+  configOverride Json?
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  mcp            MCP      @relation(fields: [mcpId], references: [id], onDelete: Restrict)
+
+  @@unique([profileId, mcpId])
+}
+
+model ProfileRule {
+  id             String   @id @default(cuid())
+  profileId      String
+  ruleId         String
+  order          Int
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  rule           Rule     @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
+  @@unique([profileId, ruleId])
+}
