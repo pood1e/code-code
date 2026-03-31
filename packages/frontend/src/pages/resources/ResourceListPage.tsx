@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -32,18 +32,28 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
   const setSearchValue = useUiStore((state) => state.setResourceSearch);
   const [items, setItems] = useState<ResourceRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const requestIdRef = useRef(0);
 
   const config = resourceConfigMap[kind];
 
   const fetchItems = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     setLoading(true);
+
     try {
       const data = await listResources(kind, searchValue || undefined);
-      setItems(data);
+      if (requestId === requestIdRef.current) {
+        setItems(data);
+      }
     } catch (error) {
-      handleError(error);
+      if (requestId === requestIdRef.current) {
+        handleError(error);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [handleError, kind, searchValue]);
 

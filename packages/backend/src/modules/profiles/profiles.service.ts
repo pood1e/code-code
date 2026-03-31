@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   profileItemsPayloadSchema,
+  profileInputSchema,
   mcpConfigOverrideSchema,
   mcpContentSchema,
   type McpConfigOverrideInput,
@@ -76,22 +77,25 @@ export class ProfilesService {
   }
 
   create(dto: ProfileMutationDto) {
+    const parsedProfile = this.parseProfileInput(dto);
+
     return this.prisma.profile.create({
       data: {
-        name: dto.name,
-        description: dto.description ?? null
+        name: parsedProfile.name,
+        description: parsedProfile.description ?? null
       }
     });
   }
 
   async update(id: string, dto: ProfileMutationDto) {
     await this.ensureProfile(id);
+    const parsedProfile = this.parseProfileInput(dto);
 
     return this.prisma.profile.update({
       where: { id },
       data: {
-        name: dto.name,
-        description: dto.description ?? null
+        name: parsedProfile.name,
+        description: parsedProfile.description ?? null
       }
     });
   }
@@ -159,6 +163,11 @@ export class ProfilesService {
           }))
         });
       }
+
+      await tx.profile.update({
+        where: { id },
+        data: { updatedAt: new Date() }
+      });
     });
 
     return this.getById(id);
@@ -193,6 +202,17 @@ export class ProfilesService {
       throw new NotFoundException('Profile not found');
     }
     return profile;
+  }
+
+  private parseProfileInput(dto: ProfileMutationDto) {
+    const parsed = profileInputSchema.safeParse(dto);
+    if (!parsed.success) {
+      throw new BadRequestException(
+        parsed.error.issues[0]?.message ?? 'Invalid profile payload'
+      );
+    }
+
+    return parsed.data;
   }
 
   private async assertResourceIdsExist(
