@@ -27,7 +27,16 @@ import { RulesService } from './rules.service';
 @ApiTags('Rules')
 @Controller('rules')
 export class RulesController {
-  constructor(private readonly rulesService: RulesService) {}
+  private readonly rulesService: RulesService;
+
+  constructor(rulesService: RulesService) {
+    this.rulesService = rulesService;
+    this.list = this.list.bind(this);
+    this.getById = this.getById.bind(this);
+    this.create = this.create.bind(this);
+    this.update = this.update.bind(this);
+    this.remove = this.remove.bind(this);
+  }
 
   @Get()
   @ApiOperation({ summary: 'List rules' })
