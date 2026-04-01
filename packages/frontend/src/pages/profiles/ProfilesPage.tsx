@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   Card,
@@ -19,6 +20,7 @@ import {
   listProfiles
 } from '../../api/profiles';
 import { useErrorMessage } from '../../api/client';
+import { queryKeys } from '../../query/query-keys';
 import { profileInputSchema } from '@agent-workbench/shared';
 
 type ProfileFormValues = {
@@ -28,38 +30,53 @@ type ProfileFormValues = {
 
 export function ProfilesPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const handleError = useErrorMessage();
   const [form] = Form.useForm<ProfileFormValues>();
-  const [items, setItems] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const fetchProfiles = useCallback(async () => {
-    setLoading(true);
-    try {
-      setItems(await listProfiles());
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setLoading(false);
+  const profilesQuery = useQuery({
+    queryKey: queryKeys.profiles.list(),
+    queryFn: listProfiles
+  });
+
+  useEffect(() => {
+    if (profilesQuery.error) {
+      handleError(profilesQuery.error);
     }
-  }, [handleError]);
+  }, [handleError, profilesQuery.error]);
+
+  const createMutation = useMutation({
+    mutationFn: createProfile,
+    onSuccess: async (created) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.profiles.list()
+      });
+      setOpen(false);
+      form.resetFields();
+      void navigate(`/profiles/${created.id}/edit`);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteProfile,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.profiles.list()
+      });
+    }
+  });
 
   const handleDelete = useCallback(
     async (id: string) => {
       try {
-        await deleteProfile(id);
-        await fetchProfiles();
+        await deleteMutation.mutateAsync(id);
       } catch (error) {
         handleError(error);
       }
     },
-    [fetchProfiles, handleError]
+    [deleteMutation, handleError]
   );
-
-  useEffect(() => {
-    void fetchProfiles();
-  }, [fetchProfiles]);
 
   const openCreateModal = () => {
     form.resetFields();
@@ -83,14 +100,17 @@ export function ProfilesPage() {
     }
 
     try {
-      const created = await createProfile(parsed.data);
-      setOpen(false);
-      form.resetFields();
-      void navigate(`/profiles/${created.id}/edit`);
+      await createMutation.mutateAsync(parsed.data);
     } catch (error) {
       handleError(error);
     }
   };
+  const items = profilesQuery.data ?? [];
+  const loading =
+    profilesQuery.isPending ||
+    profilesQuery.isFetching ||
+    createMutation.isPending ||
+    deleteMutation.isPending;
 
   return (
     <Card className="page-card">

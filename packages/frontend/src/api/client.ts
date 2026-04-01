@@ -1,4 +1,5 @@
 import type { ApiResponse } from '@agent-workbench/shared';
+import { useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
 import { Modal, message } from 'antd';
 
@@ -53,7 +54,7 @@ apiClient.interceptors.response.use(
 );
 
 export function useErrorMessage() {
-  return (error: unknown) => {
+  return useCallback((error: unknown) => {
     const apiError =
       error instanceof ApiRequestError
         ? error
@@ -63,7 +64,7 @@ export function useErrorMessage() {
             data: null
           });
     void message.error(apiError.message);
-  };
+  }, []);
 }
 
 export function showReferencedProfilesModal(error: ApiRequestError) {
