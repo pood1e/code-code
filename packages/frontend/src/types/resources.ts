@@ -15,18 +15,18 @@ export const resourceConfigMap: Record<
     path: '/skills',
     singularLabel: 'Skill',
     pluralLabel: 'Skills',
-    emptyState: '暂无数据'
+    emptyState: '还没有任何 Skill，先创建一个新的 Skill。'
   },
   mcps: {
     path: '/mcps',
     singularLabel: 'MCP',
     pluralLabel: 'MCPs',
-    emptyState: '暂无数据'
+    emptyState: '还没有任何 MCP，先创建一个新的 MCP。'
   },
   rules: {
     path: '/rules',
     singularLabel: 'Rule',
     pluralLabel: 'Rules',
-    emptyState: '暂无数据'
+    emptyState: '还没有任何 Rule，先创建一个新的 Rule。'
   }
 };

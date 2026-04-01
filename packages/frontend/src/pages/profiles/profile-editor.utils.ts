@@ -9,6 +9,7 @@ import {
   type SkillResource
 } from '@agent-workbench/shared';
 import type { ReactNode } from 'react';
+import { z } from 'zod';
 
 import type { ProfilePayload } from '../../api/profiles';
 import { normalizeDescription } from '../../utils/normalizers';
@@ -17,6 +18,11 @@ export type ProfileEditorFormValues = {
   name: string;
   description?: string;
 };
+
+export const profileEditorFormSchema = z.object({
+  name: z.string().trim().min(1, 'Profile name is required').max(100),
+  description: z.string().trim().max(500).optional()
+});
 
 export type ResourceCatalog = {
   skills: SkillResource[];
