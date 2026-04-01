@@ -9,4 +9,4 @@ packages/backend/.env
 packages/frontend/tsconfig.tsbuildinfo
 
 AGENTS.md
-docs/resource/design.md
+docs/design/
