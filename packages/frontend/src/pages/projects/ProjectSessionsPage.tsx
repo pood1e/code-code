@@ -1,5 +1,6 @@
 import {
   type ReactNode,
+  useCallback,
   startTransition,
   useEffect,
   useMemo,
@@ -970,8 +971,28 @@ export function ProjectSessionsPage() {
         : undefined) ?? {},
     [runtimeStateBySessionId, selectedSessionId]
   );
+  const selectedSessionMessagesReady = sessionMessagesQuery.status === 'success';
   const showCreatePanel =
     createPanelOpen || (sessionsQuery.data?.length ?? 0) === 0;
+
+  const updateSessionRuntimeMessageState = useCallback(
+    (
+      sessionId: string,
+      messageId: string,
+      updater: (
+        current: SessionMessageRuntimeMap[string]
+      ) => SessionMessageRuntimeMap[string]
+    ) => {
+      setRuntimeStateBySessionId((current) => ({
+        ...current,
+        [sessionId]: {
+          ...(current[sessionId] ?? {}),
+          [messageId]: updater(current[sessionId]?.[messageId])
+        }
+      }));
+    },
+    []
+  );
 
   useEffect(() => {
     const queryError =
@@ -1037,7 +1058,7 @@ export function ProjectSessionsPage() {
   }, [sessionMessagesQuery.data, selectedSessionId]);
 
   useEffect(() => {
-    if (!selectedSessionId || sessionMessagesQuery.status !== 'success') {
+    if (!selectedSessionId || !selectedSessionMessagesReady) {
       return;
     }
 
@@ -1103,32 +1124,20 @@ export function ProjectSessionsPage() {
 
       if (chunk.kind === 'thinking_delta' && chunk.messageId) {
         const messageId = chunk.messageId;
-        setRuntimeStateBySessionId((current) => ({
-          ...current,
-          [sessionId]: {
-            ...(current[sessionId] ?? {}),
-            [messageId]: {
-              ...(current[sessionId]?.[messageId] ?? {}),
-              thinkingText:
-                chunk.data.accumulatedText ??
-                `${current[sessionId]?.[messageId]?.thinkingText ?? ''}${chunk.data.deltaText}`
-            }
-          }
+        updateSessionRuntimeMessageState(sessionId, messageId, (current) => ({
+          ...(current ?? {}),
+          thinkingText:
+            chunk.data.accumulatedText ??
+            `${current?.thinkingText ?? ''}${chunk.data.deltaText}`
         }));
         return;
       }
 
       if (chunk.kind === 'usage' && chunk.messageId) {
         const messageId = chunk.messageId;
-        setRuntimeStateBySessionId((current) => ({
-          ...current,
-          [sessionId]: {
-            ...(current[sessionId] ?? {}),
-            [messageId]: {
-              ...(current[sessionId]?.[messageId] ?? {}),
-              usage: chunk.data
-            }
-          }
+        updateSessionRuntimeMessageState(sessionId, messageId, (current) => ({
+          ...(current ?? {}),
+          usage: chunk.data
         }));
         return;
       }
@@ -1150,19 +1159,13 @@ export function ProjectSessionsPage() {
           chunk.messageId
         ) {
           const messageId = chunk.messageId;
-          setRuntimeStateBySessionId((current) => ({
-            ...current,
-            [sessionId]: {
-              ...(current[sessionId] ?? {}),
-              [messageId]: {
-                ...(current[sessionId]?.[messageId] ?? {}),
-                thinkingText: undefined,
-                cancelledAt:
-                  chunk.kind === 'error' && chunk.data.code === 'USER_CANCELLED'
-                    ? new Date(chunk.timestampMs).toISOString()
-                    : undefined
-              }
-            }
+          updateSessionRuntimeMessageState(sessionId, messageId, (current) => ({
+            ...(current ?? {}),
+            thinkingText: undefined,
+            cancelledAt:
+              chunk.kind === 'error' && chunk.data.code === 'USER_CANCELLED'
+                ? new Date(chunk.timestampMs).toISOString()
+                : undefined
           }));
         }
       }
@@ -1199,8 +1202,9 @@ export function ProjectSessionsPage() {
     id,
     queryClient,
     selectedSessionId,
-    sessionMessagesQuery.status,
-    streamNonce
+    selectedSessionMessagesReady,
+    streamNonce,
+    updateSessionRuntimeMessageState
   ]);
 
   const sendMutation = useMutation({
