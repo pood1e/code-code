@@ -2,12 +2,16 @@ import {
   mcpInputSchema,
   ruleInputSchema,
   skillInputSchema,
+  type McpInput,
   type McpResource,
   type ResourceKind,
-  type ResourceRecord
+  type ResourceRecord,
+  type RuleInput,
+  type SkillInput
 } from '@agent-workbench/shared';
 
 import type { ResourcePayloadByKind } from '../../api/resources';
+import { normalizeDescription } from '../../utils/normalizers';
 
 export type EnvEntry = {
   key: string;
@@ -68,13 +72,9 @@ export function toEnvObject(entries?: EnvEntry[]) {
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-export function normalizeDescription(description?: string) {
-  return description?.trim() ? description.trim() : null;
-}
-
 export type ResourceMutationPayload = ResourcePayloadByKind[ResourceKind];
 
-export function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
+function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
   if (typeof resource.content === 'string') {
     return {
       name: resource.name,
@@ -95,7 +95,7 @@ export function toResourceFormValues(resource: ResourceRecord): ResourceFormValu
   };
 }
 
-export function buildMcpPayload(values: ResourceFormValues) {
+function buildMcpPayload(values: ResourceFormValues) {
   const parsed = mcpInputSchema.safeParse({
     name: values.name,
     description: normalizeDescription(values.description),
@@ -115,7 +115,7 @@ export function buildMcpPayload(values: ResourceFormValues) {
       };
 }
 
-export function buildMarkdownPayload(
+function buildMarkdownPayload(
   kind: Exclude<ResourceKind, 'mcps'>,
   values: ResourceFormValues
 ) {
@@ -134,3 +134,50 @@ export function buildMarkdownPayload(
         error: parsed.error.issues[0]?.message ?? 'Invalid Markdown content.'
       };
 }
+
+type ResourceEditConfig<K extends ResourceKind> = {
+  contentMode: 'markdown' | 'mcp';
+  createInitialValues: () => ResourceFormValues;
+  toFormValues: (resource: ResourceRecord) => ResourceFormValues;
+  buildPayload: (
+    values: ResourceFormValues
+  ) => {
+    data: ResourcePayloadByKind[K] | null;
+    error: string | null;
+  };
+};
+
+export const resourceEditConfigMap: {
+  [K in ResourceKind]: ResourceEditConfig<K>;
+} = {
+  skills: {
+    contentMode: 'markdown',
+    createInitialValues: () => createInitialValues('skills'),
+    toFormValues: toResourceFormValues,
+    buildPayload: (values) =>
+      buildMarkdownPayload('skills', values) as {
+        data: SkillInput | null;
+        error: string | null;
+      }
+  },
+  mcps: {
+    contentMode: 'mcp',
+    createInitialValues: () => createInitialValues('mcps'),
+    toFormValues: toResourceFormValues,
+    buildPayload: (values) =>
+      buildMcpPayload(values) as {
+        data: McpInput | null;
+        error: string | null;
+      }
+  },
+  rules: {
+    contentMode: 'markdown',
+    createInitialValues: () => createInitialValues('rules'),
+    toFormValues: toResourceFormValues,
+    buildPayload: (values) =>
+      buildMarkdownPayload('rules', values) as {
+        data: RuleInput | null;
+        error: string | null;
+      }
+  }
+};

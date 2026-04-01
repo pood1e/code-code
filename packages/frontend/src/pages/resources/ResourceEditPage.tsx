@@ -1,56 +1,40 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Form, Input, Space, Typography } from 'antd';
+import { Card, Form, Input } from 'antd';
 import {
   type ResourceRecord,
   type ResourceKind
 } from '@agent-workbench/shared';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useErrorMessage } from '../../api/client';
 import {
-  createResource,
+  isNotFoundApiError,
+  useErrorMessage
+} from '../../api/client';
+import {
   getResource,
-  updateResource,
-  type ResourcePayloadByKind
+  saveResourceByKind
 } from '../../api/resources';
-import { CodeEditor } from '../../components/JsonEditor';
 import { queryKeys } from '../../query/query-keys';
 import { resourceConfigMap } from '../../types/resources';
+import { isFormValidationError } from '../../utils/form';
 import {
-  buildMarkdownPayload,
-  buildMcpPayload,
-  createInitialValues,
+  resourceEditConfigMap,
   toEnvObject,
-  toResourceFormValues,
   type ResourceFormValues,
   type ResourceMutationPayload
 } from './resource-edit.utils';
+import {
+  MarkdownContentField,
+  McpContentFields,
+  ResourceEditError,
+  ResourceEditHeader,
+  ResourceNotFoundState
+} from './resource-edit.components';
 
 type ResourceEditPageProps = {
   kind: ResourceKind;
 };
-
-function saveResourceByKind(
-  kind: ResourceKind,
-  payload: ResourceMutationPayload,
-  id?: string
-) : Promise<ResourceRecord> {
-  switch (kind) {
-    case 'skills':
-      return id
-        ? updateResource('skills', id, payload as ResourcePayloadByKind['skills'])
-        : createResource('skills', payload as ResourcePayloadByKind['skills']);
-    case 'mcps':
-      return id
-        ? updateResource('mcps', id, payload as ResourcePayloadByKind['mcps'])
-        : createResource('mcps', payload as ResourcePayloadByKind['mcps']);
-    case 'rules':
-      return id
-        ? updateResource('rules', id, payload as ResourcePayloadByKind['rules'])
-        : createResource('rules', payload as ResourcePayloadByKind['rules']);
-  }
-}
 
 export function ResourceEditPage({ kind }: ResourceEditPageProps) {
   const { id } = useParams();
@@ -65,18 +49,21 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
   const rawEnvEntriesValue = Form.useWatch('envEntries', form);
 
   const config = resourceConfigMap[kind];
+  const editConfig = resourceEditConfigMap[kind];
   const isEditing = Boolean(id);
-  const isMcp = kind === 'mcps';
   const resourceQuery = useQuery({
-    queryKey: id ? queryKeys.resources.detail(kind, id) : queryKeys.resources.details(),
+    queryKey: id
+      ? queryKeys.resources.detail(kind, id)
+      : queryKeys.resources.details(),
     queryFn: () => getResource(kind, id!),
     enabled: isEditing
   });
+  const resourceNotFound = isEditing && isNotFoundApiError(resourceQuery.error);
 
   useEffect(() => {
     if (!id) {
       form.resetFields();
-      form.setFieldsValue(createInitialValues(kind));
+      form.setFieldsValue(editConfig.createInitialValues());
       return;
     }
 
@@ -85,17 +72,17 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
       return;
     }
 
-    form.setFieldsValue(toResourceFormValues(resource));
-  }, [form, id, resourceQuery.data, kind]);
+    form.setFieldsValue(editConfig.toFormValues(resource));
+  }, [editConfig, form, id, resourceQuery.data]);
 
   useEffect(() => {
-    if (resourceQuery.error) {
+    if (resourceQuery.error && !resourceNotFound) {
       handleError(resourceQuery.error);
     }
-  }, [handleError, resourceQuery.error]);
+  }, [handleError, resourceNotFound, resourceQuery.error]);
 
   const saveMutation = useMutation<ResourceRecord, Error, ResourceMutationPayload>({
-    mutationFn: (payload) => saveResourceByKind(kind, payload, id),
+    mutationFn: (payload) => saveResourceByKind[kind](payload as never, id),
     onSuccess: async (resource) => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -135,25 +122,29 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
   }, [commandValue, rawArgsValue, rawEnvEntriesValue]);
 
   const submit = async () => {
-    const values = await form.validateFields();
+    let values: ResourceFormValues;
+
+    try {
+      values = await form.validateFields();
+    } catch (error) {
+      if (isFormValidationError(error)) {
+        return;
+      }
+
+      handleError(error);
+      return;
+    }
+
     setContentError(null);
 
     try {
-      if (isMcp) {
-        const { data, error } = buildMcpPayload(values);
-        if (!data) {
-          setContentError(error);
-          return;
-        }
-        await saveMutation.mutateAsync(data);
-      } else {
-        const { data, error } = buildMarkdownPayload(kind, values);
-        if (!data) {
-          setContentError(error);
-          return;
-        }
-        await saveMutation.mutateAsync(data);
+      const { data, error } = editConfig.buildPayload(values);
+      if (!data) {
+        setContentError(error);
+        return;
       }
+
+      await saveMutation.mutateAsync(data);
     } catch (error) {
       handleError(error);
     }
@@ -162,28 +153,31 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
     (isEditing && (resourceQuery.isPending || resourceQuery.isFetching)) ||
     saveMutation.isPending;
 
+  if (resourceNotFound) {
+    return (
+      <Card className="page-card">
+        <ResourceNotFoundState
+          kind={kind}
+          onBack={() => {
+            void navigate(config.path);
+          }}
+        />
+      </Card>
+    );
+  }
+
   return (
     <Card className="page-card" loading={loading}>
-      <div className="page-card__header">
-        <div>
-          <Typography.Title level={2} className="page-card__title">
-            {title}
-          </Typography.Title>
-          <Typography.Paragraph className="page-card__description">
-            编辑内容
-          </Typography.Paragraph>
-        </div>
-        <Space>
-          <Button onClick={() => void navigate(config.path)}>Back</Button>
-          <Button
-            type="primary"
-            onClick={() => void submit()}
-            loading={loading}
-          >
-            Save
-          </Button>
-        </Space>
-      </div>
+      <ResourceEditHeader
+        title={title}
+        loading={loading}
+        onBack={() => {
+          void navigate(config.path);
+        }}
+        onSave={() => {
+          void submit();
+        }}
+      />
 
       <Form<ResourceFormValues> layout="vertical" form={form}>
         <Form.Item
@@ -202,123 +196,18 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
           <Input.TextArea placeholder="描述" rows={3} />
         </Form.Item>
 
-        {isMcp ? (
-          <>
-            <Form.Item label="Type" name="type" initialValue="stdio">
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
-              label="Command"
-              name="command"
-              rules={[
-                {
-                  required: true,
-                  whitespace: true,
-                  message: 'Command is required'
-                }
-              ]}
-            >
-              <Input placeholder="npx" />
-            </Form.Item>
-            <Form.List name="args">
-              {(fields, { add, remove }) => (
-                <Form.Item label="Args">
-                  <Space
-                    direction="vertical"
-                    style={{ width: '100%' }}
-                    size={12}
-                  >
-                    {fields.map((field) => (
-                      <Space
-                        key={field.key}
-                        style={{ display: 'flex' }}
-                        align="start"
-                      >
-                        <Form.Item
-                          {...field}
-                          style={{ marginBottom: 0, minWidth: 320 }}
-                          rules={[
-                            {
-                              required: true,
-                              whitespace: true,
-                              message: 'Argument is required'
-                            }
-                          ]}
-                        >
-                          <Input placeholder="Argument" />
-                        </Form.Item>
-                        <Button onClick={() => remove(field.name)}>
-                          Remove
-                        </Button>
-                      </Space>
-                    ))}
-                    <Button onClick={() => add('')}>Add Arg</Button>
-                  </Space>
-                </Form.Item>
-              )}
-            </Form.List>
-            <Form.List name="envEntries">
-              {(fields, { add, remove }) => (
-                <Form.Item label="Env">
-                  <Space
-                    direction="vertical"
-                    style={{ width: '100%' }}
-                    size={12}
-                  >
-                    {fields.map((field) => (
-                      <Space
-                        key={field.key}
-                        style={{ display: 'flex' }}
-                        align="start"
-                      >
-                        <Form.Item
-                          name={[field.name, 'key']}
-                          style={{ marginBottom: 0, minWidth: 200 }}
-                        >
-                          <Input placeholder="KEY" />
-                        </Form.Item>
-                        <Form.Item
-                          name={[field.name, 'value']}
-                          style={{ marginBottom: 0, minWidth: 240 }}
-                        >
-                          <Input placeholder="VALUE" />
-                        </Form.Item>
-                        <Button onClick={() => remove(field.name)}>
-                          Remove
-                        </Button>
-                      </Space>
-                    ))}
-                    <Button onClick={() => add({ key: '', value: '' })}>
-                      Add Env
-                    </Button>
-                  </Space>
-                </Form.Item>
-              )}
-            </Form.List>
-            <Form.Item label="JSON Preview">
-              <CodeEditor
-                value={mcpPreview}
-                onChange={() => undefined}
-                readOnly
-                mode="json"
-              />
-            </Form.Item>
-          </>
+        {editConfig.contentMode === 'mcp' ? (
+          <McpContentFields preview={mcpPreview} />
         ) : (
-          <Form.Item label="Content" name="contentText">
-            <CodeEditor
-              value={contentTextValue}
-              onChange={(value) => {
-                form.setFieldValue('contentText', value);
-              }}
-              mode="markdown"
-            />
-          </Form.Item>
+          <MarkdownContentField
+            value={contentTextValue}
+            onChange={(value) => {
+              form.setFieldValue('contentText', value);
+            }}
+          />
         )}
 
-        {contentError ? (
-          <Alert type="error" showIcon message={contentError} />
-        ) : null}
+        <ResourceEditError message={contentError} />
       </Form>
     </Card>
   );

@@ -1,13 +1,7 @@
-import {
-  Injectable,
-  NotFoundException
-} from '@nestjs/common';
-import { mcpInputSchema } from '@agent-workbench/shared';
+import { Injectable } from '@nestjs/common';
+import { mcpInputSchema, type McpInput } from '@agent-workbench/shared';
 
-import {
-  buildNameFilter,
-  throwIfReferencedByProfiles
-} from '../../common/resource.utils';
+import { createResourceCrudHandlers } from '../../common/resource-crud';
 import { parseSchemaOrThrow } from '../../common/schema.utils';
 import { toInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -21,66 +15,73 @@ export class McpsService {
     this.prisma = prisma;
   }
 
-  list(name?: string) {
-    return this.prisma.mCP.findMany({
-      where: buildNameFilter(name),
-      orderBy: { updatedAt: 'desc' }
+  private createResourceCrud() {
+    return createResourceCrudHandlers<
+      McpInput,
+      NonNullable<Awaited<ReturnType<PrismaService['mCP']['findUnique']>>>
+    >({
+      resourceLabel: 'MCP',
+      list: (nameFilter) =>
+        this.prisma.mCP.findMany({
+          where: nameFilter,
+          orderBy: { updatedAt: 'desc' }
+        }),
+      findById: (id) => this.prisma.mCP.findUnique({ where: { id } }),
+      create: (parsed) =>
+        this.prisma.mCP.create({
+          data: {
+            name: parsed.name,
+            description: parsed.description ?? null,
+            content: toInputJson(parsed.content)
+          }
+        }),
+      update: (id, parsed) =>
+        this.prisma.mCP.update({
+          where: { id },
+          data: {
+            name: parsed.name,
+            description: parsed.description ?? null,
+            content: toInputJson(parsed.content)
+          }
+        }),
+      findReferences: (id) =>
+        this.prisma.profileMCP.findMany({
+          where: { mcpId: id },
+          select: {
+            profile: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }),
+      remove: (id) =>
+        this.prisma.mCP.delete({ where: { id } }).then(() => undefined)
     });
   }
 
-  async getById(id: string) {
-    const mcp = await this.prisma.mCP.findUnique({ where: { id } });
-    if (!mcp) {
-      throw new NotFoundException('MCP not found');
-    }
+  list(name?: string) {
+    return this.createResourceCrud().list(name);
+  }
 
-    return mcp;
+  getById(id: string) {
+    return this.createResourceCrud().getById(id);
   }
 
   create(dto: McpMutationDto) {
     const parsed = parseSchemaOrThrow(mcpInputSchema, dto, 'Invalid MCP payload');
 
-    return this.prisma.mCP.create({
-      data: {
-        name: parsed.name,
-        description: parsed.description ?? null,
-        content: toInputJson(parsed.content)
-      }
-    });
+    return this.createResourceCrud().create(parsed);
   }
 
-  async update(id: string, dto: McpMutationDto) {
-    await this.getById(id);
+  update(id: string, dto: McpMutationDto) {
     const parsed = parseSchemaOrThrow(mcpInputSchema, dto, 'Invalid MCP payload');
 
-    return this.prisma.mCP.update({
-      where: { id },
-      data: {
-        name: parsed.name,
-        description: parsed.description ?? null,
-        content: toInputJson(parsed.content)
-      }
-    });
+    return this.createResourceCrud().update(id, parsed);
   }
 
-  async remove(id: string) {
-    await this.getById(id);
-
-    const references = await this.prisma.profileMCP.findMany({
-      where: { mcpId: id },
-      select: {
-        profile: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    });
-
-    throwIfReferencedByProfiles(references);
-
-    await this.prisma.mCP.delete({ where: { id } });
-    return null;
+  remove(id: string) {
+    return this.createResourceCrud().remove(id);
   }
 }

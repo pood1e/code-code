@@ -16,31 +16,33 @@ import {
   Card,
   Form,
   Input,
+  Result,
   Space,
   Typography,
   message
 } from 'antd';
 import {
   type ProfileDetail,
-  type ProfileItemsPayload
+  type SaveProfileInput
 } from '@agent-workbench/shared';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useErrorMessage } from '../../api/client';
+import {
+  isNotFoundApiError,
+  useErrorMessage
+} from '../../api/client';
 import {
   getProfile,
-  replaceProfileItems,
-  updateProfile,
-  type ProfilePayload
+  saveProfile
 } from '../../api/profiles';
 import { listResources } from '../../api/resources';
 import { CodeEditor } from '../../components/JsonEditor';
 import { queryKeys } from '../../query/query-keys';
+import { isFormValidationError } from '../../utils/form';
 import { ResourceSectionCard } from './profile-editor.components';
 import {
   buildMcpEditorState,
-  buildProfileItemsPayload,
-  buildProfilePayload,
+  buildSaveProfileInput,
   filterAvailableResources,
   parseOverrideEditorValue,
   removeSelectedItem,
@@ -96,13 +98,14 @@ export function ProfileEditorPage() {
       }
     ]
   });
+  const profileNotFound = isNotFoundApiError(profileDetailQuery.error);
 
   useEffect(() => {
     const queryError =
-      profileDetailQuery.error ??
       skillsQuery.error ??
       mcpsQuery.error ??
-      rulesQuery.error;
+      rulesQuery.error ??
+      (profileNotFound ? null : profileDetailQuery.error);
 
     if (!queryError) {
       return;
@@ -114,6 +117,7 @@ export function ProfileEditorPage() {
     handleError,
     mcpsQuery.error,
     navigate,
+    profileNotFound,
     profileDetailQuery.error,
     rulesQuery.error,
     skillsQuery.error
@@ -138,6 +142,23 @@ export function ProfileEditorPage() {
 
   if (!id) {
     return null;
+  }
+
+  if (profileNotFound) {
+    return (
+      <Card className="page-card">
+        <Result
+          status="404"
+          title="Profile not found"
+          subTitle="当前 Profile 不存在或已被删除。"
+          extra={
+            <Button onClick={() => void navigate('/profiles')}>
+              Back to Profiles
+            </Button>
+          }
+        />
+      </Card>
+    );
   }
 
   if (loading || !profileDetailQuery.data || !catalog) {
@@ -201,14 +222,8 @@ function ProfileEditorContent({
     [initialDetail.description, initialDetail.name]
   );
 
-  const saveMutation = useMutation({
-    mutationFn: async (payload: {
-      profile: ProfilePayload;
-      items: ProfileItemsPayload;
-    }) => {
-      await updateProfile(profileId, payload.profile);
-      return replaceProfileItems(profileId, payload.items);
-    },
+  const saveMutation = useMutation<ProfileDetail, Error, SaveProfileInput>({
+    mutationFn: (payload) => saveProfile(profileId, payload),
     onSuccess: async (detail) => {
       queryClient.setQueryData(queryKeys.profiles.detail(profileId), detail);
       await queryClient.invalidateQueries({
@@ -457,7 +472,7 @@ function ProfileEditorContent({
   const skillSection = baseSections.find((section) => section.key === 'skills');
   const ruleSection = baseSections.find((section) => section.key === 'rules');
 
-  const saveProfile = async () => {
+  const handleSaveProfile = async () => {
     const invalidOverride = Object.values(mcpEditorState).find(
       (item) => item.error
     );
@@ -466,29 +481,26 @@ function ProfileEditorContent({
       return;
     }
 
-    let profilePayload: ProfilePayload;
     try {
       const values = await form.validateFields();
-      profilePayload = buildProfilePayload(values);
+      const payload = buildSaveProfileInput(
+        values,
+        selectedSkills,
+        selectedMcps,
+        selectedRules
+      );
+
+      await saveMutation.mutateAsync(payload);
     } catch (error) {
+      if (isFormValidationError(error)) {
+        return;
+      }
+
       if (error instanceof Error) {
         void message.error(error.message);
+        return;
       }
-      return;
-    }
 
-    const itemsPayload = buildProfileItemsPayload(
-      selectedSkills,
-      selectedMcps,
-      selectedRules
-    );
-
-    try {
-      await saveMutation.mutateAsync({
-        profile: profilePayload,
-        items: itemsPayload
-      });
-    } catch (error) {
       handleError(error);
     }
   };
@@ -507,7 +519,11 @@ function ProfileEditorContent({
         </div>
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={onBack}>Back</Button>
-          <Button type="primary" loading={saving} onClick={() => void saveProfile()}>
+          <Button
+            type="primary"
+            loading={saving}
+            onClick={() => void handleSaveProfile()}
+          >
             Save
           </Button>
         </Space>

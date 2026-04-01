@@ -37,7 +37,7 @@ function isReferencedProfile(value: unknown): value is ReferencedProfile {
   );
 }
 
-function toApiRequestError(error: unknown) {
+export function toApiRequestError(error: unknown) {
   if (error instanceof ApiRequestError) {
     return error;
   }
@@ -50,6 +50,14 @@ function toApiRequestError(error: unknown) {
     message: payload?.message ?? 'Request failed',
     data: payload?.data ?? null
   });
+}
+
+export function getApiErrorCode(error: unknown) {
+  return toApiRequestError(error).code;
+}
+
+export function isNotFoundApiError(error: unknown) {
+  return getApiErrorCode(error) === 404;
 }
 
 function getReferencedProfiles(data: unknown) {
