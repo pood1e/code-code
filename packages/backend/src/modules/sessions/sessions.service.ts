@@ -54,6 +54,18 @@ type SessionMetricRow = Prisma.SessionMetricGetPayload<Record<string, never>>;
 type MessageDeltaData = Extract<OutputChunk, { kind: 'message_delta' }>['data'];
 type UsageData = Extract<OutputChunk, { kind: 'usage' }>['data'];
 
+function sessionMessageAscendingOrder() {
+  return [{ createdAt: 'asc' as const }, { id: 'asc' as const }];
+}
+
+function sessionMessageDescendingOrder() {
+  return [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+}
+
+function eventAscendingOrder() {
+  return [{ eventId: 'asc' as const }, { id: 'asc' as const }];
+}
+
 @Injectable()
 export class SessionsService implements OnModuleInit {
   private readonly logger = new Logger(SessionsService.name);
@@ -191,15 +203,15 @@ export class SessionsService implements OnModuleInit {
 
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+      orderBy: sessionMessageAscendingOrder()
     });
     const toolUses = await this.prisma.messageToolUse.findMany({
       where: { sessionId },
-      orderBy: [{ eventId: 'asc' }, { id: 'asc' }]
+      orderBy: eventAscendingOrder()
     });
     const metrics = await this.prisma.sessionMetric.findMany({
       where: { sessionId },
-      orderBy: [{ eventId: 'asc' }, { id: 'asc' }]
+      orderBy: eventAscendingOrder()
     });
     const toolUsesByMessageId = new Map<string, SessionToolUse[]>();
     const metricsByMessageId = new Map<string, SessionMessageMetric[]>();
@@ -311,7 +323,7 @@ export class SessionsService implements OnModuleInit {
 
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+      orderBy: sessionMessageAscendingOrder()
     });
     const lastUserIndex = [...messages]
       .map((message) => message.role)
@@ -332,10 +344,9 @@ export class SessionsService implements OnModuleInit {
     }
 
     await this.truncateSessionHistoryFrom(sessionId, lastUserMessage.id);
-    await this.rerunExistingUserInput(
-      sessionId,
-      asPlainObject(lastUserMessage.inputContent)
-    );
+    await this.sendParsedInput(sessionId, asPlainObject(lastUserMessage.inputContent), {
+      reuseLastUserMessage: true
+    });
 
     return this.getById(sessionId);
   }
@@ -398,7 +409,7 @@ export class SessionsService implements OnModuleInit {
           role: MessageRole.Assistant,
           status: MessageStatus.Streaming
         },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
+        orderBy: sessionMessageDescendingOrder()
       });
 
       if (streamingMessage) {
@@ -566,7 +577,7 @@ export class SessionsService implements OnModuleInit {
           gt: afterEventId
         }
       },
-      orderBy: { eventId: 'asc' }
+      orderBy: eventAscendingOrder()
     });
     const toolUses = await this.prisma.messageToolUse.findMany({
       where: {
@@ -575,7 +586,7 @@ export class SessionsService implements OnModuleInit {
           gt: afterEventId
         }
       },
-      orderBy: { eventId: 'asc' }
+      orderBy: eventAscendingOrder()
     });
     const metrics = await this.prisma.sessionMetric.findMany({
       where: {
@@ -584,7 +595,7 @@ export class SessionsService implements OnModuleInit {
           gt: afterEventId
         }
       },
-      orderBy: { eventId: 'asc' }
+      orderBy: eventAscendingOrder()
     });
     const streamingMessages = await this.prisma.sessionMessage.findMany({
       where: {
@@ -592,7 +603,7 @@ export class SessionsService implements OnModuleInit {
         role: MessageRole.Assistant,
         status: MessageStatus.Streaming
       },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+      orderBy: sessionMessageAscendingOrder()
     });
 
     const events: OutputChunk[] = [];
@@ -1078,19 +1089,25 @@ export class SessionsService implements OnModuleInit {
 
   private async sendParsedInput(
     sessionId: string,
-    parsedInput: Record<string, unknown>
+    parsedInput: Record<string, unknown>,
+    options?: {
+      reuseLastUserMessage?: boolean;
+    }
   ) {
     const runtimeSession = await this.ensureRuntime(sessionId);
     const previousStatus = (await this.getSessionOrThrow(sessionId)).status as SessionStatus;
-    const created = await this.prisma.$transaction(async (tx) => {
-      const userMessage = await tx.sessionMessage.create({
-        data: {
-          sessionId,
-          role: MessageRole.User,
-          status: MessageStatus.Sent,
-          inputContent: toInputJson(parsedInput as Prisma.InputJsonValue)
-        }
-      });
+    const assistantMessageId = await this.prisma.$transaction(async (tx) => {
+      if (!options?.reuseLastUserMessage) {
+        await tx.sessionMessage.create({
+          data: {
+            sessionId,
+            role: MessageRole.User,
+            status: MessageStatus.Sent,
+            inputContent: toInputJson(parsedInput as Prisma.InputJsonValue)
+          }
+        });
+      }
+
       const assistantMessage = await tx.sessionMessage.create({
         data: {
           sessionId,
@@ -1103,31 +1120,21 @@ export class SessionsService implements OnModuleInit {
         data: { status: SessionStatus.Running }
       });
 
-      return {
-        userMessage,
-        assistantMessage
-      };
+      return assistantMessage.id;
     });
 
-    this.deltaSeqs.set(
-      this.getDeltaSeqKey(sessionId, created.assistantMessage.id),
-      0
-    );
-    this.thinkingAccumulators.delete(
-      this.getThinkingAccumulatorKey(sessionId, created.assistantMessage.id)
-    );
-
+    this.prepareStreamingAssistantMessage(sessionId, assistantMessageId);
     await this.emitSessionStatus(sessionId, SessionStatus.Running, previousStatus);
 
     try {
       await this.getRunnerTypeOrThrow(runtimeSession.runnerType).send(runtimeSession, {
-        messageId: created.assistantMessage.id,
+        messageId: assistantMessageId,
         input: parsedInput
       });
     } catch (error) {
       await this.handleRecoverableMessageError(
         sessionId,
-        created.assistantMessage.id,
+        assistantMessageId,
         {
           message: error instanceof Error ? error.message : 'Runner failed to send',
           code: 'RUNNER_SEND_FAILED',
@@ -1137,60 +1144,23 @@ export class SessionsService implements OnModuleInit {
     }
   }
 
-  private async rerunExistingUserInput(
+  private prepareStreamingAssistantMessage(
     sessionId: string,
-    parsedInput: Record<string, unknown>
+    messageId: string
   ) {
-    const runtimeSession = await this.ensureRuntime(sessionId);
-    const previousStatus = (await this.getSessionOrThrow(sessionId)).status as SessionStatus;
-    const assistantMessage = await this.prisma.$transaction(async (tx) => {
-      const createdAssistantMessage = await tx.sessionMessage.create({
-        data: {
-          sessionId,
-          role: MessageRole.Assistant,
-          status: MessageStatus.Streaming
-        }
-      });
-      await tx.agentSession.update({
-        where: { id: sessionId },
-        data: { status: SessionStatus.Running }
-      });
-
-      return createdAssistantMessage;
-    });
-
     this.deltaSeqs.set(
-      this.getDeltaSeqKey(sessionId, assistantMessage.id),
+      this.getDeltaSeqKey(sessionId, messageId),
       0
     );
     this.thinkingAccumulators.delete(
-      this.getThinkingAccumulatorKey(sessionId, assistantMessage.id)
+      this.getThinkingAccumulatorKey(sessionId, messageId)
     );
-
-    await this.emitSessionStatus(sessionId, SessionStatus.Running, previousStatus);
-
-    try {
-      await this.getRunnerTypeOrThrow(runtimeSession.runnerType).send(runtimeSession, {
-        messageId: assistantMessage.id,
-        input: parsedInput
-      });
-    } catch (error) {
-      await this.handleRecoverableMessageError(
-        sessionId,
-        assistantMessage.id,
-        {
-          message: error instanceof Error ? error.message : 'Runner failed to send',
-          code: 'RUNNER_SEND_FAILED',
-          recoverable: true
-        }
-      );
-    }
   }
 
   private async truncateSessionHistoryFrom(sessionId: string, fromMessageId: string) {
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+      orderBy: sessionMessageAscendingOrder()
     });
     const startIndex = messages.findIndex((message) => message.id === fromMessageId);
 
@@ -1253,7 +1223,7 @@ export class SessionsService implements OnModuleInit {
         role: MessageRole.Assistant,
         status: MessageStatus.Streaming
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
+      orderBy: sessionMessageDescendingOrder()
     });
   }
 
