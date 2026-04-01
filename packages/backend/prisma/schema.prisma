@@ -53,6 +53,16 @@ model Profile {
   rules       ProfileRule[]
 }
 
+model AgentRunner {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  type         String
+  runnerConfig Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model ProfileSkill {
   id             String   @id @default(cuid())
   profileId      String

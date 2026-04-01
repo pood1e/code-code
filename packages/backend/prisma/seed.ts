@@ -268,6 +268,50 @@ async function main() {
     ]
   });
 
+  await prisma.agentRunner.upsert({
+    where: { id: 'runner_dev' },
+    update: {
+      name: 'Dev Runner',
+      description: 'Claude Code runner for development tasks',
+      type: 'claude-code',
+      runnerConfig: {
+        model: 'claude-sonnet-4-5'
+      }
+    },
+    create: {
+      id: 'runner_dev',
+      name: 'Dev Runner',
+      description: 'Claude Code runner for development tasks',
+      type: 'claude-code',
+      runnerConfig: {
+        model: 'claude-sonnet-4-5'
+      }
+    }
+  });
+
+  await prisma.agentRunner.upsert({
+    where: { id: 'runner_prod' },
+    update: {
+      name: 'Production Runner',
+      description: 'Claude Code runner for production tasks',
+      type: 'claude-code',
+      runnerConfig: {
+        model: 'claude-opus-4-5',
+        baseUrl: 'https://api.anthropic.com'
+      }
+    },
+    create: {
+      id: 'runner_prod',
+      name: 'Production Runner',
+      description: 'Claude Code runner for production tasks',
+      type: 'claude-code',
+      runnerConfig: {
+        model: 'claude-opus-4-5',
+        baseUrl: 'https://api.anthropic.com'
+      }
+    }
+  });
+
   console.log('Seed completed');
 }
 
