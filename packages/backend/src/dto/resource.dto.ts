@@ -1,3 +1,4 @@
+import { stringMapSchema } from '@agent-workbench/shared';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
@@ -14,6 +15,10 @@ import {
   ValidatorConstraintInterface
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { convertZodSchemaToSwaggerObjectSchemaOptions } from '../utils/zod-to-json-schema';
+
+const stringMapSwaggerSchemaOptions =
+  convertZodSchemaToSwaggerObjectSchemaOptions(stringMapSchema);
 
 @ValidatorConstraint({ name: 'isStringRecord', async: false })
 class IsStringRecordConstraint implements ValidatorConstraintInterface {
@@ -109,10 +114,7 @@ export class McpContentDto {
   args!: string[];
 
   @ApiPropertyOptional({
-    type: 'object',
-    additionalProperties: {
-      type: 'string'
-    },
+    ...stringMapSwaggerSchemaOptions,
     example: {
       LOG_LEVEL: 'info'
     },
@@ -158,10 +160,7 @@ export class McpConfigOverrideDto {
   args?: string[];
 
   @ApiPropertyOptional({
-    type: 'object',
-    additionalProperties: {
-      type: 'string'
-    },
+    ...stringMapSwaggerSchemaOptions,
     example: {
       LOG_LEVEL: 'debug'
     },
