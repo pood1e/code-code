@@ -1,6 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 
-type ReferencedProfile = {
+export type ReferencedProfile = {
   profile: {
     id: string;
     name: string;

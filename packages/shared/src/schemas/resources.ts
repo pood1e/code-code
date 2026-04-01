@@ -52,10 +52,66 @@ export const mcpProfileItemInputSchema = profileItemInputSchema.extend({
   configOverride: mcpConfigOverrideSchema.optional()
 });
 
+type ProfileItemsListEntry =
+  | z.infer<typeof profileItemInputSchema>
+  | z.infer<typeof mcpProfileItemInputSchema>;
+
+function validateProfileItemsList(
+  items: ProfileItemsListEntry[],
+  ctx: z.RefinementCtx
+) {
+  const resourceIds = new Set<string>();
+  const orders = new Set<number>();
+
+  items.forEach((item, index) => {
+    const { resourceId, order } = item;
+
+    if (resourceIds.has(resourceId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate resourceId: ${resourceId}`,
+        path: [index, 'resourceId']
+      });
+    }
+
+    if (orders.has(order)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate order: ${order}`,
+        path: [index, 'order']
+      });
+    }
+
+    if (order !== index) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Order must match the array position',
+        path: [index, 'order']
+      });
+    }
+
+    resourceIds.add(resourceId);
+    orders.add(order);
+  });
+}
+
+const profileItemsListSchema = z
+  .array(profileItemInputSchema)
+  .superRefine(validateProfileItemsList);
+const mcpProfileItemsListSchema = z
+  .array(mcpProfileItemInputSchema)
+  .superRefine(validateProfileItemsList);
+
 export const profileItemsPayloadSchema = z.object({
-  skills: z.array(profileItemInputSchema),
-  mcps: z.array(mcpProfileItemInputSchema),
-  rules: z.array(profileItemInputSchema)
+  skills: profileItemsListSchema,
+  mcps: mcpProfileItemsListSchema,
+  rules: profileItemsListSchema
+});
+
+export const saveProfileInputSchema = profileInputSchema.extend({
+  skills: profileItemsPayloadSchema.shape.skills,
+  mcps: profileItemsPayloadSchema.shape.mcps,
+  rules: profileItemsPayloadSchema.shape.rules
 });
 
 export type SkillInput = z.infer<typeof skillInputSchema>;
@@ -67,3 +123,4 @@ export type ProfileInput = z.infer<typeof profileInputSchema>;
 export type ProfileItemsPayloadInput = z.infer<
   typeof profileItemsPayloadSchema
 >;
+export type SaveProfileInput = z.infer<typeof saveProfileInputSchema>;
