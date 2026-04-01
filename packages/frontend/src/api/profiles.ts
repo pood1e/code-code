@@ -1,7 +1,7 @@
 import type {
   Profile,
   ProfileDetail,
-  ProfileItemsPayload
+  SaveProfileInput
 } from '@agent-workbench/shared';
 
 import { apiClient } from './client';
@@ -26,23 +26,15 @@ export async function createProfile(payload: ProfilePayload) {
   return response.data;
 }
 
-export async function updateProfile(id: string, payload: ProfilePayload) {
-  const response = await apiClient.put<Profile>(`/profiles/${id}`, payload);
+export async function saveProfile(id: string, payload: SaveProfileInput) {
+  const response = await apiClient.put<ProfileDetail>(
+    `/profiles/${id}`,
+    payload
+  );
   return response.data;
 }
 
 export async function deleteProfile(id: string) {
   const response = await apiClient.delete<null>(`/profiles/${id}`);
-  return response.data;
-}
-
-export async function replaceProfileItems(
-  id: string,
-  payload: ProfileItemsPayload
-) {
-  const response = await apiClient.post<ProfileDetail>(
-    `/profiles/${id}/items`,
-    payload
-  );
   return response.data;
 }

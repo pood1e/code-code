@@ -23,7 +23,7 @@ import { ResponseMessage } from '../../common/response-message.decorator';
 import {
   ExportProfileQueryDto,
   ProfileMutationDto,
-  UpdateProfileItemsDto
+  SaveProfileDto
 } from '../../dto/profile.dto';
 import { ProfilesService } from './profiles.service';
 
@@ -39,7 +39,6 @@ export class ProfilesController {
     this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.remove = this.remove.bind(this);
-    this.replaceItems = this.replaceItems.bind(this);
     this.render = this.render.bind(this);
     this.export = this.export.bind(this);
   }
@@ -70,11 +69,11 @@ export class ProfilesController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update profile' })
+  @ApiOperation({ summary: 'Replace profile aggregate' })
   @ApiParam({ name: 'id', type: String })
-  @ApiResponse({ status: 200, description: 'Profile updated.' })
-  @ResponseMessage('Profile updated')
-  update(@Param('id') id: string, @Body() dto: ProfileMutationDto) {
+  @ApiResponse({ status: 200, description: 'Profile saved.' })
+  @ResponseMessage('Profile saved')
+  update(@Param('id') id: string, @Body() dto: SaveProfileDto) {
     return this.profilesService.update(id, dto);
   }
 
@@ -86,16 +85,6 @@ export class ProfilesController {
   @ResponseMessage('Profile deleted')
   remove(@Param('id') id: string) {
     return this.profilesService.remove(id);
-  }
-
-  @Post(':id/items')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Replace profile resource items' })
-  @ApiParam({ name: 'id', type: String })
-  @ApiResponse({ status: 200, description: 'Profile items updated.' })
-  @ResponseMessage('Profile items updated')
-  replaceItems(@Param('id') id: string, @Body() dto: UpdateProfileItemsDto) {
-    return this.profilesService.replaceItems(id, dto);
   }
 
   @Get(':id/render')

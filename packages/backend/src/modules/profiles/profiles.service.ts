@@ -3,8 +3,8 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import {
-  profileItemsPayloadSchema,
   profileInputSchema,
+  saveProfileInputSchema,
   mcpConfigOverrideSchema,
   mcpContentSchema,
   type McpConfigOverrideInput,
@@ -21,7 +21,7 @@ import {
 import { parseSchemaOrThrow } from '../../common/schema.utils';
 import {
   ProfileMutationDto,
-  UpdateProfileItemsDto
+  SaveProfileDto
 } from '../../dto/profile.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -91,54 +91,49 @@ export class ProfilesService {
     });
   }
 
-  async update(id: string, dto: ProfileMutationDto) {
+  async update(id: string, dto: SaveProfileDto) {
     await this.ensureProfile(id);
-    const parsedProfile = this.parseProfileInput(dto);
-
-    return this.prisma.profile.update({
-      where: { id },
-      data: {
-        name: parsedProfile.name,
-        description: parsedProfile.description ?? null
-      }
-    });
-  }
-
-  async remove(id: string) {
-    await this.ensureProfile(id);
-    await this.prisma.profile.delete({ where: { id } });
-    return null;
-  }
-
-  async replaceItems(id: string, dto: UpdateProfileItemsDto) {
-    await this.ensureProfile(id);
-    const parsedItems = parseSchemaOrThrow(
-      profileItemsPayloadSchema,
+    const parsedProfile = parseSchemaOrThrow(
+      saveProfileInputSchema,
       dto,
-      'Invalid profile items payload'
+      'Invalid profile payload'
     );
+    const normalizedSkills = this.normalizeProfileItems(parsedProfile.skills);
+    const normalizedMcps = this.normalizeProfileItems(parsedProfile.mcps);
+    const normalizedRules = this.normalizeProfileItems(parsedProfile.rules);
 
-    await this.assertResourceIdsExist(
-      'skill',
-      parsedItems.skills.map((item) => item.resourceId)
-    );
-    await this.assertResourceIdsExist(
-      'mCP',
-      parsedItems.mcps.map((item) => item.resourceId)
-    );
-    await this.assertResourceIdsExist(
-      'rule',
-      parsedItems.rules.map((item) => item.resourceId)
-    );
+    await Promise.all([
+      this.assertResourceIdsExist(
+        'skill',
+        normalizedSkills.map((item) => item.resourceId)
+      ),
+      this.assertResourceIdsExist(
+        'mCP',
+        normalizedMcps.map((item) => item.resourceId)
+      ),
+      this.assertResourceIdsExist(
+        'rule',
+        normalizedRules.map((item) => item.resourceId)
+      )
+    ]);
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.profile.update({
+        where: { id },
+        data: {
+          name: parsedProfile.name,
+          description: parsedProfile.description ?? null,
+          updatedAt: new Date()
+        }
+      });
+
       await tx.profileSkill.deleteMany({ where: { profileId: id } });
       await tx.profileMCP.deleteMany({ where: { profileId: id } });
       await tx.profileRule.deleteMany({ where: { profileId: id } });
 
-      if (parsedItems.skills.length > 0) {
+      if (normalizedSkills.length > 0) {
         await tx.profileSkill.createMany({
-          data: parsedItems.skills.map((item) => ({
+          data: normalizedSkills.map((item) => ({
             profileId: id,
             skillId: item.resourceId,
             order: item.order
@@ -146,9 +141,9 @@ export class ProfilesService {
         });
       }
 
-      if (parsedItems.mcps.length > 0) {
+      if (normalizedMcps.length > 0) {
         await tx.profileMCP.createMany({
-          data: parsedItems.mcps.map((item) => ({
+          data: normalizedMcps.map((item) => ({
             profileId: id,
             mcpId: item.resourceId,
             order: item.order,
@@ -157,23 +152,24 @@ export class ProfilesService {
         });
       }
 
-      if (parsedItems.rules.length > 0) {
+      if (normalizedRules.length > 0) {
         await tx.profileRule.createMany({
-          data: parsedItems.rules.map((item) => ({
+          data: normalizedRules.map((item) => ({
             profileId: id,
             ruleId: item.resourceId,
             order: item.order
           }))
         });
       }
-
-      await tx.profile.update({
-        where: { id },
-        data: { updatedAt: new Date() }
-      });
     });
 
     return this.getById(id);
+  }
+
+  async remove(id: string) {
+    await this.ensureProfile(id);
+    await this.prisma.profile.delete({ where: { id } });
+    return null;
   }
 
   async render(id: string) {
@@ -209,6 +205,17 @@ export class ProfilesService {
 
   private parseProfileInput(dto: ProfileMutationDto) {
     return parseSchemaOrThrow(profileInputSchema, dto, 'Invalid profile payload');
+  }
+
+  private normalizeProfileItems<
+    TItem extends {
+      order: number;
+    }
+  >(items: TItem[]) {
+    return items.map((item, index) => ({
+      ...item,
+      order: index
+    }));
   }
 
   private async assertResourceIdsExist(

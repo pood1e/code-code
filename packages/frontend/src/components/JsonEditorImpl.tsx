@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { markdown } from '@codemirror/lang-markdown';
@@ -15,7 +16,10 @@ export default function JsonEditorImpl({
   readOnly = false,
   mode = 'json'
 }: JsonEditorImplProps) {
-  const extensions = mode === 'markdown' ? [markdown()] : [json()];
+  const extensions = useMemo(
+    () => (mode === 'markdown' ? [markdown()] : [json()]),
+    [mode]
+  );
 
   return (
     <div className="editor-shell">
