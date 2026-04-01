@@ -8,8 +8,13 @@ import { AppModule } from './app.module';
 import { ApiResponseInterceptor } from './common/api-response.interceptor';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 
+process.env.DATABASE_URL ??= 'file:./dev.db';
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule, {
+    cors: true,
+    logger: ['warn', 'error']
+  });
   const reflector = app.get(Reflector);
 
   app.setGlobalPrefix('api');
@@ -35,6 +40,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
+  console.info(`backend ready at http://localhost:${port}/api`);
 }
 
 void bootstrap();
