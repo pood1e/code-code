@@ -11,10 +11,8 @@ import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import {
-  listAgentRunners,
-  listAgentRunnerTypes
-} from '@/api/agent-runners';
+import { listAgentRunners, listAgentRunnerTypes } from '@/api/agent-runners';
+import { listProjects } from '@/api/projects';
 import { listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
 import { Button } from '@/components/ui/button';
@@ -27,6 +25,8 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/query/query-keys';
+import { useProjectStore } from '@/store/project-store';
+import { projectConfig } from '@/types/projects';
 
 const resourceItems = [
   {
@@ -56,7 +56,20 @@ const resourceItems = [
   }
 ] as const;
 
-const moduleLabel = '资源管理';
+const primaryItems = [
+  {
+    key: 'projects',
+    path: projectConfig.path,
+    label: 'Project',
+    icon: FolderKanban
+  },
+  {
+    key: 'resources',
+    path: '/skills',
+    label: '资源库',
+    icon: Blocks
+  }
+] as const;
 
 function SecondaryNavigation({
   selectedKey,
@@ -127,47 +140,83 @@ function SecondaryNavigation({
   );
 }
 
-function DesktopSidebar({ onNavigate }: { onNavigate: (key: string) => void }) {
+function DesktopSidebar({
+  selectedPrimaryKey,
+  onNavigate
+}: {
+  selectedPrimaryKey: (typeof primaryItems)[number]['key'];
+  onNavigate: (path: string) => void;
+}) {
   return (
     <aside className="hidden min-h-screen w-[184px] flex-col border-r border-sidebar-border/70 bg-[linear-gradient(180deg,rgba(13,24,48,0.98),rgba(17,31,58,0.98))] px-2.5 py-3 text-sidebar-foreground lg:flex">
       <button
         type="button"
-        onClick={() => onNavigate('/skills')}
+        onClick={() => onNavigate(projectConfig.path)}
         className="flex items-center gap-2.5 rounded-[calc(var(--radius)*0.85)] px-2.5 py-2 text-left transition-colors hover:bg-white/5"
       >
         <div className="flex size-9 items-center justify-center rounded-xl bg-white/7 text-xs font-semibold tracking-[0.24em] text-white">
           AW
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[0.82rem] font-semibold text-white">Agent Workbench</p>
+          <p className="truncate text-[0.82rem] font-semibold text-white">
+            Agent Workbench
+          </p>
         </div>
       </button>
 
-      <button
-        type="button"
-        onClick={() => onNavigate('/skills')}
-        className="mt-5 flex items-center gap-2.5 rounded-[calc(var(--radius)*0.9)] px-2.5 py-2.5 text-left text-white/88 transition-colors hover:bg-white/5"
-      >
-        <span className="flex size-8 items-center justify-center rounded-lg border border-white/8 bg-white/6 text-white/90">
-          <FolderKanban className="size-4" />
-        </span>
-        <span className="min-w-0 flex-1 text-sm font-medium">{moduleLabel}</span>
-        <span className="h-1.5 w-1.5 rounded-full bg-primary/90" />
-      </button>
+      <div className="mt-5 space-y-1.5">
+        {primaryItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = item.key === selectedPrimaryKey;
+
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => onNavigate(item.path)}
+              className={cn(
+                'flex w-full items-center gap-2.5 rounded-[calc(var(--radius)*0.9)] px-2.5 py-2.5 text-left transition-colors',
+                isActive
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/82 hover:bg-white/5'
+              )}
+            >
+              <span
+                className={cn(
+                  'flex size-8 items-center justify-center rounded-lg border',
+                  isActive
+                    ? 'border-white/12 bg-white/10 text-white'
+                    : 'border-white/8 bg-white/6 text-white/90'
+                )}
+              >
+                <Icon className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1 text-sm font-medium">
+                {item.label}
+              </span>
+              {isActive ? (
+                <span className="h-1.5 w-1.5 rounded-full bg-primary/90" />
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
     </aside>
   );
 }
 
 function MobileNavigation({
   open,
+  selectedPrimaryKey,
   selectedKey,
   onOpenChange,
   onNavigate
 }: {
   open: boolean;
+  selectedPrimaryKey: (typeof primaryItems)[number]['key'];
   selectedKey: string;
   onOpenChange: (open: boolean) => void;
-  onNavigate: (key: string) => void;
+  onNavigate: (path: string) => void;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -185,31 +234,47 @@ function MobileNavigation({
         </SheetHeader>
 
         <div className="mt-8 px-4">
-          <button
-            type="button"
-            onClick={() => {
-              onNavigate('/skills');
-              onOpenChange(false);
-            }}
-            className="flex w-full items-center gap-3 rounded-[calc(var(--radius)*1.05)] border border-white/10 bg-white/10 px-4 py-3 text-left"
-          >
-            <span className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white">
-              <FolderKanban className="size-4" />
-            </span>
-            <span className="text-sm font-semibold text-white">
-              {moduleLabel}
-            </span>
-          </button>
-          <div className="mt-5">
-            <SecondaryNavigation
-              mobile
-              selectedKey={selectedKey}
-              onNavigate={(key) => {
-                onNavigate(key);
-                onOpenChange(false);
-              }}
-            />
+          <div className="space-y-2">
+            {primaryItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = item.key === selectedPrimaryKey;
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => {
+                    onNavigate(item.path);
+                    onOpenChange(false);
+                  }}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-[calc(var(--radius)*1.05)] border px-4 py-3 text-left',
+                    isActive
+                      ? 'border-white/10 bg-white/10 text-white'
+                      : 'border-white/8 bg-white/6 text-white/82'
+                  )}
+                >
+                  <span className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="text-sm font-semibold">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
+
+          {selectedPrimaryKey === 'resources' ? (
+            <div className="mt-5">
+              <SecondaryNavigation
+                mobile
+                selectedKey={selectedKey}
+                onNavigate={(key) => {
+                  onNavigate(key);
+                  onOpenChange(false);
+                }}
+              />
+            </div>
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>
@@ -220,28 +285,47 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const selectedKey = useMemo(
+  const selectedPrimaryKey = useMemo(
     () =>
-      resourceItems.find((item) => location.pathname.startsWith(item.key))?.key ??
-      '/skills',
+      location.pathname.startsWith(projectConfig.path)
+        ? 'projects'
+        : 'resources',
     [location.pathname]
   );
-  const isListPage = useMemo(
-    () => resourceItems.some((item) => location.pathname === item.key),
+  const selectedResourceKey = useMemo(
+    () =>
+      resourceItems.find((item) => location.pathname.startsWith(item.key))
+        ?.key ?? '/skills',
+    [location.pathname]
+  );
+  const isWideListPage = useMemo(
+    () =>
+      location.pathname === projectConfig.path ||
+      resourceItems.some((item) => location.pathname === item.key),
     [location.pathname]
   );
 
-  const handleNavigate = (key: string) => {
+  const handleNavigate = (path: string) => {
+    const nextPath =
+      path === projectConfig.path && currentProjectId
+        ? `${projectConfig.path}/${currentProjectId}/config`
+        : path;
+
     setMobileOpen(false);
     startTransition(() => {
-      void navigate(key);
+      void navigate(nextPath);
     });
   };
 
   useEffect(() => {
     void Promise.all([
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.projects.list(),
+        queryFn: () => listProjects()
+      }),
       queryClient.prefetchQuery({
         queryKey: queryKeys.resources.list('skills'),
         queryFn: () => listResources('skills')
@@ -269,9 +353,15 @@ export function AppLayout() {
     ]);
   }, [queryClient]);
 
+  const currentModuleLabel =
+    selectedPrimaryKey === 'projects' ? 'Project' : '资源库';
+
   return (
     <div className="relative min-h-screen lg:flex">
-      <DesktopSidebar onNavigate={handleNavigate} />
+      <DesktopSidebar
+        selectedPrimaryKey={selectedPrimaryKey}
+        onNavigate={handleNavigate}
+      />
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 px-4 py-3 backdrop-blur lg:hidden">
@@ -281,7 +371,7 @@ export function AppLayout() {
                 Agent Workbench
               </p>
               <p className="truncate text-sm font-semibold text-foreground">
-                {moduleLabel}
+                {currentModuleLabel}
               </p>
             </div>
             <Button
@@ -298,14 +388,21 @@ export function AppLayout() {
           <div
             className={cn(
               'mx-auto w-full',
-              isListPage ? 'max-w-[96rem]' : 'max-w-7xl'
+              isWideListPage ? 'max-w-[96rem]' : 'max-w-7xl'
             )}
           >
-            <SecondaryNavigation
-              selectedKey={selectedKey}
-              onNavigate={handleNavigate}
-            />
-            <div className="min-h-[32rem] pt-5 sm:pt-6">
+            {selectedPrimaryKey === 'resources' ? (
+              <SecondaryNavigation
+                selectedKey={selectedResourceKey}
+                onNavigate={handleNavigate}
+              />
+            ) : null}
+            <div
+              className={cn(
+                'min-h-[32rem]',
+                selectedPrimaryKey === 'resources' ? 'pt-5 sm:pt-6' : ''
+              )}
+            >
               <Outlet />
             </div>
           </div>
@@ -314,7 +411,8 @@ export function AppLayout() {
 
       <MobileNavigation
         open={mobileOpen}
-        selectedKey={selectedKey}
+        selectedPrimaryKey={selectedPrimaryKey}
+        selectedKey={selectedResourceKey}
         onOpenChange={setMobileOpen}
         onNavigate={handleNavigate}
       />
