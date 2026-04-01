@@ -5,8 +5,16 @@ import { McpsModule } from './modules/mcps/mcps.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { RulesModule } from './modules/rules/rules.module';
 import { SkillsModule } from './modules/skills/skills.module';
+import { AgentRunnersModule } from './modules/agent-runners/agent-runners.module';
 
 @Module({
-  imports: [PrismaModule, SkillsModule, McpsModule, RulesModule, ProfilesModule]
+  imports: [
+    PrismaModule,
+    SkillsModule,
+    McpsModule,
+    RulesModule,
+    ProfilesModule,
+    AgentRunnersModule
+  ]
 })
 export class AppModule {}
