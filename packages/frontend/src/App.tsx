@@ -1,12 +1,19 @@
 import { Fragment, Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
+import { AgentRunnerListPage } from './pages/agent-runners/AgentRunnerListPage';
 import { ProfilesPage } from './pages/profiles/ProfilesPage';
 import { ResourceListPage } from './pages/resources/ResourceListPage';
 import { Skeleton } from './components/ui/skeleton';
 import { AppLayout } from './layout/AppLayout';
+import { agentRunnerConfig } from './types/agent-runners';
 import { resourceConfigMap, resourceKinds } from './types/resources';
 
+const AgentRunnerEditorPage = lazy(() =>
+  import('./pages/agent-runners/AgentRunnerEditorPage').then((module) => ({
+    default: module.AgentRunnerEditorPage
+  }))
+);
 const ProfileEditorPage = lazy(() =>
   import('./pages/profiles/ProfileEditorPage').then((module) => ({
     default: module.ProfileEditorPage
@@ -82,6 +89,30 @@ export function App() {
           element={
             <LazyRoute>
               <ProfileEditorPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={agentRunnerConfig.path}
+          element={
+            <LazyRoute>
+              <AgentRunnerListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={`${agentRunnerConfig.path}/new`}
+          element={
+            <LazyRoute>
+              <AgentRunnerEditorPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={`${agentRunnerConfig.path}/:id/edit`}
+          element={
+            <LazyRoute>
+              <AgentRunnerEditorPage />
             </LazyRoute>
           }
         />

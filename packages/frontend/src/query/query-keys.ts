@@ -5,6 +5,15 @@ function normalizeSearchValue(value?: string) {
 }
 
 export const queryKeys = {
+  agentRunnerTypes: {
+    all: ['agent-runner-types'] as const
+  },
+  agentRunners: {
+    all: ['agent-runners'] as const,
+    list: (searchValue?: string) =>
+      ['agent-runners', 'list', normalizeSearchValue(searchValue)] as const,
+    detail: (id: string) => ['agent-runners', 'detail', id] as const
+  },
   resources: {
     all: ['resources'] as const,
     lists: () => ['resources', 'list'] as const,
