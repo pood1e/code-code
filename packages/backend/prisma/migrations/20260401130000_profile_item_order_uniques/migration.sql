@@ -11,7 +11,15 @@ CREATE TABLE "new_ProfileSkill" (
     CONSTRAINT "ProfileSkill_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 INSERT INTO "new_ProfileSkill" ("id", "order", "profileId", "skillId")
-SELECT "id", "order", "profileId", "skillId" FROM "ProfileSkill";
+SELECT
+    "id",
+    ROW_NUMBER() OVER (
+        PARTITION BY "profileId"
+        ORDER BY "order" ASC, "id" ASC
+    ) - 1,
+    "profileId",
+    "skillId"
+FROM "ProfileSkill";
 DROP TABLE "ProfileSkill";
 ALTER TABLE "new_ProfileSkill" RENAME TO "ProfileSkill";
 CREATE UNIQUE INDEX "ProfileSkill_profileId_skillId_key" ON "ProfileSkill"("profileId", "skillId");
@@ -27,7 +35,16 @@ CREATE TABLE "new_ProfileMCP" (
     CONSTRAINT "ProfileMCP_mcpId_fkey" FOREIGN KEY ("mcpId") REFERENCES "MCP" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 INSERT INTO "new_ProfileMCP" ("configOverride", "id", "mcpId", "order", "profileId")
-SELECT "configOverride", "id", "mcpId", "order", "profileId" FROM "ProfileMCP";
+SELECT
+    "configOverride",
+    "id",
+    "mcpId",
+    ROW_NUMBER() OVER (
+        PARTITION BY "profileId"
+        ORDER BY "order" ASC, "id" ASC
+    ) - 1,
+    "profileId"
+FROM "ProfileMCP";
 DROP TABLE "ProfileMCP";
 ALTER TABLE "new_ProfileMCP" RENAME TO "ProfileMCP";
 CREATE UNIQUE INDEX "ProfileMCP_profileId_mcpId_key" ON "ProfileMCP"("profileId", "mcpId");
@@ -42,7 +59,15 @@ CREATE TABLE "new_ProfileRule" (
     CONSTRAINT "ProfileRule_ruleId_fkey" FOREIGN KEY ("ruleId") REFERENCES "Rule" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 INSERT INTO "new_ProfileRule" ("id", "order", "profileId", "ruleId")
-SELECT "id", "order", "profileId", "ruleId" FROM "ProfileRule";
+SELECT
+    "id",
+    ROW_NUMBER() OVER (
+        PARTITION BY "profileId"
+        ORDER BY "order" ASC, "id" ASC
+    ) - 1,
+    "profileId",
+    "ruleId"
+FROM "ProfileRule";
 DROP TABLE "ProfileRule";
 ALTER TABLE "new_ProfileRule" RENAME TO "ProfileRule";
 CREATE UNIQUE INDEX "ProfileRule_profileId_ruleId_key" ON "ProfileRule"("profileId", "ruleId");
