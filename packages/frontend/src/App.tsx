@@ -2,6 +2,7 @@ import { Fragment, Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AgentRunnerListPage } from './pages/agent-runners/AgentRunnerListPage';
+import { ProjectListPage } from './pages/projects/ProjectListPage';
 import { ProfilesPage } from './pages/profiles/ProfilesPage';
 import { ResourceListPage } from './pages/resources/ResourceListPage';
 import { Skeleton } from './components/ui/skeleton';
@@ -17,6 +18,16 @@ const AgentRunnerEditorPage = lazy(() =>
 const ProfileEditorPage = lazy(() =>
   import('./pages/profiles/ProfileEditorPage').then((module) => ({
     default: module.ProfileEditorPage
+  }))
+);
+const ProjectConfigPage = lazy(() =>
+  import('./pages/projects/ProjectConfigPage').then((module) => ({
+    default: module.ProjectConfigPage
+  }))
+);
+const ProjectDashboardPage = lazy(() =>
+  import('./pages/projects/ProjectDashboardPage').then((module) => ({
+    default: module.ProjectDashboardPage
   }))
 );
 const ResourceEditPage = lazy(() =>
@@ -47,7 +58,31 @@ export function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route index element={<Navigate to="/skills" replace />} />
+        <Route index element={<Navigate to="/projects" replace />} />
+        <Route
+          path="/projects"
+          element={
+            <LazyRoute>
+              <ProjectListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/config"
+          element={
+            <LazyRoute>
+              <ProjectConfigPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/dashboard"
+          element={
+            <LazyRoute>
+              <ProjectDashboardPage />
+            </LazyRoute>
+          }
+        />
         {resourceKinds.map((kind) => (
           <Fragment key={kind}>
             <Route
