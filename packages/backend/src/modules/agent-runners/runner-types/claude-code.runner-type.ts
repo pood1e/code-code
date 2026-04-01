@@ -34,33 +34,45 @@ export const ClaudeCodeRunnerType: RunnerType = {
   taskConfigSchema: claudeCodeTaskConfigSchema,
   runtimeConfigSchema: claudeCodeRuntimeConfigSchema,
 
-  async createSession(
-    _runnerConfig: unknown,
-    _platformSessionConfig: PlatformSessionConfig,
-    _sessionConfig: unknown
+  createSession(
+    runnerConfig: unknown,
+    platformSessionConfig: PlatformSessionConfig,
+    sessionConfig: unknown
   ): Promise<unknown> {
-    throw new Error('Not implemented');
+    void runnerConfig;
+    void platformSessionConfig;
+    void sessionConfig;
+    return Promise.reject(new Error('Not implemented'));
   },
 
-  async destroySession(_session: unknown): Promise<void> {
-    throw new Error('Not implemented');
+  destroySession(session: unknown): Promise<void> {
+    void session;
+    return Promise.reject(new Error('Not implemented'));
   },
 
-  async *runTask(
-    _session: unknown,
-    _taskConfig: unknown
-  ): AsyncIterable<unknown> {
-    throw new Error('Not implemented');
+  runTask(session: unknown, taskConfig: unknown): AsyncIterable<unknown> {
+    void session;
+    void taskConfig;
+
+    return {
+      [Symbol.asyncIterator](): AsyncIterator<unknown> {
+        return {
+          next() {
+            return Promise.reject(new Error('Not implemented'));
+          }
+        };
+      }
+    };
   },
 
-  async cancelTask(_session: unknown): Promise<void> {
-    throw new Error('Not implemented');
+  cancelTask(session: unknown): Promise<void> {
+    void session;
+    return Promise.reject(new Error('Not implemented'));
   },
 
-  async updateRuntimeConfig(
-    _session: unknown,
-    _runtimeConfig: unknown
-  ): Promise<void> {
-    throw new Error('Not implemented');
+  updateRuntimeConfig(session: unknown, runtimeConfig: unknown): Promise<void> {
+    void session;
+    void runtimeConfig;
+    return Promise.reject(new Error('Not implemented'));
   }
 };
