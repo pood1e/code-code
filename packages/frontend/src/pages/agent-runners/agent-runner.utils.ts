@@ -370,7 +370,7 @@ export function buildAgentRunnerInitialValues(
             parsedSchema.fields,
             detail?.runnerConfig
           )
-        : {}
+        : (detail?.runnerConfig ?? {})
   };
 }
 
@@ -406,9 +406,11 @@ export function buildUpdateAgentRunnerInput(
   values: AgentRunnerEditorFormValues,
   runnerConfig: Record<string, unknown>
 ): UpdateAgentRunnerInput {
+  const description = values.description?.trim();
+
   return {
     name: values.name.trim(),
-    description: values.description?.trim() || undefined,
+    description: description && description.length > 0 ? description : null,
     runnerConfig
   };
 }
@@ -464,4 +466,30 @@ export function getRunnerConfigDefaultSummary(
     .filter((field) => isPrimitiveDefault(field.defaultValue))
     .map((field) => `${field.label}: ${String(field.defaultValue)}`)
     .join(' · ');
+}
+
+export function stringifyRunnerConfig(
+  runnerConfig?: Record<string, unknown>
+) {
+  return JSON.stringify(runnerConfig ?? {}, null, 2);
+}
+
+export function parseRawRunnerConfigText(value: string) {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {
+        error: 'Runner Config 必须是 JSON 对象。'
+      };
+    }
+
+    return {
+      data: parsed as Record<string, unknown>
+    };
+  } catch {
+    return {
+      error: 'Runner Config 不是有效的 JSON。'
+    };
+  }
 }
