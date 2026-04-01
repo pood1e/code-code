@@ -9,6 +9,7 @@ import {
   type RuleInput,
   type SkillInput
 } from '@agent-workbench/shared';
+import { z } from 'zod';
 
 import type { ResourcePayloadByKind } from '../../api/resources';
 import { normalizeDescription } from '../../utils/normalizers';
@@ -24,9 +25,33 @@ export type ResourceFormValues = {
   contentText?: string;
   type?: 'stdio';
   command?: string;
-  args?: string[];
+  argsText?: string;
   envEntries?: EnvEntry[];
 };
+
+export const resourceMarkdownFormSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  description: z.string().trim().max(500).optional(),
+  contentText: z.string().min(1, 'Content is required')
+});
+export type ResourceMarkdownFormValues = z.infer<
+  typeof resourceMarkdownFormSchema
+>;
+
+export const resourceMcpFormSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  description: z.string().trim().max(500).optional(),
+  type: z.literal('stdio').optional(),
+  command: z.string().trim().min(1, 'Command is required'),
+  argsText: z.string().optional(),
+  envEntries: z.array(
+    z.object({
+      key: z.string(),
+      value: z.string()
+    })
+  )
+});
+export type ResourceMcpFormValues = z.infer<typeof resourceMcpFormSchema>;
 
 export function createInitialValues(kind: ResourceKind): ResourceFormValues {
   if (kind === 'mcps') {
@@ -35,7 +60,7 @@ export function createInitialValues(kind: ResourceKind): ResourceFormValues {
       description: '',
       type: 'stdio',
       command: '',
-      args: [],
+      argsText: '',
       envEntries: []
     };
   }
@@ -90,7 +115,7 @@ function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
     description: mcpResource.description ?? '',
     type: mcpResource.content.type,
     command: mcpResource.content.command,
-    args: mcpResource.content.args,
+    argsText: mcpResource.content.args.join('\n'),
     envEntries: toEnvEntries(mcpResource.content.env)
   };
 }
@@ -102,7 +127,10 @@ function buildMcpPayload(values: ResourceFormValues) {
     content: {
       type: 'stdio',
       command: values.command?.trim() ?? '',
-      args: (values.args ?? []).map((item) => item.trim()).filter(Boolean),
+      args: (values.argsText ?? '')
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean),
       env: toEnvObject(values.envEntries)
     }
   });

@@ -1,23 +1,13 @@
-import { Modal, Tag } from 'antd';
-
 export function formatDateTime(value: string) {
-  return new Date(value).toLocaleString();
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(value));
 }
 
-export function renderNullableDescription(value: string | null) {
-  return value ?? <Tag color="default">-</Tag>;
-}
-
-export function confirmEntityDelete(
-  entityName: string,
-  onConfirm: () => void
-) {
-  Modal.confirm({
-    title: `Delete ${entityName}?`,
-    content: '删除后不可恢复。',
-    okButtonProps: { danger: true },
-    onOk: () => {
-      onConfirm();
-    }
-  });
+export function formatNullableDescription(value: string | null) {
+  return value?.trim() ? value : '暂无描述';
 }
