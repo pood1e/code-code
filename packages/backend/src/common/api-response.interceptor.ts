@@ -12,7 +12,11 @@ import { RESPONSE_MESSAGE_KEY } from './response-message.decorator';
 
 @Injectable()
 export class ApiResponseInterceptor<T> implements NestInterceptor<T, unknown> {
-  constructor(private readonly reflector: Reflector) {}
+  private readonly reflector: Reflector;
+
+  constructor(reflector: Reflector) {
+    this.reflector = reflector;
+  }
 
   intercept(
     context: ExecutionContext,

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException
 } from '@nestjs/common';
@@ -19,6 +18,7 @@ import {
   sanitizeJson,
   toNullableInputJson
 } from '../../common/json.utils';
+import { parseSchemaOrThrow } from '../../common/schema.utils';
 import {
   ProfileMutationDto,
   UpdateProfileItemsDto
@@ -27,7 +27,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly prisma: PrismaService;
+
+  constructor(prisma: PrismaService) {
+    this.prisma = prisma;
+  }
 
   list() {
     return this.prisma.profile.findMany({
@@ -108,24 +112,23 @@ export class ProfilesService {
 
   async replaceItems(id: string, dto: UpdateProfileItemsDto) {
     await this.ensureProfile(id);
-    const parsedItems = profileItemsPayloadSchema.safeParse(dto);
-    if (!parsedItems.success) {
-      throw new BadRequestException(
-        parsedItems.error.issues[0]?.message ?? 'Invalid profile items payload'
-      );
-    }
+    const parsedItems = parseSchemaOrThrow(
+      profileItemsPayloadSchema,
+      dto,
+      'Invalid profile items payload'
+    );
 
     await this.assertResourceIdsExist(
       'skill',
-      parsedItems.data.skills.map((item) => item.resourceId)
+      parsedItems.skills.map((item) => item.resourceId)
     );
     await this.assertResourceIdsExist(
       'mCP',
-      parsedItems.data.mcps.map((item) => item.resourceId)
+      parsedItems.mcps.map((item) => item.resourceId)
     );
     await this.assertResourceIdsExist(
       'rule',
-      parsedItems.data.rules.map((item) => item.resourceId)
+      parsedItems.rules.map((item) => item.resourceId)
     );
 
     await this.prisma.$transaction(async (tx) => {
@@ -133,9 +136,9 @@ export class ProfilesService {
       await tx.profileMCP.deleteMany({ where: { profileId: id } });
       await tx.profileRule.deleteMany({ where: { profileId: id } });
 
-      if (parsedItems.data.skills.length > 0) {
+      if (parsedItems.skills.length > 0) {
         await tx.profileSkill.createMany({
-          data: parsedItems.data.skills.map((item) => ({
+          data: parsedItems.skills.map((item) => ({
             profileId: id,
             skillId: item.resourceId,
             order: item.order
@@ -143,9 +146,9 @@ export class ProfilesService {
         });
       }
 
-      if (parsedItems.data.mcps.length > 0) {
+      if (parsedItems.mcps.length > 0) {
         await tx.profileMCP.createMany({
-          data: parsedItems.data.mcps.map((item) => ({
+          data: parsedItems.mcps.map((item) => ({
             profileId: id,
             mcpId: item.resourceId,
             order: item.order,
@@ -154,9 +157,9 @@ export class ProfilesService {
         });
       }
 
-      if (parsedItems.data.rules.length > 0) {
+      if (parsedItems.rules.length > 0) {
         await tx.profileRule.createMany({
-          data: parsedItems.data.rules.map((item) => ({
+          data: parsedItems.rules.map((item) => ({
             profileId: id,
             ruleId: item.resourceId,
             order: item.order
@@ -205,14 +208,7 @@ export class ProfilesService {
   }
 
   private parseProfileInput(dto: ProfileMutationDto) {
-    const parsed = profileInputSchema.safeParse(dto);
-    if (!parsed.success) {
-      throw new BadRequestException(
-        parsed.error.issues[0]?.message ?? 'Invalid profile payload'
-      );
-    }
-
-    return parsed.data;
+    return parseSchemaOrThrow(profileInputSchema, dto, 'Invalid profile payload');
   }
 
   private async assertResourceIdsExist(

@@ -13,6 +13,7 @@ module.exports = tseslint.config(
       '**/node_modules/**',
       '**/.turbo/**',
       '**/*.d.ts',
+      'packages/backend/scripts/**',
       'packages/frontend/scripts/**',
       'eslint.config.js'
     ]

@@ -43,4 +43,20 @@ async function bootstrap() {
   console.info(`backend ready at http://localhost:${port}/api`);
 }
 
-void bootstrap();
+void bootstrap().catch((error: unknown) => {
+  const port = Number(process.env.PORT ?? 3000);
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'EADDRINUSE'
+  ) {
+    console.error(
+      `backend: port ${port} is already in use, stop the existing server or run with PORT=${port + 1}`
+    );
+    process.exit(1);
+  }
+
+  throw error;
+});

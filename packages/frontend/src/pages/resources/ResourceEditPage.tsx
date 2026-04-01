@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Form, Input, Space, Typography } from 'antd';
 import {
-  mcpInputSchema,
-  ruleInputSchema,
-  skillInputSchema,
-  type McpResource,
+  type ResourceRecord,
   type ResourceKind
 } from '@agent-workbench/shared';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -20,81 +17,25 @@ import {
 import { CodeEditor } from '../../components/JsonEditor';
 import { queryKeys } from '../../query/query-keys';
 import { resourceConfigMap } from '../../types/resources';
-
-type EnvEntry = {
-  key: string;
-  value: string;
-};
-
-type ResourceFormValues = {
-  name: string;
-  description?: string;
-  contentText?: string;
-  type?: 'stdio';
-  command?: string;
-  args?: string[];
-  envEntries?: EnvEntry[];
-};
+import {
+  buildMarkdownPayload,
+  buildMcpPayload,
+  createInitialValues,
+  toEnvObject,
+  toResourceFormValues,
+  type ResourceFormValues,
+  type ResourceMutationPayload
+} from './resource-edit.utils';
 
 type ResourceEditPageProps = {
   kind: ResourceKind;
 };
 
-function createInitialValues(kind: ResourceKind): ResourceFormValues {
-  if (kind === 'mcps') {
-    return {
-      name: '',
-      description: '',
-      type: 'stdio',
-      command: '',
-      args: [],
-      envEntries: []
-    };
-  }
-
-  return {
-    name: '',
-    description: '',
-    contentText: ''
-  };
-}
-
-function toEnvEntries(env?: Record<string, string>): EnvEntry[] {
-  if (!env) {
-    return [];
-  }
-
-  return Object.entries(env).map(([key, value]) => ({ key, value }));
-}
-
-function toEnvObject(entries?: EnvEntry[]) {
-  const result = (entries ?? []).reduce<Record<string, string>>(
-    (acc, entry) => {
-      const key = entry.key.trim();
-      if (!key) {
-        return acc;
-      }
-
-      acc[key] = entry.value;
-      return acc;
-    },
-    {}
-  );
-
-  return Object.keys(result).length > 0 ? result : undefined;
-}
-
-function normalizeDescription(description?: string) {
-  return description?.trim() ? description.trim() : null;
-}
-
-type ResourceMutationPayload = ResourcePayloadByKind[ResourceKind];
-
-async function saveResourceByKind(
+function saveResourceByKind(
   kind: ResourceKind,
   payload: ResourceMutationPayload,
   id?: string
-) {
+) : Promise<ResourceRecord> {
   switch (kind) {
     case 'skills':
       return id
@@ -144,24 +85,7 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
       return;
     }
 
-    if (typeof resource.content === 'string') {
-      form.setFieldsValue({
-        name: resource.name,
-        description: resource.description ?? '',
-        contentText: resource.content
-      });
-      return;
-    }
-
-    const mcpResource = resource as McpResource;
-    form.setFieldsValue({
-      name: mcpResource.name,
-      description: mcpResource.description ?? '',
-      type: mcpResource.content.type,
-      command: mcpResource.content.command,
-      args: mcpResource.content.args,
-      envEntries: toEnvEntries(mcpResource.content.env)
-    });
+    form.setFieldsValue(toResourceFormValues(resource));
   }, [form, id, resourceQuery.data, kind]);
 
   useEffect(() => {
@@ -170,9 +94,8 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
     }
   }, [handleError, resourceQuery.error]);
 
-  const saveMutation = useMutation({
-    mutationFn: (payload: ResourceMutationPayload) =>
-      saveResourceByKind(kind, payload, id),
+  const saveMutation = useMutation<ResourceRecord, Error, ResourceMutationPayload>({
+    mutationFn: (payload) => saveResourceByKind(kind, payload, id),
     onSuccess: async (resource) => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -217,48 +140,27 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
 
     try {
       if (isMcp) {
-        const parsed = mcpInputSchema.safeParse({
-          name: values.name,
-          description: normalizeDescription(values.description),
-          content: {
-            type: 'stdio',
-            command: values.command?.trim() ?? '',
-            args: (values.args ?? [])
-              .map((item) => item.trim())
-              .filter(Boolean),
-            env: toEnvObject(values.envEntries)
-          }
-        });
-
-        if (!parsed.success) {
-          setContentError(
-            parsed.error.issues[0]?.message ?? 'Invalid MCP content.'
-          );
+        const { data, error } = buildMcpPayload(values);
+        if (!data) {
+          setContentError(error);
           return;
         }
-        await saveMutation.mutateAsync(parsed.data);
+        await saveMutation.mutateAsync(data);
       } else {
-        const payload = {
-          name: values.name,
-          description: normalizeDescription(values.description),
-          content: values.contentText ?? ''
-        };
-        const schema = kind === 'skills' ? skillInputSchema : ruleInputSchema;
-        const parsed = schema.safeParse(payload);
-
-        if (!parsed.success) {
-          setContentError(
-            parsed.error.issues[0]?.message ?? 'Invalid Markdown content.'
-          );
+        const { data, error } = buildMarkdownPayload(kind, values);
+        if (!data) {
+          setContentError(error);
           return;
         }
-        await saveMutation.mutateAsync(parsed.data);
+        await saveMutation.mutateAsync(data);
       }
     } catch (error) {
       handleError(error);
     }
   };
-  const loading = resourceQuery.isPending || saveMutation.isPending;
+  const loading =
+    (isEditing && (resourceQuery.isPending || resourceQuery.isFetching)) ||
+    saveMutation.isPending;
 
   return (
     <Card className="page-card" loading={loading}>
