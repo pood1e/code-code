@@ -14,6 +14,8 @@ import {
   ValidateNested
 } from 'class-validator';
 
+import { McpConfigOverrideDto } from './resource.dto';
+
 export class ProfileMutationDto {
   @ApiProperty({ example: 'Default Assistant' })
   @IsString()
@@ -52,15 +54,12 @@ export class McpProfileItemDto extends ProfileItemDto {
   })
   @IsOptional()
   @IsObject()
-  configOverride?: {
-    type?: 'stdio';
-    command?: string;
-    args?: string[];
-    env?: Record<string, string>;
-  };
+  @ValidateNested()
+  @Type(() => McpConfigOverrideDto)
+  configOverride?: McpConfigOverrideDto;
 }
 
-export class UpdateProfileItemsDto {
+export class SaveProfileDto extends ProfileMutationDto {
   @ApiProperty({ type: [ProfileItemDto] })
   @IsArray()
   @ArrayUnique((item: ProfileItemDto) => item.resourceId)
@@ -68,9 +67,9 @@ export class UpdateProfileItemsDto {
   @Type(() => ProfileItemDto)
   skills!: ProfileItemDto[];
 
-  @ApiProperty({ type: [ProfileItemDto] })
+  @ApiProperty({ type: [McpProfileItemDto] })
   @IsArray()
-  @ArrayUnique((item: ProfileItemDto) => item.resourceId)
+  @ArrayUnique((item: McpProfileItemDto) => item.resourceId)
   @ValidateNested({ each: true })
   @Type(() => McpProfileItemDto)
   mcps!: McpProfileItemDto[];

@@ -1,13 +1,11 @@
-import { useCallback, useDeferredValue, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   Card,
   Input,
-  Modal,
   Space,
   Table,
-  Tag,
   Typography
 } from 'antd';
 import type { ResourceKind, ResourceRecord } from '@agent-workbench/shared';
@@ -19,9 +17,15 @@ import {
   useErrorMessage
 } from '../../api/client';
 import { deleteResource, listResources } from '../../api/resources';
+import { useDebouncedValue } from '../../hooks/use-debounced-value';
 import { queryKeys } from '../../query/query-keys';
 import { useUiStore } from '../../store/ui-store';
 import { resourceConfigMap } from '../../types/resources';
+import {
+  confirmEntityDelete,
+  formatDateTime,
+  renderNullableDescription
+} from '../../utils/entity-table';
 
 type ResourceListPageProps = {
   kind: ResourceKind;
@@ -33,12 +37,12 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
   const handleError = useErrorMessage();
   const searchValue = useUiStore((state) => state.resourceSearch[kind]);
   const setSearchValue = useUiStore((state) => state.setResourceSearch);
-  const deferredSearchValue = useDeferredValue(searchValue);
+  const debouncedSearchValue = useDebouncedValue(searchValue.trim(), 300);
 
   const config = resourceConfigMap[kind];
   const resourceListQuery = useQuery({
-    queryKey: queryKeys.resources.list(kind, deferredSearchValue),
-    queryFn: () => listResources(kind, deferredSearchValue || undefined),
+    queryKey: queryKeys.resources.list(kind, debouncedSearchValue),
+    queryFn: () => listResources(kind, debouncedSearchValue || undefined),
     placeholderData: keepPreviousData
   });
 
@@ -73,10 +77,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
     [deleteMutation, handleError]
   );
   const items = (resourceListQuery.data ?? []) as ResourceRecord[];
-  const loading =
-    resourceListQuery.isPending ||
-    resourceListQuery.isFetching ||
-    deleteMutation.isPending;
+  const loading = resourceListQuery.isPending || deleteMutation.isPending;
 
   return (
     <Card className="page-card">
@@ -108,7 +109,12 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
           }}
           style={{ width: 320 }}
         />
-        <Button onClick={() => void resourceListQuery.refetch()}>Refresh</Button>
+        <Button
+          onClick={() => void resourceListQuery.refetch()}
+          loading={resourceListQuery.isFetching}
+        >
+          Refresh
+        </Button>
       </Space>
 
       <Table<ResourceRecord>
@@ -125,13 +131,12 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
           {
             title: 'Description',
             dataIndex: 'description',
-            render: (value: string | null) =>
-              value ?? <Tag color="default">-</Tag>
+            render: renderNullableDescription
           },
           {
             title: 'Updated At',
             dataIndex: 'updatedAt',
-            render: (value: string) => new Date(value).toLocaleString()
+            render: formatDateTime
           },
           {
             title: 'Actions',
@@ -148,13 +153,8 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
                 <Button
                   danger
                   onClick={() => {
-                    Modal.confirm({
-                      title: `Delete ${record.name}?`,
-                      content: '删除后不可恢复。',
-                      okButtonProps: { danger: true },
-                      onOk: () => {
+                    confirmEntityDelete(record.name, () => {
                         void handleDelete(record.id);
-                      }
                     });
                   }}
                 >

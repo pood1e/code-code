@@ -1,13 +1,7 @@
-import {
-  Injectable,
-  NotFoundException
-} from '@nestjs/common';
-import { skillInputSchema } from '@agent-workbench/shared';
+import { Injectable } from '@nestjs/common';
+import { skillInputSchema, type SkillInput } from '@agent-workbench/shared';
 
-import {
-  buildNameFilter,
-  throwIfReferencedByProfiles
-} from '../../common/resource.utils';
+import { createResourceCrudHandlers } from '../../common/resource-crud';
 import { parseSchemaOrThrow } from '../../common/schema.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SkillMutationDto } from '../../dto/resource.dto';
@@ -20,20 +14,58 @@ export class SkillsService {
     this.prisma = prisma;
   }
 
-  list(name?: string) {
-    return this.prisma.skill.findMany({
-      where: buildNameFilter(name),
-      orderBy: { updatedAt: 'desc' }
+  private createResourceCrud() {
+    return createResourceCrudHandlers<
+      SkillInput,
+      NonNullable<Awaited<ReturnType<PrismaService['skill']['findUnique']>>>
+    >({
+      resourceLabel: 'Skill',
+      list: (nameFilter) =>
+        this.prisma.skill.findMany({
+          where: nameFilter,
+          orderBy: { updatedAt: 'desc' }
+        }),
+      findById: (id) => this.prisma.skill.findUnique({ where: { id } }),
+      create: (parsed) =>
+        this.prisma.skill.create({
+          data: {
+            name: parsed.name,
+            description: parsed.description ?? null,
+            content: parsed.content
+          }
+        }),
+      update: (id, parsed) =>
+        this.prisma.skill.update({
+          where: { id },
+          data: {
+            name: parsed.name,
+            description: parsed.description ?? null,
+            content: parsed.content
+          }
+        }),
+      findReferences: (id) =>
+        this.prisma.profileSkill.findMany({
+          where: { skillId: id },
+          select: {
+            profile: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }),
+      remove: (id) =>
+        this.prisma.skill.delete({ where: { id } }).then(() => undefined)
     });
   }
 
-  async getById(id: string) {
-    const skill = await this.prisma.skill.findUnique({ where: { id } });
-    if (!skill) {
-      throw new NotFoundException('Skill not found');
-    }
+  list(name?: string) {
+    return this.createResourceCrud().list(name);
+  }
 
-    return skill;
+  getById(id: string) {
+    return this.createResourceCrud().getById(id);
   }
 
   create(dto: SkillMutationDto) {
@@ -43,51 +75,20 @@ export class SkillsService {
       'Invalid skill payload'
     );
 
-    return this.prisma.skill.create({
-      data: {
-        name: parsed.name,
-        description: parsed.description ?? null,
-        content: parsed.content
-      }
-    });
+    return this.createResourceCrud().create(parsed);
   }
 
-  async update(id: string, dto: SkillMutationDto) {
-    await this.getById(id);
+  update(id: string, dto: SkillMutationDto) {
     const parsed = parseSchemaOrThrow(
       skillInputSchema,
       dto,
       'Invalid skill payload'
     );
 
-    return this.prisma.skill.update({
-      where: { id },
-      data: {
-        name: parsed.name,
-        description: parsed.description ?? null,
-        content: parsed.content
-      }
-    });
+    return this.createResourceCrud().update(id, parsed);
   }
 
-  async remove(id: string) {
-    await this.getById(id);
-
-    const references = await this.prisma.profileSkill.findMany({
-      where: { skillId: id },
-      select: {
-        profile: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    });
-
-    throwIfReferencedByProfiles(references);
-
-    await this.prisma.skill.delete({ where: { id } });
-    return null;
+  remove(id: string) {
+    return this.createResourceCrud().remove(id);
   }
 }

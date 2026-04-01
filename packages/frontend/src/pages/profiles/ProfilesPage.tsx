@@ -8,7 +8,6 @@ import {
   Modal,
   Space,
   Table,
-  Tag,
   Typography
 } from 'antd';
 import type { Profile } from '@agent-workbench/shared';
@@ -21,6 +20,12 @@ import {
 } from '../../api/profiles';
 import { useErrorMessage } from '../../api/client';
 import { queryKeys } from '../../query/query-keys';
+import {
+  confirmEntityDelete,
+  formatDateTime,
+  renderNullableDescription
+} from '../../utils/entity-table';
+import { isFormValidationError } from '../../utils/form';
 import { profileInputSchema } from '@agent-workbench/shared';
 
 type ProfileFormValues = {
@@ -84,7 +89,19 @@ export function ProfilesPage() {
   };
 
   const submit = async () => {
-    const values = await form.validateFields();
+    let values: ProfileFormValues;
+
+    try {
+      values = await form.validateFields();
+    } catch (error) {
+      if (isFormValidationError(error)) {
+        return;
+      }
+
+      handleError(error);
+      return;
+    }
+
     const parsed = profileInputSchema.safeParse({
       name: values.name,
       description: values.description?.trim() ? values.description.trim() : null
@@ -142,13 +159,12 @@ export function ProfilesPage() {
           {
             title: 'Description',
             dataIndex: 'description',
-            render: (value: string | null) =>
-              value ?? <Tag color="default">-</Tag>
+            render: renderNullableDescription
           },
           {
             title: 'Updated At',
             dataIndex: 'updatedAt',
-            render: (value: string) => new Date(value).toLocaleString()
+            render: formatDateTime
           },
           {
             title: 'Actions',
@@ -161,13 +177,8 @@ export function ProfilesPage() {
                 <Button
                   danger
                   onClick={() => {
-                    Modal.confirm({
-                      title: `Delete ${record.name}?`,
-                      content: '删除后不可恢复。',
-                      okButtonProps: { danger: true },
-                      onOk: () => {
+                    confirmEntityDelete(record.name, () => {
                         void handleDelete(record.id);
-                      }
                     });
                   }}
                 >

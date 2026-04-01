@@ -4,13 +4,14 @@ import {
   type McpConfigOverride,
   type McpResource,
   type ProfileDetail,
-  type ProfileItemsPayload,
   type RuleResource,
+  type SaveProfileInput,
   type SkillResource
 } from '@agent-workbench/shared';
 import type { ReactNode } from 'react';
 
 import type { ProfilePayload } from '../../api/profiles';
+import { normalizeDescription } from '../../utils/normalizers';
 
 export type ProfileEditorFormValues = {
   name: string;
@@ -100,10 +101,6 @@ export type McpSectionConfig = {
   onReorder: (activeId: string, overId: string) => void;
 };
 
-export function normalizeDescription(description?: string) {
-  return description?.trim() ? description.trim() : null;
-}
-
 export function syncOrders<T extends { order: number }>(items: T[]) {
   return items.map((item, index) => ({ ...item, order: index }));
 }
@@ -187,7 +184,9 @@ export function filterAvailableResources<T extends { id: string; name: string }>
     );
 }
 
-export function buildProfilePayload(values: ProfileEditorFormValues) {
+export function buildProfilePayload(
+  values: ProfileEditorFormValues
+): ProfilePayload {
   const parsed = profileInputSchema.safeParse({
     name: values.name,
     description: normalizeDescription(values.description)
@@ -200,12 +199,16 @@ export function buildProfilePayload(values: ProfileEditorFormValues) {
   return parsed.data satisfies ProfilePayload;
 }
 
-export function buildProfileItemsPayload(
+export function buildSaveProfileInput(
+  values: ProfileEditorFormValues,
   selectedSkills: SelectedBaseItem[],
   selectedMcps: SelectedMcpItem[],
   selectedRules: SelectedBaseItem[]
-) {
+): SaveProfileInput {
+  const profile = buildProfilePayload(values);
+
   return {
+    ...profile,
     skills: syncOrders(selectedSkills).map((item) => ({
       resourceId: item.resourceId,
       order: item.order
@@ -219,7 +222,7 @@ export function buildProfileItemsPayload(
       resourceId: item.resourceId,
       order: item.order
     }))
-  } satisfies ProfileItemsPayload;
+  } satisfies SaveProfileInput;
 }
 
 export function toAvailableItems<
