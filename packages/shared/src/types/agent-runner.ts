@@ -4,6 +4,25 @@ export type RunnerTypeCapabilities = {
   mcp: boolean;
 };
 
+export type RunnerConfigJsonSchemaProperty = {
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array';
+  title?: string;
+  description?: string;
+  default?: unknown;
+  enum?: unknown[];
+  format?: string;
+};
+
+export type RunnerConfigJsonSchema = {
+  $schema?: string;
+  type?: 'object';
+  title?: string;
+  description?: string;
+  properties?: Record<string, RunnerConfigJsonSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean;
+};
+
 export type RunnerTypeMeta = {
   id: string;
   name: string;
@@ -18,8 +37,34 @@ export type PlatformSessionConfig = {
 };
 
 export type RunnerTypeResponse = RunnerTypeMeta & {
-  runnerConfigSchema: object;
+  runnerConfigSchema: RunnerConfigJsonSchema;
   runnerSessionConfigSchema: object;
   taskConfigSchema: object;
   runtimeConfigSchema: object;
+};
+
+export type AgentRunnerSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentRunnerDetail = AgentRunnerSummary & {
+  runnerConfig: Record<string, unknown>;
+};
+
+export type CreateAgentRunnerInput = {
+  name: string;
+  description?: string | null;
+  type: string;
+  runnerConfig: Record<string, unknown>;
+};
+
+export type UpdateAgentRunnerInput = {
+  name?: string;
+  description?: string | null;
+  runnerConfig?: Record<string, unknown>;
 };

@@ -1,5 +1,6 @@
 import {
   Blocks,
+  Bot,
   CircuitBoard,
   FolderKanban,
   PanelLeftOpen,
@@ -10,6 +11,10 @@ import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import {
+  listAgentRunners,
+  listAgentRunnerTypes
+} from '@/api/agent-runners';
 import { listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
 import { Button } from '@/components/ui/button';
@@ -43,6 +48,11 @@ const resourceItems = [
     key: '/profiles',
     label: 'Profiles',
     icon: Blocks
+  },
+  {
+    key: '/agent-runners',
+    label: 'AgentRunner',
+    icon: Bot
   }
 ] as const;
 
@@ -247,6 +257,14 @@ export function AppLayout() {
       queryClient.prefetchQuery({
         queryKey: queryKeys.profiles.list(),
         queryFn: listProfiles
+      }),
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.agentRunnerTypes.all,
+        queryFn: listAgentRunnerTypes
+      }),
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.agentRunners.list(),
+        queryFn: () => listAgentRunners()
       })
     ]);
   }, [queryClient]);

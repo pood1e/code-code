@@ -1,11 +1,11 @@
-import type { ZodType } from 'zod';
+import type { ZodTypeAny } from 'zod';
 import type { RunnerTypeMeta, PlatformSessionConfig } from '@agent-workbench/shared';
 
 export interface RunnerType extends RunnerTypeMeta {
-  runnerConfigSchema: ZodType;
-  runnerSessionConfigSchema: ZodType;
-  taskConfigSchema: ZodType;
-  runtimeConfigSchema: ZodType;
+  runnerConfigSchema: ZodTypeAny;
+  runnerSessionConfigSchema: ZodTypeAny;
+  taskConfigSchema: ZodTypeAny;
+  runtimeConfigSchema: ZodTypeAny;
 
   // 以下方法第二阶段只定义签名，不实现
   createSession(
