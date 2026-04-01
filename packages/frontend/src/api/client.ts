@@ -85,6 +85,8 @@ export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api'
 });
 
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api';
+
 apiClient.interceptors.response.use(
   (response) => {
     if (
