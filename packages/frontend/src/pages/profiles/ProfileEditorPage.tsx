@@ -124,9 +124,11 @@ export function ProfileEditorPage() {
     }
 
     handleError(queryError);
+    void navigate('/profiles', { replace: true });
   }, [
     handleError,
     mcpsQuery.error,
+    navigate,
     profileNotFound,
     profileDetailQuery.error,
     rulesQuery.error,
