@@ -2,12 +2,17 @@ import {
   mcpInputSchema,
   ruleInputSchema,
   skillInputSchema,
+  type McpInput,
   type McpResource,
   type ResourceKind,
-  type ResourceRecord
+  type ResourceRecord,
+  type RuleInput,
+  type SkillInput
 } from '@agent-workbench/shared';
+import { z } from 'zod';
 
 import type { ResourcePayloadByKind } from '../../api/resources';
+import { normalizeDescription } from '../../utils/normalizers';
 
 export type EnvEntry = {
   key: string;
@@ -20,9 +25,33 @@ export type ResourceFormValues = {
   contentText?: string;
   type?: 'stdio';
   command?: string;
-  args?: string[];
+  argsText?: string;
   envEntries?: EnvEntry[];
 };
+
+export const resourceMarkdownFormSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  description: z.string().trim().max(500).optional(),
+  contentText: z.string().min(1, 'Content is required')
+});
+export type ResourceMarkdownFormValues = z.infer<
+  typeof resourceMarkdownFormSchema
+>;
+
+export const resourceMcpFormSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  description: z.string().trim().max(500).optional(),
+  type: z.literal('stdio').optional(),
+  command: z.string().trim().min(1, 'Command is required'),
+  argsText: z.string().optional(),
+  envEntries: z.array(
+    z.object({
+      key: z.string(),
+      value: z.string()
+    })
+  )
+});
+export type ResourceMcpFormValues = z.infer<typeof resourceMcpFormSchema>;
 
 export function createInitialValues(kind: ResourceKind): ResourceFormValues {
   if (kind === 'mcps') {
@@ -31,7 +60,7 @@ export function createInitialValues(kind: ResourceKind): ResourceFormValues {
       description: '',
       type: 'stdio',
       command: '',
-      args: [],
+      argsText: '',
       envEntries: []
     };
   }
@@ -68,13 +97,9 @@ export function toEnvObject(entries?: EnvEntry[]) {
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-export function normalizeDescription(description?: string) {
-  return description?.trim() ? description.trim() : null;
-}
-
 export type ResourceMutationPayload = ResourcePayloadByKind[ResourceKind];
 
-export function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
+function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
   if (typeof resource.content === 'string') {
     return {
       name: resource.name,
@@ -90,19 +115,22 @@ export function toResourceFormValues(resource: ResourceRecord): ResourceFormValu
     description: mcpResource.description ?? '',
     type: mcpResource.content.type,
     command: mcpResource.content.command,
-    args: mcpResource.content.args,
+    argsText: mcpResource.content.args.join('\n'),
     envEntries: toEnvEntries(mcpResource.content.env)
   };
 }
 
-export function buildMcpPayload(values: ResourceFormValues) {
+function buildMcpPayload(values: ResourceFormValues) {
   const parsed = mcpInputSchema.safeParse({
     name: values.name,
     description: normalizeDescription(values.description),
     content: {
       type: 'stdio',
       command: values.command?.trim() ?? '',
-      args: (values.args ?? []).map((item) => item.trim()).filter(Boolean),
+      args: (values.argsText ?? '')
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean),
       env: toEnvObject(values.envEntries)
     }
   });
@@ -115,7 +143,7 @@ export function buildMcpPayload(values: ResourceFormValues) {
       };
 }
 
-export function buildMarkdownPayload(
+function buildMarkdownPayload(
   kind: Exclude<ResourceKind, 'mcps'>,
   values: ResourceFormValues
 ) {
@@ -134,3 +162,50 @@ export function buildMarkdownPayload(
         error: parsed.error.issues[0]?.message ?? 'Invalid Markdown content.'
       };
 }
+
+type ResourceEditConfig<K extends ResourceKind> = {
+  contentMode: 'markdown' | 'mcp';
+  createInitialValues: () => ResourceFormValues;
+  toFormValues: (resource: ResourceRecord) => ResourceFormValues;
+  buildPayload: (
+    values: ResourceFormValues
+  ) => {
+    data: ResourcePayloadByKind[K] | null;
+    error: string | null;
+  };
+};
+
+export const resourceEditConfigMap: {
+  [K in ResourceKind]: ResourceEditConfig<K>;
+} = {
+  skills: {
+    contentMode: 'markdown',
+    createInitialValues: () => createInitialValues('skills'),
+    toFormValues: toResourceFormValues,
+    buildPayload: (values) =>
+      buildMarkdownPayload('skills', values) as {
+        data: SkillInput | null;
+        error: string | null;
+      }
+  },
+  mcps: {
+    contentMode: 'mcp',
+    createInitialValues: () => createInitialValues('mcps'),
+    toFormValues: toResourceFormValues,
+    buildPayload: (values) =>
+      buildMcpPayload(values) as {
+        data: McpInput | null;
+        error: string | null;
+      }
+  },
+  rules: {
+    contentMode: 'markdown',
+    createInitialValues: () => createInitialValues('rules'),
+    toFormValues: toResourceFormValues,
+    buildPayload: (values) =>
+      buildMarkdownPayload('rules', values) as {
+        data: RuleInput | null;
+        error: string | null;
+      }
+  }
+};

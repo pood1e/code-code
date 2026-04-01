@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { markdown } from '@codemirror/lang-markdown';
@@ -15,15 +16,22 @@ export default function JsonEditorImpl({
   readOnly = false,
   mode = 'json'
 }: JsonEditorImplProps) {
-  const extensions = mode === 'markdown' ? [markdown()] : [json()];
+  const extensions = useMemo(
+    () => (mode === 'markdown' ? [markdown()] : [json()]),
+    [mode]
+  );
 
   return (
-    <div className="editor-shell">
+    <div className="editor-shell overflow-hidden rounded-[calc(var(--radius)*1.15)] border border-border/70 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
       <CodeMirror
         value={value}
         onChange={onChange}
         extensions={extensions}
         editable={!readOnly}
+        basicSetup={{
+          lineNumbers: true,
+          foldGutter: false
+        }}
       />
     </div>
   );

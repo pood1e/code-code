@@ -62,6 +62,7 @@ model ProfileSkill {
   skill          Skill    @relation(fields: [skillId], references: [id], onDelete: Restrict)
 
   @@unique([profileId, skillId])
+  @@unique([profileId, order])
 }
 
 model ProfileMCP {
@@ -74,6 +75,7 @@ model ProfileMCP {
   mcp            MCP      @relation(fields: [mcpId], references: [id], onDelete: Restrict)
 
   @@unique([profileId, mcpId])
+  @@unique([profileId, order])
 }
 
 model ProfileRule {
@@ -85,4 +87,5 @@ model ProfileRule {
   rule           Rule     @relation(fields: [ruleId], references: [id], onDelete: Restrict)
 
   @@unique([profileId, ruleId])
+  @@unique([profileId, order])
 }

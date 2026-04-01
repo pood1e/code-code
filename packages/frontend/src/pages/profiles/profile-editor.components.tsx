@@ -1,8 +1,9 @@
 import {
-  DeleteOutlined,
-  MenuOutlined,
-  PlusOutlined
-} from '@ant-design/icons';
+  Delete,
+  GripVertical,
+  Plus,
+  Search
+} from 'lucide-react';
 import {
   closestCenter,
   DndContext,
@@ -19,16 +20,14 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  Button,
-  Card,
-  Empty,
-  Input,
-  Space,
-  Tag,
-  Typography
-} from 'antd';
 import type { ReactNode } from 'react';
+
+import { EmptyState } from '@/components/app/EmptyState';
+import { SurfaceCard } from '@/components/app/SurfaceCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 import type {
   AvailableResourceListProps,
@@ -37,6 +36,9 @@ import type {
   SelectedBaseItem,
   SelectedResourceListProps
 } from './profile-editor.utils';
+
+const panelItemClassName =
+  'flex items-start justify-between gap-3 rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-background/80 p-3.5';
 
 function SortableSelectedItem<T extends SelectedBaseItem>({
   item,
@@ -60,36 +62,44 @@ function SortableSelectedItem<T extends SelectedBaseItem>({
     <div
       ref={setNodeRef}
       style={style}
-      className={`profile-editor__selected-item${
-        isDragging ? ' profile-editor__selected-item--dragging' : ''
-      }`}
+      className={cn(
+        `${panelItemClassName} transition-shadow`,
+        isDragging ? 'shadow-[0_20px_44px_-28px_rgba(15,23,42,0.4)]' : ''
+      )}
     >
-      <div className="profile-editor__selected-item-main">
+      <div className="flex min-w-0 flex-1 gap-3">
         <Button
-          type="text"
-          icon={<MenuOutlined />}
-          className="profile-editor__drag-handle"
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          className="mt-0.5 shrink-0"
           {...attributes}
           {...listeners}
-        />
-        <div className="profile-editor__selected-copy">
-          <Space size={8} wrap>
-            <Typography.Text strong>{item.name}</Typography.Text>
-            <Tag>{item.order + 1}</Tag>
-            {meta ? <Tag color="blue">{meta}</Tag> : null}
-          </Space>
-          <Typography.Paragraph className="profile-editor__item-description">
-            {item.description ?? '无描述'}
-          </Typography.Paragraph>
+        >
+          <GripVertical />
+        </Button>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate font-medium text-foreground">{item.name}</p>
+            <Badge variant="secondary">#{item.order + 1}</Badge>
+            {meta ? <Badge variant="outline">{meta}</Badge> : null}
+          </div>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {item.description ?? '暂无描述'}
+          </p>
           {children}
         </div>
       </div>
       <Button
-        type="text"
-        danger
-        icon={<DeleteOutlined />}
+        type="button"
+        variant="outline"
+        size="icon-sm"
+        aria-label={`Remove ${item.name}`}
+        title={`Remove ${item.name}`}
         onClick={() => onRemove(item.resourceId)}
-      />
+      >
+        <Delete />
+      </Button>
     </div>
   );
 }
@@ -125,13 +135,17 @@ function SelectedResourceList<T extends SelectedBaseItem>({
   };
 
   return (
-    <div className="profile-editor__panel">
-      <div className="profile-editor__panel-header">
-        <Typography.Title level={4}>{title}</Typography.Title>
-        <Tag>{items.length}</Tag>
+    <SurfaceCard className="rounded-[calc(var(--radius)*1.05)] p-4 shadow-none">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <Badge variant="secondary">{items.length}</Badge>
       </div>
       {items.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} />
+        <EmptyState
+          title="暂无已选资源"
+          description={emptyText}
+          className="py-10"
+        />
       ) : (
         <DndContext
           sensors={sensors}
@@ -142,7 +156,7 @@ function SelectedResourceList<T extends SelectedBaseItem>({
             items={items.map((item) => item.resourceId)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="profile-editor__selected-list">
+            <div className="grid gap-3">
               {items.map((item) => (
                 <SortableSelectedItem
                   key={item.resourceId}
@@ -157,7 +171,7 @@ function SelectedResourceList<T extends SelectedBaseItem>({
           </SortableContext>
         </DndContext>
       )}
-    </div>
+    </SurfaceCard>
   );
 }
 
@@ -170,44 +184,56 @@ function AvailableResourceList({
   onAdd
 }: AvailableResourceListProps) {
   return (
-    <div className="profile-editor__panel">
-      <div className="profile-editor__panel-header">
-        <Typography.Title level={4}>{title}</Typography.Title>
-        <Tag>{items.length}</Tag>
+    <SurfaceCard className="rounded-[calc(var(--radius)*1.05)] p-4 shadow-none">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <Badge variant="secondary">{items.length}</Badge>
       </div>
-      <Input
-        allowClear
-        placeholder="按名称搜索"
-        value={searchValue}
-        onChange={(event) => onSearchChange(event.target.value)}
-      />
-      <div className="profile-editor__available-list">
+
+      <div className="relative mb-4">
+        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={searchValue}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="按名称搜索"
+          className="h-10 rounded-xl pl-10"
+        />
+      </div>
+
+      <div className="grid gap-3">
         {items.length === 0 ? (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} />
+          <EmptyState
+            title="暂无可选资源"
+            description={emptyText}
+            className="py-10"
+          />
         ) : (
           items.map((item) => (
-            <div key={item.id} className="profile-editor__available-item">
-              <div className="profile-editor__available-copy">
-                <Space size={8} wrap>
-                  <Typography.Text strong>{item.name}</Typography.Text>
-                  {item.meta ? <Tag color="blue">{item.meta}</Tag> : null}
-                </Space>
-                <Typography.Paragraph className="profile-editor__item-description">
-                  {item.description ?? '无描述'}
-                </Typography.Paragraph>
+            <div key={item.id} className={panelItemClassName}>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-foreground">{item.name}</p>
+                  {item.meta ? <Badge variant="outline">{item.meta}</Badge> : null}
+                </div>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {item.description ?? '暂无描述'}
+                </p>
               </div>
               <Button
-                type="text"
-                icon={<PlusOutlined />}
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                aria-label={`Add ${item.name}`}
+                title={`Add ${item.name}`}
                 onClick={() => onAdd(item.id)}
               >
-                添加
+                <Plus />
               </Button>
             </div>
           ))
         )}
       </div>
-    </div>
+    </SurfaceCard>
   );
 }
 
@@ -216,14 +242,19 @@ export function ResourceSectionCard<T extends SelectedBaseItem>({
   renderMeta,
   renderDetails
 }: {
-  section: BaseSectionConfig | McpSectionConfig;
+  section:
+    | (BaseSectionConfig & { selectedItems: T[] })
+    | (McpSectionConfig & { selectedItems: T[] });
   renderMeta?: (item: T) => string | null;
   renderDetails?: (item: T) => ReactNode;
 }) {
   return (
-    <Card className="profile-editor__section-card">
-      <Typography.Title level={3}>{section.title}</Typography.Title>
-      <div className="profile-editor__section-grid">
+    <SurfaceCard>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-foreground">{section.title}</h2>
+        <Badge variant="outline">{section.selectedItems.length}</Badge>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
         <AvailableResourceList
           title="可选资源"
           searchValue={section.searchValue}
@@ -235,13 +266,13 @@ export function ResourceSectionCard<T extends SelectedBaseItem>({
         <SelectedResourceList
           title="已选资源"
           emptyText={section.emptySelectedText}
-          items={section.selectedItems as T[]}
+          items={section.selectedItems}
           onRemove={section.onRemove}
           onReorder={section.onReorder}
           renderMeta={renderMeta}
           renderDetails={renderDetails}
         />
       </div>
-    </Card>
+    </SurfaceCard>
   );
 }

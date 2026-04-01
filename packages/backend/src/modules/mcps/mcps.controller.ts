@@ -28,11 +28,6 @@ export class McpsController {
 
   constructor(mcpsService: McpsService) {
     this.mcpsService = mcpsService;
-    this.list = this.list.bind(this);
-    this.getById = this.getById.bind(this);
-    this.create = this.create.bind(this);
-    this.update = this.update.bind(this);
-    this.remove = this.remove.bind(this);
   }
 
   @Get()

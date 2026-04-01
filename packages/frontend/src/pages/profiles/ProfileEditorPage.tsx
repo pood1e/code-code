@@ -10,39 +10,42 @@ import {
   useQueries,
   useQueryClient
 } from '@tanstack/react-query';
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  Space,
-  Typography,
-  message
-} from 'antd';
 import {
   type ProfileDetail,
-  type ProfileItemsPayload
+  type SaveProfileInput
 } from '@agent-workbench/shared';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { useErrorMessage } from '../../api/client';
+import {
+  isNotFoundApiError,
+  useErrorMessage
+} from '@/api/client';
 import {
   getProfile,
-  replaceProfileItems,
-  updateProfile,
-  type ProfilePayload
-} from '../../api/profiles';
-import { listResources } from '../../api/resources';
-import { CodeEditor } from '../../components/JsonEditor';
-import { queryKeys } from '../../query/query-keys';
+  saveProfile
+} from '@/api/profiles';
+import { listResources } from '@/api/resources';
+import { EditorToolbar } from '@/components/app/EditorToolbar';
+import { FormField } from '@/components/app/FormField';
+import { EmptyState } from '@/components/app/EmptyState';
+import { SurfaceCard } from '@/components/app/SurfaceCard';
+import { CodeEditor } from '@/components/JsonEditor';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { queryKeys } from '@/query/query-keys';
 import { ResourceSectionCard } from './profile-editor.components';
 import {
   buildMcpEditorState,
-  buildProfileItemsPayload,
-  buildProfilePayload,
+  buildSaveProfileInput,
   filterAvailableResources,
   parseOverrideEditorValue,
+  profileEditorFormSchema,
   removeSelectedItem,
   reorderSelectedItems,
   syncOrders,
@@ -58,6 +61,17 @@ import {
   type SelectedBaseItem,
   type SelectedMcpItem
 } from './profile-editor.utils';
+
+function LoadingState() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-10 w-40 rounded-xl" />
+      <Skeleton className="h-28 rounded-[calc(var(--radius)*1.2)]" />
+      <Skeleton className="h-80 rounded-[calc(var(--radius)*1.2)]" />
+      <Skeleton className="h-80 rounded-[calc(var(--radius)*1.2)]" />
+    </div>
+  );
+}
 
 export function ProfileEditorPage() {
   const { id } = useParams();
@@ -96,24 +110,24 @@ export function ProfileEditorPage() {
       }
     ]
   });
+  const profileNotFound = isNotFoundApiError(profileDetailQuery.error);
 
   useEffect(() => {
     const queryError =
-      profileDetailQuery.error ??
       skillsQuery.error ??
       mcpsQuery.error ??
-      rulesQuery.error;
+      rulesQuery.error ??
+      (profileNotFound ? null : profileDetailQuery.error);
 
     if (!queryError) {
       return;
     }
 
     handleError(queryError);
-    void navigate('/profiles');
   }, [
     handleError,
     mcpsQuery.error,
-    navigate,
+    profileNotFound,
     profileDetailQuery.error,
     rulesQuery.error,
     skillsQuery.error
@@ -140,8 +154,23 @@ export function ProfileEditorPage() {
     return null;
   }
 
+  if (profileNotFound) {
+    return (
+      <EmptyState
+        title="未找到 Profile"
+        description="当前 Profile 不存在或已被删除。"
+        action={
+          <Button variant="outline" onClick={() => void navigate('/profiles')}>
+            <ArrowLeft data-icon="inline-start" />
+            返回 Profiles
+          </Button>
+        }
+      />
+    );
+  }
+
   if (loading || !profileDetailQuery.data || !catalog) {
-    return <Card className="page-card" loading />;
+    return <LoadingState />;
   }
 
   return (
@@ -170,7 +199,13 @@ function ProfileEditorContent({
 }) {
   const queryClient = useQueryClient();
   const handleError = useErrorMessage();
-  const [form] = Form.useForm<ProfileEditorFormValues>();
+  const form = useForm<ProfileEditorFormValues>({
+    resolver: zodResolver(profileEditorFormSchema),
+    defaultValues: {
+      name: initialDetail.name,
+      description: initialDetail.description ?? ''
+    }
+  });
   const [selectedSkills, setSelectedSkills] = useState<SelectedBaseItem[]>(() =>
     toSelectedBaseItems(initialDetail.skills)
   );
@@ -193,28 +228,15 @@ function ProfileEditorContent({
   const deferredSkillSearch = useDeferredValue(searchState.skills);
   const deferredMcpSearch = useDeferredValue(searchState.mcps);
   const deferredRuleSearch = useDeferredValue(searchState.rules);
-  const initialValues = useMemo(
-    () => ({
-      name: initialDetail.name,
-      description: initialDetail.description ?? ''
-    }),
-    [initialDetail.description, initialDetail.name]
-  );
 
-  const saveMutation = useMutation({
-    mutationFn: async (payload: {
-      profile: ProfilePayload;
-      items: ProfileItemsPayload;
-    }) => {
-      await updateProfile(profileId, payload.profile);
-      return replaceProfileItems(profileId, payload.items);
-    },
+  const saveMutation = useMutation<ProfileDetail, Error, SaveProfileInput>({
+    mutationFn: (payload) => saveProfile(profileId, payload),
     onSuccess: async (detail) => {
       queryClient.setQueryData(queryKeys.profiles.detail(profileId), detail);
       await queryClient.invalidateQueries({
         queryKey: queryKeys.profiles.list()
       });
-      void message.success('Profile saved');
+      toast.success('Profile 已保存');
     }
   });
 
@@ -457,101 +479,88 @@ function ProfileEditorContent({
   const skillSection = baseSections.find((section) => section.key === 'skills');
   const ruleSection = baseSections.find((section) => section.key === 'rules');
 
-  const saveProfile = async () => {
+  const handleSaveProfile = form.handleSubmit(async (values) => {
     const invalidOverride = Object.values(mcpEditorState).find(
       (item) => item.error
     );
     if (invalidOverride) {
-      void message.error('请先修正 MCP override 的 JSON。');
+      toast.error('请先修正 MCP override 的 JSON。');
       return;
     }
 
-    let profilePayload: ProfilePayload;
     try {
-      const values = await form.validateFields();
-      profilePayload = buildProfilePayload(values);
+      const payload = buildSaveProfileInput(
+        values,
+        selectedSkills,
+        selectedMcps,
+        selectedRules
+      );
+
+      await saveMutation.mutateAsync(payload);
     } catch (error) {
       if (error instanceof Error) {
-        void message.error(error.message);
+        toast.error(error.message);
+        return;
       }
-      return;
-    }
 
-    const itemsPayload = buildProfileItemsPayload(
-      selectedSkills,
-      selectedMcps,
-      selectedRules
-    );
-
-    try {
-      await saveMutation.mutateAsync({
-        profile: profilePayload,
-        items: itemsPayload
-      });
-    } catch (error) {
       handleError(error);
     }
-  };
-  const saving = saveMutation.isPending;
+  });
 
   return (
-    <Card className="page-card">
-      <div className="page-card__header">
-        <div>
-          <Typography.Title level={2} className="page-card__title">
-            Profile Editor
-          </Typography.Title>
-          <Typography.Paragraph className="page-card__description">
-            编辑基础信息、关联资源和 MCP override
-          </Typography.Paragraph>
-        </div>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={onBack}>Back</Button>
-          <Button type="primary" loading={saving} onClick={() => void saveProfile()}>
-            Save
-          </Button>
-        </Space>
-      </div>
+    <div className="space-y-6">
+      <EditorToolbar
+        title={initialDetail.name}
+        onBack={onBack}
+        onSave={() => void handleSaveProfile()}
+        saveDisabled={saveMutation.isPending}
+      />
 
-      <Form<ProfileEditorFormValues>
-        layout="vertical"
-        form={form}
-        initialValues={initialValues}
-        className="profile-editor__form"
-      >
-        <div className="profile-editor__form-grid">
-          <Form.Item
+      <SurfaceCard>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <FormField
             label="Name"
-            name="name"
-            rules={[{ required: true, message: 'Profile name is required' }]}
+            htmlFor="profile-name"
+            error={form.formState.errors.name?.message}
           >
-            <Input placeholder="Profile name" />
-          </Form.Item>
-          <Form.Item label="Description" name="description">
-            <Input.TextArea rows={3} placeholder="描述" />
-          </Form.Item>
+            <Input id="profile-name" {...form.register('name')} />
+          </FormField>
+          <FormField
+            label="Description"
+            htmlFor="profile-description"
+            error={form.formState.errors.description?.message}
+          >
+            <Textarea
+              id="profile-description"
+              rows={4}
+              {...form.register('description')}
+            />
+          </FormField>
         </div>
-      </Form>
+      </SurfaceCard>
 
-      <div className="profile-editor__sections">
-        {skillSection ? (
-          <ResourceSectionCard<SelectedBaseItem> section={skillSection} />
-        ) : null}
+      {skillSection ? (
+        <ResourceSectionCard<SelectedBaseItem> section={skillSection} />
+      ) : null}
 
-        <ResourceSectionCard<SelectedMcpItem>
-          section={mcpSection}
-          renderMeta={(item) => item.command}
-          renderDetails={(item) => {
-            const isExpanded = expandedMcps.includes(item.resourceId);
-            const editor = mcpEditorState[item.resourceId] ?? {
-              value: '',
-              error: null
-            };
+      <ResourceSectionCard<SelectedMcpItem>
+        section={mcpSection}
+        renderMeta={(item) => item.command}
+        renderDetails={(item) => {
+          const isExpanded = expandedMcps.includes(item.resourceId);
+          const editor = mcpEditorState[item.resourceId] ?? {
+            value: '',
+            error: null
+          };
 
-            return (
-              <div className="profile-editor__override">
+          return (
+            <div className="space-y-3 rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-muted/35 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">MCP Override</p>
                 <Button
-                  type="link"
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() =>
                     setExpandedMcps((current) =>
                       current.includes(item.resourceId)
@@ -562,33 +571,28 @@ function ProfileEditorContent({
                 >
                   {isExpanded ? '收起 override' : '编辑 override'}
                 </Button>
-                {isExpanded ? (
-                  <div className="profile-editor__override-editor">
-                    <Typography.Paragraph className="profile-editor__hint">
-                      仅填写需要覆盖的字段。留空表示不覆盖。
-                    </Typography.Paragraph>
-                    <CodeEditor
-                      value={editor.value}
-                      onChange={(value) =>
-                        updateMcpOverride(item.resourceId, value)
-                      }
-                    />
-                    {editor.error ? (
-                      <Typography.Text type="danger">
-                        {editor.error}
-                      </Typography.Text>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
-            );
-          }}
-        />
+              {isExpanded ? (
+                <div className="space-y-3">
+                  <CodeEditor
+                    value={editor.value}
+                    onChange={(value) =>
+                      updateMcpOverride(item.resourceId, value)
+                    }
+                  />
+                  {editor.error ? (
+                    <p className="text-sm text-destructive">{editor.error}</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          );
+        }}
+      />
 
-        {ruleSection ? (
-          <ResourceSectionCard<SelectedBaseItem> section={ruleSection} />
-        ) : null}
-      </div>
-    </Card>
+      {ruleSection ? (
+        <ResourceSectionCard<SelectedBaseItem> section={ruleSection} />
+      ) : null}
+    </div>
   );
 }

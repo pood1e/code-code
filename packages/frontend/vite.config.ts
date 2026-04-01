@@ -1,8 +1,15 @@
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  },
   build: {
     chunkSizeWarningLimit: 900,
     rollupOptions: {
@@ -20,12 +27,8 @@ export default defineConfig({
             return 'dnd-kit';
           }
 
-          if (
-            id.includes('/antd/') ||
-            id.includes('@ant-design') ||
-            id.includes('/rc-')
-          ) {
-            return 'antd';
+          if (id.includes('@radix-ui') || id.includes('lucide-react')) {
+            return 'radix';
           }
 
           if (
@@ -38,6 +41,17 @@ export default defineConfig({
 
           if (id.includes('/axios/')) {
             return 'network';
+          }
+
+          if (
+            id.includes('react-hook-form') ||
+            id.includes('@hookform/resolvers')
+          ) {
+            return 'forms';
+          }
+
+          if (id.includes('@tanstack/react-table')) {
+            return 'table';
           }
 
           return undefined;

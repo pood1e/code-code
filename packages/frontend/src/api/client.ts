@@ -1,7 +1,7 @@
 import type { ApiResponse } from '@agent-workbench/shared';
 import { useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
-import { Modal, message } from 'antd';
+import { toast } from 'sonner';
 
 type ApiErrorPayload = {
   code: number;
@@ -21,7 +21,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-type ReferencedProfile = {
+export type ReferencedProfile = {
   id: string;
   name: string;
 };
@@ -37,9 +37,17 @@ function isReferencedProfile(value: unknown): value is ReferencedProfile {
   );
 }
 
-function toApiRequestError(error: unknown) {
+export function toApiRequestError(error: unknown) {
   if (error instanceof ApiRequestError) {
     return error;
+  }
+
+  if (!error || typeof error !== 'object') {
+    return new ApiRequestError({
+      code: 500,
+      message: 'Request failed',
+      data: null
+    });
   }
 
   const axiosError = error as AxiosError<Partial<ApiErrorPayload>>;
@@ -52,7 +60,15 @@ function toApiRequestError(error: unknown) {
   });
 }
 
-function getReferencedProfiles(data: unknown) {
+export function getApiErrorCode(error: unknown) {
+  return toApiRequestError(error).code;
+}
+
+export function isNotFoundApiError(error: unknown) {
+  return getApiErrorCode(error) === 404;
+}
+
+export function getReferencedProfiles(data: unknown) {
   if (
     !data ||
     typeof data !== 'object' ||
@@ -89,19 +105,6 @@ apiClient.interceptors.response.use(
 export function useErrorMessage() {
   return useCallback((error: unknown) => {
     const apiError = toApiRequestError(error);
-    void message.error(apiError.message);
+    toast.error(apiError.message);
   }, []);
-}
-
-export function showReferencedProfilesModal(error: ApiRequestError) {
-  const referencedBy = getReferencedProfiles(error.data);
-
-  Modal.error({
-    title: '资源仍被 Profile 引用',
-    content: referencedBy.length
-      ? `以下 Profile 仍在引用当前资源，删除已被阻止：\n${referencedBy
-          .map((item) => `${item.name} (${item.id})`)
-          .join('\n')}`
-      : error.message
-  });
 }
