@@ -27,7 +27,16 @@ import { SkillsService } from './skills.service';
 @ApiTags('Skills')
 @Controller('skills')
 export class SkillsController {
-  constructor(private readonly skillsService: SkillsService) {}
+  private readonly skillsService: SkillsService;
+
+  constructor(skillsService: SkillsService) {
+    this.skillsService = skillsService;
+    this.list = this.list.bind(this);
+    this.getById = this.getById.bind(this);
+    this.create = this.create.bind(this);
+    this.update = this.update.bind(this);
+    this.remove = this.remove.bind(this);
+  }
 
   @Get()
   @ApiOperation({ summary: 'List skills' })

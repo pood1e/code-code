@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "dev": "node ./scripts/dev.mjs",
     "start": "node dist/src/main.js",
     "lint": "eslint src prisma --ext .ts",
     "prisma": "prisma",
