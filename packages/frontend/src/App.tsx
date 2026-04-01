@@ -30,6 +30,11 @@ const ProjectDashboardPage = lazy(() =>
     default: module.ProjectDashboardPage
   }))
 );
+const ProjectSessionsPage = lazy(() =>
+  import('./pages/projects/ProjectSessionsPage').then((module) => ({
+    default: module.ProjectSessionsPage
+  }))
+);
 const ResourceEditPage = lazy(() =>
   import('./pages/resources/ResourceEditPage').then((module) => ({
     default: module.ResourceEditPage
@@ -80,6 +85,14 @@ export function App() {
           element={
             <LazyRoute>
               <ProjectDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/sessions"
+          element={
+            <LazyRoute>
+              <ProjectSessionsPage />
             </LazyRoute>
           }
         />

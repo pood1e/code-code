@@ -11,6 +11,13 @@ export const queryKeys = {
       ['projects', 'list', normalizeSearchValue(searchValue)] as const,
     detail: (id: string) => ['projects', 'detail', id] as const
   },
+  sessions: {
+    all: ['sessions'] as const,
+    lists: () => ['sessions', 'list'] as const,
+    list: (scopeId: string) => ['sessions', 'list', scopeId] as const,
+    detail: (id: string) => ['sessions', 'detail', id] as const,
+    messages: (id: string) => ['sessions', 'messages', id] as const
+  },
   agentRunnerTypes: {
     all: ['agent-runner-types'] as const
   },

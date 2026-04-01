@@ -10,9 +10,6 @@
     "prisma": "prisma",
     "seed": "tsx prisma/seed.ts"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@agent-workbench/shared": "workspace:*",
     "@nestjs/common": "^11.1.7",

@@ -29,16 +29,10 @@ export type RunnerTypeMeta = {
   capabilities: RunnerTypeCapabilities;
 };
 
-export type PlatformSessionConfig = {
-  cwd: string;
-  skills: string[];
-  rules: string[];
-  mcps: string[];
-};
-
 export type RunnerTypeResponse = RunnerTypeMeta & {
   runnerConfigSchema: RunnerConfigJsonSchema;
   runnerSessionConfigSchema: object;
+  inputSchema: object;
   taskConfigSchema: object;
   runtimeConfigSchema: object;
 };

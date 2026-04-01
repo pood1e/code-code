@@ -304,6 +304,7 @@ export function AppLayout() {
   const isWideListPage = useMemo(
     () =>
       location.pathname === projectConfig.path ||
+      location.pathname.endsWith('/sessions') ||
       resourceItems.some((item) => location.pathname === item.key),
     [location.pathname]
   );

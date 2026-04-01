@@ -35,9 +35,10 @@ export class RunnerTypeRegistry {
       runnerSessionConfigSchema: convertZodSchemaToJsonSchema(
         runnerType.runnerSessionConfigSchema
       ),
-      taskConfigSchema: convertZodSchemaToJsonSchema(
-        runnerType.taskConfigSchema
+      inputSchema: convertZodSchemaToJsonSchema(
+        runnerType.inputSchema
       ),
+      taskConfigSchema: convertZodSchemaToJsonSchema(runnerType.inputSchema),
       runtimeConfigSchema: convertZodSchemaToJsonSchema(
         runnerType.runtimeConfigSchema
       )

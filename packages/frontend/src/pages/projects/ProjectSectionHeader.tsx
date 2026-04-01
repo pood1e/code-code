@@ -7,7 +7,7 @@ const tabButtonClassName =
 const selectClassName =
   'flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 sm:w-auto sm:min-w-[16rem]';
 
-type ProjectTab = 'config' | 'dashboard';
+type ProjectTab = 'config' | 'sessions' | 'dashboard';
 
 type ProjectSectionHeaderProps = {
   projects: Project[];
@@ -55,6 +55,18 @@ export function ProjectSectionHeader({
             )}
           >
             配置
+          </button>
+          <button
+            type="button"
+            onClick={() => onTabChange('sessions')}
+            className={cn(
+              tabButtonClassName,
+              activeTab === 'sessions'
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
+            )}
+          >
+            Sessions
           </button>
           <button
             type="button"

@@ -8,7 +8,7 @@ import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
 
-type ProjectTab = 'config' | 'dashboard';
+type ProjectTab = 'config' | 'sessions' | 'dashboard';
 
 export function useProjectPageData() {
   const { id } = useParams<{ id: string }>();
