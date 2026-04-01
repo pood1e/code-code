@@ -20,6 +20,7 @@ import { EditorToolbar } from '@/components/app/EditorToolbar';
 import { EmptyState } from '@/components/app/EmptyState';
 import { FormField } from '@/components/app/FormField';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
+import { JsonEditor } from '@/components/JsonEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +35,10 @@ import {
   buildUpdateAgentRunnerInput,
   getRunnerConfigDefaultSummary,
   getRunnerConfigFieldValue,
-  parseRunnerConfigSchema,
   normalizeRunnerConfigValues,
+  parseRawRunnerConfigText,
+  parseRunnerConfigSchema,
+  stringifyRunnerConfig,
   type AgentRunnerEditorFormValues,
   type RunnerConfigField
 } from './agent-runner.utils';
@@ -155,6 +158,12 @@ function AgentRunnerEditorContent({
   const navigate = useNavigate();
   const handleError = useErrorMessage();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [rawRunnerConfigText, setRawRunnerConfigText] = useState(() =>
+    stringifyRunnerConfig(initialValues.runnerConfig)
+  );
+  const [rawRunnerConfigError, setRawRunnerConfigError] = useState<string | null>(
+    null
+  );
   const isEditing = Boolean(runnerId);
 
   const form = useForm<AgentRunnerEditorFormValues>({
@@ -181,34 +190,53 @@ function AgentRunnerEditorContent({
 
   const saveMutation = useMutation({
     mutationFn: (values: AgentRunnerEditorFormValues) => {
-      if (!parsedSchema.supported) {
-        throw new Error(parsedSchema.reason);
+      if (parsedSchema.supported) {
+        const runnerConfig = normalizeRunnerConfigValues(
+          parsedSchema.fields,
+          values.runnerConfig ?? {}
+        );
+        const validationResult = parsedSchema.validationSchema.safeParse(
+          runnerConfig
+        );
+
+        if (!validationResult.success) {
+          for (const issue of validationResult.error.issues) {
+            const fieldName = issue.path[0];
+            if (typeof fieldName === 'string') {
+              form.setError(`runnerConfig.${fieldName}`, {
+                message: issue.message
+              });
+            }
+          }
+          throw new Error('表单校验失败');
+        }
+
+        return isEditing && runnerId
+          ? updateAgentRunner(
+              runnerId,
+              buildUpdateAgentRunnerInput(values, validationResult.data)
+            )
+          : createAgentRunner(
+              buildCreateAgentRunnerInput(values, validationResult.data)
+            );
       }
 
-      const runnerConfig = normalizeRunnerConfigValues(
-        parsedSchema.fields,
-        values.runnerConfig ?? {}
-      );
-      const validationResult = parsedSchema.validationSchema.safeParse(runnerConfig);
-
-      if (!validationResult.success) {
-        for (const issue of validationResult.error.issues) {
-          const fieldName = issue.path[0];
-          if (typeof fieldName === 'string') {
-            form.setError(`runnerConfig.${fieldName}`, {
-              message: issue.message
-            });
-          }
-        }
-        throw new Error('表单校验失败');
+      const rawRunnerConfigResult = parseRawRunnerConfigText(rawRunnerConfigText);
+      if (!rawRunnerConfigResult.data) {
+        setRawRunnerConfigError(
+          rawRunnerConfigResult.error ?? 'Runner Config 校验失败'
+        );
+        throw new Error('原始配置校验失败');
       }
 
       return isEditing && runnerId
         ? updateAgentRunner(
             runnerId,
-            buildUpdateAgentRunnerInput(values, validationResult.data)
+            buildUpdateAgentRunnerInput(values, rawRunnerConfigResult.data)
           )
-        : createAgentRunner(buildCreateAgentRunnerInput(values, validationResult.data));
+        : createAgentRunner(
+            buildCreateAgentRunnerInput(values, rawRunnerConfigResult.data)
+          );
     },
     onSuccess: async (savedAgentRunner) => {
       await Promise.all([
@@ -242,17 +270,28 @@ function AgentRunnerEditorContent({
           ? buildRunnerConfigInitialValues(nextSchema.fields)
           : {}
     });
+    setRawRunnerConfigText(
+      nextSchema.supported
+        ? stringifyRunnerConfig(buildRunnerConfigInitialValues(nextSchema.fields))
+        : stringifyRunnerConfig()
+    );
+    setRawRunnerConfigError(null);
     setSubmitError(null);
   };
 
   const handleSave = form.handleSubmit(async (values) => {
     setSubmitError(null);
+    setRawRunnerConfigError(null);
     form.clearErrors();
 
     try {
       await saveMutation.mutateAsync(values);
     } catch (error) {
-      if (error instanceof Error && error.message === '表单校验失败') {
+      if (
+        error instanceof Error &&
+        (error.message === '表单校验失败' ||
+          error.message === '原始配置校验失败')
+      ) {
         return;
       }
 
@@ -363,11 +402,27 @@ function AgentRunnerEditorContent({
               </div>
             )
           ) : (
-            <div className="pt-4">
-              <Alert variant="destructive" className="rounded-[calc(var(--radius)*0.95)]">
-                <AlertTitle>当前 RunnerType 暂不支持工作台编辑</AlertTitle>
+            <div className="space-y-4 pt-4">
+              <Alert className="rounded-[calc(var(--radius)*0.95)] border-border/70">
+                <AlertTitle>当前 RunnerType 使用原始 JSON 编辑</AlertTitle>
                 <AlertDescription>{parsedSchema.reason}</AlertDescription>
               </Alert>
+
+              <FormField
+                label="Runner Config JSON"
+                description="当前 schema 无法被工作台结构化渲染，请直接编辑原始 JSON 对象。"
+                error={rawRunnerConfigError ?? undefined}
+              >
+                <JsonEditor
+                  value={rawRunnerConfigText}
+                  onChange={(value) => {
+                    setRawRunnerConfigText(value);
+                    if (rawRunnerConfigError) {
+                      setRawRunnerConfigError(null);
+                    }
+                  }}
+                />
+              </FormField>
             </div>
           )}
         </SurfaceCard>
