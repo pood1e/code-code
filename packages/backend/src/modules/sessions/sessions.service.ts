@@ -191,15 +191,15 @@ export class SessionsService implements OnModuleInit {
 
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
     });
     const toolUses = await this.prisma.messageToolUse.findMany({
       where: { sessionId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ eventId: 'asc' }, { id: 'asc' }]
     });
     const metrics = await this.prisma.sessionMetric.findMany({
       where: { sessionId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ eventId: 'asc' }, { id: 'asc' }]
     });
     const toolUsesByMessageId = new Map<string, SessionToolUse[]>();
     const metricsByMessageId = new Map<string, SessionMessageMetric[]>();
@@ -311,26 +311,28 @@ export class SessionsService implements OnModuleInit {
 
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
     });
-    const lastUserMessage = [...messages]
-      .reverse()
-      .find((message) => message.role === 'user');
+    const lastUserIndex = [...messages]
+      .map((message) => message.role)
+      .lastIndexOf('user');
+    const lastUserMessage =
+      lastUserIndex >= 0 ? messages[lastUserIndex] : undefined;
 
     if (!lastUserMessage?.inputContent) {
       throw new BadRequestException('No previous user message to reload');
     }
 
-    const lastAssistantMessage = [...messages]
-      .reverse()
-      .find((message) => message.role === 'assistant');
+    const hasAssistantAfterUser = messages
+      .slice(lastUserIndex + 1)
+      .some((message) => message.role === 'assistant');
 
-    if (!lastAssistantMessage) {
+    if (!hasAssistantAfterUser) {
       throw new BadRequestException('No previous assistant message to reload');
     }
 
-    await this.truncateSessionHistoryFrom(sessionId, lastAssistantMessage.id);
-    await this.sendParsedInput(
+    await this.truncateSessionHistoryFrom(sessionId, lastUserMessage.id);
+    await this.rerunExistingUserInput(
       sessionId,
       asPlainObject(lastUserMessage.inputContent)
     );
@@ -396,7 +398,7 @@ export class SessionsService implements OnModuleInit {
           role: MessageRole.Assistant,
           status: MessageStatus.Streaming
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
       });
 
       if (streamingMessage) {
@@ -456,7 +458,9 @@ export class SessionsService implements OnModuleInit {
     return this.getById(sessionId);
   }
 
-  createEventsStream(sessionId: string, afterEventId = 0) {
+  async createEventsStream(sessionId: string, afterEventId = 0) {
+    await this.getSessionOrThrow(sessionId);
+
     if (this.replayOverflowSessions.get(sessionId) === afterEventId) {
       this.replayOverflowSessions.delete(sessionId);
       throw new ServiceUnavailableException({
@@ -588,7 +592,7 @@ export class SessionsService implements OnModuleInit {
         role: MessageRole.Assistant,
         status: MessageStatus.Streaming
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
     });
 
     const events: OutputChunk[] = [];
@@ -1133,10 +1137,60 @@ export class SessionsService implements OnModuleInit {
     }
   }
 
+  private async rerunExistingUserInput(
+    sessionId: string,
+    parsedInput: Record<string, unknown>
+  ) {
+    const runtimeSession = await this.ensureRuntime(sessionId);
+    const previousStatus = (await this.getSessionOrThrow(sessionId)).status as SessionStatus;
+    const assistantMessage = await this.prisma.$transaction(async (tx) => {
+      const createdAssistantMessage = await tx.sessionMessage.create({
+        data: {
+          sessionId,
+          role: MessageRole.Assistant,
+          status: MessageStatus.Streaming
+        }
+      });
+      await tx.agentSession.update({
+        where: { id: sessionId },
+        data: { status: SessionStatus.Running }
+      });
+
+      return createdAssistantMessage;
+    });
+
+    this.deltaSeqs.set(
+      this.getDeltaSeqKey(sessionId, assistantMessage.id),
+      0
+    );
+    this.thinkingAccumulators.delete(
+      this.getThinkingAccumulatorKey(sessionId, assistantMessage.id)
+    );
+
+    await this.emitSessionStatus(sessionId, SessionStatus.Running, previousStatus);
+
+    try {
+      await this.getRunnerTypeOrThrow(runtimeSession.runnerType).send(runtimeSession, {
+        messageId: assistantMessage.id,
+        input: parsedInput
+      });
+    } catch (error) {
+      await this.handleRecoverableMessageError(
+        sessionId,
+        assistantMessage.id,
+        {
+          message: error instanceof Error ? error.message : 'Runner failed to send',
+          code: 'RUNNER_SEND_FAILED',
+          recoverable: true
+        }
+      );
+    }
+  }
+
   private async truncateSessionHistoryFrom(sessionId: string, fromMessageId: string) {
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
     });
     const startIndex = messages.findIndex((message) => message.id === fromMessageId);
 
@@ -1199,7 +1253,7 @@ export class SessionsService implements OnModuleInit {
         role: MessageRole.Assistant,
         status: MessageStatus.Streaming
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
     });
   }
 

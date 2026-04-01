@@ -1037,7 +1037,7 @@ export function ProjectSessionsPage() {
   }, [sessionMessagesQuery.data, selectedSessionId]);
 
   useEffect(() => {
-    if (!selectedSessionId) {
+    if (!selectedSessionId || sessionMessagesQuery.status !== 'success') {
       return;
     }
 
@@ -1195,7 +1195,13 @@ export function ProjectSessionsPage() {
       }
       source.close();
     };
-  }, [id, queryClient, selectedSessionId, streamNonce]);
+  }, [
+    id,
+    queryClient,
+    selectedSessionId,
+    sessionMessagesQuery.status,
+    streamNonce
+  ]);
 
   const sendMutation = useMutation({
     mutationFn: async (payload: ReturnType<typeof sendSessionMessageInputSchema.parse>) => {

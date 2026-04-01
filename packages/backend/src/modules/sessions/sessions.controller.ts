@@ -121,7 +121,7 @@ export class SessionsController {
 
   @Sse(':id/events')
   @SkipApiResponse()
-  stream(
+  async stream(
     @Param('id') id: string,
     @Query() query: SessionEventsQueryDto
   ) {
@@ -135,9 +135,11 @@ export class SessionsController {
       )
     );
 
-    return merge(
-      this.sessionsService.createEventsStream(id, query.afterEventId ?? 0),
-      heartbeat$
+    const events$ = await this.sessionsService.createEventsStream(
+      id,
+      query.afterEventId ?? 0
     );
+
+    return merge(events$, heartbeat$);
   }
 }
