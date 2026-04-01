@@ -21,6 +21,50 @@ export class ApiRequestError extends Error {
   }
 }
 
+type ReferencedProfile = {
+  id: string;
+  name: string;
+};
+
+function isReferencedProfile(value: unknown): value is ReferencedProfile {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'id' in value &&
+      typeof value.id === 'string' &&
+      'name' in value &&
+      typeof value.name === 'string'
+  );
+}
+
+function toApiRequestError(error: unknown) {
+  if (error instanceof ApiRequestError) {
+    return error;
+  }
+
+  const axiosError = error as AxiosError<Partial<ApiErrorPayload>>;
+  const payload = axiosError.response?.data;
+
+  return new ApiRequestError({
+    code: payload?.code ?? axiosError.response?.status ?? 500,
+    message: payload?.message ?? 'Request failed',
+    data: payload?.data ?? null
+  });
+}
+
+function getReferencedProfiles(data: unknown) {
+  if (
+    !data ||
+    typeof data !== 'object' ||
+    !('referencedBy' in data) ||
+    !Array.isArray(data.referencedBy)
+  ) {
+    return [];
+  }
+
+  return data.referencedBy.filter(isReferencedProfile);
+}
+
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api'
 });
@@ -39,38 +83,18 @@ apiClient.interceptors.response.use(
       data: (response.data as ApiResponse<unknown>).data
     };
   },
-  (error) => {
-    const axiosError = error as AxiosError<Partial<ApiErrorPayload>>;
-    const payload = axiosError.response?.data;
-
-    return Promise.reject(
-      new ApiRequestError({
-        code: payload?.code ?? axiosError.response?.status ?? 500,
-        message: payload?.message ?? 'Request failed',
-        data: payload?.data ?? null
-      })
-    );
-  }
+  (error) => Promise.reject(toApiRequestError(error))
 );
 
 export function useErrorMessage() {
   return useCallback((error: unknown) => {
-    const apiError =
-      error instanceof ApiRequestError
-        ? error
-        : new ApiRequestError({
-            code: 500,
-            message: 'Request failed',
-            data: null
-          });
+    const apiError = toApiRequestError(error);
     void message.error(apiError.message);
   }, []);
 }
 
 export function showReferencedProfilesModal(error: ApiRequestError) {
-  const referencedBy = ((
-    error.data as { referencedBy?: Array<{ id: string; name: string }> } | null
-  )?.referencedBy ?? []) as Array<{ id: string; name: string }>;
+  const referencedBy = getReferencedProfiles(error.data);
 
   Modal.error({
     title: '资源仍被 Profile 引用',

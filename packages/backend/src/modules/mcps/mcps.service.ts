@@ -1,22 +1,29 @@
 import {
-  BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException
 } from '@nestjs/common';
 import { mcpInputSchema } from '@agent-workbench/shared';
 
+import {
+  buildNameFilter,
+  throwIfReferencedByProfiles
+} from '../../common/resource.utils';
+import { parseSchemaOrThrow } from '../../common/schema.utils';
 import { toInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { McpMutationDto } from '../../dto/resource.dto';
 
 @Injectable()
 export class McpsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly prisma: PrismaService;
+
+  constructor(prisma: PrismaService) {
+    this.prisma = prisma;
+  }
 
   list(name?: string) {
     return this.prisma.mCP.findMany({
-      where: name ? { name: { contains: name } } : undefined,
+      where: buildNameFilter(name),
       orderBy: { updatedAt: 'desc' }
     });
   }
@@ -31,37 +38,27 @@ export class McpsService {
   }
 
   create(dto: McpMutationDto) {
-    const parsed = mcpInputSchema.safeParse(dto);
-    if (!parsed.success) {
-      throw new BadRequestException(
-        parsed.error.issues[0]?.message ?? 'Invalid MCP payload'
-      );
-    }
+    const parsed = parseSchemaOrThrow(mcpInputSchema, dto, 'Invalid MCP payload');
 
     return this.prisma.mCP.create({
       data: {
-        name: parsed.data.name,
-        description: parsed.data.description ?? null,
-        content: toInputJson(parsed.data.content)
+        name: parsed.name,
+        description: parsed.description ?? null,
+        content: toInputJson(parsed.content)
       }
     });
   }
 
   async update(id: string, dto: McpMutationDto) {
     await this.getById(id);
-    const parsed = mcpInputSchema.safeParse(dto);
-    if (!parsed.success) {
-      throw new BadRequestException(
-        parsed.error.issues[0]?.message ?? 'Invalid MCP payload'
-      );
-    }
+    const parsed = parseSchemaOrThrow(mcpInputSchema, dto, 'Invalid MCP payload');
 
     return this.prisma.mCP.update({
       where: { id },
       data: {
-        name: parsed.data.name,
-        description: parsed.data.description ?? null,
-        content: toInputJson(parsed.data.content)
+        name: parsed.name,
+        description: parsed.description ?? null,
+        content: toInputJson(parsed.content)
       }
     });
   }
@@ -81,12 +78,7 @@ export class McpsService {
       }
     });
 
-    if (references.length > 0) {
-      throw new ConflictException({
-        message: '该资源被以下 Profile 引用，无法删除',
-        referencedBy: references.map(({ profile }) => profile)
-      });
-    }
+    throwIfReferencedByProfiles(references);
 
     await this.prisma.mCP.delete({ where: { id } });
     return null;
