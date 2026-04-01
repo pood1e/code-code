@@ -53,6 +53,7 @@ export function DataTable<TData>({
     [pageSize]
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is the intended state owner for this grid component.
   const table = useReactTable({
     data,
     columns,
