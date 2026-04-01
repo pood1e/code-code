@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   Card,
@@ -18,6 +19,7 @@ import {
   useErrorMessage
 } from '../../api/client';
 import { deleteResource, listResources } from '../../api/resources';
+import { queryKeys } from '../../query/query-keys';
 import { useUiStore } from '../../store/ui-store';
 import { resourceConfigMap } from '../../types/resources';
 
@@ -27,41 +29,38 @@ type ResourceListPageProps = {
 
 export function ResourceListPage({ kind }: ResourceListPageProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const handleError = useErrorMessage();
   const searchValue = useUiStore((state) => state.resourceSearch[kind]);
   const setSearchValue = useUiStore((state) => state.setResourceSearch);
-  const [items, setItems] = useState<ResourceRecord[]>([]);
-  const [loading, setLoading] = useState(false);
-  const requestIdRef = useRef(0);
+  const deferredSearchValue = useDeferredValue(searchValue);
 
   const config = resourceConfigMap[kind];
+  const resourceListQuery = useQuery({
+    queryKey: queryKeys.resources.list(kind, deferredSearchValue),
+    queryFn: () => listResources(kind, deferredSearchValue || undefined),
+    placeholderData: keepPreviousData
+  });
 
-  const fetchItems = useCallback(async () => {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-    setLoading(true);
-
-    try {
-      const data = await listResources(kind, searchValue || undefined);
-      if (requestId === requestIdRef.current) {
-        setItems(data);
-      }
-    } catch (error) {
-      if (requestId === requestIdRef.current) {
-        handleError(error);
-      }
-    } finally {
-      if (requestId === requestIdRef.current) {
-        setLoading(false);
-      }
+  useEffect(() => {
+    if (resourceListQuery.error) {
+      handleError(resourceListQuery.error);
     }
-  }, [handleError, kind, searchValue]);
+  }, [handleError, resourceListQuery.error]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteResource(kind, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.resources.lists()
+      });
+    }
+  });
 
   const handleDelete = useCallback(
     async (id: string) => {
       try {
-        await deleteResource(kind, id);
-        await fetchItems();
+        await deleteMutation.mutateAsync(id);
       } catch (error) {
         if (error instanceof ApiRequestError && error.code === 409) {
           showReferencedProfilesModal(error);
@@ -71,12 +70,13 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
         handleError(error);
       }
     },
-    [fetchItems, handleError, kind]
+    [deleteMutation, handleError]
   );
-
-  useEffect(() => {
-    void fetchItems();
-  }, [fetchItems]);
+  const items = (resourceListQuery.data ?? []) as ResourceRecord[];
+  const loading =
+    resourceListQuery.isPending ||
+    resourceListQuery.isFetching ||
+    deleteMutation.isPending;
 
   return (
     <Card className="page-card">
@@ -104,11 +104,11 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
           value={searchValue}
           onChange={(event) => setSearchValue(kind, event.target.value)}
           onSearch={() => {
-            void fetchItems();
+            void resourceListQuery.refetch();
           }}
           style={{ width: 320 }}
         />
-        <Button onClick={() => void fetchItems()}>Refresh</Button>
+        <Button onClick={() => void resourceListQuery.refetch()}>Refresh</Button>
       </Space>
 
       <Table<ResourceRecord>

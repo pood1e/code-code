@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Form, Input, Space, Typography } from 'antd';
 import {
   mcpInputSchema,
@@ -13,9 +14,11 @@ import { useErrorMessage } from '../../api/client';
 import {
   createResource,
   getResource,
-  updateResource
+  updateResource,
+  type ResourcePayloadByKind
 } from '../../api/resources';
 import { CodeEditor } from '../../components/JsonEditor';
+import { queryKeys } from '../../query/query-keys';
 import { resourceConfigMap } from '../../types/resources';
 
 type EnvEntry = {
@@ -85,12 +88,35 @@ function normalizeDescription(description?: string) {
   return description?.trim() ? description.trim() : null;
 }
 
+type ResourceMutationPayload = ResourcePayloadByKind[ResourceKind];
+
+async function saveResourceByKind(
+  kind: ResourceKind,
+  payload: ResourceMutationPayload,
+  id?: string
+) {
+  switch (kind) {
+    case 'skills':
+      return id
+        ? updateResource('skills', id, payload as ResourcePayloadByKind['skills'])
+        : createResource('skills', payload as ResourcePayloadByKind['skills']);
+    case 'mcps':
+      return id
+        ? updateResource('mcps', id, payload as ResourcePayloadByKind['mcps'])
+        : createResource('mcps', payload as ResourcePayloadByKind['mcps']);
+    case 'rules':
+      return id
+        ? updateResource('rules', id, payload as ResourcePayloadByKind['rules'])
+        : createResource('rules', payload as ResourcePayloadByKind['rules']);
+  }
+}
+
 export function ResourceEditPage({ kind }: ResourceEditPageProps) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const handleError = useErrorMessage();
   const [form] = Form.useForm<ResourceFormValues>();
-  const [loading, setLoading] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
   const contentTextValue = Form.useWatch('contentText', form) ?? '';
   const commandValue = Form.useWatch('command', form) ?? '';
@@ -100,38 +126,66 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
   const config = resourceConfigMap[kind];
   const isEditing = Boolean(id);
   const isMcp = kind === 'mcps';
+  const resourceQuery = useQuery({
+    queryKey: id ? queryKeys.resources.detail(kind, id) : queryKeys.resources.details(),
+    queryFn: () => getResource(kind, id!),
+    enabled: isEditing
+  });
 
   useEffect(() => {
     if (!id) {
+      form.resetFields();
       form.setFieldsValue(createInitialValues(kind));
       return;
     }
 
-    setLoading(true);
-    void getResource(kind, id)
-      .then((resource) => {
-        if (typeof resource.content === 'string') {
-          form.setFieldsValue({
-            name: resource.name,
-            description: resource.description ?? '',
-            contentText: resource.content
-          });
-          return;
-        }
+    const resource = resourceQuery.data;
+    if (!resource) {
+      return;
+    }
 
-        const mcpResource = resource as McpResource;
-        form.setFieldsValue({
-          name: mcpResource.name,
-          description: mcpResource.description ?? '',
-          type: mcpResource.content.type,
-          command: mcpResource.content.command,
-          args: mcpResource.content.args,
-          envEntries: toEnvEntries(mcpResource.content.env)
-        });
-      })
-      .catch(handleError)
-      .finally(() => setLoading(false));
-  }, [form, handleError, id, kind]);
+    if (typeof resource.content === 'string') {
+      form.setFieldsValue({
+        name: resource.name,
+        description: resource.description ?? '',
+        contentText: resource.content
+      });
+      return;
+    }
+
+    const mcpResource = resource as McpResource;
+    form.setFieldsValue({
+      name: mcpResource.name,
+      description: mcpResource.description ?? '',
+      type: mcpResource.content.type,
+      command: mcpResource.content.command,
+      args: mcpResource.content.args,
+      envEntries: toEnvEntries(mcpResource.content.env)
+    });
+  }, [form, id, resourceQuery.data, kind]);
+
+  useEffect(() => {
+    if (resourceQuery.error) {
+      handleError(resourceQuery.error);
+    }
+  }, [handleError, resourceQuery.error]);
+
+  const saveMutation = useMutation({
+    mutationFn: (payload: ResourceMutationPayload) =>
+      saveResourceByKind(kind, payload, id),
+    onSuccess: async (resource) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.resources.lists()
+        }),
+        queryClient.setQueryData(
+          queryKeys.resources.detail(kind, resource.id),
+          resource
+        )
+      ]);
+      void navigate(config.path);
+    }
+  });
 
   const title = useMemo(
     () => `${isEditing ? 'Edit' : 'Create'} ${config.singularLabel}`,
@@ -161,7 +215,6 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
     const values = await form.validateFields();
     setContentError(null);
 
-    setLoading(true);
     try {
       if (isMcp) {
         const parsed = mcpInputSchema.safeParse({
@@ -183,12 +236,7 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
           );
           return;
         }
-
-        if (id) {
-          await updateResource(kind, id, parsed.data);
-        } else {
-          await createResource(kind, parsed.data);
-        }
+        await saveMutation.mutateAsync(parsed.data);
       } else {
         const payload = {
           name: values.name,
@@ -204,21 +252,13 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
           );
           return;
         }
-
-        if (id) {
-          await updateResource(kind, id, parsed.data);
-        } else {
-          await createResource(kind, parsed.data);
-        }
+        await saveMutation.mutateAsync(parsed.data);
       }
-
-      void navigate(config.path);
     } catch (error) {
       handleError(error);
-    } finally {
-      setLoading(false);
     }
   };
+  const loading = resourceQuery.isPending || saveMutation.isPending;
 
   return (
     <Card className="page-card" loading={loading}>

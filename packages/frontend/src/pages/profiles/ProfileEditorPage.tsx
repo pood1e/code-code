@@ -6,6 +6,11 @@ import {
   useState
 } from 'react';
 import {
+  useMutation,
+  useQueries,
+  useQueryClient
+} from '@tanstack/react-query';
+import {
   ArrowLeftOutlined,
   DeleteOutlined,
   MenuOutlined,
@@ -60,6 +65,7 @@ import {
 } from '../../api/profiles';
 import { listResources } from '../../api/resources';
 import { CodeEditor } from '../../components/JsonEditor';
+import { queryKeys } from '../../query/query-keys';
 
 type ProfileEditorFormValues = {
   name: string;
@@ -113,6 +119,40 @@ type AvailableResourceListProps = {
   items: AvailableResourceItem[];
   emptyText: string;
   onAdd: (id: string) => void;
+};
+
+type SearchState = {
+  skills: string;
+  mcps: string;
+  rules: string;
+};
+
+type BaseSectionConfig = {
+  key: 'skills' | 'rules';
+  title: 'Skills' | 'Rules';
+  emptyAvailableText: string;
+  emptySelectedText: string;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  availableItems: AvailableResourceItem[];
+  selectedItems: SelectedBaseItem[];
+  onAdd: (resourceId: string) => void;
+  onRemove: (resourceId: string) => void;
+  onReorder: (activeId: string, overId: string) => void;
+};
+
+type McpSectionConfig = {
+  key: 'mcps';
+  title: 'MCPs';
+  emptyAvailableText: string;
+  emptySelectedText: string;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  availableItems: AvailableResourceItem[];
+  selectedItems: SelectedMcpItem[];
+  onAdd: (resourceId: string) => void;
+  onRemove: (resourceId: string) => void;
+  onReorder: (activeId: string, overId: string) => void;
 };
 
 function normalizeDescription(description?: string) {
@@ -200,14 +240,6 @@ function filterAvailableResources<T extends { id: string; name: string }>(
     );
 }
 
-function buildInitialCatalog() {
-  return {
-    skills: [],
-    mcps: [],
-    rules: []
-  } satisfies ResourceCatalog;
-}
-
 function buildProfilePayload(values: ProfileEditorFormValues) {
   const parsed = profileInputSchema.safeParse({
     name: values.name,
@@ -241,6 +273,68 @@ function buildProfileItemsPayload(
       order: item.order
     }))
   } satisfies ProfileItemsPayload;
+}
+
+function toAvailableItems<T extends { id: string; name: string; description: string | null }>(
+  items: T[],
+  meta?: (item: T) => string | undefined
+) {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    meta: meta?.(item)
+  }));
+}
+
+function removeSelectedItem<T extends { resourceId: string; order: number }>(
+  items: T[],
+  resourceId: string
+) {
+  return syncOrders(items.filter((item) => item.resourceId !== resourceId));
+}
+
+function toSelectedBaseItems(
+  items: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    order: number;
+  }>
+) {
+  return syncOrders(
+    items.map((item) => ({
+      resourceId: item.id,
+      name: item.name,
+      description: item.description,
+      order: item.order
+    }))
+  );
+}
+
+function toSelectedMcpItems(items: ProfileDetail['mcps']) {
+  return syncOrders(
+    items.map((item) => ({
+      resourceId: item.id,
+      name: item.name,
+      description: item.description,
+      order: item.order,
+      command: item.content.command,
+      configOverride: normalizeOverride(item.configOverride)
+    }))
+  );
+}
+
+function buildMcpEditorState(items: SelectedMcpItem[]) {
+  return Object.fromEntries(
+    items.map((item) => [
+      item.resourceId,
+      {
+        value: formatOverrideEditorValue(item.configOverride),
+        error: null
+      }
+    ])
+  );
 }
 
 function SortableSelectedItem<T extends SelectedBaseItem>({
@@ -420,18 +514,128 @@ export function ProfileEditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const handleError = useErrorMessage();
+
+  useEffect(() => {
+    if (!id) {
+      void navigate('/profiles', { replace: true });
+    }
+  }, [id, navigate]);
+
+  const [
+    profileDetailQuery,
+    skillsQuery,
+    mcpsQuery,
+    rulesQuery
+  ] = useQueries({
+    queries: [
+      {
+        queryKey: id ? queryKeys.profiles.detail(id) : queryKeys.profiles.list(),
+        queryFn: () => getProfile(id!),
+        enabled: Boolean(id)
+      },
+      {
+        queryKey: queryKeys.resources.list('skills'),
+        queryFn: () => listResources('skills')
+      },
+      {
+        queryKey: queryKeys.resources.list('mcps'),
+        queryFn: () => listResources('mcps')
+      },
+      {
+        queryKey: queryKeys.resources.list('rules'),
+        queryFn: () => listResources('rules')
+      }
+    ]
+  });
+
+  useEffect(() => {
+    const queryError =
+      profileDetailQuery.error ??
+      skillsQuery.error ??
+      mcpsQuery.error ??
+      rulesQuery.error;
+
+    if (!queryError) {
+      return;
+    }
+
+    handleError(queryError);
+    void navigate('/profiles');
+  }, [
+    handleError,
+    mcpsQuery.error,
+    navigate,
+    profileDetailQuery.error,
+    rulesQuery.error,
+    skillsQuery.error
+  ]);
+
+  const catalog = useMemo(
+    () =>
+      skillsQuery.data && mcpsQuery.data && rulesQuery.data
+        ? {
+            skills: skillsQuery.data,
+            mcps: mcpsQuery.data,
+            rules: rulesQuery.data
+          }
+        : null,
+    [mcpsQuery.data, rulesQuery.data, skillsQuery.data]
+  );
+  const loading =
+    profileDetailQuery.isPending ||
+    skillsQuery.isPending ||
+    mcpsQuery.isPending ||
+    rulesQuery.isPending;
+
+  if (!id) {
+    return null;
+  }
+
+  if (loading || !profileDetailQuery.data || !catalog) {
+    return <Card className="page-card" loading />;
+  }
+
+  return (
+    <ProfileEditorContent
+      key={`${profileDetailQuery.data.id}:${profileDetailQuery.data.updatedAt}`}
+      profileId={id}
+      initialDetail={profileDetailQuery.data}
+      catalog={catalog}
+      onBack={() => {
+        void navigate('/profiles');
+      }}
+    />
+  );
+}
+
+function ProfileEditorContent({
+  profileId,
+  initialDetail,
+  catalog,
+  onBack
+}: {
+  profileId: string;
+  initialDetail: ProfileDetail;
+  catalog: ResourceCatalog;
+  onBack: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const handleError = useErrorMessage();
   const [form] = Form.useForm<ProfileEditorFormValues>();
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [catalog, setCatalog] = useState<ResourceCatalog>(buildInitialCatalog);
-  const [selectedSkills, setSelectedSkills] = useState<SelectedBaseItem[]>([]);
-  const [selectedMcps, setSelectedMcps] = useState<SelectedMcpItem[]>([]);
-  const [selectedRules, setSelectedRules] = useState<SelectedBaseItem[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<SelectedBaseItem[]>(() =>
+    toSelectedBaseItems(initialDetail.skills)
+  );
+  const [selectedMcps, setSelectedMcps] = useState<SelectedMcpItem[]>(() =>
+    toSelectedMcpItems(initialDetail.mcps)
+  );
+  const [selectedRules, setSelectedRules] = useState<SelectedBaseItem[]>(() =>
+    toSelectedBaseItems(initialDetail.rules)
+  );
   const [expandedMcps, setExpandedMcps] = useState<string[]>([]);
   const [mcpEditorState, setMcpEditorState] = useState<
     Record<string, OverrideEditorState>
-  >({});
-  const [searchState, setSearchState] = useState({
+  >(() => buildMcpEditorState(toSelectedMcpItems(initialDetail.mcps)));
+  const [searchState, setSearchState] = useState<SearchState>({
     skills: '',
     mcps: '',
     rules: ''
@@ -440,80 +644,30 @@ export function ProfileEditorPage() {
   const deferredSkillSearch = useDeferredValue(searchState.skills);
   const deferredMcpSearch = useDeferredValue(searchState.mcps);
   const deferredRuleSearch = useDeferredValue(searchState.rules);
+  const initialValues = useMemo(
+    () => ({
+      name: initialDetail.name,
+      description: initialDetail.description ?? ''
+    }),
+    [initialDetail.description, initialDetail.name]
+  );
 
-  const applyProfileDetail = useCallback((detail: ProfileDetail) => {
-    form.setFieldsValue({
-      name: detail.name,
-      description: detail.description ?? ''
-    });
-    setSelectedSkills(
-      syncOrders(
-        detail.skills.map((item) => ({
-          resourceId: item.id,
-          name: item.name,
-          description: item.description,
-          order: item.order
-        }))
-      )
-    );
-    const nextMcps = syncOrders(
-      detail.mcps.map((item) => ({
-        resourceId: item.id,
-        name: item.name,
-        description: item.description,
-        order: item.order,
-        command: item.content.command,
-        configOverride: normalizeOverride(item.configOverride)
-      }))
-    );
-    setSelectedMcps(nextMcps);
-    setSelectedRules(
-      syncOrders(
-        detail.rules.map((item) => ({
-          resourceId: item.id,
-          name: item.name,
-          description: item.description,
-          order: item.order
-        }))
-      )
-    );
-    setMcpEditorState(
-      Object.fromEntries(
-        nextMcps.map((item) => [
-          item.resourceId,
-          {
-            value: formatOverrideEditorValue(item.configOverride),
-            error: null
-          }
-        ])
-      )
-    );
-    setExpandedMcps([]);
-  }, [form]);
-
-  useEffect(() => {
-    if (!id) {
-      void navigate('/profiles', { replace: true });
-      return;
+  const saveMutation = useMutation({
+    mutationFn: async (payload: {
+      profile: ProfilePayload;
+      items: ProfileItemsPayload;
+    }) => {
+      await updateProfile(profileId, payload.profile);
+      return replaceProfileItems(profileId, payload.items);
+    },
+    onSuccess: async (detail) => {
+      queryClient.setQueryData(queryKeys.profiles.detail(profileId), detail);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.profiles.list()
+      });
+      void message.success('Profile saved');
     }
-
-    setLoading(true);
-    void Promise.all([
-      getProfile(id),
-      listResources('skills'),
-      listResources('mcps'),
-      listResources('rules')
-    ])
-      .then(([detail, skills, mcps, rules]) => {
-        setCatalog({ skills, mcps, rules });
-        applyProfileDetail(detail);
-      })
-      .catch((error) => {
-        handleError(error);
-        void navigate('/profiles');
-      })
-      .finally(() => setLoading(false));
-  }, [applyProfileDetail, handleError, id, navigate]);
+  });
 
   const selectedSkillIds = useMemo(
     () => new Set(selectedSkills.map((item) => item.resourceId)),
@@ -544,30 +698,63 @@ export function ProfileEditorPage() {
   );
   const availableRules = useMemo(
     () =>
-      filterAvailableResources(catalog.rules, selectedRuleIds, deferredRuleSearch),
+      filterAvailableResources(
+        catalog.rules,
+        selectedRuleIds,
+        deferredRuleSearch
+      ),
     [catalog.rules, deferredRuleSearch, selectedRuleIds]
   );
 
-  const addSkill = (resourceId: string) => {
-    const resource = catalog.skills.find((item) => item.id === resourceId);
-    if (!resource || selectedSkillIds.has(resourceId)) {
-      return;
-    }
+  const updateSearchValue = useCallback(
+    (key: keyof SearchState, value: string) => {
+      setSearchState((current) => ({ ...current, [key]: value }));
+    },
+    []
+  );
 
-    setSelectedSkills((current) =>
-      syncOrders([
-        ...current,
-        {
-          resourceId,
-          name: resource.name,
-          description: resource.description,
-          order: current.length
-        }
-      ])
-    );
-  };
+  const addBaseResource = useCallback(
+    (
+      resourceId: string,
+      resources: Array<{ id: string; name: string; description: string | null }>,
+      selectedIds: Set<string>,
+      setItems: React.Dispatch<React.SetStateAction<SelectedBaseItem[]>>
+    ) => {
+      const resource = resources.find((item) => item.id === resourceId);
+      if (!resource || selectedIds.has(resourceId)) {
+        return;
+      }
 
-  const addMcp = (resourceId: string) => {
+      setItems((current) =>
+        syncOrders([
+          ...current,
+          {
+            resourceId,
+            name: resource.name,
+            description: resource.description,
+            order: current.length
+          }
+        ])
+      );
+    },
+    []
+  );
+
+  const addSkill = useCallback(
+    (resourceId: string) => {
+      addBaseResource(resourceId, catalog.skills, selectedSkillIds, setSelectedSkills);
+    },
+    [addBaseResource, catalog.skills, selectedSkillIds]
+  );
+
+  const addRule = useCallback(
+    (resourceId: string) => {
+      addBaseResource(resourceId, catalog.rules, selectedRuleIds, setSelectedRules);
+    },
+    [addBaseResource, catalog.rules, selectedRuleIds]
+  );
+
+  const addMcp = useCallback((resourceId: string) => {
     const resource = catalog.mcps.find((item) => item.id === resourceId);
     if (!resource || selectedMcpIds.has(resourceId)) {
       return;
@@ -593,28 +780,9 @@ export function ProfileEditorPage() {
         error: null
       }
     }));
-  };
+  }, [catalog.mcps, selectedMcpIds]);
 
-  const addRule = (resourceId: string) => {
-    const resource = catalog.rules.find((item) => item.id === resourceId);
-    if (!resource || selectedRuleIds.has(resourceId)) {
-      return;
-    }
-
-    setSelectedRules((current) =>
-      syncOrders([
-        ...current,
-        {
-          resourceId,
-          name: resource.name,
-          description: resource.description,
-          order: current.length
-        }
-      ])
-    );
-  };
-
-  const updateMcpOverride = (resourceId: string, value: string) => {
+  const updateMcpOverride = useCallback((resourceId: string, value: string) => {
     const parsed = parseOverrideEditorValue(value);
 
     setMcpEditorState((current) => ({
@@ -631,13 +799,114 @@ export function ProfileEditorPage() {
           : item
       )
     );
-  };
+  }, []);
+
+  const removeSkill = useCallback((resourceId: string) => {
+    setSelectedSkills((current) => removeSelectedItem(current, resourceId));
+  }, []);
+
+  const removeRule = useCallback((resourceId: string) => {
+    setSelectedRules((current) => removeSelectedItem(current, resourceId));
+  }, []);
+
+  const removeMcp = useCallback((resourceId: string) => {
+    setSelectedMcps((current) => removeSelectedItem(current, resourceId));
+    setExpandedMcps((current) => current.filter((item) => item !== resourceId));
+    setMcpEditorState((current) => {
+      const next = { ...current };
+      delete next[resourceId];
+      return next;
+    });
+  }, []);
+
+  const reorderSkills = useCallback((activeId: string, overId: string) => {
+    setSelectedSkills((current) =>
+      reorderSelectedItems(current, activeId, overId)
+    );
+  }, []);
+
+  const reorderMcps = useCallback((activeId: string, overId: string) => {
+    setSelectedMcps((current) => reorderSelectedItems(current, activeId, overId));
+  }, []);
+
+  const reorderRules = useCallback((activeId: string, overId: string) => {
+    setSelectedRules((current) =>
+      reorderSelectedItems(current, activeId, overId)
+    );
+  }, []);
+
+  const baseSections = useMemo<BaseSectionConfig[]>(
+    () => [
+      {
+        key: 'skills',
+        title: 'Skills',
+        emptyAvailableText: '没有可添加的 Skill',
+        emptySelectedText: '还没有选中的 Skill',
+        searchValue: searchState.skills,
+        onSearchChange: (value) => updateSearchValue('skills', value),
+        availableItems: toAvailableItems(availableSkills),
+        selectedItems: selectedSkills,
+        onAdd: addSkill,
+        onRemove: removeSkill,
+        onReorder: reorderSkills
+      },
+      {
+        key: 'rules',
+        title: 'Rules',
+        emptyAvailableText: '没有可添加的 Rule',
+        emptySelectedText: '还没有选中的 Rule',
+        searchValue: searchState.rules,
+        onSearchChange: (value) => updateSearchValue('rules', value),
+        availableItems: toAvailableItems(availableRules),
+        selectedItems: selectedRules,
+        onAdd: addRule,
+        onRemove: removeRule,
+        onReorder: reorderRules
+      }
+    ],
+    [
+      addRule,
+      addSkill,
+      availableRules,
+      availableSkills,
+      removeRule,
+      removeSkill,
+      reorderRules,
+      reorderSkills,
+      searchState.rules,
+      searchState.skills,
+      selectedRules,
+      selectedSkills,
+      updateSearchValue
+    ]
+  );
+
+  const mcpSection = useMemo<McpSectionConfig>(
+    () => ({
+      key: 'mcps',
+      title: 'MCPs',
+      emptyAvailableText: '没有可添加的 MCP',
+      emptySelectedText: '还没有选中的 MCP',
+      searchValue: searchState.mcps,
+      onSearchChange: (value) => updateSearchValue('mcps', value),
+      availableItems: toAvailableItems(availableMcps, (item) => item.content.command),
+      selectedItems: selectedMcps,
+      onAdd: addMcp,
+      onRemove: removeMcp,
+      onReorder: reorderMcps
+    }),
+    [
+      addMcp,
+      availableMcps,
+      removeMcp,
+      reorderMcps,
+      searchState.mcps,
+      selectedMcps,
+      updateSearchValue
+    ]
+  );
 
   const saveProfile = async () => {
-    if (!id) {
-      return;
-    }
-
     const invalidOverride = Object.values(mcpEditorState).find(
       (item) => item.error
     );
@@ -663,21 +932,19 @@ export function ProfileEditorPage() {
       selectedRules
     );
 
-    setSaving(true);
     try {
-      await updateProfile(id, profilePayload);
-      const detail = await replaceProfileItems(id, itemsPayload);
-      applyProfileDetail(detail);
-      void message.success('Profile saved');
+      await saveMutation.mutateAsync({
+        profile: profilePayload,
+        items: itemsPayload
+      });
     } catch (error) {
       handleError(error);
-    } finally {
-      setSaving(false);
     }
   };
+  const saving = saveMutation.isPending;
 
   return (
-    <Card className="page-card" loading={loading}>
+    <Card className="page-card">
       <div className="page-card__header">
         <div>
           <Typography.Title level={2} className="page-card__title">
@@ -688,12 +955,7 @@ export function ProfileEditorPage() {
           </Typography.Paragraph>
         </div>
         <Space>
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() => void navigate('/profiles')}
-          >
-            Back
-          </Button>
+          <Button icon={<ArrowLeftOutlined />} onClick={onBack}>Back</Button>
           <Button type="primary" loading={saving} onClick={() => void saveProfile()}>
             Save
           </Button>
@@ -703,6 +965,7 @@ export function ProfileEditorPage() {
       <Form<ProfileEditorFormValues>
         layout="vertical"
         form={form}
+        initialValues={initialValues}
         className="profile-editor__form"
       >
         <div className="profile-editor__form-grid">
@@ -720,85 +983,48 @@ export function ProfileEditorPage() {
       </Form>
 
       <div className="profile-editor__sections">
-        <Card className="profile-editor__section-card">
-          <Typography.Title level={3}>Skills</Typography.Title>
-          <div className="profile-editor__section-grid">
-            <AvailableResourceList
-              title="可选资源"
-              searchValue={searchState.skills}
-              onSearchChange={(value) =>
-                setSearchState((current) => ({ ...current, skills: value }))
-              }
-              items={availableSkills.map((item) => ({
-                id: item.id,
-                name: item.name,
-                description: item.description
-              }))}
-              emptyText="没有可添加的 Skill"
-              onAdd={addSkill}
-            />
-            <SelectedResourceList
-              title="已选资源"
-              emptyText="还没有选中的 Skill"
-              items={selectedSkills}
-              onRemove={(resourceId) =>
-                setSelectedSkills((current) =>
-                  syncOrders(
-                    current.filter((item) => item.resourceId !== resourceId)
-                  )
-                )
-              }
-              onReorder={(activeId, overId) =>
-                setSelectedSkills((current) =>
-                  reorderSelectedItems(current, activeId, overId)
-                )
-              }
-            />
-          </div>
-        </Card>
+        {baseSections
+          .filter((section) => section.key === 'skills')
+          .map((section) => (
+            <Card key={section.key} className="profile-editor__section-card">
+              <Typography.Title level={3}>{section.title}</Typography.Title>
+              <div className="profile-editor__section-grid">
+                <AvailableResourceList
+                  title="可选资源"
+                  searchValue={section.searchValue}
+                  onSearchChange={section.onSearchChange}
+                  items={section.availableItems}
+                  emptyText={section.emptyAvailableText}
+                  onAdd={section.onAdd}
+                />
+                <SelectedResourceList
+                  title="已选资源"
+                  emptyText={section.emptySelectedText}
+                  items={section.selectedItems}
+                  onRemove={section.onRemove}
+                  onReorder={section.onReorder}
+                />
+              </div>
+            </Card>
+          ))}
 
         <Card className="profile-editor__section-card">
-          <Typography.Title level={3}>MCPs</Typography.Title>
+          <Typography.Title level={3}>{mcpSection.title}</Typography.Title>
           <div className="profile-editor__section-grid">
             <AvailableResourceList
               title="可选资源"
-              searchValue={searchState.mcps}
-              onSearchChange={(value) =>
-                setSearchState((current) => ({ ...current, mcps: value }))
-              }
-              items={availableMcps.map((item) => ({
-                id: item.id,
-                name: item.name,
-                description: item.description,
-                meta: item.content.command
-              }))}
-              emptyText="没有可添加的 MCP"
-              onAdd={addMcp}
+              searchValue={mcpSection.searchValue}
+              onSearchChange={mcpSection.onSearchChange}
+              items={mcpSection.availableItems}
+              emptyText={mcpSection.emptyAvailableText}
+              onAdd={mcpSection.onAdd}
             />
             <SelectedResourceList
               title="已选资源"
-              emptyText="还没有选中的 MCP"
-              items={selectedMcps}
-              onRemove={(resourceId) => {
-                setSelectedMcps((current) =>
-                  syncOrders(
-                    current.filter((item) => item.resourceId !== resourceId)
-                  )
-                );
-                setExpandedMcps((current) =>
-                  current.filter((item) => item !== resourceId)
-                );
-                setMcpEditorState((current) => {
-                  const next = { ...current };
-                  delete next[resourceId];
-                  return next;
-                });
-              }}
-              onReorder={(activeId, overId) =>
-                setSelectedMcps((current) =>
-                  reorderSelectedItems(current, activeId, overId)
-                )
-              }
+              emptyText={mcpSection.emptySelectedText}
+              items={mcpSection.selectedItems}
+              onRemove={mcpSection.onRemove}
+              onReorder={mcpSection.onReorder}
               renderMeta={(item) => item.command}
               renderDetails={(item) => {
                 const isExpanded = expandedMcps.includes(item.resourceId);
@@ -846,42 +1072,30 @@ export function ProfileEditorPage() {
           </div>
         </Card>
 
-        <Card className="profile-editor__section-card">
-          <Typography.Title level={3}>Rules</Typography.Title>
-          <div className="profile-editor__section-grid">
-            <AvailableResourceList
-              title="可选资源"
-              searchValue={searchState.rules}
-              onSearchChange={(value) =>
-                setSearchState((current) => ({ ...current, rules: value }))
-              }
-              items={availableRules.map((item) => ({
-                id: item.id,
-                name: item.name,
-                description: item.description
-              }))}
-              emptyText="没有可添加的 Rule"
-              onAdd={addRule}
-            />
-            <SelectedResourceList
-              title="已选资源"
-              emptyText="还没有选中的 Rule"
-              items={selectedRules}
-              onRemove={(resourceId) =>
-                setSelectedRules((current) =>
-                  syncOrders(
-                    current.filter((item) => item.resourceId !== resourceId)
-                  )
-                )
-              }
-              onReorder={(activeId, overId) =>
-                setSelectedRules((current) =>
-                  reorderSelectedItems(current, activeId, overId)
-                )
-              }
-            />
-          </div>
-        </Card>
+        {baseSections
+          .filter((section) => section.key === 'rules')
+          .map((section) => (
+            <Card key={section.key} className="profile-editor__section-card">
+              <Typography.Title level={3}>{section.title}</Typography.Title>
+              <div className="profile-editor__section-grid">
+                <AvailableResourceList
+                  title="可选资源"
+                  searchValue={section.searchValue}
+                  onSearchChange={section.onSearchChange}
+                  items={section.availableItems}
+                  emptyText={section.emptyAvailableText}
+                  onAdd={section.onAdd}
+                />
+                <SelectedResourceList
+                  title="已选资源"
+                  emptyText={section.emptySelectedText}
+                  items={section.selectedItems}
+                  onRemove={section.onRemove}
+                  onReorder={section.onReorder}
+                />
+              </div>
+            </Card>
+          ))}
       </div>
     </Card>
   );
