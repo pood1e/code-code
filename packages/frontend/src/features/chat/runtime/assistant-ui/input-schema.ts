@@ -53,14 +53,18 @@ export function buildAdditionalInputInitialValues(fields: RunnerConfigField[]) {
 
 export function buildStructuredMessagePayload({
   schema,
+  runtimeSchema,
   primaryField,
   composerText,
-  additionalValues
+  additionalValues,
+  runtimeValues
 }: {
   schema: Extract<SupportedRunnerConfigSchema, { supported: true }>;
+  runtimeSchema: SupportedRunnerConfigSchema;
   primaryField: RunnerConfigField;
   composerText: string;
   additionalValues: Record<string, unknown>;
+  runtimeValues: Record<string, unknown>;
 }) {
   const normalizedInput = normalizeRunnerConfigValues(schema.fields, {
     ...additionalValues,
@@ -72,8 +76,26 @@ export function buildStructuredMessagePayload({
     throw new Error(validationResult.error.issues[0]?.message ?? '消息输入校验失败');
   }
 
+  let finalRuntimeConfig: Record<string, unknown> | undefined = undefined;
+  if (runtimeSchema.supported && runtimeSchema.fields.length > 0) {
+    const normalizedRuntime = normalizeRunnerConfigValues(
+      runtimeSchema.fields,
+      runtimeValues
+    );
+    const runtimeValidationResult = runtimeSchema.validationSchema.safeParse(
+      normalizedRuntime
+    );
+    if (!runtimeValidationResult.success) {
+      throw new Error(
+        runtimeValidationResult.error.issues[0]?.message ?? '运行时参数校验失败'
+      );
+    }
+    finalRuntimeConfig = runtimeValidationResult.data;
+  }
+
   return {
-    input: validationResult.data
+    input: validationResult.data,
+    runtimeConfig: finalRuntimeConfig
   } satisfies SendSessionMessageInput;
 }
 

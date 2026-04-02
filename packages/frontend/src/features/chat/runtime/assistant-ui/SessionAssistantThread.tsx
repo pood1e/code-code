@@ -23,6 +23,7 @@ import {
   SendHorizontal,
   Square
 } from 'lucide-react';
+import React from 'react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +55,8 @@ import type {
 import { buildSessionAssistantMessageRecords } from './thread-adapter';
 
 const rawJsonTemplate = '{\n  "prompt": ""\n}';
+
+const ThreadConfigContext = React.createContext<{ assistantName?: string }>({});
 
 function formatDomainMessageStatus(status: MessageStatus) {
   switch (status) {
@@ -106,6 +109,7 @@ function useCurrentMessageMetadata() {
 function MessageHeader({ isUser }: { isUser: boolean }) {
   const createdAt = useAuiState((state) => state.message.createdAt);
   const metadata = useCurrentMessageMetadata();
+  const { assistantName } = React.useContext(ThreadConfigContext);
   const statusLabel = metadata?.cancelledAt
     ? '已中止'
     : metadata
@@ -115,17 +119,18 @@ function MessageHeader({ isUser }: { isUser: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <Badge variant={isUser ? 'outline' : 'secondary'}>
-          {isUser ? 'User' : 'Assistant'}
-        </Badge>
+        <div className="flex size-6 items-center justify-center rounded-sm bg-foreground/10 text-[10px] font-bold">
+          {isUser ? 'ME' : 'AI'}
+        </div>
+        <span className="text-sm font-semibold text-foreground">
+          {isUser ? 'You' : (assistantName || 'Assistant')}
+        </span>
         <span className="text-xs text-muted-foreground">
           {createdAt.toLocaleString()}
         </span>
       </div>
       {statusLabel ? (
-        <Badge variant="outline">
-          {statusLabel}
-        </Badge>
+        <span className="text-xs text-muted-foreground/60">{statusLabel}</span>
       ) : null}
     </div>
   );
@@ -206,7 +211,7 @@ function MessageCancelledNotice() {
 
 function AssistantTextPart({ text }: { text: string }) {
   return (
-    <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{text}</p>
+    <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/90">{text}</p>
   );
 }
 
@@ -285,20 +290,20 @@ function AssistantEmptyPart({
 
 function UserMessageBubble() {
   return (
-    <MessagePrimitive.Root className="flex justify-end">
-      <div className="max-w-[85%] rounded-2xl border border-border/40 bg-background/80 p-4">
+    <MessagePrimitive.Root className="group flex w-full flex-col items-center py-6">
+      <div className="flex w-full max-w-3xl flex-col gap-1 px-4 sm:px-0">
         <MessageHeader isUser />
-        <div className="mt-3 [&>*+*]:mt-3">
+        <div className="mt-1 pl-8">
           <MessagePrimitive.Parts
             components={{
               Text: AssistantTextPart
             }}
           />
         </div>
-        <div className="mt-3 flex justify-end">
+        <div className="mt-2 flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
           <ActionBarPrimitive.Edit asChild>
-            <Button variant="ghost" size="sm">
-              <Pencil />
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground">
+              <Pencil className="mr-1.5 size-3" />
               编辑
             </Button>
           </ActionBarPrimitive.Edit>
@@ -313,33 +318,38 @@ function UserMessageEditComposer() {
   const value = useAuiState((state) => state.message.composer.text);
 
   return (
-    <MessagePrimitive.Root className="flex justify-end">
-      <div className="w-full max-w-[85%] rounded-2xl border border-border/40 bg-background/90 p-4">
-        <p className="text-sm font-semibold text-foreground">编辑消息</p>
-        <Textarea
-          className="mt-3"
-          rows={6}
-          value={value}
-          onChange={(event) => {
-            aui.message().composer().setText(event.target.value);
-          }}
-        />
-        <div className="mt-3 flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              aui.message().composer().cancel();
+    <MessagePrimitive.Root className="flex w-full flex-col items-center py-6">
+      <div className="flex w-full max-w-3xl flex-col gap-3 px-4 sm:px-0">
+        <MessageHeader isUser />
+        <div className="pl-8">
+          <Textarea
+            className="min-h-24 resize-y rounded-xl border border-input bg-background/50 p-3 text-[15px] focus-visible:ring-1 focus-visible:ring-ring"
+            rows={4}
+            value={value}
+            onChange={(event) => {
+              aui.message().composer().setText(event.target.value);
             }}
-          >
-            取消
-          </Button>
-          <Button
-            onClick={() => {
-              aui.message().composer().send();
-            }}
-          >
-            保存并重跑
-          </Button>
+          />
+          <div className="mt-3 flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                aui.message().composer().cancel();
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              size="sm"
+              className="rounded-full"
+              onClick={() => {
+                aui.message().composer().send();
+              }}
+            >
+              保存并重跑
+            </Button>
+          </div>
         </div>
       </div>
     </MessagePrimitive.Root>
@@ -350,10 +360,10 @@ function AssistantMessageBubble() {
   const isLast = useAuiState((state) => state.message.isLast);
 
   return (
-    <MessagePrimitive.Root className="flex justify-start">
-      <div className="max-w-[88%] rounded-2xl border border-border/40 bg-background/80 p-4">
+    <MessagePrimitive.Root className="group flex w-full flex-col items-center py-6">
+      <div className="flex w-full max-w-3xl flex-col gap-1 px-4 sm:px-0">
         <MessageHeader isUser={false} />
-        <div className="mt-3 [&>*+*]:mt-3">
+        <div className="mt-1 pl-8 [&>*+*]:mt-4">
           <MessagePrimitive.Parts
             components={{
               Text: AssistantTextPart,
@@ -365,14 +375,16 @@ function AssistantMessageBubble() {
             }}
           />
         </div>
-        <MessageCancelledNotice />
-        <MessageErrorAlert />
-        <MessageUsageFooter />
+        <div className="pl-8">
+          <MessageCancelledNotice />
+          <MessageErrorAlert />
+          <MessageUsageFooter />
+        </div>
         {isLast ? (
-          <div className="mt-3 flex justify-end">
+          <div className="mt-2 flex justify-start pl-8 opacity-0 transition-opacity group-hover:opacity-100">
             <ActionBarPrimitive.Reload asChild>
-              <Button variant="ghost" size="sm">
-                <RotateCcw />
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground">
+                <RotateCcw className="mr-1.5 size-3" />
                 重跑
               </Button>
             </ActionBarPrimitive.Reload>
@@ -419,13 +431,13 @@ function AdditionalInputFields({
   if (fields.length === 0) {
     return null;
   }
-
   return (
-    <details className="rounded-xl border border-border/40 bg-muted/20">
-      <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium text-foreground">
-        高级输入参数
+    <details className="group relative">
+      <summary className="flex cursor-pointer list-none items-center rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-muted/50 hover:text-foreground">
+        高级输入
       </summary>
-      <div className="space-y-3 border-t border-border/60 px-3 py-3">
+      <div className="absolute bottom-full left-0 z-10 mb-2 w-80 max-h-80 overflow-y-auto rounded-xl border border-border/60 bg-background/95 p-3 shadow-xl backdrop-blur group-open:animate-in group-open:fade-in-0 group-open:zoom-in-95">
+        <div className="space-y-4">
         {fields.map((field) => {
           if (field.kind === 'boolean') {
             return (
@@ -509,6 +521,7 @@ function AdditionalInputFields({
             </div>
           );
         })}
+        </div>
       </div>
     </details>
   );
@@ -518,77 +531,131 @@ function ThreadComposer({
   mode,
   additionalFields,
   additionalValues,
+  runtimeFields,
+  runtimeValues,
   composerError,
-  onAdditionalValueChange
+  onAdditionalValueChange,
+  onRuntimeValueChange
 }: {
   mode: 'text' | 'raw-json';
   additionalFields: RunnerConfigField[];
   additionalValues: Record<string, unknown>;
+  runtimeFields: RunnerConfigField[];
+  runtimeValues: Record<string, unknown>;
   composerError: string | null;
   onAdditionalValueChange: (fieldName: string, value: unknown) => void;
+  onRuntimeValueChange: (fieldName: string, value: unknown) => void;
 }) {
   const isRunning = useAuiState((state) => state.thread.isRunning);
   const isDisabled = useAuiState((state) => state.thread.isDisabled);
+  const { assistantName } = React.useContext(ThreadConfigContext);
 
   return (
-    <div className="border-t border-border/40 bg-background/98 px-5 py-4 backdrop-blur">
+    <div className="w-full bg-gradient-to-t from-background via-background to-transparent pb-6 pt-4">
+      <div className="mx-auto flex w-full max-w-3xl flex-col px-4 sm:px-0">
         {isRunning ? (
-          <div className="flex justify-end">
-            <Badge variant="secondary">
-              <LoaderCircle className="mr-1 size-3 animate-spin" />
-              输出中
+          <div className="mb-3 flex justify-center">
+            <Badge variant="secondary" className="shadow-sm">
+              <LoaderCircle className="mr-1.5 size-3 animate-spin" />
+              正在生成...
             </Badge>
           </div>
         ) : null}
 
         {composerError ? (
-          <Alert variant="destructive" className={cn(isRunning ? 'mt-4' : undefined)}>
+          <Alert variant="destructive" className="mb-3">
             <AlertTitle>发送失败</AlertTitle>
             <AlertDescription>{composerError}</AlertDescription>
           </Alert>
         ) : null}
 
-        <ComposerPrimitive.Root className={cn(isRunning || composerError ? 'mt-4' : undefined, 'space-y-3')}>
+        <ComposerPrimitive.Root className="relative flex flex-col rounded-[1.5rem] border border-input bg-background shadow-sm transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
           <RawJsonTemplateSync enabled={mode === 'raw-json'} />
           <ComposerPrimitive.Input
-            className={cn(
-              'flex min-h-24 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm leading-6 outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50'
-            )}
-            placeholder={mode === 'text' ? '输入消息' : '输入 JSON'}
-            minRows={mode === 'text' ? 4 : 7}
+            className="w-full resize-none border-none bg-transparent px-5 py-4 text-[15px] outline-none placeholder:text-muted-foreground/75 focus:ring-0"
+            placeholder={mode === 'text' ? `给 ${assistantName || 'AI'} 发送消息...` : '输入 JSON'}
+            minRows={mode === 'text' ? 1 : 4}
             maxRows={14}
             submitMode="enter"
           />
-          {mode === 'text' ? (
-            <AdditionalInputFields
-              fields={additionalFields}
-              values={additionalValues}
-              disabled={isDisabled}
-              onChange={onAdditionalValueChange}
-            />
-          ) : null}
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-xs text-muted-foreground">
-              {isDisabled && !isRunning ? '当前 Session 暂不可发送。' : null}
+
+          <div className="flex items-end justify-between px-3 pb-3 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {runtimeFields.length > 0 ? (
+                <>
+                  {runtimeFields.map((field) => {
+                    if (field.kind === 'enum') {
+                      const val = getRunnerConfigFieldValue(field, runtimeValues[field.name]);
+                      return (
+                        <select
+                          key={field.name}
+                          value={val}
+                          disabled={isDisabled}
+                          onChange={(e) => onRuntimeValueChange(field.name, e.target.value)}
+                          className="h-8 max-w-[140px] cursor-pointer appearance-none rounded-full bg-muted/30 px-3 py-1 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          title={field.label}
+                        >
+                          {!field.required ? <option value="">{field.label}</option> : null}
+                          {field.enumOptions?.map((option) => (
+                            <option key={String(option.value)} value={String(option.value)}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    }
+                    
+                    const val = getRunnerConfigFieldValue(field, runtimeValues[field.name]);
+                    return (
+                      <Input
+                        key={field.name}
+                        placeholder={field.label}
+                        value={val}
+                        disabled={isDisabled}
+                        onChange={(e) => onRuntimeValueChange(field.name, e.target.value)}
+                        className="h-8 max-w-[120px] rounded-full border-none bg-muted/30 px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    );
+                  })}
+                </>
+              ) : null}
+
+              {mode === 'text' && additionalFields.length > 0 ? (
+                <AdditionalInputFields
+                  fields={additionalFields}
+                  values={additionalValues}
+                  disabled={isDisabled}
+                  onChange={onAdditionalValueChange}
+                />
+              ) : null}
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-2 pl-2">
+              {isDisabled && !isRunning ? (
+                <span className="mr-2 text-xs text-muted-foreground">会话暂不可用</span>
+              ) : null}
               {isRunning ? (
                 <ComposerPrimitive.Cancel asChild>
-                  <Button variant="outline" type="button">
-                    <Square />
-                    中止
+                  <Button variant="outline" size="icon" className="size-8 rounded-full" title="中止">
+                    <Square className="size-3" fill="currentColor" />
                   </Button>
                 </ComposerPrimitive.Cancel>
               ) : null}
               <ComposerPrimitive.Send asChild>
-                <Button type="submit" disabled={isDisabled}>
-                  <SendHorizontal />
-                  发送
+                <Button 
+                  type="submit" 
+                  disabled={isDisabled}
+                  size="icon"
+                  className="size-8 rounded-full transition-transform active:scale-95"
+                  title="发送"
+                >
+                  <SendHorizontal className="size-4" />
                 </Button>
               </ComposerPrimitive.Send>
             </div>
           </div>
         </ComposerPrimitive.Root>
+      </div>
     </div>
   );
 }
@@ -635,10 +702,30 @@ export function SessionAssistantThread({
     () => buildAdditionalInputInitialValues(additionalInputFields),
     [additionalInputFields]
   );
+  
+  const runtimeSchema = useMemo(
+    () => parseRunnerConfigSchema(runnerType?.runtimeConfigSchema),
+    [runnerType]
+  );
+  const structuredRuntimeSchema = runtimeSchema.supported ? runtimeSchema : undefined;
+  const runtimeFields = useMemo(() => structuredRuntimeSchema?.fields ?? [], [structuredRuntimeSchema]);
+  
+  const initialRuntimeValues = useMemo(() => {
+    const defaults = buildAdditionalInputInitialValues(runtimeFields);
+    return session.defaultRuntimeConfig
+      ? { ...defaults, ...session.defaultRuntimeConfig }
+      : defaults;
+  }, [runtimeFields, session.defaultRuntimeConfig]);
+
   const [additionalInputValues, setAdditionalInputValues] =
     useState<Record<string, unknown>>(initialAdditionalInputValues);
+  const [runtimeValues, setRuntimeValues] = 
+    useState<Record<string, unknown>>(initialRuntimeValues);
+    
   const [composerError, setComposerError] = useState<string | null>(null);
   const supportsTextComposer = Boolean(structuredInputSchema && primaryInputField);
+  const composerMode = !runnerType ? 'text' : supportsTextComposer ? 'text' : 'raw-json';
+  
   const runtimeMessages = useMemo(
     () => buildSessionAssistantMessageRecords(messages, runtimeState),
     [messages, runtimeState]
@@ -655,9 +742,11 @@ export function SessionAssistantThread({
           const payload = supportsTextComposer
             ? buildStructuredMessagePayload({
                 schema: structuredInputSchema!,
+                runtimeSchema: structuredRuntimeSchema ?? { supported: false as const, reason: '不支持' },
                 primaryField: primaryInputField!,
                 composerText,
-                additionalValues: additionalInputValues
+                additionalValues: additionalInputValues,
+                runtimeValues
               })
             : (() => {
                 const parsed = parseSessionInputText(composerText);
@@ -689,12 +778,14 @@ export function SessionAssistantThread({
         const payload = supportsTextComposer
           ? buildStructuredMessagePayload({
               schema: structuredInputSchema!,
+              runtimeSchema: structuredRuntimeSchema ?? { supported: false as const, reason: '不支持' },
               primaryField: primaryInputField!,
               composerText,
               additionalValues: omitPrimaryFieldValue(
                 originalMessage.inputContent,
                 primaryInputField?.name
-              )
+              ),
+              runtimeValues
             })
           : (() => {
               const parsed = parseSessionInputText(composerText);
@@ -707,42 +798,52 @@ export function SessionAssistantThread({
         await onEdit(messageId, payload);
       }}
     >
-      <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
-        <ThreadPrimitive.Viewport
-          className="min-h-0 flex-1 overflow-y-auto px-5 py-5"
-          autoScroll
-        >
-          {messages.length === 0 ? (
-            <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 text-center">
-              <p className="text-base font-medium text-foreground">开始对话</p>
-              <p className="text-sm text-muted-foreground">消息会显示在这里</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <ThreadPrimitive.Messages
-                components={{
-                  UserMessage: UserMessageBubble,
-                  UserEditComposer: UserMessageEditComposer,
-                  AssistantMessage: AssistantMessageBubble
-                }}
-              />
-            </div>
-          )}
-        </ThreadPrimitive.Viewport>
+      <ThreadConfigContext.Provider value={{ assistantName: runnerType?.name || 'Agent' }}>
+        <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
+          <ThreadPrimitive.Viewport
+            className="min-h-0 flex-1 overflow-y-auto px-5 py-5"
+            autoScroll
+          >
+            {messages.length === 0 ? (
+              <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 text-center">
+                <p className="text-base font-medium text-foreground">开始对话</p>
+                <p className="text-sm text-muted-foreground">消息会显示在这里</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <ThreadPrimitive.Messages
+                  components={{
+                    UserMessage: UserMessageBubble,
+                    UserEditComposer: UserMessageEditComposer,
+                    AssistantMessage: AssistantMessageBubble
+                  }}
+                />
+              </div>
+            )}
+          </ThreadPrimitive.Viewport>
 
-        <ThreadComposer
-          mode={supportsTextComposer ? 'text' : 'raw-json'}
-          additionalFields={additionalInputFields}
-          additionalValues={additionalInputValues}
-          composerError={composerError}
-          onAdditionalValueChange={(fieldName, value) => {
-            setAdditionalInputValues((current) => ({
-              ...current,
-              [fieldName]: value
-            }));
-          }}
-        />
-      </ThreadPrimitive.Root>
+          <ThreadComposer
+            mode={composerMode}
+            additionalFields={additionalInputFields}
+            additionalValues={additionalInputValues}
+            runtimeFields={runtimeFields}
+            runtimeValues={runtimeValues}
+            composerError={composerError}
+            onAdditionalValueChange={(fieldName, value) => {
+              setAdditionalInputValues((current) => ({
+                ...current,
+                [fieldName]: value
+              }));
+            }}
+            onRuntimeValueChange={(fieldName, value) => {
+              setRuntimeValues((current) => ({
+                ...current,
+                [fieldName]: value
+              }));
+            }}
+          />
+        </ThreadPrimitive.Root>
+      </ThreadConfigContext.Provider>
     </SessionAssistantRuntimeProvider>
   );
 }

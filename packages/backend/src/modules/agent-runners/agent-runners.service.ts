@@ -121,4 +121,16 @@ export class AgentRunnersService {
     await this.prisma.agentRunner.delete({ where: { id } });
     return null;
   }
+
+  async checkHealth(id: string): Promise<{ status: 'online' | 'offline' | 'unknown' }> {
+    const runner = await this.getById(id);
+    const runnerType = this.runnerTypeRegistry.get(runner.type);
+    
+    if (!runnerType) {
+      return { status: 'unknown' };
+    }
+
+    const status = await runnerType.checkHealth(runner.runnerConfig);
+    return { status };
+  }
 }

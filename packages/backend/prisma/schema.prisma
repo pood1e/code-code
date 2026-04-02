@@ -121,6 +121,7 @@ model AgentSession {
   activeAssistantMessageId String?
   platformSessionConfig  Json
   runnerSessionConfig    Json
+  defaultRuntimeConfig   Json?
   runnerState            Json?
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt

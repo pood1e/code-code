@@ -39,7 +39,10 @@ export class SessionMapper {
       platformSessionConfig: platformSessionConfigSchema.parse(
         sanitizeJson(session.platformSessionConfig)
       ),
-      runnerSessionConfig: asPlainObject(session.runnerSessionConfig)
+      runnerSessionConfig: asPlainObject(session.runnerSessionConfig),
+      defaultRuntimeConfig: session.defaultRuntimeConfig
+        ? asPlainObject(session.defaultRuntimeConfig)
+        : null
     };
   }
 

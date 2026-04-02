@@ -49,13 +49,14 @@ export class SessionsCommandService {
       parsed.runnerSessionConfig,
       'Invalid runnerSessionConfig'
     ) as Record<string, unknown>;
-    const initialInput = parsed.initialInput
+    const initialInput = parsed.initialMessage?.input
       ? this.sessionRuntimeService.parseRunnerInputOrThrow(
           runnerType,
-          parsed.initialInput,
+          parsed.initialMessage.input,
           'Invalid initialInput'
         )
       : undefined;
+    const initialRuntimeConfig = parsed.initialMessage?.runtimeConfig;
 
     await this.sessionsQueryService.assertResourceIdsExist('skill', parsed.skillIds);
     await this.sessionsQueryService.assertResourceIdsExist('rule', parsed.ruleIds);
@@ -82,6 +83,7 @@ export class SessionsCommandService {
         runnerSessionConfig: toInputJson(
           runnerSessionConfig as Prisma.InputJsonValue
         ),
+        defaultRuntimeConfig: initialRuntimeConfig ? toInputJson(initialRuntimeConfig as Prisma.InputJsonValue) : undefined,
         runnerState: toInputJson({} as Prisma.InputJsonValue)
       }
     });
@@ -95,7 +97,7 @@ export class SessionsCommandService {
 
       if (initialInput) {
         await this.withSessionSendLock(created.id, async () => {
-          await this.sessionRuntimeService.sendParsedInput(created.id, initialInput, {
+          await this.sessionRuntimeService.sendParsedInput(created.id, initialInput, initialRuntimeConfig, {
             throwOnSyncSendFailure: true
           });
         });
@@ -121,7 +123,7 @@ export class SessionsCommandService {
         sessionId,
         dto.input
       );
-      await this.sessionRuntimeService.sendParsedInput(sessionId, parsedInput);
+      await this.sessionRuntimeService.sendParsedInput(sessionId, parsedInput, dto.runtimeConfig);
       return this.sessionsQueryService.listMessages(sessionId);
     });
   }
@@ -198,6 +200,7 @@ export class SessionsCommandService {
       await this.sessionRuntimeService.sendParsedInput(
         sessionId,
         asPlainObject(lastUserMessage.inputContent),
+        {},
         {
           reuseLastUserMessage: true
         }
@@ -236,7 +239,7 @@ export class SessionsCommandService {
         dto.input
       );
       await this.truncateSessionHistoryFrom(sessionId, messageId);
-      await this.sessionRuntimeService.sendParsedInput(sessionId, parsedInput);
+      await this.sessionRuntimeService.sendParsedInput(sessionId, parsedInput, dto.runtimeConfig);
 
       return this.sessionsQueryService.getById(sessionId);
     });

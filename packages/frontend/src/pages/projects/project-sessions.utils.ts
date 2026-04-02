@@ -24,6 +24,7 @@ export const createSessionFormSchema = z.object({
   runnerSessionConfig: z.record(z.string(), z.unknown()),
   initialMessageText: z.string().trim().optional(),
   initialInputConfig: z.record(z.string(), z.unknown()),
+  initialRuntimeConfig: z.record(z.string(), z.unknown()),
   initialRawInput: z.string().optional()
 });
 
@@ -44,6 +45,7 @@ export function buildCreateSessionFormValues(): CreateSessionFormValues {
     runnerSessionConfig: {},
     initialMessageText: '',
     initialInputConfig: {},
+    initialRuntimeConfig: {},
     initialRawInput: ''
   };
 }
@@ -52,7 +54,7 @@ export function buildCreateSessionPayload(
   scopeId: string,
   values: CreateSessionFormValues,
   profileDetail?: ProfileDetail,
-  initialInput?: Record<string, unknown>
+  initialMessage?: SendSessionMessageInput
 ): CreateSessionInput {
   const profileMcpOverrides = new Map(
     (profileDetail?.mcps ?? []).map((item) => [item.id, item.configOverride])
@@ -68,7 +70,7 @@ export function buildCreateSessionPayload(
       configOverride: profileMcpOverrides.get(resourceId)
     })),
     runnerSessionConfig: values.runnerSessionConfig,
-    initialInput
+    initialMessage
   });
 }
 

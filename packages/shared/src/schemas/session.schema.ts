@@ -28,6 +28,11 @@ export const platformSessionConfigSchema = z.object({
   mcps: z.array(platformSessionMcpSchema)
 });
 
+export const sendSessionMessageInputSchema = z.object({
+  input: jsonObjectSchema,
+  runtimeConfig: jsonObjectSchema.optional()
+});
+
 export const createSessionInputSchema = z.object({
   scopeId: idSchema,
   runnerId: idSchema,
@@ -35,11 +40,7 @@ export const createSessionInputSchema = z.object({
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema),
   runnerSessionConfig: jsonObjectSchema,
-  initialInput: jsonObjectSchema.optional()
-});
-
-export const sendSessionMessageInputSchema = z.object({
-  input: jsonObjectSchema
+  initialMessage: sendSessionMessageInputSchema.optional()
 });
 
 export const editSessionMessageInputSchema = sendSessionMessageInputSchema;

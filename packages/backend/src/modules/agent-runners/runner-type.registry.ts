@@ -3,6 +3,9 @@ import type { RunnerTypeResponse } from '@agent-workbench/shared';
 import type { RunnerType } from './runner-type.interface';
 import { convertZodSchemaToJsonSchema } from '../../utils/zod-to-json-schema';
 import { ClaudeCodeRunnerType } from './runner-types/claude-code.runner-type';
+import { CursorCliRunnerType } from './runner-types/cursor-cli.runner-type';
+import { QwenCliRunnerType } from './runner-types/qwen-cli.runner-type';
+import { MockRunnerType } from './runner-types/mock.runner-type';
 
 @Injectable()
 export class RunnerTypeRegistry {
@@ -10,6 +13,9 @@ export class RunnerTypeRegistry {
 
   constructor() {
     this.register(ClaudeCodeRunnerType);
+    this.register(CursorCliRunnerType);
+    this.register(QwenCliRunnerType);
+    this.register(MockRunnerType);
   }
 
   register(runnerType: RunnerType): void {

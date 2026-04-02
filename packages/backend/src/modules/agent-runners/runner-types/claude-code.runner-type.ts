@@ -1,20 +1,21 @@
 import { z } from 'zod';
-import type { PlatformSessionConfig } from '@agent-workbench/shared';
-import type {
-  RawOutputChunk,
-  RunnerSendPayload,
-  RunnerSessionRecord,
-  RunnerType
-} from '../runner-type.interface';
+
+import { createCliRunnerType, type CliRunnerState } from '../cli/cli-runner-base';
+import type { CliProcessOptions } from '../cli/cli-process';
+import { probeClaudeCodeHealth } from '../cli/health-probes';
+import {
+  parseClaudeLine,
+  createClaudeParserState,
+  type ClaudeParserState
+} from '../cli/parsers/claude-code.parser';
+import type { RunnerSendPayload } from '../runner-type.interface';
 
 export const claudeCodeRunnerConfigSchema = z.object({
-  model: z.string().default('claude-sonnet-4-5'),
-  baseUrl: z.string().optional()
+  executorUser: z.string().optional()
 });
 
 export const claudeCodeRunnerSessionConfigSchema = z.object({
-  maxTurns: z.number().int().positive().optional(),
-  permissionMode: z.enum(['auto', 'manual']).default('auto')
+  maxTurns: z.number().int().positive().optional()
 });
 
 export const claudeCodeInputSchema = z.object({
@@ -22,12 +23,16 @@ export const claudeCodeInputSchema = z.object({
 });
 
 export const claudeCodeRuntimeConfigSchema = z.object({
-  model: z.string().optional()
+  model: z.string().default('claude-sonnet-4-5'),
+  permissionMode: z
+    .enum(['plan', 'auto', 'bypassPermissions'])
+    .default('plan')
 });
 
-export const ClaudeCodeRunnerType: RunnerType = {
+export const ClaudeCodeRunnerType = createCliRunnerType({
   id: 'claude-code',
   name: 'Claude Code',
+  materializerTarget: 'claude',
   capabilities: {
     skill: true,
     rule: true,
@@ -38,239 +43,91 @@ export const ClaudeCodeRunnerType: RunnerType = {
   inputSchema: claudeCodeInputSchema,
   runtimeConfigSchema: claudeCodeRuntimeConfigSchema,
 
-  checkHealth() {
-    return Promise.resolve<'online'>('online');
+  async checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'> {
+    const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
+    return probeClaudeCodeHealth(config.executorUser);
   },
 
-  createSession(
-    sessionId: string,
-    runnerConfig: unknown,
-    platformSessionConfig: PlatformSessionConfig,
-    runnerSessionConfig: unknown
-  ): Promise<Record<string, unknown>> {
-    void sessionId;
-    void runnerConfig;
-    void platformSessionConfig;
-    void runnerSessionConfig;
-
-    const handle = new MockRunnerSession();
-    mockRunnerSessions.set(handle.id, handle);
-
-    return Promise.resolve({ handleId: handle.id });
-  },
-
-  destroySession(session: RunnerSessionRecord): Promise<void> {
-    getMockRunnerSession(session)?.destroy();
-    removeMockRunnerSession(session);
-    return Promise.resolve();
-  },
-
-  send(
-    session: RunnerSessionRecord,
+  buildCommand(
+    runnerConfig: Record<string, unknown>,
+    _runnerSessionConfig: Record<string, unknown>,
+    cliState: CliRunnerState,
     payload: RunnerSendPayload
-  ): Promise<void> {
-    const runnerSession = getMockRunnerSession(session);
-    const parsedInput = claudeCodeInputSchema.parse(payload.input);
-    void runnerSession.enqueueResponse(payload.messageId, parsedInput);
-    return Promise.resolve();
-  },
+  ): CliProcessOptions {
+    const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
+    // const sessionConfig = claudeCodeRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const runtimeConfig = claudeCodeRuntimeConfigSchema.parse(payload.runtimeConfig);
+    const input = claudeCodeInputSchema.parse(payload.input);
 
-  output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk> {
-    return getMockRunnerSession(session).stream();
-  },
-
-  cancelOutput(session: RunnerSessionRecord): Promise<void> {
-    getMockRunnerSession(session).cancel();
-    return Promise.resolve();
-  }
-};
-
-const mockRunnerSessions = new Map<string, MockRunnerSession>();
-
-class AsyncChunkQueue<T> implements AsyncIterable<T> {
-  private readonly values: T[] = [];
-  private readonly resolvers: Array<(result: IteratorResult<T>) => void> = [];
-  private closed = false;
-
-  push(value: T) {
-    if (this.closed) {
-      return;
-    }
-
-    const resolver = this.resolvers.shift();
-    if (resolver) {
-      resolver({ value, done: false });
-      return;
-    }
-
-    this.values.push(value);
-  }
-
-  close() {
-    if (this.closed) {
-      return;
-    }
-
-    this.closed = true;
-    while (this.resolvers.length > 0) {
-      const resolver = this.resolvers.shift();
-      resolver?.({ value: undefined, done: true });
-    }
-  }
-
-  [Symbol.asyncIterator](): AsyncIterator<T> {
-    return {
-      next: () => {
-        const value = this.values.shift();
-        if (value !== undefined) {
-          return Promise.resolve({ value, done: false });
-        }
-
-        if (this.closed) {
-          return Promise.resolve({ value: undefined, done: true });
-        }
-
-        return new Promise<IteratorResult<T>>((resolve) => {
-          this.resolvers.push(resolve);
-        });
-      }
-    };
-  }
-}
-
-class MockRunnerSession {
-  readonly id = `mock_${Math.random().toString(36).slice(2)}`;
-
-  private readonly queue = new AsyncChunkQueue<RawOutputChunk>();
-  private destroyed = false;
-  private runVersion = 0;
-
-  stream() {
-    return this.queue;
-  }
-
-  cancel() {
-    this.runVersion += 1;
-  }
-
-  destroy() {
-    this.destroyed = true;
-    this.runVersion += 1;
-    this.queue.close();
-  }
-
-  async enqueueResponse(
-    messageId: string,
-    input: z.infer<typeof claudeCodeInputSchema>
-  ) {
-    const runVersion = ++this.runVersion;
-    const prompt = input.prompt.trim();
-    const messageChunks = [
-      '这是一个 Mock Session，用于打通 Session 运行时链路。',
-      `收到输入：${prompt}`,
-      '当前响应来自 claude-code 的本地模拟流，不会调用外部模型。'
+    const args: string[] = [
+      '-p', // non-interactive print mode
+      '--output-format', 'stream-json',
+      '--verbose', // required for stream-json with --print
+      '--include-partial-messages'
     ];
 
-    this.emitChunk({
-      kind: 'thinking_delta',
-      messageId,
-      timestampMs: Date.now(),
-      data: {
-        deltaText: 'Mock runner 正在整理上下文...',
-        accumulatedText: 'Mock runner 正在整理上下文...'
-      }
-    });
-    await sleep(60);
-    if (!this.isRunActive(runVersion)) {
-      return;
+    // Permission mode
+    args.push('--permission-mode', runtimeConfig.permissionMode);
+
+    // Model
+    if (runtimeConfig.model) {
+      args.push('--model', runtimeConfig.model);
     }
 
-    let accumulatedText = '';
-    for (const segment of messageChunks) {
-      accumulatedText = accumulatedText
-        ? `${accumulatedText}\n\n${segment}`
-        : segment;
-      this.emitChunk({
-        kind: 'message_delta',
-        messageId,
-        timestampMs: Date.now(),
-        data: {
-          deltaText: accumulatedText.endsWith(segment)
-            ? `${accumulatedText === segment ? '' : '\n\n'}${segment}`
-            : segment,
-          accumulatedText
-        }
-      });
-      await sleep(90);
-      if (!this.isRunActive(runVersion)) {
-        return;
-      }
+    // Session continuation
+    if (cliState.cliSessionId) {
+      args.push('--resume', cliState.cliSessionId);
     }
 
-    this.emitChunk({
-      kind: 'usage',
-      messageId,
-      timestampMs: Date.now(),
-      data: {
-        inputTokens: Math.max(prompt.length, 1),
-        outputTokens: accumulatedText.length,
-        modelId: 'mock-claude-code',
-        costUsd: 0
-      }
-    });
-    await sleep(30);
-    if (!this.isRunActive(runVersion)) {
-      return;
+    // MCP config
+    if (cliState.mcpConfigPath) {
+      args.push('--mcp-config', cliState.mcpConfigPath);
     }
 
-    this.emitChunk({
-      kind: 'message_result',
-      messageId,
-      timestampMs: Date.now(),
-      data: {
-        text: accumulatedText,
-        stopReason: 'mock_complete',
-        durationMs: 300
-      }
-    });
-  }
-
-  private emitChunk(chunk: RawOutputChunk) {
-    if (this.destroyed) {
-      return;
+    // Add context dir so Claude can see platform-injected rules/skills
+    if (cliState.contextDir) {
+      args.push('--add-dir', cliState.contextDir);
     }
 
-    this.queue.push(chunk);
+    // Prompt separator and prompt
+    args.push('--', input.prompt);
+
+    // Determine cwd: use the original workspace cwd, not the context dir
+    // Claude uses the real workspace as cwd, context dir is added via --add-dir
+    const cwd = cliState.contextDir
+      ? cliState.contextDir.split('/.agent-workbench/')[0] ?? '.'
+      : '.';
+
+    if (config.executorUser) {
+      return {
+        command: 'sudo',
+        args: ['-u', config.executorUser, '-i', 'claude', ...args],
+        cwd
+      };
+    }
+
+    return {
+      command: 'claude',
+      args,
+      cwd
+    };
+  },
+
+  parseLine(
+    line: string,
+    _messageId: string,
+    parserState: Record<string, unknown>
+  ): import('../runner-type.interface').RawOutputChunk[] {
+    return parseClaudeLine(line, parserState as unknown as ClaudeParserState);
+  },
+
+  extractSessionId(
+    parserState: Record<string, unknown>
+  ): string | null {
+    return (parserState as unknown as ClaudeParserState).sessionId ?? null;
+  },
+
+  createParserState(messageId: string): Record<string, unknown> {
+    return createClaudeParserState(messageId) as unknown as Record<string, unknown>;
   }
-
-  private isRunActive(runVersion: number) {
-    return !this.destroyed && this.runVersion === runVersion;
-  }
-}
-
-function getMockRunnerSession(session: RunnerSessionRecord) {
-  const handleId = session.runnerState.handleId;
-  if (typeof handleId !== 'string') {
-    throw new Error('Mock runner session handle is missing');
-  }
-
-  const runnerSession = mockRunnerSessions.get(handleId);
-  if (!runnerSession) {
-    throw new Error(`Mock runner session not found: ${handleId}`);
-  }
-
-  return runnerSession;
-}
-
-function removeMockRunnerSession(session: RunnerSessionRecord) {
-  const handleId = session.runnerState.handleId;
-  if (typeof handleId === 'string') {
-    mockRunnerSessions.delete(handleId);
-  }
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
+});

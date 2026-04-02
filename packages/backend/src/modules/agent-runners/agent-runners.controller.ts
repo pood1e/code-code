@@ -93,4 +93,13 @@ export class AgentRunnersController {
   remove(@Param('id') id: string) {
     return this.agentRunnersService.remove(id);
   }
+
+  @Get('agent-runners/:id/health')
+  @ApiOperation({ summary: 'Check health status of an agent runner' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Health status fetched.' })
+  @ResponseMessage('Health status fetched')
+  checkHealth(@Param('id') id: string) {
+    return this.agentRunnersService.checkHealth(id);
+  }
 }

@@ -1,5 +1,6 @@
 import type { ZodTypeAny } from 'zod';
 import type { RunnerTypeMeta, PlatformSessionConfig } from '@agent-workbench/shared';
+import type { MaterializerTarget } from './cli/context-materializer';
 
 export type RunnerSessionRecord = {
   id: string;
@@ -14,6 +15,7 @@ export type RunnerSessionRecord = {
 export type RunnerSendPayload = {
   messageId: string;
   input: Record<string, unknown>;
+  runtimeConfig: Record<string, unknown>;
 };
 
 export type RunnerOutputChunkKind =
@@ -95,6 +97,12 @@ export interface RunnerType extends RunnerTypeMeta {
   inputSchema: ZodTypeAny;
   runtimeConfigSchema: ZodTypeAny;
 
+  /**
+   * If set, this runner is backed by an external CLI and requires
+   * context materialization (MCP/Rule/Skill file writing) during session creation.
+   */
+  materializerTarget?: MaterializerTarget;
+
   checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
   createSession(
     sessionId: string,
@@ -107,3 +115,4 @@ export interface RunnerType extends RunnerTypeMeta {
   output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk>;
   cancelOutput(session: RunnerSessionRecord): Promise<void>;
 }
+
