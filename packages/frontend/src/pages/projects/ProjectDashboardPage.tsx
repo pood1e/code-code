@@ -1,20 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 
 import { EmptyState } from '@/components/app/EmptyState';
+import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { Button } from '@/components/ui/button';
 import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
 import { projectConfig } from '@/types/projects';
 
-function LoadingState() {
-  return (
-    <div className="space-y-4">
-      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
-      <div className="h-56 animate-pulse rounded-2xl bg-muted/60" />
-    </div>
-  );
-}
+
 
 export function ProjectDashboardPage() {
   const navigate = useNavigate();
@@ -29,7 +23,7 @@ export function ProjectDashboardPage() {
   } = useProjectPageData();
 
   if (isLoading) {
-    return <LoadingState />;
+    return <PageLoadingSkeleton />;
   }
 
   if (isNotFound) {
