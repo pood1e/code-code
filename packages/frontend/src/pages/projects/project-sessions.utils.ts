@@ -125,14 +125,27 @@ export function applyOutputChunkToMessages(
   chunk: OutputChunk
 ) {
   switch (chunk.kind) {
+    case 'thinking_delta':
+      return messages.map((message) =>
+        message.id === chunk.messageId
+          ? {
+              ...message,
+              status: MessageStatusEnum.Streaming,
+              thinkingText: chunk.data.accumulatedText !== undefined
+                ? chunk.data.accumulatedText
+                : `${message.thinkingText ?? ''}${chunk.data.deltaText ?? ''}`
+            }
+          : message
+      );
     case 'message_delta':
       return messages.map((message) =>
         message.id === chunk.messageId
           ? {
               ...message,
               status: MessageStatusEnum.Streaming,
-              outputText:
-                chunk.data.accumulatedText ?? chunk.data.deltaText ?? message.outputText
+              outputText: chunk.data.accumulatedText !== undefined
+                ? chunk.data.accumulatedText
+                : `${message.outputText ?? ''}${chunk.data.deltaText ?? ''}`
             }
           : message
       );
