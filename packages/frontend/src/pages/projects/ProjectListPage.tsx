@@ -60,8 +60,8 @@ export function ProjectListPage() {
   if (projectsQuery.isPending) {
     return (
       <div className="mx-auto max-w-3xl space-y-4">
-        <div className="h-10 w-40 animate-pulse rounded-xl bg-muted/70" />
-        <div className="h-72 animate-pulse rounded-[calc(var(--radius)*1.2)] bg-muted/60" />
+        <div className="h-8 w-40 animate-pulse rounded-xl bg-muted" />
+        <div className="h-64 animate-pulse rounded-2xl bg-muted/60" />
       </div>
     );
   }
@@ -114,7 +114,7 @@ export function ProjectListPage() {
             return (
               <SurfaceCard
                 key={project.id}
-                className="p-0 transition-colors hover:border-primary/30"
+                className="p-0 transition-colors hover:border-foreground/15"
               >
                 <button
                   type="button"
@@ -127,7 +127,7 @@ export function ProjectListPage() {
                         {project.name}
                       </span>
                       {isCurrent ? (
-                        <span className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        <span className="inline-flex rounded-full bg-foreground/5 px-2 py-0.5 text-xs font-medium text-foreground">
                           当前
                         </span>
                       ) : null}

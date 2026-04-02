@@ -125,7 +125,7 @@ function ResourcePageFrame({
       {children}
 
       {contentError ? (
-        <Alert variant="destructive" className="rounded-[calc(var(--radius)*0.95)]">
+        <Alert variant="destructive" className="rounded-xl">
           <AlertTitle>保存失败</AlertTitle>
           <AlertDescription>{contentError}</AlertDescription>
         </Alert>

@@ -31,9 +31,9 @@ import { projectConfig } from '@/types/projects';
 function LoadingState() {
   return (
     <div className="space-y-4">
-      <div className="h-32 animate-pulse rounded-[calc(var(--radius)*1.1)] bg-muted/70" />
-      <div className="h-12 w-44 animate-pulse rounded-xl bg-muted/70" />
-      <div className="h-72 animate-pulse rounded-[calc(var(--radius)*1.1)] bg-muted/60" />
+      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+      <div className="h-10 w-40 animate-pulse rounded-xl bg-muted" />
+      <div className="h-64 animate-pulse rounded-2xl bg-muted/60" />
     </div>
   );
 }
@@ -233,7 +233,7 @@ export function ProjectConfigPage() {
             </div>
           </SurfaceCard>
 
-          <SurfaceCard className="border-destructive/20 bg-destructive/3">
+          <SurfaceCard className="border-destructive/15 bg-destructive/3">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="font-medium text-foreground">删除当前 Project</p>
