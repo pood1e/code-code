@@ -18,7 +18,7 @@ import type { Prisma } from '@prisma/client';
 import {
   asPlainObject,
   toInputJson,
-  toNullableInputJson
+  toOptionalInputJson
 } from '../../common/json.utils';
 import { parseSchemaOrThrow } from '../../common/schema.utils';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -539,13 +539,13 @@ export class SessionRuntimeService {
             callId:
               typeof chunk.data.callId === 'string' ? chunk.data.callId : null,
             toolName: chunk.data.toolName,
-            args: toNullableInputJson(
+            args: toOptionalInputJson(
               chunk.data.args as Prisma.InputJsonValue | undefined
             ),
-            result: toNullableInputJson(
+            result: toOptionalInputJson(
               chunk.data.result as Prisma.InputJsonValue | undefined
             ),
-            error: toNullableInputJson(
+            error: toOptionalInputJson(
               chunk.data.error as Prisma.InputJsonValue | undefined
             )
           }

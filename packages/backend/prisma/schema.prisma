@@ -192,7 +192,7 @@ model SessionEvent {
   eventId     Int
   kind        String
   messageId   String?
-  timestampMs Int
+  timestampMs BigInt
   data        Json?
   createdAt   DateTime     @default(now())
   session     AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)

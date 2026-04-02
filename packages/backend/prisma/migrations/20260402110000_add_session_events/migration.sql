@@ -6,7 +6,7 @@ CREATE TABLE "SessionEvent" (
     "eventId" INTEGER NOT NULL,
     "kind" TEXT NOT NULL,
     "messageId" TEXT,
-    "timestampMs" INTEGER NOT NULL,
+    "timestampMs" BIGINT NOT NULL,
     "data" JSONB,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "SessionEvent_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "AgentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
