@@ -1,204 +1,30 @@
-import { useCallback, startTransition, useEffect, useMemo, useState } from 'react';
-import { useMutation, useQueries, useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { startTransition, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronDown, Info, RefreshCw, Trash2, Plus } from 'lucide-react';
-import type { SessionMessageRuntimeMap } from '@/features/chat/runtime/assistant-ui/thread-adapter';
-import type { SendSessionMessageInput, PagedSessionMessages } from '@agent-workbench/shared';
+import { Info, RefreshCw, Trash2, Plus } from 'lucide-react';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 
-import { getAgentRunner, listAgentRunners, listAgentRunnerTypes } from '@/api/agent-runners';
-import { listProfiles } from '@/api/profiles';
-import { listResources } from '@/api/resources';
-import {
-  cancelSession,
-  disposeSession,
-  editSessionMessage,
-  getSession,
-  listSessionMessages,
-  listSessions,
-  reloadSession,
-  sendSessionMessage
-} from '@/api/sessions';
 import { ApiRequestError, toApiRequestError } from '@/api/client';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { EmptyState } from '@/components/app/EmptyState';
+import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import { SessionAssistantThread } from '@/features/chat/runtime/assistant-ui/SessionAssistantThread';
 import { useSessionEventStream } from '@/pages/projects/use-session-event-stream';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
 import { queryKeys } from '@/query/query-keys';
-import { cn } from '@/lib/utils';
 
 import { formatRelativeTime } from '@/utils/format-time';
 import { SessionStatusBadge } from '@/features/sessions/components/SessionStatusBadge';
+import { SessionSelector } from '@/features/sessions/components/SessionSelector';
 import { SessionDetailsPanel } from '@/features/sessions/panels/SessionDetailsPanel';
 import { CreateSessionPanel } from '@/features/sessions/panels/CreateSessionPanel';
-import { getSessionStatusLabel } from '@/pages/projects/project-sessions.utils';
+import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
+import { useSessionPageQueries } from '@/features/sessions/hooks/use-session-page-queries';
+import { useSessionPageMutations } from '@/features/sessions/hooks/use-session-page-mutations';
+import { useSessionRuntimeState } from '@/features/sessions/hooks/use-session-runtime-state';
 
 const sessionQueryKeys = queryKeys.sessions;
-
-type ProjectTab = 'config' | 'sessions' | 'dashboard';
-
-const tabItems: { key: ProjectTab; label: string }[] = [
-  { key: 'config', label: '配置' },
-  { key: 'sessions', label: 'Sessions' },
-  { key: 'dashboard', label: 'Dashboard' }
-];
-
-function LoadingState() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="space-y-4 w-64">
-        <div className="h-6 animate-pulse rounded-xl bg-muted/70" />
-        <div className="h-4 animate-pulse rounded-xl bg-muted/50" />
-        <div className="h-4 animate-pulse rounded-xl bg-muted/40 w-3/4" />
-      </div>
-    </div>
-  );
-}
-
-/** Compact inline header: Project switcher + tabs + session dropdown */
-function SessionPageHeader({
-  projects,
-  currentProjectId,
-  onProjectChange,
-  onTabChange
-}: {
-  projects: { id: string; name: string }[];
-  currentProjectId: string;
-  onProjectChange: (id: string) => void;
-  onTabChange: (tab: ProjectTab) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-border/40 bg-background/95 px-4 py-2 backdrop-blur-sm sm:px-5">
-      <select
-        aria-label="选择当前 Project"
-        className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 sm:min-w-40"
-        value={currentProjectId}
-        onChange={(event) => onProjectChange(event.target.value)}
-      >
-        {projects.map((project) => (
-          <option key={project.id} value={project.id}>
-            {project.name}
-          </option>
-        ))}
-      </select>
-
-      <div className="flex items-center gap-0.5">
-        {tabItems.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => onTabChange(tab.key)}
-            className={cn(
-              'rounded-md px-2.5 py-1 text-sm transition-colors',
-              tab.key === 'sessions'
-                ? 'bg-accent font-medium text-foreground'
-                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Session selector dropdown in the chat header */
-function SessionSelector({
-  sessions,
-  selectedSessionId,
-  runnerNameById,
-  onSelect,
-  onCreate
-}: {
-  sessions: { id: string; runnerId: string; runnerType: string; updatedAt: string; status: string }[];
-  selectedSessionId: string | null;
-  runnerNameById: Record<string, string>;
-  onSelect: (id: string) => void;
-  onCreate: () => void;
-}) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const selectedTitle = useMemo(() => {
-    if (!selectedSessionId) return '选择 Session';
-    const session = sessions.find(s => s.id === selectedSessionId);
-    if (!session) return '选择 Session';
-    return runnerNameById[session.runnerId] ?? session.runnerType;
-  }, [selectedSessionId, sessions, runnerNameById]);
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
-      >
-        <span className="max-w-[12rem] truncate">{selectedTitle}</span>
-        <ChevronDown className={cn(
-          'size-3.5 text-muted-foreground transition-transform duration-200',
-          dropdownOpen && 'rotate-180'
-        )} />
-      </button>
-
-      {dropdownOpen ? (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setDropdownOpen(false)}
-          />
-          <div className="absolute left-0 top-full z-20 mt-1 w-72 rounded-xl border border-border/60 bg-background/98 py-1 shadow-xl backdrop-blur">
-            <div className="max-h-64 overflow-y-auto">
-              {sessions.map((session) => {
-                const title = runnerNameById[session.runnerId] ?? session.runnerType;
-                const isSelected = session.id === selectedSessionId;
-                return (
-                  <button
-                    key={session.id}
-                    type="button"
-                    onClick={() => {
-                      onSelect(session.id);
-                      setDropdownOpen(false);
-                    }}
-                    className={cn(
-                      'flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors',
-                      isSelected
-                        ? 'bg-accent/50 font-medium text-foreground'
-                        : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground'
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{title}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {formatRelativeTime(session.updatedAt)}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {getSessionStatusLabel(session.status as SessionStatusEnum)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="border-t border-border/40 px-2 py-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  onCreate();
-                  setDropdownOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
-              >
-                <Plus className="size-3.5" />
-                新建 Session
-              </button>
-            </div>
-          </div>
-        </>
-      ) : null}
-    </div>
-  );
-}
 
 export function ProjectSessionsPage() {
   const handleError = useErrorMessage();
@@ -206,9 +32,6 @@ export function ProjectSessionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [createPanelOpen, setCreatePanelOpen] = useState(false);
   const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
-  const [runtimeStateBySessionId, setRuntimeStateBySessionId] = useState<
-    Record<string, SessionMessageRuntimeMap>
-  >({});
   const {
     id,
     project,
@@ -219,98 +42,44 @@ export function ProjectSessionsPage() {
     goToProjectTab
   } = useProjectPageData();
 
-  const [
-    runnerTypesQuery,
-    runnersQuery,
-    profilesQuery,
-    skillsQuery,
-    mcpsQuery,
-    rulesQuery
-  ] = useQueries({
-    queries: [
-      {
-        queryKey: queryKeys.agentRunnerTypes.all,
-        queryFn: listAgentRunnerTypes
-      },
-      {
-        queryKey: queryKeys.agentRunners.list(),
-        queryFn: () => listAgentRunners()
-      },
-      {
-        queryKey: queryKeys.profiles.list(),
-        queryFn: listProfiles
-      },
-      {
-        queryKey: queryKeys.resources.list('skills'),
-        queryFn: () => listResources('skills')
-      },
-      {
-        queryKey: queryKeys.resources.list('mcps'),
-        queryFn: () => listResources('mcps')
-      },
-      {
-        queryKey: queryKeys.resources.list('rules'),
-        queryFn: () => listResources('rules')
-      }
-    ]
-  });
-  const sessionsQuery = useQuery({
-    queryKey: id ? sessionQueryKeys.list(id) : sessionQueryKeys.lists(),
-    queryFn: () => listSessions(id!),
-    enabled: Boolean(id)
-  });
-
   const selectedSessionId = searchParams.get('sessionId');
-  const sessionDetailQuery = useQuery({
-    queryKey: selectedSessionId
-      ? sessionQueryKeys.detail(selectedSessionId)
-      : sessionQueryKeys.all,
-    queryFn: () => getSession(selectedSessionId!),
-    enabled: Boolean(selectedSessionId)
-  });
-  const sessionMessagesQuery = useInfiniteQuery({
-    queryKey: selectedSessionId
-      ? sessionQueryKeys.messages(selectedSessionId)
-      : sessionQueryKeys.all,
-    queryFn: ({ pageParam }) => listSessionMessages(selectedSessionId!, pageParam),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
-    enabled: Boolean(selectedSessionId)
-  });
-  const flatMessages = useMemo(() => {
-    if (!sessionMessagesQuery.data) return [];
-    return [...sessionMessagesQuery.data.pages].reverse().flatMap(page => page.data);
-  }, [sessionMessagesQuery.data]);
 
-  const selectedRunnerQuery = useQuery({
-    queryKey: sessionDetailQuery.data?.runnerId
-      ? queryKeys.agentRunners.detail(sessionDetailQuery.data.runnerId)
-      : queryKeys.agentRunners.all,
-    queryFn: () => getAgentRunner(sessionDetailQuery.data!.runnerId),
-    enabled: Boolean(sessionDetailQuery.data?.runnerId)
+  const {
+    sessionsQuery,
+    sessionMessagesQuery,
+    selectedSession,
+    flatMessages,
+    runnerTypes,
+    runners,
+    profiles,
+    resources,
+    selectedRunnerType,
+    selectedRunnerQuery,
+    runnerNameById,
+    selectedSessionMessagesReady,
+    queryError
+  } = useSessionPageQueries(id, selectedSessionId);
+
+  const {
+    runtimeStateBySessionId,
+    setRuntimeStateBySessionId,
+    updateSessionRuntimeMessageState,
+    clearSessionRuntimeState
+  } = useSessionRuntimeState();
+
+  const {
+    sendMutation,
+    cancelMutation,
+    reloadMutation,
+    editMutation,
+    disposeMutation,
+    invalidateSessionThreadState
+  } = useSessionPageMutations({
+    selectedSessionId,
+    projectId: id,
+    clearSessionRuntimeState
   });
 
-  const selectedSession = sessionDetailQuery.data;
-  const runnerTypes = useMemo(() => runnerTypesQuery.data ?? [], [runnerTypesQuery.data]);
-  const runners = useMemo(() => runnersQuery.data ?? [], [runnersQuery.data]);
-  const profiles = useMemo(() => profilesQuery.data ?? [], [profilesQuery.data]);
-  const resources = useMemo(
-    () => ({
-      skills: skillsQuery.data ?? [],
-      mcps: mcpsQuery.data ?? [],
-      rules: rulesQuery.data ?? []
-    }),
-    [mcpsQuery.data, rulesQuery.data, skillsQuery.data]
-  );
-  const selectedRunnerType = useMemo(() => {
-    if (!selectedSession) {
-      return undefined;
-    }
-
-    return runnerTypes.find(
-      (runnerType) => runnerType.id === selectedSession.runnerType
-    );
-  }, [runnerTypes, selectedSession]);
   const selectedRuntimeState = useMemo(
     () =>
       (selectedSessionId
@@ -319,66 +88,17 @@ export function ProjectSessionsPage() {
     [runtimeStateBySessionId, selectedSessionId]
   );
 
-  const runnerNameById = useMemo(
-    () =>
-      Object.fromEntries(runners.map((runner) => [runner.id, runner.name] as const)),
-    [runners]
-  );
-  const selectedSessionMessagesReady = sessionMessagesQuery.status === 'success';
   const showCreatePanel =
     createPanelOpen || (sessionsQuery.data?.length ?? 0) === 0;
 
-  const updateSessionRuntimeMessageState = useCallback(
-    (
-      sessionId: string,
-      messageId: string,
-      updater: (
-        current: SessionMessageRuntimeMap[string]
-      ) => SessionMessageRuntimeMap[string]
-    ) => {
-      setRuntimeStateBySessionId((current) => ({
-        ...current,
-        [sessionId]: {
-          ...(current[sessionId] ?? {}),
-          [messageId]: updater(current[sessionId]?.[messageId])
-        }
-      }));
-    },
-    []
-  );
-
+  // Centralized query error handling
   useEffect(() => {
-    const queryError =
-      sessionsQuery.error ??
-      sessionDetailQuery.error ??
-      sessionMessagesQuery.error ??
-      selectedRunnerQuery.error ??
-      runnerTypesQuery.error ??
-      runnersQuery.error ??
-      profilesQuery.error ??
-      skillsQuery.error ??
-      mcpsQuery.error ??
-      rulesQuery.error;
-
-    if (!queryError) {
-      return;
+    if (queryError) {
+      handleError(queryError);
     }
+  }, [handleError, queryError]);
 
-    handleError(queryError);
-  }, [
-    handleError,
-    mcpsQuery.error,
-    profilesQuery.error,
-    rulesQuery.error,
-    selectedRunnerQuery.error,
-    runnerTypesQuery.error,
-    runnersQuery.error,
-    sessionDetailQuery.error,
-    sessionMessagesQuery.error,
-    sessionsQuery.error,
-    skillsQuery.error
-  ]);
-
+  // Auto-select first session or clear invalid session
   useEffect(() => {
     const sessions = sessionsQuery.data ?? [];
     if (sessions.length === 0) {
@@ -407,6 +127,7 @@ export function ProjectSessionsPage() {
     });
   }, [selectedSessionId, sessionsQuery.data, setSearchParams]);
 
+  // SSE event stream
   useSessionEventStream({
     scopeId: id,
     session: selectedSession,
@@ -417,72 +138,34 @@ export function ProjectSessionsPage() {
     updateSessionRuntimeMessageState
   });
 
-  const sendMutation = useMutation({
-    mutationFn: async (payload: SendSessionMessageInput) => {
-      return sendSessionMessage(selectedSessionId!, payload);
-    },
-    onSuccess: (messages: PagedSessionMessages) => {
-      if (!selectedSessionId) {
-        return;
-      }
+  // --- UI state handlers ---
 
-      queryClient.setQueryData<InfiniteData<PagedSessionMessages>>(
-        sessionQueryKeys.messages(selectedSessionId),
-        (current) => current ? {
-          pageParams: [undefined],
-          pages: [messages]
-        } : current
-      );
-    }
-  });
-  const cancelMutation = useMutation({
-    mutationFn: () => cancelSession(selectedSessionId!)
-  });
-  const reloadMutation = useMutation({
-    mutationFn: () => reloadSession(selectedSessionId!)
-  });
-  const editMutation = useMutation({
-    mutationFn: ({
-      messageId,
-      payload
-    }: {
-      messageId: string;
-      payload: SendSessionMessageInput;
-    }) => editSessionMessage(selectedSessionId!, messageId, payload)
-  });
-  const disposeMutation = useMutation({
-    mutationFn: () => disposeSession(selectedSessionId!),
-    onSuccess: (session) => {
-      queryClient.setQueryData(sessionQueryKeys.detail(session.id), session);
-      if (id) {
-        queryClient.invalidateQueries({
-          queryKey: sessionQueryKeys.list(id)
-        }).catch(() => undefined);
-      }
-    }
-  });
-
-  const invalidateSessionThreadState = async (sessionId: string, scopeId: string) => {
-    setRuntimeStateBySessionId((current) => ({
-      ...current,
-      [sessionId]: {}
-    }));
-
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: sessionQueryKeys.messages(sessionId)
-      }),
-      queryClient.invalidateQueries({
-        queryKey: sessionQueryKeys.detail(sessionId)
-      }),
-      queryClient.invalidateQueries({
-        queryKey: sessionQueryKeys.list(scopeId)
-      })
-    ]);
+  const selectSession = (sessionId: string) => {
+    setDetailsPanelOpen(false);
+    setCreatePanelOpen(false);
+    startTransition(() => {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.set('sessionId', sessionId);
+        return next;
+      });
+    });
   };
 
+  const openCreatePanel = () => {
+    setDetailsPanelOpen(false);
+    setCreatePanelOpen(true);
+  };
+
+  const closePanel = () => {
+    setDetailsPanelOpen(false);
+    setCreatePanelOpen(false);
+  };
+
+  // --- Render guards ---
+
   if (isLoading || sessionsQuery.isPending) {
-    return <LoadingState />;
+    return <PageLoadingSkeleton variant="fullscreen" />;
   }
 
   if (isNotFound) {
@@ -512,9 +195,10 @@ export function ProjectSessionsPage() {
   return (
     <div className="flex h-screen flex-col">
       {/* Compact page header */}
-      <SessionPageHeader
+      <ProjectSectionHeader
         projects={projects}
         currentProjectId={id}
+        activeTab="sessions"
         onProjectChange={(nextId) => goToProjectTab(nextId, 'sessions')}
         onTabChange={(tab) => goToProjectTab(id, tab)}
       />
@@ -529,20 +213,10 @@ export function ProjectSessionsPage() {
             profiles={profiles}
             resources={resources}
             canCancel={(sessionsQuery.data?.length ?? 0) > 0}
-            onCancel={() => {
-              setDetailsPanelOpen(false);
-              setCreatePanelOpen(false);
-            }}
+            onCancel={closePanel}
             onCreated={(session) => {
-              setDetailsPanelOpen(false);
-              setCreatePanelOpen(false);
-              startTransition(() => {
-                setSearchParams((current) => {
-                  const next = new URLSearchParams(current);
-                  next.set('sessionId', session.id);
-                  return next;
-                });
-              });
+              closePanel();
+              selectSession(session.id);
             }}
           />
         ) : selectedSession ? (
@@ -554,21 +228,8 @@ export function ProjectSessionsPage() {
                   sessions={sessionsQuery.data ?? []}
                   selectedSessionId={selectedSessionId}
                   runnerNameById={runnerNameById}
-                  onSelect={(sessionId) => {
-                    setDetailsPanelOpen(false);
-                    setCreatePanelOpen(false);
-                    startTransition(() => {
-                      setSearchParams((current) => {
-                        const next = new URLSearchParams(current);
-                        next.set('sessionId', sessionId);
-                        return next;
-                      });
-                    });
-                  }}
-                  onCreate={() => {
-                    setDetailsPanelOpen(false);
-                    setCreatePanelOpen(true);
-                  }}
+                  onSelect={selectSession}
+                  onCreate={openCreatePanel}
                 />
                 <SessionStatusBadge status={selectedSession.status} />
                 <span className="hidden text-xs text-muted-foreground sm:inline">
@@ -719,12 +380,7 @@ export function ProjectSessionsPage() {
               title="选择 Session"
               description="或新建一个"
               action={
-                <Button
-                  onClick={() => {
-                    setDetailsPanelOpen(false);
-                    setCreatePanelOpen(true);
-                  }}
-                >
+                <Button onClick={openCreatePanel}>
                   <Plus />
                   新建 Session
                 </Button>

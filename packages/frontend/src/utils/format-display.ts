@@ -11,3 +11,7 @@ export function formatDateTime(value: string) {
 export function formatNullableDescription(value: string | null) {
   return value?.trim() ? value : '暂无描述';
 }
+
+export function normalizeDescription(description?: string) {
+  return description?.trim() ? description.trim() : null;
+}
