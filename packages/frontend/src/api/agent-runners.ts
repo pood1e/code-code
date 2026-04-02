@@ -49,3 +49,10 @@ export async function deleteAgentRunner(id: string) {
   const response = await apiClient.delete<null>(`/agent-runners/${id}`);
   return response.data;
 }
+
+export async function checkAgentRunnerHealth(id: string) {
+  const response = await apiClient.get<{ status: 'online' | 'offline' | 'unknown' }>(
+    `/agent-runners/${id}/health`
+  );
+  return response.data;
+}

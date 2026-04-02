@@ -154,6 +154,7 @@ export type SessionSummary = {
 export type SessionDetail = SessionSummary & {
   platformSessionConfig: PlatformSessionConfig;
   runnerSessionConfig: Record<string, unknown>;
+  defaultRuntimeConfig: Record<string, unknown> | null;
 };
 
 export type SessionToolUse = {
@@ -193,6 +194,11 @@ export type SessionMessageDetail = {
   createdAt: string;
 };
 
+export type SendSessionMessageInput = {
+  input: Record<string, unknown>;
+  runtimeConfig?: Record<string, unknown>;
+};
+
 export type CreateSessionInput = {
   scopeId: string;
   runnerId: string;
@@ -200,11 +206,7 @@ export type CreateSessionInput = {
   ruleIds: string[];
   mcps: PlatformSessionMcp[];
   runnerSessionConfig: Record<string, unknown>;
-  initialInput?: Record<string, unknown>;
-};
-
-export type SendSessionMessageInput = {
-  input: Record<string, unknown>;
+  initialMessage?: SendSessionMessageInput;
 };
 
 export type EditSessionMessageInput = SendSessionMessageInput;

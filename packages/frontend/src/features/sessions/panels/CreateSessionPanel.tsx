@@ -123,6 +123,14 @@ export function CreateSessionPanel({
     [selectedRunnerType]
   );
   const structuredInputSchema = inputConfigSchema.supported ? inputConfigSchema : undefined;
+  
+  const runtimeConfigSchema = useMemo(
+    () => parseRunnerConfigSchema(selectedRunnerType?.runtimeConfigSchema),
+    [selectedRunnerType]
+  );
+  const structuredRuntimeSchema = runtimeConfigSchema.supported ? runtimeConfigSchema : undefined;
+  const runtimeFields = useMemo(() => structuredRuntimeSchema?.fields ?? [], [structuredRuntimeSchema]);
+
   const primaryInputField = useMemo(() => {
     if (!structuredInputSchema) {
       return undefined;
@@ -173,6 +181,7 @@ export function CreateSessionPanel({
   useEffect(() => {
     if (!structuredInputSchema) {
       form.setValue('initialInputConfig', {});
+      form.setValue('initialRuntimeConfig', buildAdditionalInputInitialValues(runtimeFields));
       form.setValue('initialMessageText', '');
       form.setValue('initialRawInput', '');
       return;
@@ -182,9 +191,10 @@ export function CreateSessionPanel({
       'initialInputConfig',
       buildAdditionalInputInitialValues(additionalInputFields)
     );
+    form.setValue('initialRuntimeConfig', buildAdditionalInputInitialValues(runtimeFields));
     form.setValue('initialMessageText', '');
     form.setValue('initialRawInput', '');
-  }, [additionalInputFields, form, selectedRunnerType?.id, structuredInputSchema]);
+  }, [additionalInputFields, runtimeFields, form, selectedRunnerType?.id, structuredInputSchema]);
 
   useEffect(() => {
     if (!selectedProfileId || !profileDetailQuery.data) {
@@ -233,14 +243,16 @@ export function CreateSessionPanel({
 
       const initialMessageTextValue = values.initialMessageText?.trim() ?? '';
       const initialRawInputValue = values.initialRawInput?.trim() ?? '';
-      const initialInput = supportsStructuredInitialInput
+      const initialMessage = supportsStructuredInitialInput
         ? initialMessageTextValue.length > 0
           ? buildStructuredMessagePayload({
               schema: structuredInputSchema!,
+              runtimeSchema: structuredRuntimeSchema ?? { supported: false as const, reason: '不支持' },
               primaryField: primaryInputField!,
               composerText: initialMessageTextValue,
-              additionalValues: values.initialInputConfig
-            }).input
+              additionalValues: values.initialInputConfig,
+              runtimeValues: values.initialRuntimeConfig
+            })
           : undefined
         : initialRawInputValue.length > 0
           ? (() => {
@@ -248,7 +260,15 @@ export function CreateSessionPanel({
               if (!parsed.data) {
                 throw new Error(parsed.error ?? '首条消息输入校验失败');
               }
-              return parsed.data.input;
+              // Add runtime config manually since parser only gives input
+              let runtimeConfig: Record<string, unknown> | undefined = undefined;
+              if (structuredRuntimeSchema?.supported && structuredRuntimeSchema.fields.length > 0) {
+                 const normalized = normalizeRunnerConfigValues(structuredRuntimeSchema.fields, values.initialRuntimeConfig);
+                 const validRuntime = structuredRuntimeSchema.validationSchema.safeParse(normalized);
+                 if (!validRuntime.success) throw new Error('首条消息运行时参数校验失败');
+                 runtimeConfig = validRuntime.data;
+              }
+              return { input: parsed.data.input, runtimeConfig };
             })()
           : undefined;
 
@@ -256,7 +276,7 @@ export function CreateSessionPanel({
         buildCreateSessionPayload(projectId, {
           ...values,
           runnerSessionConfig
-        }, profileDetailQuery.data, initialInput)
+        }, profileDetailQuery.data, initialMessage)
       );
     },
     onSuccess: async (session) => {
@@ -418,13 +438,28 @@ export function CreateSessionPanel({
             ) : null}
 
             {sessionConfigSchema.supported && sessionConfigSchema.fields.length > 0 ? (
-              <SetupSection title="会话参数">
+              <SetupSection title="会话参数 (Session Config)">
                 <div className="grid gap-4">
                   {sessionConfigSchema.fields.map((field) => (
                     <DynamicConfigFieldInput
                       key={field.name}
                       field={field}
                       namePrefix="runnerSessionConfig"
+                      control={form.control}
+                    />
+                  ))}
+                </div>
+              </SetupSection>
+            ) : null}
+
+            {runtimeFields.length > 0 ? (
+              <SetupSection title="运行参数 (Runtime Config)">
+                <div className="grid gap-4">
+                  {runtimeFields.map((field) => (
+                    <DynamicConfigFieldInput
+                      key={field.name}
+                      field={field}
+                      namePrefix="initialRuntimeConfig"
                       control={form.control}
                     />
                   ))}

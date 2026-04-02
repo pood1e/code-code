@@ -33,6 +33,32 @@ export class SessionMcpItemDto {
   configOverride?: Record<string, unknown>;
 }
 
+export class SendSessionMessageDto {
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      model: 'claude-sonnet-4-5',
+      permissionMode: 'auto'
+    }
+  })
+  @IsOptional()
+  @IsObject()
+  runtimeConfig?: Record<string, unknown>;
+
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      prompt: 'Summarize the last run'
+    }
+  })
+  @IsObject()
+  input!: Record<string, unknown>;
+}
+
+export class EditSessionMessageDto extends SendSessionMessageDto {}
+
 export class CreateSessionDto {
   @ApiProperty({ example: 'project_agent_workbench' })
   @IsString()
@@ -72,30 +98,15 @@ export class CreateSessionDto {
   runnerSessionConfig!: Record<string, unknown>;
 
   @ApiPropertyOptional({
-    type: 'object',
-    additionalProperties: true,
-    example: {
-      prompt: 'Summarize the last run'
-    }
+    type: SendSessionMessageDto
   })
   @IsOptional()
-  @IsObject()
-  initialInput?: Record<string, unknown>;
+  @ValidateNested()
+  @Type(() => SendSessionMessageDto)
+  initialMessage?: SendSessionMessageDto;
 }
 
-export class SendSessionMessageDto {
-  @ApiProperty({
-    type: 'object',
-    additionalProperties: true,
-    example: {
-      prompt: 'Summarize the last run'
-    }
-  })
-  @IsObject()
-  input!: Record<string, unknown>;
-}
 
-export class EditSessionMessageDto extends SendSessionMessageDto {}
 
 export class SessionEventsQueryDto {
   @ApiPropertyOptional({ example: 12 })

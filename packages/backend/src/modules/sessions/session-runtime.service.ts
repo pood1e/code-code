@@ -11,7 +11,10 @@ import {
   errorPayloadSchema,
   platformSessionConfigSchema,
   type ErrorPayload,
-  type OutputChunk
+  type McpConfigOverride,
+  type McpStdioContent,
+  type OutputChunk,
+  type PlatformSessionConfig
 } from '@agent-workbench/shared';
 import type { Prisma } from '@prisma/client';
 
@@ -28,6 +31,10 @@ import type {
   RunnerSessionRecord,
   RunnerType
 } from '../agent-runners/runner-type.interface';
+import {
+  materializeContext,
+  type MaterializerTarget
+} from '../agent-runners/cli/context-materializer';
 import { SessionEventStore } from './session-event.store';
 import { SessionsQueryService } from './sessions-query.service';
 import type { SessionRow } from './session.types';
@@ -151,6 +158,7 @@ export class SessionRuntimeService {
   async sendParsedInput(
     sessionId: string,
     parsedInput: Record<string, unknown>,
+    runtimeConfig: Record<string, unknown> = {},
     options?: {
       reuseLastUserMessage?: boolean;
       throwOnSyncSendFailure?: boolean;
@@ -160,6 +168,19 @@ export class SessionRuntimeService {
     const previousStatus = (
       await this.sessionsQueryService.getSessionOrThrow(sessionId)
     ).status as SessionStatus;
+
+    const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
+    let parsedRuntimeConfig = runtimeConfig;
+    if (runnerType.runtimeConfigSchema) {
+      const parseResult = runnerType.runtimeConfigSchema.safeParse(runtimeConfig);
+      if (parseResult.success) {
+        parsedRuntimeConfig = parseResult.data as Record<string, unknown>;
+      } else {
+        throw new Error(
+          `Invalid runtime config: ${parseResult.error.message}`
+        );
+      }
+    }
 
     const assistantMessageId = await this.prisma.$transaction(async (tx) => {
       if (!options?.reuseLastUserMessage) {
@@ -199,13 +220,11 @@ export class SessionRuntimeService {
     );
 
     try {
-      await this.getRunnerTypeOrThrow(runtimeSession.runnerType).send(
-        runtimeSession,
-        {
-          messageId: assistantMessageId,
-          input: parsedInput
-        }
-      );
+      await runnerType.send(runtimeSession, {
+        messageId: assistantMessageId,
+        input: parsedInput,
+        runtimeConfig: parsedRuntimeConfig
+      });
     } catch (error) {
       if (options?.throwOnSyncSendFailure) {
         throw error;
@@ -382,14 +401,23 @@ export class SessionRuntimeService {
     }
 
     const runtimeSession = await this.buildRunnerSessionRecord(session);
-    const runnerState = await this.getRunnerTypeOrThrow(
-      runtimeSession.runnerType
-    ).createSession(
+    const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
+    const runnerState = await runnerType.createSession(
       session.id,
       runtimeSession.runnerConfig,
       runtimeSession.platformSessionConfig,
       runtimeSession.runnerSessionConfig
     );
+
+    // For CLI-backed runners, materialize MCP/Rule/Skill into the file system
+    if (runnerType.materializerTarget) {
+      await this.materializeCliContext(
+        runnerType.materializerTarget,
+        sessionId,
+        runtimeSession.platformSessionConfig,
+        runnerState
+      );
+    }
 
     const updatedSession = await this.prisma.agentSession.update({
       where: { id: sessionId },
@@ -407,6 +435,84 @@ export class SessionRuntimeService {
     this.outputConsumers.set(sessionId, outputConsumer);
 
     return updatedRuntimeSession;
+  }
+
+  /**
+   * Resolve resource IDs from PlatformSessionConfig to actual content
+   * and write them into the file system as CLI-recognizable files.
+   * Mutates `runnerState` in place to set contextDir and mcpConfigPath.
+   */
+  private async materializeCliContext(
+    target: MaterializerTarget,
+    sessionId: string,
+    platformConfig: PlatformSessionConfig,
+    runnerState: Record<string, unknown>
+  ): Promise<void> {
+    const skills = await this.resolveSkills(platformConfig.skillIds);
+    const rules = await this.resolveRules(platformConfig.ruleIds);
+    const mcps = await this.resolveMcps(platformConfig.mcps);
+
+    const result = await materializeContext({
+      target,
+      sessionId,
+      cwd: platformConfig.cwd,
+      platformConfig,
+      skills,
+      rules,
+      mcps
+    });
+
+    runnerState.contextDir = result.contextDir;
+    runnerState.mcpConfigPath = result.mcpConfigPath;
+  }
+
+  private async resolveSkills(
+    skillIds: string[]
+  ): Promise<Array<{ name: string; content: string }>> {
+    if (skillIds.length === 0) return [];
+
+    const records = await this.prisma.skill.findMany({
+      where: { id: { in: skillIds } },
+      select: { name: true, content: true }
+    });
+    return records;
+  }
+
+  private async resolveRules(
+    ruleIds: string[]
+  ): Promise<Array<{ name: string; content: string }>> {
+    if (ruleIds.length === 0) return [];
+
+    const records = await this.prisma.rule.findMany({
+      where: { id: { in: ruleIds } },
+      select: { name: true, content: true }
+    });
+    return records;
+  }
+
+  private async resolveMcps(
+    mcps: PlatformSessionConfig['mcps']
+  ): Promise<Array<{ name: string; content: McpStdioContent; configOverride?: McpConfigOverride }>> {
+    if (mcps.length === 0) return [];
+
+    const mcpIds = mcps.map((m) => m.resourceId);
+    const records = await this.prisma.mCP.findMany({
+      where: { id: { in: mcpIds } },
+      select: { id: true, name: true, content: true }
+    });
+
+    const recordMap = new Map(records.map((r) => [r.id, r]));
+    return mcps
+      .map((m) => {
+        const record = recordMap.get(m.resourceId);
+        if (!record) return null;
+        return {
+          name: record.name,
+          content: record.content as unknown as McpStdioContent,
+          configOverride: m.configOverride
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }
 
   private async buildRunnerSessionRecord(

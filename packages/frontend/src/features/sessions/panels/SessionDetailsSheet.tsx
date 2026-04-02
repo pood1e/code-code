@@ -161,10 +161,10 @@ export function SessionDetailsSheet({
             description="消息输入按 RunnerType 的 input schema 解释。"
           />
 
-          <RunnerSchemaSection
-            title="Runtime Schema"
-            schema={toRunnerConfigJsonSchema(runnerType?.runtimeConfigSchema)}
-            description="运行时动态参数 schema，当前页面只展示，不直接编辑。"
+          <ReadonlyRunnerConfigSection
+            title="Default Runtime Config"
+            schema={runnerType?.runtimeConfigSchema}
+            values={session.defaultRuntimeConfig ?? undefined}
           />
         </div>
       </SheetContent>
