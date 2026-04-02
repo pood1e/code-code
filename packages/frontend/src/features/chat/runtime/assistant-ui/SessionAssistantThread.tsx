@@ -78,23 +78,23 @@ export function SessionAssistantThread({
   onLoadMore?: () => void;
 }) {
   const [firstItemIndex, setFirstItemIndex] = useState(100_000);
-  const [prevFirstId, setPrevFirstId] = useState<string | undefined>(undefined);
-  const [prevMessagesLength, setPrevMessagesLength] = useState<number>(0);
+  const prevFirstIdRef = useRef<string | undefined>(undefined);
+  const prevMessagesLengthRef = useRef<number>(0);
 
-  if (messages.length > 0 && messages[0]?.id !== prevFirstId) {
-    if (prevFirstId !== undefined) {
-      const oldFirstIndex = messages.findIndex(m => m.id === prevFirstId);
-      if (oldFirstIndex > 0) {
-        setFirstItemIndex(prev => prev - oldFirstIndex);
-      } else {
-        setFirstItemIndex(prev => prev - Math.max(0, messages.length - prevMessagesLength));
+  useEffect(() => {
+    if (messages.length > 0 && messages[0]?.id !== prevFirstIdRef.current) {
+      if (prevFirstIdRef.current !== undefined) {
+        const oldFirstIndex = messages.findIndex(m => m.id === prevFirstIdRef.current);
+        if (oldFirstIndex > 0) {
+          setFirstItemIndex(prev => prev - oldFirstIndex);
+        } else {
+          setFirstItemIndex(prev => prev - Math.max(0, messages.length - prevMessagesLengthRef.current));
+        }
       }
+      prevFirstIdRef.current = messages[0]?.id;
     }
-    setPrevFirstId(messages[0]?.id);
-  }
-  if (messages.length !== prevMessagesLength) {
-    setPrevMessagesLength(messages.length);
-  }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages]);
 
   const inputSchema = useMemo(
     () => parseRunnerConfigSchema(runnerType?.inputSchema),

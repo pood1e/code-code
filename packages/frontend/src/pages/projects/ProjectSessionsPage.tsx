@@ -1,10 +1,10 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Info, RefreshCw, Trash2, Plus } from 'lucide-react';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 
-import { ApiRequestError, toApiRequestError } from '@/api/client';
+
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { EmptyState } from '@/components/app/EmptyState';
 import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
@@ -22,7 +22,7 @@ import { CreateSessionPanel } from '@/features/sessions/panels/CreateSessionPane
 import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import { useSessionPageQueries } from '@/features/sessions/hooks/use-session-page-queries';
 import { useSessionPageMutations } from '@/features/sessions/hooks/use-session-page-mutations';
-import { useSessionRuntimeState } from '@/features/sessions/hooks/use-session-runtime-state';
+import { useSessionRuntimeStore } from '@/store/session-runtime-store';
 
 const sessionQueryKeys = queryKeys.sessions;
 
@@ -58,14 +58,9 @@ export function ProjectSessionsPage() {
     runnerNameById,
     selectedSessionMessagesReady,
     queryError
-  } = useSessionPageQueries(id, selectedSessionId);
+  } = useSessionPageQueries(id, selectedSessionId, createPanelOpen);
 
-  const {
-    runtimeStateBySessionId,
-    setRuntimeStateBySessionId,
-    updateSessionRuntimeMessageState,
-    clearSessionRuntimeState
-  } = useSessionRuntimeState();
+  const clearSessionState = useSessionRuntimeStore((s) => s.clearSessionState);
 
   const {
     sendMutation,
@@ -77,15 +72,11 @@ export function ProjectSessionsPage() {
   } = useSessionPageMutations({
     selectedSessionId,
     projectId: id,
-    clearSessionRuntimeState
+    clearSessionRuntimeState: clearSessionState
   });
 
-  const selectedRuntimeState = useMemo(
-    () =>
-      (selectedSessionId
-        ? runtimeStateBySessionId[selectedSessionId]
-        : undefined) ?? {},
-    [runtimeStateBySessionId, selectedSessionId]
+  const selectedRuntimeState = useSessionRuntimeStore((s) =>
+    selectedSessionId ? (s.stateBySessionId[selectedSessionId] ?? {}) : {}
   );
 
   const showCreatePanel =
@@ -133,9 +124,7 @@ export function ProjectSessionsPage() {
     session: selectedSession,
     messages: flatMessages,
     messagesReady: selectedSessionMessagesReady,
-    queryClient,
-    setRuntimeStateBySessionId,
-    updateSessionRuntimeMessageState
+    queryClient
   });
 
   // --- UI state handlers ---
@@ -311,66 +300,26 @@ export function ProjectSessionsPage() {
               }}
               runnerType={selectedRunnerType}
               runtimeState={selectedRuntimeState}
-              onSend={async (payload) => {
-                try {
-                  await sendMutation.mutateAsync(payload);
-                } catch (error) {
-                  const apiError = toApiRequestError(error);
-                  throw new ApiRequestError({
-                    code: apiError.code,
-                    message: apiError.message,
-                    data: apiError.data
-                  });
-                }
-              }}
-              onCancel={async () => {
-                try {
-                  await cancelMutation.mutateAsync();
-                } catch (error) {
-                  const apiError = toApiRequestError(error);
-                  throw new ApiRequestError({
-                    code: apiError.code,
-                    message: apiError.message,
-                    data: apiError.data
-                  });
-                }
-              }}
+              onSend={async (payload) => { await sendMutation.mutateAsync(payload); }}
+              onCancel={async () => { await cancelMutation.mutateAsync(); }}
               onReload={async () => {
                 if (!id) {
                   return;
                 }
 
-                try {
-                  await reloadMutation.mutateAsync();
-                  await invalidateSessionThreadState(selectedSession.id, id);
-                } catch (error) {
-                  const apiError = toApiRequestError(error);
-                  throw new ApiRequestError({
-                    code: apiError.code,
-                    message: apiError.message,
-                    data: apiError.data
-                  });
-                }
+                await reloadMutation.mutateAsync();
+                await invalidateSessionThreadState(selectedSession.id, id);
               }}
               onEdit={async (messageId, payload) => {
                 if (!id) {
                   return;
                 }
 
-                try {
-                  await editMutation.mutateAsync({
-                    messageId,
-                    payload
-                  });
-                  await invalidateSessionThreadState(selectedSession.id, id);
-                } catch (error) {
-                  const apiError = toApiRequestError(error);
-                  throw new ApiRequestError({
-                    code: apiError.code,
-                    message: apiError.message,
-                    data: apiError.data
-                  });
-                }
+                await editMutation.mutateAsync({
+                  messageId,
+                  payload
+                });
+                await invalidateSessionThreadState(selectedSession.id, id);
               }}
             />
           </div>

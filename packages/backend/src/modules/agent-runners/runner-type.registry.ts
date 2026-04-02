@@ -1,21 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, type OnModuleInit } from '@nestjs/common';
+import { DiscoveryService } from '@nestjs/core';
 import type { RunnerTypeResponse } from '@agent-workbench/shared';
 import type { RunnerType } from './runner-type.interface';
-import { convertZodSchemaToJsonSchema } from '../../utils/zod-to-json-schema';
-import { ClaudeCodeRunnerType } from './runner-types/claude-code.runner-type';
-import { CursorCliRunnerType } from './runner-types/cursor-cli.runner-type';
-import { QwenCliRunnerType } from './runner-types/qwen-cli.runner-type';
-import { MockRunnerType } from './runner-types/mock.runner-type';
+import { RUNNER_TYPE_METADATA } from './runner-type.decorator';
+import { zodToSchemaDescriptor } from './schema-descriptor.util';
 
 @Injectable()
-export class RunnerTypeRegistry {
+export class RunnerTypeRegistry implements OnModuleInit {
   private readonly runnerTypes: Map<string, RunnerType> = new Map();
 
-  constructor() {
-    this.register(ClaudeCodeRunnerType);
-    this.register(CursorCliRunnerType);
-    this.register(QwenCliRunnerType);
-    this.register(MockRunnerType);
+  constructor(private readonly discoveryService: DiscoveryService) {}
+
+  onModuleInit(): void {
+    const providers = this.discoveryService.getProviders();
+
+    for (const wrapper of providers) {
+      const instance = wrapper.instance;
+      if (!instance || !wrapper.metatype) continue;
+
+      const isRunnerType = Reflect.getMetadata(RUNNER_TYPE_METADATA, wrapper.metatype);
+      if (!isRunnerType) continue;
+
+      const runnerType = instance as RunnerType;
+      if (typeof runnerType.id === 'string' && typeof runnerType.name === 'string') {
+        this.register(runnerType);
+      }
+    }
   }
 
   register(runnerType: RunnerType): void {
@@ -35,20 +45,11 @@ export class RunnerTypeRegistry {
       id: runnerType.id,
       name: runnerType.name,
       capabilities: runnerType.capabilities,
-      runnerConfigSchema: convertZodSchemaToJsonSchema(
-        runnerType.runnerConfigSchema
-      ),
-      runnerSessionConfigSchema: convertZodSchemaToJsonSchema(
-        runnerType.runnerSessionConfigSchema
-      ),
-      inputSchema: convertZodSchemaToJsonSchema(
-        runnerType.inputSchema
-      ),
-      // taskConfigSchema currently maps to inputSchema — will diverge when a dedicated task config schema is added
-      taskConfigSchema: convertZodSchemaToJsonSchema(runnerType.inputSchema),
-      runtimeConfigSchema: convertZodSchemaToJsonSchema(
-        runnerType.runtimeConfigSchema
-      )
+      runnerConfigSchema: zodToSchemaDescriptor(runnerType.runnerConfigSchema),
+      runnerSessionConfigSchema: zodToSchemaDescriptor(runnerType.runnerSessionConfigSchema),
+      inputSchema: zodToSchemaDescriptor(runnerType.inputSchema),
+      taskConfigSchema: zodToSchemaDescriptor(runnerType.inputSchema),
+      runtimeConfigSchema: zodToSchemaDescriptor(runnerType.runtimeConfigSchema)
     }));
   }
 

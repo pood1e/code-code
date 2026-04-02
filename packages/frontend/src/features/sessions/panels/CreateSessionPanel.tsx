@@ -1,31 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { parseSessionInputText } from '@/features/chat/runtime/assistant-ui/input-payload';
 import {
   buildAdditionalInputInitialValues,
-  buildStructuredMessagePayload,
   getAdditionalInputFields,
   getPrimaryInputField
 } from '@/features/chat/runtime/assistant-ui/input-schema';
 import {
   buildRunnerConfigInitialValues,
-  normalizeRunnerConfigValues,
   parseRunnerConfigSchema
 } from '@/lib/runner-config-schema';
 import {
   buildCreateSessionFormValues,
-  buildCreateSessionPayload,
   createSessionFormSchema,
   type CreateSessionFormValues
 } from '@/pages/projects/project-sessions.form';
-import { createSession } from '@/api/sessions';
 import { getProfile } from '@/api/profiles';
 import { probeAgentRunnerContext } from '@/api/agent-runners';
 import { toApiRequestError } from '@/api/client';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { queryKeys } from '@/query/query-keys';
+import { useCreateSessionMutation } from '../hooks/use-create-session-mutation';
 import { DynamicConfigFieldInput } from '../components/DynamicConfigFieldInput';
 import { ResourceSelectionSection } from '../components/ResourceSelectionSection';
 import { SetupSection } from '../components/SetupSection';
@@ -63,7 +59,6 @@ export function CreateSessionPanel({
   onCancel: () => void;
   onCreated: (session: SessionDetail) => void;
 }) {
-  const queryClient = useQueryClient();
   const handleError = useErrorMessage();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -217,77 +212,16 @@ export function CreateSessionPanel({
     );
   }, [form, profileDetailQuery.data, selectedProfileId]);
 
-  const createMutation = useMutation({
-    mutationFn: async (values: CreateSessionFormValues) => {
-      let runnerSessionConfig = values.runnerSessionConfig;
-      if (sessionConfigSchema.supported) {
-        const normalized = normalizeRunnerConfigValues(
-          sessionConfigSchema.fields,
-          values.runnerSessionConfig
-        );
-        const validationResult = sessionConfigSchema.validationSchema.safeParse(
-          normalized
-        );
-        if (!validationResult.success) {
-          for (const issue of validationResult.error.issues) {
-            const fieldName = issue.path[0];
-            if (typeof fieldName === 'string') {
-              form.setError(`runnerSessionConfig.${fieldName}` as `runnerSessionConfig.${string}`, {
-                message: issue.message
-              });
-            }
-          }
-          throw new Error('Session 配置校验失败');
-        }
-
-        runnerSessionConfig = validationResult.data;
-      }
-
-      const initialMessageTextValue = values.initialMessageText?.trim() ?? '';
-      const initialRawInputValue = values.initialRawInput?.trim() ?? '';
-      const initialMessage = supportsStructuredInitialInput
-        ? initialMessageTextValue.length > 0
-          ? buildStructuredMessagePayload({
-              schema: structuredInputSchema!,
-              runtimeSchema: structuredRuntimeSchema ?? { supported: false as const, reason: '不支持' },
-              primaryField: primaryInputField!,
-              composerText: initialMessageTextValue,
-              additionalValues: values.initialInputConfig,
-              runtimeValues: values.initialRuntimeConfig
-            })
-          : undefined
-        : initialRawInputValue.length > 0
-          ? (() => {
-              const parsed = parseSessionInputText(initialRawInputValue);
-              if (!parsed.data) {
-                throw new Error(parsed.error ?? '首条消息输入校验失败');
-              }
-              // Add runtime config manually since parser only gives input
-              let runtimeConfig: Record<string, unknown> | undefined = undefined;
-              if (structuredRuntimeSchema?.supported && structuredRuntimeSchema.fields.length > 0) {
-                 const normalized = normalizeRunnerConfigValues(structuredRuntimeSchema.fields, values.initialRuntimeConfig);
-                 const validRuntime = structuredRuntimeSchema.validationSchema.safeParse(normalized);
-                 if (!validRuntime.success) throw new Error('首条消息运行时参数校验失败');
-                 runtimeConfig = validRuntime.data;
-              }
-              return { input: parsed.data.input, runtimeConfig };
-            })()
-          : undefined;
-
-      return createSession(
-        buildCreateSessionPayload(projectId, {
-          ...values,
-          runnerSessionConfig
-        }, profileDetailQuery.data, initialMessage)
-      );
-    },
-    onSuccess: async (session) => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.sessions.list(projectId)
-      });
-      queryClient.setQueryData(queryKeys.sessions.detail(session.id), session);
-      onCreated(session);
-    }
+  const createMutation = useCreateSessionMutation({
+    projectId,
+    form,
+    sessionConfigSchema,
+    structuredInputSchema,
+    structuredRuntimeSchema,
+    primaryInputField,
+    supportsStructuredInitialInput,
+    profileDetail: profileDetailQuery.data,
+    onCreated
   });
 
   const toggleSelection = (
@@ -350,7 +284,7 @@ export function CreateSessionPanel({
               >
                 <Textarea
                   rows={10}
-                  placeholder='{\n  "prompt": ""\n}'
+                  placeholder={'{\n  "prompt": ""\n}'}
                   className="min-h-36 resize-none border-0 bg-transparent px-0 py-0 font-mono text-sm shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-40"
                   {...form.register('initialRawInput')}
                 />

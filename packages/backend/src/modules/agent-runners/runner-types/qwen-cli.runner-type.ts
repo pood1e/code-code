@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { createCliRunnerType, type CliRunnerState } from '../cli/cli-runner-base';
+import { CliRunnerTypeBase, type CliRunnerState } from '../cli/cli-runner-base';
+import type { CliSessionRegistry } from '../cli/cli-session-registry';
 import type { CliProcessOptions } from '../cli/cli-process';
 import { probeQwenCliHealth } from '../cli/health-probes';
 import {
@@ -8,7 +9,8 @@ import {
   createQwenParserState,
   type QwenParserState
 } from '../cli/parsers/qwen-cli.parser';
-import type { RunnerSendPayload } from '../runner-type.interface';
+import type { RawOutputChunk, RunnerSendPayload } from '../runner-type.interface';
+import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const qwenCliRunnerConfigSchema = z.object({
   executorUser: z.string().optional()
@@ -26,24 +28,25 @@ export const qwenCliRuntimeConfigSchema = z.object({
     .default('plan')
 });
 
-export const QwenCliRunnerType = createCliRunnerType({
-  id: 'qwen-cli',
-  name: 'Qwen CLI',
-  materializerTarget: 'qwen',
-  capabilities: {
-    skill: true,
-    rule: true,
-    mcp: true
-  },
-  runnerConfigSchema: qwenCliRunnerConfigSchema,
-  runnerSessionConfigSchema: qwenCliRunnerSessionConfigSchema,
-  inputSchema: qwenCliInputSchema,
-  runtimeConfigSchema: qwenCliRuntimeConfigSchema,
+@RunnerTypeProvider()
+export class QwenCliRunnerType extends CliRunnerTypeBase {
+  readonly id = 'qwen-cli';
+  readonly name = 'Qwen CLI';
+  readonly materializerTarget = 'qwen' as const;
+  readonly capabilities = { skill: true, rule: true, mcp: true };
+  readonly runnerConfigSchema = qwenCliRunnerConfigSchema;
+  readonly runnerSessionConfigSchema = qwenCliRunnerSessionConfigSchema;
+  readonly inputSchema = qwenCliInputSchema;
+  readonly runtimeConfigSchema = qwenCliRuntimeConfigSchema;
+
+  constructor(cliSessionRegistry: CliSessionRegistry) {
+    super(cliSessionRegistry);
+  }
 
   async checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'> {
     const config = qwenCliRunnerConfigSchema.parse(runnerConfig);
     return probeQwenCliHealth(config.executorUser);
-  },
+  }
 
   buildCommand(
     runnerConfig: Record<string, unknown>,
@@ -92,23 +95,23 @@ export const QwenCliRunnerType = createCliRunnerType({
       args,
       cwd
     };
-  },
+  }
 
   parseLine(
     line: string,
     _messageId: string,
     parserState: Record<string, unknown>
-  ): import('../runner-type.interface').RawOutputChunk[] {
+  ): RawOutputChunk[] {
     return parseQwenLine(line, parserState as unknown as QwenParserState);
-  },
+  }
 
-  extractSessionId(
+  override extractSessionId(
     parserState: Record<string, unknown>
   ): string | null {
     return (parserState as unknown as QwenParserState).sessionId;
-  },
+  }
 
   createParserState(messageId: string): Record<string, unknown> {
     return createQwenParserState(messageId) as unknown as Record<string, unknown>;
   }
-});
+}
