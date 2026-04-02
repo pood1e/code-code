@@ -4,6 +4,8 @@ import {
   CircuitBoard,
   FolderKanban,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   ShieldCheck,
   SlidersHorizontal
 } from 'lucide-react';
@@ -26,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
+import { useUiStore } from '@/store/ui-store';
 import { projectConfig } from '@/types/projects';
 
 const resourceItems = [
@@ -42,28 +45,57 @@ const primaryItems = [
 ] as const;
 
 function DesktopSidebar({
+  collapsed,
   selectedPrimaryKey,
   selectedResourceKey,
-  onNavigate
+  onNavigate,
+  onToggle
 }: {
+  collapsed: boolean;
   selectedPrimaryKey: (typeof primaryItems)[number]['key'];
   selectedResourceKey: string;
   onNavigate: (path: string) => void;
+  onToggle: () => void;
 }) {
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-border/50 bg-sidebar lg:block">
-      <div className="sticky top-0 flex h-screen flex-col px-4 py-6">
-        <button
-          type="button"
-          onClick={() => onNavigate(projectConfig.path)}
-          className="mb-8 px-2 text-left"
+    <aside
+      className={cn(
+        'hidden shrink-0 border-r border-border/50 bg-sidebar transition-[width] duration-200 ease-in-out lg:block',
+        collapsed ? 'w-[3.5rem]' : 'w-56'
+      )}
+    >
+      <div className="sticky top-0 flex h-screen flex-col py-4">
+        {/* Header */}
+        <div
+          className={cn(
+            'mb-6 flex items-center',
+            collapsed ? 'justify-center px-2' : 'justify-between px-4'
+          )}
         >
-          <p className="text-sm font-semibold text-foreground tracking-tight">
-            Agent Workbench
-          </p>
-        </button>
+          {collapsed ? null : (
+            <button
+              type="button"
+              onClick={() => onNavigate(projectConfig.path)}
+              className="min-w-0 px-1 text-left"
+            >
+              <p className="truncate text-sm font-semibold tracking-tight text-foreground">
+                Agent Workbench
+              </p>
+            </button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onToggle}
+            className="shrink-0 text-muted-foreground"
+            title={collapsed ? '展开侧栏' : '收起侧栏'}
+          >
+            {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          </Button>
+        </div>
 
-        <nav className="flex-1 space-y-1">
+        {/* Primary Navigation */}
+        <nav className={cn('flex-1 space-y-1', collapsed ? 'px-2' : 'px-3')}>
           {primaryItems.map((item) => {
             const isActive = item.key === selectedPrimaryKey;
 
@@ -72,25 +104,37 @@ function DesktopSidebar({
                 key={item.key}
                 type="button"
                 onClick={() => onNavigate(item.path)}
+                title={collapsed ? item.label : undefined}
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors duration-150',
+                  'flex w-full items-center rounded-xl transition-colors duration-150',
+                  collapsed
+                    ? 'justify-center py-2.5'
+                    : 'gap-2.5 px-3 py-2 text-left text-sm',
                   isActive
                     ? 'bg-accent font-medium text-foreground'
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
-                <item.icon className="size-4" />
-                {item.label}
+                <item.icon className="size-4 shrink-0" />
+                {collapsed ? null : item.label}
               </button>
             );
           })}
         </nav>
 
+        {/* Resource Sub-Navigation */}
         {selectedPrimaryKey === 'resources' ? (
-          <div className="mt-auto border-t border-border/50 pt-4">
-            <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-              资源
-            </p>
+          <div
+            className={cn(
+              'mt-auto border-t border-border/50 pt-4',
+              collapsed ? 'px-2' : 'px-3'
+            )}
+          >
+            {collapsed ? null : (
+              <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                资源
+              </p>
+            )}
             <nav className="space-y-0.5">
               {resourceItems.map((item) => {
                 const isActive = item.key === selectedResourceKey;
@@ -100,15 +144,19 @@ function DesktopSidebar({
                     key={item.key}
                     type="button"
                     onClick={() => onNavigate(item.key)}
+                    title={collapsed ? item.label : undefined}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors duration-150',
+                      'flex w-full items-center rounded-lg transition-colors duration-150',
+                      collapsed
+                        ? 'justify-center py-2'
+                        : 'gap-2 px-3 py-1.5 text-left text-[13px]',
                       isActive
                         ? 'bg-accent font-medium text-foreground'
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                     )}
                   >
-                    <item.icon className="size-3.5" />
-                    {item.label}
+                    <item.icon className="size-3.5 shrink-0" />
+                    {collapsed ? null : item.label}
                   </button>
                 );
               })}
@@ -214,8 +262,14 @@ export function AppLayout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
+  const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const isProjectPage = useMemo(
+    () => /^\/projects\/[^/]+/.test(location.pathname),
+    [location.pathname]
+  );
   const selectedPrimaryKey = useMemo(
     () =>
       location.pathname.startsWith(projectConfig.path)
@@ -278,9 +332,11 @@ export function AppLayout() {
   return (
     <div className="relative min-h-screen lg:flex">
       <DesktopSidebar
+        collapsed={sidebarCollapsed}
         selectedPrimaryKey={selectedPrimaryKey}
         selectedResourceKey={selectedResourceKey}
         onNavigate={handleNavigate}
+        onToggle={toggleSidebar}
       />
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
@@ -299,10 +355,21 @@ export function AppLayout() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
-          <div className="mx-auto w-full max-w-5xl">
+        <main
+          className={cn(
+            'flex-1',
+            isProjectPage
+              ? 'px-0 py-0'
+              : 'px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8'
+          )}
+        >
+          {isProjectPage ? (
             <Outlet />
-          </div>
+          ) : (
+            <div className="mx-auto w-full max-w-5xl">
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
 

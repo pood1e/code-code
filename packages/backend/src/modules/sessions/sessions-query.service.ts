@@ -6,7 +6,6 @@ import type { AgentRunner } from '@prisma/client';
 import {
   MessageRole,
   MessageStatus,
-  type SessionMessageDetail,
   type SessionMessageMetric,
   type SessionSummary,
   type SessionToolUse,
@@ -17,7 +16,6 @@ import { sanitizeJson } from '../../common/json.utils';
 import { assertResourceIdsExist, type ResourceIdType } from '../../common/resource.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SessionMapper } from './session-mapper';
-import type { SessionRow } from './session.types';
 
 function sessionMessageAscendingOrder() {
   return [{ createdAt: 'asc' as const }, { id: 'asc' as const }];

@@ -1,9 +1,9 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ThreadPrimitive
 } from '@assistant-ui/react';
-import { Virtuoso } from 'react-virtuoso';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type {
   RunnerTypeResponse,
   SendSessionMessageInput,
@@ -43,11 +43,15 @@ import { ThreadComposerUI } from './components/ThreadComposerUI';
 
 const VirtuosoScroller = React.forwardRef<HTMLDivElement, any>((props, ref) => {
   return (
-    <ThreadPrimitive.Viewport
-      {...props}
-      ref={ref}
-      className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto w-full"
-    />
+    <>
+      <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
+      <ThreadPrimitive.Viewport
+        {...props}
+        ref={ref}
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto w-full scrollbar-hide"
+        style={{ ...props.style, scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      />
+    </>
   );
 });
 VirtuosoScroller.displayName = 'VirtuosoScroller';
@@ -74,21 +78,23 @@ export function SessionAssistantThread({
   onLoadMore?: () => void;
 }) {
   const [firstItemIndex, setFirstItemIndex] = useState(100_000);
-  const prevFirstIdRef = useRef<string | undefined>(undefined);
-  const prevMessagesLengthRef = useRef<number>(0);
+  const [prevFirstId, setPrevFirstId] = useState<string | undefined>(undefined);
+  const [prevMessagesLength, setPrevMessagesLength] = useState<number>(0);
 
-  if (messages.length > 0 && messages[0]?.id !== prevFirstIdRef.current) {
-    if (prevFirstIdRef.current !== undefined) {
-      const oldFirstIndex = messages.findIndex(m => m.id === prevFirstIdRef.current);
+  if (messages.length > 0 && messages[0]?.id !== prevFirstId) {
+    if (prevFirstId !== undefined) {
+      const oldFirstIndex = messages.findIndex(m => m.id === prevFirstId);
       if (oldFirstIndex > 0) {
         setFirstItemIndex(prev => prev - oldFirstIndex);
       } else {
-        setFirstItemIndex(prev => prev - Math.max(0, messages.length - prevMessagesLengthRef.current));
+        setFirstItemIndex(prev => prev - Math.max(0, messages.length - prevMessagesLength));
       }
     }
-    prevFirstIdRef.current = messages[0]?.id;
+    setPrevFirstId(messages[0]?.id);
   }
-  prevMessagesLengthRef.current = messages.length;
+  if (messages.length !== prevMessagesLength) {
+    setPrevMessagesLength(messages.length);
+  }
 
   const inputSchema = useMemo(
     () => parseRunnerConfigSchema(runnerType?.inputSchema),
@@ -136,16 +142,19 @@ export function SessionAssistantThread({
   const composerMode = !runnerType ? 'text' : supportsTextComposer ? 'text' : 'raw-json';
   
   const previousRecordsRef = useRef<SessionAssistantMessageRecord[]>([]);
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
 
   const runtimeMessages = useMemo(() => {
-    const nextRecords = buildSessionAssistantMessageRecords(
+    return buildSessionAssistantMessageRecords(
       messages,
       runtimeState,
       previousRecordsRef.current
     );
-    previousRecordsRef.current = nextRecords;
-    return nextRecords;
   }, [messages, runtimeState]);
+
+  useEffect(() => {
+    previousRecordsRef.current = runtimeMessages;
+  }, [runtimeMessages]);
 
   const configContextValue = useMemo(
     () => ({ assistantName: runnerType?.name || 'Agent' }),
@@ -237,10 +246,11 @@ export function SessionAssistantThread({
               </ThreadPrimitive.Viewport>
             ) : (
               <Virtuoso
+                ref={virtuosoRef}
                 className="min-h-0 flex-1 w-full"
                 data={messages}
                 firstItemIndex={firstItemIndex}
-                initialTopMostItemIndex={100_000 - 1} // Align to roughly initial bottom offset
+                initialTopMostItemIndex={messages.length > 0 ? firstItemIndex + messages.length - 1 : 0}
                 alignToBottom={true}
                 computeItemKey={(index, message) => message.id}
                 startReached={onLoadMore}
@@ -252,6 +262,9 @@ export function SessionAssistantThread({
                 }}
                 itemContent={(index, message) => {
                   const relativeIndex = index - firstItemIndex;
+                  if (relativeIndex >= messages.length || relativeIndex < 0) {
+                    return <div className="pb-3 px-4 sm:px-5 text-red-500">Error: Index bounds {index} - {firstItemIndex} = {relativeIndex} vs {messages.length}</div>;
+                  }
                   return (
                     <div className="pb-3 px-4 sm:px-5">
                       <ThreadPrimitive.MessageByIndex 

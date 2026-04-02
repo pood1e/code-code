@@ -118,6 +118,10 @@ export class SessionEventStore {
 
       return () => {
         subscription.unsubscribe();
+        const subject = this.subjects.get(sessionId);
+        if (subject && subject.observers.length === 0) {
+          this.subjects.delete(sessionId);
+        }
       };
     });
   }
