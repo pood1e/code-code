@@ -212,7 +212,7 @@ function AssistantTextPart({ text }: { text: string }) {
 
 function AssistantReasoningPart({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-border/70 bg-muted/25 p-3">
+    <div className="rounded-lg border border-dashed border-border/40 bg-muted/25 p-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         Thinking
       </p>
@@ -231,7 +231,7 @@ function AssistantToolPart({
   isError
 }: ToolCallMessagePartProps) {
   return (
-    <div className="rounded-lg border border-border/70 bg-muted/25 p-3">
+    <div className="rounded-lg border border-border/40 bg-muted/25 p-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -286,7 +286,7 @@ function AssistantEmptyPart({
 function UserMessageBubble() {
   return (
     <MessagePrimitive.Root className="flex justify-end">
-      <div className="max-w-[85%] rounded-[calc(var(--radius)*0.95)] border border-border/70 bg-background/80 p-4">
+      <div className="max-w-[85%] rounded-2xl border border-border/40 bg-background/80 p-4">
         <MessageHeader isUser />
         <div className="mt-3 [&>*+*]:mt-3">
           <MessagePrimitive.Parts
@@ -314,7 +314,7 @@ function UserMessageEditComposer() {
 
   return (
     <MessagePrimitive.Root className="flex justify-end">
-      <div className="w-full max-w-[85%] rounded-[calc(var(--radius)*0.95)] border border-border/70 bg-background/90 p-4">
+      <div className="w-full max-w-[85%] rounded-2xl border border-border/40 bg-background/90 p-4">
         <p className="text-sm font-semibold text-foreground">编辑消息</p>
         <Textarea
           className="mt-3"
@@ -351,7 +351,7 @@ function AssistantMessageBubble() {
 
   return (
     <MessagePrimitive.Root className="flex justify-start">
-      <div className="max-w-[88%] rounded-[calc(var(--radius)*0.95)] border border-border/70 bg-background/80 p-4">
+      <div className="max-w-[88%] rounded-2xl border border-border/40 bg-background/80 p-4">
         <MessageHeader isUser={false} />
         <div className="mt-3 [&>*+*]:mt-3">
           <MessagePrimitive.Parts
@@ -421,7 +421,7 @@ function AdditionalInputFields({
   }
 
   return (
-    <details className="rounded-xl border border-border/70 bg-muted/20">
+    <details className="rounded-xl border border-border/40 bg-muted/20">
       <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium text-foreground">
         高级输入参数
       </summary>
@@ -431,7 +431,7 @@ function AdditionalInputFields({
             return (
               <label
                 key={field.name}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/70 px-3 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/70 px-3 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">{field.label}</p>
@@ -531,7 +531,7 @@ function ThreadComposer({
   const isDisabled = useAuiState((state) => state.thread.isDisabled);
 
   return (
-    <div className="border-t border-border/70 bg-background/98 px-5 py-4 backdrop-blur">
+    <div className="border-t border-border/40 bg-background/98 px-5 py-4 backdrop-blur">
         {isRunning ? (
           <div className="flex justify-end">
             <Badge variant="secondary">

@@ -38,7 +38,7 @@ import type {
 } from './profile-editor.utils';
 
 const panelItemClassName =
-  'flex items-start justify-between gap-3 rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-background/80 p-3.5';
+  'flex items-start justify-between gap-3 rounded-2xl border border-border/40 bg-background/80 p-3.5';
 
 function SortableSelectedItem<T extends SelectedBaseItem>({
   item,
@@ -135,7 +135,7 @@ function SelectedResourceList<T extends SelectedBaseItem>({
   };
 
   return (
-    <SurfaceCard className="rounded-[calc(var(--radius)*1.05)] p-4 shadow-none">
+    <SurfaceCard className="rounded-2xl p-4 shadow-none">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         <Badge variant="secondary">{items.length}</Badge>
@@ -184,7 +184,7 @@ function AvailableResourceList({
   onAdd
 }: AvailableResourceListProps) {
   return (
-    <SurfaceCard className="rounded-[calc(var(--radius)*1.05)] p-4 shadow-none">
+    <SurfaceCard className="rounded-2xl p-4 shadow-none">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         <Badge variant="secondary">{items.length}</Badge>

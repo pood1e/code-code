@@ -174,7 +174,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
   return (
     <SurfaceCard>
       {showToolbar ? (
-        <div className="flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full max-w-xl flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -306,7 +306,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
               referencedState.profiles.map((profile) => (
                 <div
                   key={profile.id}
-                  className="rounded-2xl border border-border/70 bg-muted/40 px-4 py-3"
+                  className="rounded-2xl border border-border/40 bg-muted/40 px-4 py-3"
                 >
                   <p className="font-medium text-foreground">{profile.name}</p>
                   <p className="text-sm text-muted-foreground">{profile.id}</p>

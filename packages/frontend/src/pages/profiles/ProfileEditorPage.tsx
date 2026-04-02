@@ -66,9 +66,9 @@ function LoadingState() {
   return (
     <div className="space-y-4">
       <Skeleton className="h-10 w-40 rounded-xl" />
-      <Skeleton className="h-28 rounded-[calc(var(--radius)*1.2)]" />
-      <Skeleton className="h-80 rounded-[calc(var(--radius)*1.2)]" />
-      <Skeleton className="h-80 rounded-[calc(var(--radius)*1.2)]" />
+      <Skeleton className="h-28 rounded-2xl" />
+      <Skeleton className="h-80 rounded-2xl" />
+      <Skeleton className="h-80 rounded-2xl" />
     </div>
   );
 }
@@ -556,7 +556,7 @@ function ProfileEditorContent({
           };
 
           return (
-            <div className="space-y-3 rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-muted/35 p-3">
+            <div className="space-y-3 rounded-2xl border border-border/40 bg-muted/35 p-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">MCP Override</p>
                 <Button

@@ -10,8 +10,8 @@ import { projectConfig } from '@/types/projects';
 function LoadingState() {
   return (
     <div className="space-y-4">
-      <div className="h-32 animate-pulse rounded-[calc(var(--radius)*1.1)] bg-muted/70" />
-      <div className="h-64 animate-pulse rounded-[calc(var(--radius)*1.1)] bg-muted/60" />
+      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+      <div className="h-56 animate-pulse rounded-2xl bg-muted/60" />
     </div>
   );
 }

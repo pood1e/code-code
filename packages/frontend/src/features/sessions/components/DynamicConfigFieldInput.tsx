@@ -1,0 +1,86 @@
+import { Controller, useForm } from 'react-hook-form';
+import { FormField } from '@/components/app/FormField';
+import { Input } from '@/components/ui/input';
+import {
+  getRunnerConfigFieldValue,
+  type RunnerConfigField
+} from '@/lib/runner-config-schema';
+
+export function DynamicConfigFieldInput({
+  field,
+  namePrefix,
+  control
+}: {
+  field: RunnerConfigField;
+  namePrefix: string;
+  control: ReturnType<typeof useForm<any>>['control'];
+}) {
+  return (
+    <Controller
+      control={control}
+      name={`${namePrefix}.${field.name}`}
+      render={({ field: controllerField, fieldState }) => {
+        if (field.kind === 'boolean') {
+          return (
+            <FormField
+              label={field.label}
+              description={field.description}
+              error={fieldState.error?.message}
+            >
+              <label className="flex items-center gap-3 rounded-lg border border-border/40 px-3 py-3">
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={Boolean(controllerField.value)}
+                  onChange={(event) => controllerField.onChange(event.target.checked)}
+                />
+                <span className="text-sm text-foreground">启用</span>
+              </label>
+            </FormField>
+          );
+        }
+
+        if (field.kind === 'enum') {
+          return (
+            <FormField
+              label={field.label}
+              description={field.description}
+              error={fieldState.error?.message}
+            >
+              <select
+                className="flex h-9 w-full rounded-xl border border-input bg-transparent px-3 py-1.5 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-50"
+                value={getRunnerConfigFieldValue(field, controllerField.value)}
+                onChange={(event) => controllerField.onChange(event.target.value)}
+              >
+                {!field.required ? <option value="">未设置</option> : null}
+                {field.enumOptions?.map((option) => (
+                  <option key={String(option.value)} value={String(option.value)}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          );
+        }
+
+        return (
+          <FormField
+            label={field.label}
+            description={field.description}
+            error={fieldState.error?.message}
+          >
+            <Input
+              type={
+                field.kind === 'number' || field.kind === 'integer'
+                  ? 'number'
+                  : 'text'
+              }
+              value={getRunnerConfigFieldValue(field, controllerField.value)}
+              onChange={(event) => controllerField.onChange(event.target.value)}
+            />
+          </FormField>
+        );
+      }}
+    />
+  );
+}

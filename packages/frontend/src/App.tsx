@@ -43,14 +43,12 @@ const ResourceEditPage = lazy(() =>
 
 function RouteFallback() {
   return (
-    <div className="min-h-[32rem] rounded-[calc(var(--radius)*1.6)] border border-border/70 bg-card/80 p-6 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.32)] backdrop-blur">
-      <div className="space-y-4">
-        <Skeleton className="h-4 w-28 rounded-full" />
-        <Skeleton className="h-11 w-72 rounded-2xl" />
-        <Skeleton className="h-4 w-full rounded-full" />
-        <Skeleton className="h-4 w-5/6 rounded-full" />
-        <Skeleton className="h-72 rounded-[calc(var(--radius)*1.2)]" />
-      </div>
+    <div className="space-y-4">
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="h-10 w-64" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-64 rounded-2xl" />
     </div>
   );
 }
