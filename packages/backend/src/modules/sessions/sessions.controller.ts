@@ -25,6 +25,7 @@ import {
   EditSessionMessageDto,
   SendSessionMessageDto,
   SessionEventsQueryDto,
+  SessionMessagesQueryDto,
   SessionQueryDto
 } from './dto/session.dto';
 import { SessionsService } from './sessions.service';
@@ -115,8 +116,11 @@ export class SessionsController {
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Session messages fetched.' })
   @ResponseMessage('Session messages fetched')
-  listMessages(@Param('id') id: string) {
-    return this.sessionsService.listMessages(id);
+  listMessages(
+    @Param('id') id: string,
+    @Query() query: SessionMessagesQueryDto
+  ) {
+    return this.sessionsService.listMessages(id, query.cursor, query.limit);
   }
 
   @Sse(':id/events')

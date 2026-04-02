@@ -194,6 +194,11 @@ export type SessionMessageDetail = {
   createdAt: string;
 };
 
+export type PagedSessionMessages = {
+  data: SessionMessageDetail[];
+  nextCursor: string | null;
+};
+
 export type SendSessionMessageInput = {
   input: Record<string, unknown>;
   runtimeConfig?: Record<string, unknown>;

@@ -9,11 +9,13 @@ import {
 export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
   field,
   namePrefix,
-  control
+  control,
+  discoveredOptions
 }: {
   field: RunnerConfigField;
   namePrefix: string;
   control: Control<TFieldValues>;
+  discoveredOptions?: Record<string, Array<{ label: string; value: string } | string>>;
 }) {
   return (
     <Controller
@@ -40,7 +42,22 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
           );
         }
 
-        if (field.kind === 'enum') {
+        const discoveredEnumList = field.contextKey && discoveredOptions ? discoveredOptions[field.contextKey] : undefined;
+        const hasDiscoveredEnums = Array.isArray(discoveredEnumList) && discoveredEnumList.length > 0;
+
+        if (field.kind === 'enum' || hasDiscoveredEnums) {
+          let optionsToRender: { label: string; value: string }[] = [];
+          if (hasDiscoveredEnums) {
+            optionsToRender = discoveredEnumList.map(item =>
+              typeof item === 'string' ? { label: item, value: item } : item
+            );
+          } else if (field.enumOptions) {
+            optionsToRender = field.enumOptions.map(opt => ({
+              label: opt.label,
+              value: String(opt.value)
+            }));
+          }
+
           return (
             <FormField
               label={field.label}
@@ -53,8 +70,8 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
                 onChange={(event) => controllerField.onChange(event.target.value)}
               >
                 {!field.required ? <option value="">未设置</option> : null}
-                {field.enumOptions?.map((option) => (
-                  <option key={String(option.value)} value={String(option.value)}>
+                {optionsToRender.map((option) => (
+                  <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}

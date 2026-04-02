@@ -25,7 +25,8 @@ export const queryKeys = {
     all: ['agent-runners'] as const,
     list: (searchValue?: string) =>
       ['agent-runners', 'list', normalizeSearchValue(searchValue)] as const,
-    detail: (id: string) => ['agent-runners', 'detail', id] as const
+    detail: (id: string) => ['agent-runners', 'detail', id] as const,
+    context: (id: string) => ['agent-runners', 'context', id] as const
   },
   resources: {
     all: ['resources'] as const,

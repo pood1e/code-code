@@ -55,7 +55,7 @@ export const ClaudeCodeRunnerType = createCliRunnerType({
     payload: RunnerSendPayload
   ): CliProcessOptions {
     const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
-    // const sessionConfig = claudeCodeRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const sessionConfig = claudeCodeRunnerSessionConfigSchema.parse(_runnerSessionConfig);
     const runtimeConfig = claudeCodeRuntimeConfigSchema.parse(payload.runtimeConfig);
     const input = claudeCodeInputSchema.parse(payload.input);
 
@@ -65,6 +65,10 @@ export const ClaudeCodeRunnerType = createCliRunnerType({
       '--verbose', // required for stream-json with --print
       '--include-partial-messages'
     ];
+
+    // Note: Claude Code doesn't currently support --max-turns, so we ignore it here
+    // but the sessionConfig structure is validated for future-proofing.
+    void sessionConfig;
 
     // Permission mode
     args.push('--permission-mode', runtimeConfig.permissionMode);

@@ -25,6 +25,7 @@ export type RunnerConfigField = {
   defaultValue?: string | number | boolean;
   enumOptions?: RunnerConfigEnumOption[];
   enumValueType?: RunnerConfigEnumValueType;
+  contextKey?: string;
 };
 
 export type SupportedRunnerConfigSchema =
@@ -106,16 +107,21 @@ function parseProperty(
   }
 
   switch (property.type) {
-    case 'string':
+    case 'string': {
+      const isContextDynamic = property.description?.startsWith('context:');
+      const contextKey = isContextDynamic ? property.description!.split(':')[1].trim() : undefined;
+      const cleanDescription = isContextDynamic ? undefined : property.description;
+
       return {
         name,
         label: toFieldLabel(name, property.title),
-        description: property.description,
+        description: cleanDescription,
         kind: property.format === 'url' ? 'url' : 'string',
         required,
-        defaultValue:
-          typeof property.default === 'string' ? property.default : undefined
+        defaultValue: typeof property.default === 'string' ? property.default : undefined,
+        contextKey
       };
+    }
     case 'number':
       return {
         name,

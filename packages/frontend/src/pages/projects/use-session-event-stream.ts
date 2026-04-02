@@ -3,10 +3,11 @@ import type {
   OutputChunk,
   SessionDetail,
   SessionMessageDetail,
+  PagedSessionMessages,
   SessionSummary
 } from '@agent-workbench/shared';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, InfiniteData } from '@tanstack/react-query';
 
 import {
   createSessionEventSource,
@@ -122,6 +123,11 @@ export function useSessionEventStream({
       lastEventIdRef.current = Math.max(lastEventIdRef.current, chunk.eventId);
       updateSessionCaches(queryClient, scopeId, sessionId, chunk);
 
+      if (chunk.kind === 'done') {
+        // done is a message-level completion signal, do not close the session-level SSE connection
+        return;
+      }
+
       if (chunk.kind === 'session_status') {
         if (chunk.data.status !== SessionStatusEnum.Running) {
           setRuntimeStateBySessionId((current) => ({
@@ -166,9 +172,22 @@ export function useSessionEventStream({
         chunk.kind === 'error' ||
         chunk.kind === 'tool_use'
       ) {
-        queryClient.setQueryData<SessionMessageDetail[] | undefined>(
+        queryClient.setQueryData<InfiniteData<PagedSessionMessages> | undefined>(
           queryKeys.sessions.messages(sessionId),
-          (current) => (current ? applyOutputChunkToMessages(current, chunk) : current)
+          (current) => {
+            if (!current || !current.pages.length) return current;
+            
+            const firstPage = current.pages[0];
+            const updatedFirstPage = {
+              ...firstPage,
+              data: applyOutputChunkToMessages(firstPage.data, chunk)
+            };
+            
+            return {
+              ...current,
+              pages: [updatedFirstPage, ...current.pages.slice(1)]
+            };
+          }
         );
 
         if (

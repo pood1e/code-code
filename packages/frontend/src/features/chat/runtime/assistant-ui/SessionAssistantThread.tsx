@@ -1,7 +1,9 @@
 import { useMemo, useState, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ThreadPrimitive
 } from '@assistant-ui/react';
+import { Virtuoso } from 'react-virtuoso';
 import type {
   RunnerTypeResponse,
   SendSessionMessageInput,
@@ -10,6 +12,8 @@ import type {
 } from '@agent-workbench/shared';
 import React from 'react';
 
+import { probeAgentRunnerContext } from '@/api/agent-runners';
+import { queryKeys } from '@/query/query-keys';
 import {
   parseRunnerConfigSchema
 } from '@/lib/runner-config-schema';
@@ -27,7 +31,8 @@ import {
 import { SessionAssistantRuntimeProvider } from './SessionAssistantRuntimeProvider';
 
 import type {
-  SessionMessageRuntimeMap
+  SessionMessageRuntimeMap,
+  SessionAssistantMessageRecord
 } from './thread-adapter';
 import { buildSessionAssistantMessageRecords } from './thread-adapter';
 
@@ -35,6 +40,17 @@ import { ThreadConfigContext } from './context';
 import { UserMessageBubble, UserMessageEditComposer } from './components/UserMessage';
 import { AssistantMessageBubble } from './components/AssistantMessage';
 import { ThreadComposerUI } from './components/ThreadComposerUI';
+
+const VirtuosoScroller = React.forwardRef<HTMLDivElement, any>((props, ref) => {
+  return (
+    <ThreadPrimitive.Viewport
+      {...props}
+      ref={ref}
+      className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto w-full"
+    />
+  );
+});
+VirtuosoScroller.displayName = 'VirtuosoScroller';
 
 export function SessionAssistantThread({
   session,
@@ -44,7 +60,8 @@ export function SessionAssistantThread({
   onSend,
   onCancel,
   onReload,
-  onEdit
+  onEdit,
+  onLoadMore
 }: {
   session: SessionDetail;
   messages: SessionMessageDetail[];
@@ -54,7 +71,25 @@ export function SessionAssistantThread({
   onCancel: () => Promise<void>;
   onReload: () => Promise<void>;
   onEdit: (messageId: string, payload: SendSessionMessageInput) => Promise<void>;
+  onLoadMore?: () => void;
 }) {
+  const [firstItemIndex, setFirstItemIndex] = useState(100_000);
+  const prevFirstIdRef = useRef<string | undefined>(undefined);
+  const prevMessagesLengthRef = useRef<number>(0);
+
+  if (messages.length > 0 && messages[0]?.id !== prevFirstIdRef.current) {
+    if (prevFirstIdRef.current !== undefined) {
+      const oldFirstIndex = messages.findIndex(m => m.id === prevFirstIdRef.current);
+      if (oldFirstIndex > 0) {
+        setFirstItemIndex(prev => prev - oldFirstIndex);
+      } else {
+        setFirstItemIndex(prev => prev - Math.max(0, messages.length - prevMessagesLengthRef.current));
+      }
+    }
+    prevFirstIdRef.current = messages[0]?.id;
+  }
+  prevMessagesLengthRef.current = messages.length;
+
   const inputSchema = useMemo(
     () => parseRunnerConfigSchema(runnerType?.inputSchema),
     [runnerType]
@@ -100,15 +135,28 @@ export function SessionAssistantThread({
   const supportsTextComposer = Boolean(structuredInputSchema && primaryInputField);
   const composerMode = !runnerType ? 'text' : supportsTextComposer ? 'text' : 'raw-json';
   
-  const runtimeMessages = useMemo(
-    () => buildSessionAssistantMessageRecords(messages, runtimeState),
-    [messages, runtimeState]
-  );
+  const previousRecordsRef = useRef<SessionAssistantMessageRecord[]>([]);
+
+  const runtimeMessages = useMemo(() => {
+    const nextRecords = buildSessionAssistantMessageRecords(
+      messages,
+      runtimeState,
+      previousRecordsRef.current
+    );
+    previousRecordsRef.current = nextRecords;
+    return nextRecords;
+  }, [messages, runtimeState]);
 
   const configContextValue = useMemo(
     () => ({ assistantName: runnerType?.name || 'Agent' }),
     [runnerType?.name]
   );
+
+  const { data: runnerContext } = useQuery({
+    queryKey: queryKeys.agentRunners.context(session.runnerId),
+    queryFn: () => probeAgentRunnerContext(session.runnerId),
+    staleTime: 60 * 1000
+  });
 
   return (
     <SessionAssistantRuntimeProvider
@@ -180,27 +228,45 @@ export function SessionAssistantThread({
     >
       <ThreadConfigContext.Provider value={configContextValue}>
         <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
-          <ThreadPrimitive.Viewport
-            className="min-h-0 flex-1 overflow-y-auto px-5 py-5"
-            autoScroll
-          >
             {messages.length === 0 ? (
-              <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 text-center">
-                <p className="text-base font-medium text-foreground">开始对话</p>
-                <p className="text-sm text-muted-foreground">消息会显示在这里</p>
-              </div>
+              <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-0">
+                <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 text-center">
+                  <p className="text-base font-medium text-foreground">开始对话</p>
+                  <p className="text-sm text-muted-foreground">消息会显示在这里</p>
+                </div>
+              </ThreadPrimitive.Viewport>
             ) : (
-              <div className="space-y-3">
-                <ThreadPrimitive.Messages
-                  components={{
-                    UserMessage: UserMessageBubble,
-                    UserEditComposer: UserMessageEditComposer,
-                    AssistantMessage: AssistantMessageBubble
-                  }}
-                />
-              </div>
+              <Virtuoso
+                className="min-h-0 flex-1 w-full"
+                data={messages}
+                firstItemIndex={firstItemIndex}
+                initialTopMostItemIndex={100_000 - 1} // Align to roughly initial bottom offset
+                alignToBottom={true}
+                computeItemKey={(index, message) => message.id}
+                startReached={onLoadMore}
+                followOutput="smooth"
+                components={{
+                  Scroller: VirtuosoScroller,
+                  Header: () => <div className="h-5" />,
+                  Footer: () => <div className="h-5" />
+                }}
+                itemContent={(index, message) => {
+                  const relativeIndex = index - firstItemIndex;
+                  return (
+                    <div className="pb-3 px-4 sm:px-5">
+                      <ThreadPrimitive.MessageByIndex 
+                        index={relativeIndex} 
+                        components={{
+                          UserMessage: UserMessageBubble,
+                          UserEditComposer: UserMessageEditComposer,
+                          AssistantMessage: AssistantMessageBubble
+                        }}
+                      />
+                    </div>
+                  );
+                }}
+              />
             )}
-          </ThreadPrimitive.Viewport>
 
           <ThreadComposerUI
             key={composerKey}
@@ -210,6 +276,7 @@ export function SessionAssistantThread({
             runtimeFields={runtimeFields}
             initialRuntimeValues={initialRuntimeValues}
             composerError={composerError}
+            discoveredOptions={runnerContext}
             onAdditionalValueChange={(fieldName: string, value: unknown) => {
               additionalValuesRef.current = {
                 ...additionalValuesRef.current,

@@ -156,6 +156,7 @@ export function ThreadComposerUI({
   runtimeFields,
   initialRuntimeValues,
   composerError,
+  discoveredOptions,
   onAdditionalValueChange,
   onRuntimeValueChange
 }: {
@@ -165,6 +166,7 @@ export function ThreadComposerUI({
   runtimeFields: RunnerConfigField[];
   initialRuntimeValues: Record<string, unknown>;
   composerError: string | null;
+  discoveredOptions?: Record<string, Array<{ label: string; value: string } | string>>;
   onAdditionalValueChange: (fieldName: string, value: unknown) => void;
   onRuntimeValueChange: (fieldName: string, value: unknown) => void;
 }) {
@@ -219,8 +221,19 @@ export function ThreadComposerUI({
               {runtimeFields.length > 0 ? (
                 <>
                   {runtimeFields.map((field) => {
-                    if (field.kind === 'enum') {
+                    const discoveredEnumList = field.contextKey && discoveredOptions ? discoveredOptions[field.contextKey] : undefined;
+                    const hasDiscoveredEnums = Array.isArray(discoveredEnumList) && discoveredEnumList.length > 0;
+
+                    if (field.kind === 'enum' || hasDiscoveredEnums) {
                       const val = getRunnerConfigFieldValue(field, runtimeValues[field.name]);
+                      
+                      let optionsToRender: { label: string; value: string }[] = [];
+                      if (hasDiscoveredEnums) {
+                         optionsToRender = discoveredEnumList.map(item => typeof item === 'string' ? { label: item, value: item } : item);
+                      } else if (field.enumOptions) {
+                         optionsToRender = field.enumOptions.map(opt => ({ label: opt.label, value: String(opt.value) }));
+                      }
+
                       return (
                         <select
                           key={field.name}
@@ -231,8 +244,8 @@ export function ThreadComposerUI({
                           title={field.label}
                         >
                           {!field.required ? <option value="">{field.label}</option> : null}
-                          {field.enumOptions?.map((option) => (
-                            <option key={String(option.value)} value={String(option.value)}>
+                          {optionsToRender.map((option) => (
+                            <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
                           ))}

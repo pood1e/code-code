@@ -3,7 +3,8 @@ import type {
   PlatformSessionConfig,
   McpStdioContent,
   McpConfigOverride,
-  RunnerTypeCapabilities
+  RunnerTypeCapabilities,
+  RunnerContext
 } from '@agent-workbench/shared';
 import type { ZodTypeAny } from 'zod';
 
@@ -78,6 +79,13 @@ export class AsyncChunkQueue implements AsyncIterable<RawOutputChunk> {
         return new Promise<IteratorResult<RawOutputChunk>>((resolve) => {
           this.resolvers.push(resolve);
         });
+      },
+      return: () => {
+        this.close();
+        return Promise.resolve({ 
+          value: undefined as unknown as RawOutputChunk, 
+          done: true 
+        });
       }
     };
   }
@@ -141,6 +149,7 @@ export type CliRunnerTypeConfig = {
   runtimeConfigSchema: ZodTypeAny;
 
   checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
+  probeContext?(runnerConfig: unknown): Promise<RunnerContext>;
 
   /**
    * Build the CLI command and arguments for a single execution.
@@ -187,20 +196,19 @@ export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
     inputSchema: config.inputSchema,
     runtimeConfigSchema: config.runtimeConfigSchema,
 
-    checkHealth: config.checkHealth,
+    checkHealth: (runnerConfig: unknown) => config.checkHealth(runnerConfig),
+    probeContext: config.probeContext ? (runnerConfig: unknown) => config.probeContext!(runnerConfig) : undefined,
 
-    async createSession(
+    createSession(
       sessionId: string,
       _runnerConfig: unknown,
       _platformSessionConfig: PlatformSessionConfig,
       _runnerSessionConfig: unknown
     ): Promise<Record<string, unknown>> {
-      // The actual context materialization (MCP/Rule/Skill file writing)
-      // requires Prisma access to resolve resource IDs → content.
-      // This is handled by the session runtime service calling
-      // materializeSessionContext() before createSession().
-      //
-      // createSession() here just initializes the in-memory state.
+      void _runnerConfig;
+      void _platformSessionConfig;
+      void _runnerSessionConfig;
+      
       const state: CliRunnerState = {
         contextDir: null,
         mcpConfigPath: null,
@@ -208,7 +216,7 @@ export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
       };
 
       logger.log(`CLI session created: ${sessionId} (type: ${config.id})`);
-      return state as unknown as Record<string, unknown>;
+      return Promise.resolve(state as unknown as Record<string, unknown>);
     },
 
     async destroySession(session: RunnerSessionRecord): Promise<void> {
@@ -234,8 +242,8 @@ export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
     ): Promise<void> {
       const handle = getCliSessionHandle(session);
       const state = session.runnerState as CliRunnerState;
-      const runnerConfig = session.runnerConfig as Record<string, unknown>;
-      const runnerSessionConfig = session.runnerSessionConfig as Record<string, unknown>;
+      const runnerConfig = session.runnerConfig;
+      const runnerSessionConfig = session.runnerSessionConfig;
 
       // Kill any previous process from this session
       if (handle.process?.isRunning) {
@@ -262,6 +270,22 @@ export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
 
         try {
           const chunks = config.parseLine(line, payload.messageId, parserState);
+          
+          // Eagerly update CLI session ID if extracted, so it's available 
+          // before the chunks are processed by the runtime.
+          if (config.extractSessionId) {
+            const cliSessionId = config.extractSessionId(parserState);
+            if (cliSessionId && (session.runnerState as CliRunnerState).cliSessionId !== cliSessionId) {
+              (session.runnerState as CliRunnerState).cliSessionId = cliSessionId;
+              handle.queue.push({
+                kind: 'state_update',
+                messageId: payload.messageId,
+                timestampMs: Date.now(),
+                data: { cliSessionId }
+              });
+            }
+          }
+
           for (const chunk of chunks) {
             handle.queue.push(chunk);
           }
@@ -285,6 +309,12 @@ export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
           const cliSessionId = config.extractSessionId(parserState);
           if (cliSessionId) {
             (session.runnerState as CliRunnerState).cliSessionId = cliSessionId;
+            handle.queue.push({
+              kind: 'state_update',
+              messageId: payload.messageId,
+              timestampMs: Date.now(),
+              data: { cliSessionId }
+            });
           }
         }
 
@@ -310,12 +340,13 @@ export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
       return getCliSessionHandle(session).queue;
     },
 
-    async cancelOutput(session: RunnerSessionRecord): Promise<void> {
+    cancelOutput(session: RunnerSessionRecord): Promise<void> {
       const handle = activeSessions.get(`cli:${session.id}`);
       if (handle) {
         handle.cancelled = true;
         handle.process?.kill();
       }
+      return Promise.resolve();
     }
   };
 }
