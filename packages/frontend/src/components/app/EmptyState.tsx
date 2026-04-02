@@ -8,6 +8,7 @@ type EmptyStateProps = {
   action?: ReactNode;
   icon?: ReactNode;
   className?: string;
+  size?: 'default' | 'compact';
 };
 
 export function EmptyState({
@@ -15,12 +16,14 @@ export function EmptyState({
   description,
   action,
   icon,
-  className
+  className,
+  size = 'default'
 }: EmptyStateProps) {
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-6 py-16 text-center',
+        'flex flex-col items-center justify-center px-6 text-center',
+        size === 'compact' ? 'py-10' : 'py-16',
         className
       )}
     >

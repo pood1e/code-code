@@ -57,6 +57,7 @@ export function SessionList({
                   新建 Session
                 </Button>
               }
+              size="compact"
             />
           )}
         </div>
