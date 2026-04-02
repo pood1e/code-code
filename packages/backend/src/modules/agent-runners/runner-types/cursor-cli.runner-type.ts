@@ -74,7 +74,7 @@ export const CursorCliRunnerType = createCliRunnerType({
           const models: string[] = [];
           const lines = stdout.split('\n');
           for (const line of lines) {
-            const match = line.match(/^([a-z0-9\-\.]+)\s+-/);
+            const match = line.match(/^([a-z0-9\-.]+)\s+-/);
             if (match) {
               models.push(match[1]);
             }

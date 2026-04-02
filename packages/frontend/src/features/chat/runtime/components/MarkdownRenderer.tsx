@@ -161,7 +161,7 @@ const CodeBlock = memo(function CodeBlock({
           variant="ghost"
           size="icon"
           className="h-6 w-6 text-zinc-400 hover:text-zinc-100 transition-colors"
-          onClick={copyToClipboard}
+          onClick={() => void copyToClipboard()}
         >
           {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           <span className="sr-only">Copy code</span>

@@ -53,7 +53,7 @@ export function ProjectDashboardPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-screen flex-col">
       <ProjectSectionHeader
         projects={projects}
         currentProjectId={id}
@@ -62,21 +62,25 @@ export function ProjectDashboardPage() {
         onTabChange={(tab) => goToProjectTab(id, tab)}
       />
 
-      <SurfaceCard className="py-10">
-        <EmptyState
-          title="Dashboard 敬请期待"
-          description="第一阶段只实现 Project 配置管理，Dashboard 暂不提供实际内容。"
-          action={
-            <Button
-              onClick={() =>
-                void navigate(`${projectConfig.path}/${id}/config`)
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
+        <div className="mx-auto w-full max-w-5xl space-y-4">
+          <SurfaceCard className="py-10">
+            <EmptyState
+              title="Dashboard 敬请期待"
+              description="第一阶段只实现 Project 配置管理，Dashboard 暂不提供实际内容。"
+              action={
+                <Button
+                  onClick={() =>
+                    void navigate(`${projectConfig.path}/${id}/config`)
+                  }
+                >
+                  前往配置页
+                </Button>
               }
-            >
-              前往配置页
-            </Button>
-          }
-        />
-      </SurfaceCard>
+            />
+          </SurfaceCard>
+        </div>
+      </div>
     </div>
   );
 }

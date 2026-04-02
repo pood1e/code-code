@@ -221,23 +221,31 @@ export function useSessionEventStream({
         return;
       }
 
-      void Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.sessions.messages(sessionId)
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.sessions.detail(sessionId)
-        }),
-        scopeId
-          ? queryClient.invalidateQueries({
-              queryKey: queryKeys.sessions.list(scopeId)
-            })
-          : Promise.resolve()
-      ]).catch(() => undefined);
+      // Instead of an aggressive immediate refetch on every disconnect, we only invalidate once every few seconds
+      // to avoid request storms on network drop or server restart.
+      if (!reconnectTimerRef.current) {
+        void Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.sessions.messages(sessionId)
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.sessions.detail(sessionId)
+          }),
+          scopeId
+            ? queryClient.invalidateQueries({
+                queryKey: queryKeys.sessions.list(scopeId)
+              })
+            : Promise.resolve()
+        ]).catch(() => undefined);
+      } else {
+        window.clearTimeout(reconnectTimerRef.current);
+      }
 
+      // Linear backoff (or simple fixed interval, e.g. 2s) to avoid spamming the backend
       reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
         setStreamNonce((value) => value + 1);
-      }, 1000);
+      }, 2000);
     };
 
     return () => {

@@ -33,14 +33,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/app/FormField';
 import { Button } from '@/components/ui/button';
-import { LoaderCircle, SlidersHorizontal } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle
-} from '@/components/ui/sheet';
+import { ChevronDown, LoaderCircle, SlidersHorizontal } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { AgentRunnerSummary, Profile, ResourceByKind, RunnerTypeResponse, SessionDetail } from '@agent-workbench/shared';
 
 const selectClassName =
@@ -394,11 +388,18 @@ export function CreateSessionPanel({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-9 rounded-full px-3 text-xs text-muted-foreground whitespace-nowrap"
-                  onClick={() => setAdvancedOpen(true)}
+                  className={cn(
+                    'h-9 rounded-full px-3 text-xs text-muted-foreground whitespace-nowrap',
+                    advancedOpen && 'bg-accent text-foreground'
+                  )}
+                  onClick={() => setAdvancedOpen(!advancedOpen)}
                 >
                   <SlidersHorizontal />
                   高级设置
+                  <ChevronDown className={cn(
+                    'size-3 transition-transform duration-200',
+                    advancedOpen && 'rotate-180'
+                  )} />
                 </Button>
               </div>
 
@@ -422,92 +423,101 @@ export function CreateSessionPanel({
         </div>
       </div>
 
-      <Sheet open={advancedOpen} onOpenChange={setAdvancedOpen}>
-        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
-          <SheetHeader className="border-b border-border/40 px-5 py-4 text-left">
-            <SheetTitle>高级设置</SheetTitle>
-            <SheetDescription>资源、输入参数和会话参数。</SheetDescription>
-          </SheetHeader>
+      {/* Inline collapsible advanced settings */}
+      <div
+        className={cn(
+          'grid transition-all duration-300 ease-in-out',
+          advancedOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="mx-auto max-w-4xl border-t border-border/30 px-5 py-5">
+            <div className="mb-4 flex items-center gap-2">
+              <SlidersHorizontal className="size-4 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">高级设置</p>
+              <p className="text-xs text-muted-foreground">资源、输入参数和会话参数</p>
+            </div>
 
-          <div className="space-y-5 px-5 py-5">
-            {additionalInputFields.length > 0 ? (
-              <SetupSection title="输入参数">
-                <div className="grid gap-4">
-                  {additionalInputFields.map((field) => (
-                    <DynamicConfigFieldInput
-                      key={field.name}
-                      field={field}
-                      namePrefix="initialInputConfig"
-                      control={form.control}
-                      discoveredOptions={runnerContext}
-                    />
-                  ))}
+            <div className="space-y-5">
+              {additionalInputFields.length > 0 ? (
+                <SetupSection title="输入参数">
+                  <div className="grid gap-4">
+                    {additionalInputFields.map((field) => (
+                      <DynamicConfigFieldInput
+                        key={field.name}
+                        field={field}
+                        namePrefix="initialInputConfig"
+                        control={form.control}
+                        discoveredOptions={runnerContext}
+                      />
+                    ))}
+                  </div>
+                </SetupSection>
+              ) : null}
+
+              {sessionConfigSchema.supported && sessionConfigSchema.fields.length > 0 ? (
+                <SetupSection title="会话参数 (Session Config)">
+                  <div className="grid gap-4">
+                    {sessionConfigSchema.fields.map((field) => (
+                      <DynamicConfigFieldInput
+                        key={field.name}
+                        field={field}
+                        namePrefix="runnerSessionConfig"
+                        control={form.control}
+                        discoveredOptions={runnerContext}
+                      />
+                    ))}
+                  </div>
+                </SetupSection>
+              ) : null}
+
+              {runtimeFields.length > 0 ? (
+                <SetupSection title="运行参数 (Runtime Config)">
+                  <div className="grid gap-4">
+                    {runtimeFields.map((field) => (
+                      <DynamicConfigFieldInput
+                        key={field.name}
+                        field={field}
+                        namePrefix="initialRuntimeConfig"
+                        control={form.control}
+                        discoveredOptions={runnerContext}
+                      />
+                    ))}
+                  </div>
+                </SetupSection>
+              ) : null}
+
+              <SetupSection title="资源">
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <ResourceSelectionSection
+                    label="技能"
+                    items={resources.skills}
+                    value={selectedSkillIds}
+                    onToggle={(resourceId) => toggleSelection('skillIds', resourceId)}
+                  />
+                  <ResourceSelectionSection
+                    label="规则"
+                    items={resources.rules}
+                    value={selectedRuleIds}
+                    onToggle={(resourceId) => toggleSelection('ruleIds', resourceId)}
+                  />
+                  <ResourceSelectionSection
+                    label="MCP"
+                    items={resources.mcps}
+                    value={selectedMcpIds}
+                    onToggle={(resourceId) => toggleSelection('mcpIds', resourceId)}
+                    getHint={(item) =>
+                      typeof item.content === 'object' && item.content
+                        ? item.content.command
+                        : undefined
+                    }
+                  />
                 </div>
               </SetupSection>
-            ) : null}
-
-            {sessionConfigSchema.supported && sessionConfigSchema.fields.length > 0 ? (
-              <SetupSection title="会话参数 (Session Config)">
-                <div className="grid gap-4">
-                  {sessionConfigSchema.fields.map((field) => (
-                    <DynamicConfigFieldInput
-                      key={field.name}
-                      field={field}
-                      namePrefix="runnerSessionConfig"
-                      control={form.control}
-                      discoveredOptions={runnerContext}
-                    />
-                  ))}
-                </div>
-              </SetupSection>
-            ) : null}
-
-            {runtimeFields.length > 0 ? (
-              <SetupSection title="运行参数 (Runtime Config)">
-                <div className="grid gap-4">
-                  {runtimeFields.map((field) => (
-                    <DynamicConfigFieldInput
-                      key={field.name}
-                      field={field}
-                      namePrefix="initialRuntimeConfig"
-                      control={form.control}
-                      discoveredOptions={runnerContext}
-                    />
-                  ))}
-                </div>
-              </SetupSection>
-            ) : null}
-
-            <SetupSection title="资源">
-              <div className="grid gap-5 xl:grid-cols-2">
-                <ResourceSelectionSection
-                  label="技能"
-                  items={resources.skills}
-                  value={selectedSkillIds}
-                  onToggle={(resourceId) => toggleSelection('skillIds', resourceId)}
-                />
-                <ResourceSelectionSection
-                  label="规则"
-                  items={resources.rules}
-                  value={selectedRuleIds}
-                  onToggle={(resourceId) => toggleSelection('ruleIds', resourceId)}
-                />
-                <ResourceSelectionSection
-                  label="MCP"
-                  items={resources.mcps}
-                  value={selectedMcpIds}
-                  onToggle={(resourceId) => toggleSelection('mcpIds', resourceId)}
-                  getHint={(item) =>
-                    typeof item.content === 'object' && item.content
-                      ? item.content.command
-                      : undefined
-                  }
-                />
-              </div>
-            </SetupSection>
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </div>
     </div>
   );
 }
