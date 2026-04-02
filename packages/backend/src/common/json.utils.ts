@@ -18,6 +18,7 @@ export function toInputJson(value: Prisma.InputJsonValue) {
   return value;
 }
 
-export function toNullableInputJson(value?: Prisma.InputJsonValue) {
+/** Returns the value as-is or `undefined` if absent. In Prisma, `undefined` means "do not update this field". */
+export function toOptionalInputJson(value?: Prisma.InputJsonValue) {
   return value ?? undefined;
 }

@@ -7,6 +7,7 @@ import { ProfilesModule } from './modules/profiles/profiles.module';
 import { RulesModule } from './modules/rules/rules.module';
 import { SkillsModule } from './modules/skills/skills.module';
 import { AgentRunnersModule } from './modules/agent-runners/agent-runners.module';
+import { SessionsModule } from './modules/sessions/sessions.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { AgentRunnersModule } from './modules/agent-runners/agent-runners.module
     McpsModule,
     RulesModule,
     ProfilesModule,
-    AgentRunnersModule
+    AgentRunnersModule,
+    SessionsModule
   ]
 })
 export class AppModule {}

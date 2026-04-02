@@ -12,9 +12,9 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
-  isNotFoundApiError,
-  useErrorMessage
+  isNotFoundApiError
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { getResource, saveResourceByKind } from '@/api/resources';
 import { EditorToolbar } from '@/components/app/EditorToolbar';
 import { EmptyState } from '@/components/app/EmptyState';
@@ -125,7 +125,7 @@ function ResourcePageFrame({
       {children}
 
       {contentError ? (
-        <Alert variant="destructive" className="rounded-[calc(var(--radius)*0.95)]">
+        <Alert variant="destructive" className="rounded-xl">
           <AlertTitle>保存失败</AlertTitle>
           <AlertDescription>{contentError}</AlertDescription>
         </Alert>

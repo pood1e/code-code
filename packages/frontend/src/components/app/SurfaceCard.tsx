@@ -9,7 +9,7 @@ export const SurfaceCard = forwardRef<HTMLDivElement, SurfaceCardProps>(
     <div
       ref={ref}
       className={cn(
-        'rounded-[calc(var(--radius)*1.1)] border border-border/70 bg-card/80 p-4 shadow-[0_18px_36px_-32px_rgba(15,23,42,0.18)] sm:p-5',
+        'rounded-2xl border border-border/60 bg-card p-5 sm:p-6',
         className
       )}
       {...props}

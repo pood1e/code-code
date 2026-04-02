@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
-import { useErrorMessage } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import {
   createProfile,
   deleteProfile,
@@ -182,7 +182,7 @@ export function ProfilesPage() {
   return (
     <SurfaceCard>
       {showToolbar ? (
-        <div className="flex items-center justify-end border-b border-border/70 pb-4">
+        <div className="flex items-center justify-end border-b border-border/40 pb-4">
           <Button
             size="sm"
             aria-label="新建 Profile"

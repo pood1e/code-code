@@ -7,9 +7,9 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
-  isNotFoundApiError,
-  useErrorMessage
+  isNotFoundApiError
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import {
   createAgentRunner,
   getAgentRunner,
@@ -49,9 +49,9 @@ const selectClassName =
 function LoadingState() {
   return (
     <div className="space-y-4">
-      <div className="h-10 w-40 animate-pulse rounded-xl bg-muted/80" />
-      <div className="h-28 animate-pulse rounded-[calc(var(--radius)*1.2)] bg-muted/70" />
-      <div className="h-72 animate-pulse rounded-[calc(var(--radius)*1.2)] bg-muted/60" />
+      <div className="h-8 w-40 animate-pulse rounded-xl bg-muted" />
+      <div className="h-24 animate-pulse rounded-2xl bg-muted/80" />
+      <div className="h-64 animate-pulse rounded-2xl bg-muted/60" />
     </div>
   );
 }
@@ -75,7 +75,7 @@ function RunnerConfigFieldInput({
               description={field.description}
               error={fieldState.error?.message}
             >
-              <label className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/80 px-3 py-3">
+              <label className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/80 px-3 py-3">
                 <input
                   type="checkbox"
                   checked={Boolean(controllerField.value)}
@@ -310,7 +310,7 @@ function AgentRunnerEditorContent({
       />
 
       {submitError ? (
-        <Alert variant="destructive" className="rounded-[calc(var(--radius)*0.95)]">
+        <Alert variant="destructive" className="rounded-xl">
           <AlertTitle>保存失败</AlertTitle>
           <AlertDescription>{submitError}</AlertDescription>
         </Alert>
@@ -373,7 +373,7 @@ function AgentRunnerEditorContent({
         </SurfaceCard>
 
         <SurfaceCard>
-          <div className="border-b border-border/70 pb-4">
+          <div className="border-b border-border/40 pb-4">
             <p className="text-sm font-medium text-foreground">Runner Config</p>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               按所选 RunnerType 的 L1 配置 Schema 填写长期稳定配置。
@@ -393,7 +393,7 @@ function AgentRunnerEditorContent({
               </div>
             ) : (
               <div className="pt-4">
-                <Alert className="rounded-[calc(var(--radius)*0.95)] border-border/70">
+                <Alert className="rounded-xl border-border/40">
                   <AlertTitle>当前类型没有可编辑字段</AlertTitle>
                   <AlertDescription>
                     该 RunnerType 的 L1 配置为空，保存时将提交空对象。
@@ -403,7 +403,7 @@ function AgentRunnerEditorContent({
             )
           ) : (
             <div className="space-y-4 pt-4">
-              <Alert className="rounded-[calc(var(--radius)*0.95)] border-border/70">
+              <Alert className="rounded-xl border-border/40">
                 <AlertTitle>当前 RunnerType 使用原始 JSON 编辑</AlertTitle>
                 <AlertDescription>{parsedSchema.reason}</AlertDescription>
               </Alert>

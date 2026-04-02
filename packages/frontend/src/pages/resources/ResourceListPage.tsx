@@ -7,9 +7,9 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   ApiRequestError,
-  getReferencedProfiles,
-  useErrorMessage
+  getReferencedProfiles
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { deleteResource, listResources } from '@/api/resources';
 import { ConfirmDialog } from '@/components/app/ConfirmDialog';
 import { DataTable } from '@/components/app/DataTable';
@@ -174,14 +174,14 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
   return (
     <SurfaceCard>
       {showToolbar ? (
-        <div className="flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full max-w-xl flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchValue}
               onChange={(event) => setSearchValue(kind, event.target.value)}
               placeholder="按名称搜索"
-              className="h-10 rounded-xl pl-10"
+              className="h-9 rounded-xl pl-10"
             />
           </div>
           <div className="flex shrink-0 items-center justify-end gap-2">
@@ -212,7 +212,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
         </div>
       ) : null}
 
-      <div className={showToolbar ? 'pt-4' : ''}>
+      <div className={showToolbar ? 'pt-3' : ''}>
         <DataTable
           columns={columns}
           data={items}
@@ -306,7 +306,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
               referencedState.profiles.map((profile) => (
                 <div
                   key={profile.id}
-                  className="rounded-2xl border border-border/70 bg-muted/40 px-4 py-3"
+                  className="rounded-2xl border border-border/40 bg-muted/40 px-4 py-3"
                 >
                   <p className="font-medium text-foreground">{profile.name}</p>
                   <p className="text-sm text-muted-foreground">{profile.id}</p>

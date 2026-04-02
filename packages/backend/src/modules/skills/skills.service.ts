@@ -9,13 +9,14 @@ import { SkillMutationDto } from '../../dto/resource.dto';
 @Injectable()
 export class SkillsService {
   private readonly prisma: PrismaService;
+  private readonly resourceCrud: ReturnType<typeof createResourceCrudHandlers<
+    SkillInput,
+    NonNullable<Awaited<ReturnType<PrismaService['skill']['findUnique']>>>
+  >>;
 
   constructor(prisma: PrismaService) {
     this.prisma = prisma;
-  }
-
-  private createResourceCrud() {
-    return createResourceCrudHandlers<
+    this.resourceCrud = createResourceCrudHandlers<
       SkillInput,
       NonNullable<Awaited<ReturnType<PrismaService['skill']['findUnique']>>>
     >({
@@ -61,11 +62,11 @@ export class SkillsService {
   }
 
   list(name?: string) {
-    return this.createResourceCrud().list(name);
+    return this.resourceCrud.list(name);
   }
 
   getById(id: string) {
-    return this.createResourceCrud().getById(id);
+    return this.resourceCrud.getById(id);
   }
 
   create(dto: SkillMutationDto) {
@@ -75,7 +76,7 @@ export class SkillsService {
       'Invalid skill payload'
     );
 
-    return this.createResourceCrud().create(parsed);
+    return this.resourceCrud.create(parsed);
   }
 
   update(id: string, dto: SkillMutationDto) {
@@ -85,10 +86,10 @@ export class SkillsService {
       'Invalid skill payload'
     );
 
-    return this.createResourceCrud().update(id, parsed);
+    return this.resourceCrud.update(id, parsed);
   }
 
   remove(id: string) {
-    return this.createResourceCrud().remove(id);
+    return this.resourceCrud.remove(id);
   }
 }
