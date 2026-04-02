@@ -22,7 +22,7 @@ export default function JsonEditorImpl({
   );
 
   return (
-    <div className="editor-shell overflow-hidden rounded-[calc(var(--radius)*1.15)] border border-border/70 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+    <div className="editor-shell overflow-hidden rounded-2xl border border-border/40 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
       <CodeMirror
         value={value}
         onChange={onChange}

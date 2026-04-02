@@ -15,6 +15,13 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+const stringMapSwaggerSchemaOptions = {
+  type: 'object' as const,
+  additionalProperties: {
+    type: 'string' as const
+  }
+};
+
 @ValidatorConstraint({ name: 'isStringRecord', async: false })
 class IsStringRecordConstraint implements ValidatorConstraintInterface {
   validate(value: unknown) {
@@ -109,10 +116,7 @@ export class McpContentDto {
   args!: string[];
 
   @ApiPropertyOptional({
-    type: 'object',
-    additionalProperties: {
-      type: 'string'
-    },
+    ...stringMapSwaggerSchemaOptions,
     example: {
       LOG_LEVEL: 'info'
     },
@@ -158,10 +162,7 @@ export class McpConfigOverrideDto {
   args?: string[];
 
   @ApiPropertyOptional({
-    type: 'object',
-    additionalProperties: {
-      type: 'string'
-    },
+    ...stringMapSwaggerSchemaOptions,
     example: {
       LOG_LEVEL: 'debug'
     },

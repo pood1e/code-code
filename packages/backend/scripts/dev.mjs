@@ -79,7 +79,7 @@ async function main() {
 
   if (usingDefaultDb) {
     console.info('backend dev: ensuring local sqlite schema');
-    await run('pnpm', ['prisma', 'migrate', 'deploy']);
+    await run('pnpm', ['prisma', 'db', 'push', '--accept-data-loss', '--skip-generate']);
 
     if (shouldSeed) {
       console.info('backend dev: seeding local sqlite');

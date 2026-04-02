@@ -1,7 +1,10 @@
 import {
   Blocks,
+  Bot,
   CircuitBoard,
   FolderKanban,
+  Menu,
+  PanelLeftClose,
   PanelLeftOpen,
   ShieldCheck,
   SlidersHorizontal
@@ -10,6 +13,8 @@ import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import { listAgentRunners, listAgentRunnerTypes } from '@/api/agent-runners';
+import { listProjects } from '@/api/projects';
 import { listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
 import { Button } from '@/components/ui/button';
@@ -22,184 +27,230 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/query/query-keys';
+import { useProjectStore } from '@/store/project-store';
+import { useUiStore } from '@/store/ui-store';
+import { projectConfig } from '@/types/projects';
 
 const resourceItems = [
-  {
-    key: '/skills',
-    label: 'Skills',
-    icon: SlidersHorizontal
-  },
-  {
-    key: '/mcps',
-    label: 'MCPs',
-    icon: CircuitBoard
-  },
-  {
-    key: '/rules',
-    label: 'Rules',
-    icon: ShieldCheck
-  },
-  {
-    key: '/profiles',
-    label: 'Profiles',
-    icon: Blocks
-  }
+  { key: '/skills', label: 'Skills', icon: SlidersHorizontal },
+  { key: '/mcps', label: 'MCPs', icon: CircuitBoard },
+  { key: '/rules', label: 'Rules', icon: ShieldCheck },
+  { key: '/profiles', label: 'Profiles', icon: Blocks },
+  { key: '/agent-runners', label: 'Runners', icon: Bot }
 ] as const;
 
-const moduleLabel = '资源管理';
+const primaryItems = [
+  { key: 'projects', path: projectConfig.path, label: 'Projects', icon: FolderKanban },
+  { key: 'resources', path: '/skills', label: '资源库', icon: Blocks }
+] as const;
 
-function SecondaryNavigation({
-  selectedKey,
+function DesktopSidebar({
+  collapsed,
+  selectedPrimaryKey,
+  selectedResourceKey,
   onNavigate,
-  mobile
+  onToggle
 }: {
-  selectedKey: string;
-  onNavigate: (key: string) => void;
-  mobile?: boolean;
+  collapsed: boolean;
+  selectedPrimaryKey: (typeof primaryItems)[number]['key'];
+  selectedResourceKey: string;
+  onNavigate: (path: string) => void;
+  onToggle: () => void;
 }) {
   return (
-    <div
+    <aside
       className={cn(
-        'overflow-x-auto',
-        mobile
-          ? 'rounded-[calc(var(--radius)*1.1)] border border-white/10 bg-white/6 p-1.5'
-          : ''
+        'hidden shrink-0 border-r border-border/50 bg-sidebar transition-[width] duration-200 ease-in-out lg:block',
+        collapsed ? 'w-[3.5rem]' : 'w-56'
       )}
     >
-      <div
-        className={cn(
-          'flex gap-1.5',
-          mobile ? 'flex-col' : 'min-w-max border-b border-border/70'
-        )}
-      >
-        {resourceItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.key === selectedKey;
-
-          return (
+      <div className="sticky top-0 flex h-screen flex-col py-4">
+        {/* Header */}
+        <div
+          className={cn(
+            'mb-6 flex items-center',
+            collapsed ? 'justify-center px-2' : 'justify-between px-4'
+          )}
+        >
+          {collapsed ? null : (
             <button
-              key={item.key}
               type="button"
-              onClick={() => onNavigate(item.key)}
-              className={cn(
-                'flex items-center gap-2 text-left transition-colors',
-                mobile ? 'rounded-[calc(var(--radius)*0.8)] px-3 py-2.5' : '',
-                isActive
-                  ? mobile
-                    ? 'border border-white/15 bg-white/14 text-white shadow-[0_18px_44px_-24px_rgba(15,23,42,0.55)]'
-                    : 'border-b-2 border-primary px-1 pb-3 text-foreground'
-                  : mobile
-                    ? 'border border-transparent bg-transparent text-white/82 hover:border-white/10 hover:bg-white/8'
-                    : 'border-b-2 border-transparent px-1 pb-3 text-muted-foreground hover:border-border hover:text-foreground'
-              )}
+              onClick={() => onNavigate(projectConfig.path)}
+              className="min-w-0 px-1 text-left"
             >
-              <span
+              <p className="truncate text-sm font-semibold tracking-tight text-foreground">
+                Agent Workbench
+              </p>
+            </button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onToggle}
+            className="shrink-0 text-muted-foreground"
+            title={collapsed ? '展开侧栏' : '收起侧栏'}
+          >
+            {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          </Button>
+        </div>
+
+        {/* Primary Navigation */}
+        <nav className={cn('flex-1 space-y-1', collapsed ? 'px-2' : 'px-3')}>
+          {primaryItems.map((item) => {
+            const isActive = item.key === selectedPrimaryKey;
+
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => onNavigate(item.path)}
+                title={collapsed ? item.label : undefined}
                 className={cn(
-                  'flex size-4 items-center justify-center',
-                  mobile ? 'size-8 rounded-xl border' : '',
+                  'flex w-full items-center rounded-xl transition-colors duration-150',
+                  collapsed
+                    ? 'justify-center py-2.5'
+                    : 'gap-2.5 px-3 py-2 text-left text-sm',
                   isActive
-                    ? mobile
-                      ? 'border-white/12 bg-white/10 text-white'
-                      : 'text-primary'
-                    : mobile
-                      ? 'border-white/10 bg-white/6 text-white/72'
-                      : 'text-muted-foreground'
+                    ? 'bg-accent font-medium text-foreground'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
-                <Icon className="size-4" />
-              </span>
-              <span className="min-w-0 text-sm font-medium">{item.label}</span>
-            </button>
-          );
-        })}
+                <item.icon className="size-4 shrink-0" />
+                {collapsed ? null : item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Resource Sub-Navigation */}
+        {selectedPrimaryKey === 'resources' ? (
+          <div
+            className={cn(
+              'mt-auto border-t border-border/50 pt-4',
+              collapsed ? 'px-2' : 'px-3'
+            )}
+          >
+            {collapsed ? null : (
+              <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                资源
+              </p>
+            )}
+            <nav className="space-y-0.5">
+              {resourceItems.map((item) => {
+                const isActive = item.key === selectedResourceKey;
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => onNavigate(item.key)}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      'flex w-full items-center rounded-lg transition-colors duration-150',
+                      collapsed
+                        ? 'justify-center py-2'
+                        : 'gap-2 px-3 py-1.5 text-left text-[13px]',
+                      isActive
+                        ? 'bg-accent font-medium text-foreground'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                    )}
+                  >
+                    <item.icon className="size-3.5 shrink-0" />
+                    {collapsed ? null : item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        ) : null}
       </div>
-    </div>
-  );
-}
-
-function DesktopSidebar({ onNavigate }: { onNavigate: (key: string) => void }) {
-  return (
-    <aside className="hidden min-h-screen w-[184px] flex-col border-r border-sidebar-border/70 bg-[linear-gradient(180deg,rgba(13,24,48,0.98),rgba(17,31,58,0.98))] px-2.5 py-3 text-sidebar-foreground lg:flex">
-      <button
-        type="button"
-        onClick={() => onNavigate('/skills')}
-        className="flex items-center gap-2.5 rounded-[calc(var(--radius)*0.85)] px-2.5 py-2 text-left transition-colors hover:bg-white/5"
-      >
-        <div className="flex size-9 items-center justify-center rounded-xl bg-white/7 text-xs font-semibold tracking-[0.24em] text-white">
-          AW
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-[0.82rem] font-semibold text-white">Agent Workbench</p>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onNavigate('/skills')}
-        className="mt-5 flex items-center gap-2.5 rounded-[calc(var(--radius)*0.9)] px-2.5 py-2.5 text-left text-white/88 transition-colors hover:bg-white/5"
-      >
-        <span className="flex size-8 items-center justify-center rounded-lg border border-white/8 bg-white/6 text-white/90">
-          <FolderKanban className="size-4" />
-        </span>
-        <span className="min-w-0 flex-1 text-sm font-medium">{moduleLabel}</span>
-        <span className="h-1.5 w-1.5 rounded-full bg-primary/90" />
-      </button>
     </aside>
   );
 }
 
 function MobileNavigation({
   open,
-  selectedKey,
+  selectedPrimaryKey,
+  selectedResourceKey,
   onOpenChange,
   onNavigate
 }: {
   open: boolean;
-  selectedKey: string;
+  selectedPrimaryKey: (typeof primaryItems)[number]['key'];
+  selectedResourceKey: string;
   onOpenChange: (open: boolean) => void;
-  onNavigate: (key: string) => void;
+  onNavigate: (path: string) => void;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="w-[90vw] max-w-[340px] border-border/70 bg-sidebar px-0 text-sidebar-foreground"
+        className="w-72 border-border/50 bg-sidebar px-0"
       >
         <SheetHeader className="px-6 text-left">
-          <SheetTitle className="text-sidebar-foreground">
-            Agent Workbench
-          </SheetTitle>
-          <SheetDescription className="sr-only">
-            Primary navigation
-          </SheetDescription>
+          <SheetTitle>Agent Workbench</SheetTitle>
+          <SheetDescription className="sr-only">导航</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-8 px-4">
-          <button
-            type="button"
-            onClick={() => {
-              onNavigate('/skills');
-              onOpenChange(false);
-            }}
-            className="flex w-full items-center gap-3 rounded-[calc(var(--radius)*1.05)] border border-white/10 bg-white/10 px-4 py-3 text-left"
-          >
-            <span className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white">
-              <FolderKanban className="size-4" />
-            </span>
-            <span className="text-sm font-semibold text-white">
-              {moduleLabel}
-            </span>
-          </button>
-          <div className="mt-5">
-            <SecondaryNavigation
-              mobile
-              selectedKey={selectedKey}
-              onNavigate={(key) => {
-                onNavigate(key);
-                onOpenChange(false);
-              }}
-            />
-          </div>
+        <div className="mt-6 px-4">
+          <nav className="space-y-1">
+            {primaryItems.map((item) => {
+              const isActive = item.key === selectedPrimaryKey;
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => {
+                    onNavigate(item.path);
+                    onOpenChange(false);
+                  }}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',
+                    isActive
+                      ? 'bg-accent font-medium text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50'
+                  )}
+                >
+                  <item.icon className="size-4" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {selectedPrimaryKey === 'resources' ? (
+            <div className="mt-4 border-t border-border/50 pt-4">
+              <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                资源
+              </p>
+              <nav className="space-y-0.5">
+                {resourceItems.map((item) => {
+                  const isActive = item.key === selectedResourceKey;
+
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => {
+                        onNavigate(item.key);
+                        onOpenChange(false);
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors',
+                        isActive
+                          ? 'bg-accent font-medium text-foreground'
+                          : 'text-muted-foreground hover:bg-accent/50'
+                      )}
+                    >
+                      <item.icon className="size-3.5" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>
@@ -210,28 +261,47 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const currentProjectId = useProjectStore((state) => state.currentProjectId);
+  const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const selectedKey = useMemo(
-    () =>
-      resourceItems.find((item) => location.pathname.startsWith(item.key))?.key ??
-      '/skills',
+  const isProjectPage = useMemo(
+    () => /^\/projects\/[^/]+/.test(location.pathname),
     [location.pathname]
   );
-  const isListPage = useMemo(
-    () => resourceItems.some((item) => location.pathname === item.key),
+  const selectedPrimaryKey = useMemo(
+    () =>
+      location.pathname.startsWith(projectConfig.path)
+        ? 'projects'
+        : 'resources',
+    [location.pathname]
+  );
+  const selectedResourceKey = useMemo(
+    () =>
+      resourceItems.find((item) => location.pathname.startsWith(item.key))
+        ?.key ?? '/skills',
     [location.pathname]
   );
 
-  const handleNavigate = (key: string) => {
+  const handleNavigate = (path: string) => {
+    const nextPath =
+      path === projectConfig.path && currentProjectId
+        ? `${projectConfig.path}/${currentProjectId}/config`
+        : path;
+
     setMobileOpen(false);
     startTransition(() => {
-      void navigate(key);
+      void navigate(nextPath);
     });
   };
 
   useEffect(() => {
     void Promise.all([
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.projects.list(),
+        queryFn: () => listProjects()
+      }),
       queryClient.prefetchQuery({
         queryKey: queryKeys.resources.list('skills'),
         queryFn: () => listResources('skills')
@@ -247,56 +317,66 @@ export function AppLayout() {
       queryClient.prefetchQuery({
         queryKey: queryKeys.profiles.list(),
         queryFn: listProfiles
+      }),
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.agentRunnerTypes.all,
+        queryFn: listAgentRunnerTypes
+      }),
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.agentRunners.list(),
+        queryFn: () => listAgentRunners()
       })
     ]);
   }, [queryClient]);
 
   return (
     <div className="relative min-h-screen lg:flex">
-      <DesktopSidebar onNavigate={handleNavigate} />
+      <DesktopSidebar
+        collapsed={sidebarCollapsed}
+        selectedPrimaryKey={selectedPrimaryKey}
+        selectedResourceKey={selectedResourceKey}
+        onNavigate={handleNavigate}
+        onToggle={toggleSidebar}
+      />
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 px-4 py-3 backdrop-blur lg:hidden">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Agent Workbench
-              </p>
-              <p className="truncate text-sm font-semibold text-foreground">
-                {moduleLabel}
-              </p>
-            </div>
+        <header className="sticky top-0 z-30 border-b border-border/50 bg-background/95 px-4 py-3 backdrop-blur-sm lg:hidden">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm font-semibold text-foreground">
+              Agent Workbench
+            </p>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon-sm"
               onClick={() => setMobileOpen(true)}
             >
-              <PanelLeftOpen />
+              <Menu />
             </Button>
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div
-            className={cn(
-              'mx-auto w-full',
-              isListPage ? 'max-w-[96rem]' : 'max-w-7xl'
-            )}
-          >
-            <SecondaryNavigation
-              selectedKey={selectedKey}
-              onNavigate={handleNavigate}
-            />
-            <div className="min-h-[32rem] pt-5 sm:pt-6">
+        <main
+          className={cn(
+            'flex-1',
+            isProjectPage
+              ? 'px-0 py-0'
+              : 'px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8'
+          )}
+        >
+          {isProjectPage ? (
+            <Outlet />
+          ) : (
+            <div className="mx-auto w-full max-w-5xl">
               <Outlet />
             </div>
-          </div>
+          )}
         </main>
       </div>
 
       <MobileNavigation
         open={mobileOpen}
-        selectedKey={selectedKey}
+        selectedPrimaryKey={selectedPrimaryKey}
+        selectedResourceKey={selectedResourceKey}
         onOpenChange={setMobileOpen}
         onNavigate={handleNavigate}
       />

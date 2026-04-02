@@ -1,5 +1,4 @@
 import type { ApiResponse } from '@agent-workbench/shared';
-import { useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
 import { toast } from 'sonner';
 
@@ -85,6 +84,8 @@ export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api'
 });
 
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api';
+
 apiClient.interceptors.response.use(
   (response) => {
     if (
@@ -102,9 +103,3 @@ apiClient.interceptors.response.use(
   (error) => Promise.reject(toApiRequestError(error))
 );
 
-export function useErrorMessage() {
-  return useCallback((error: unknown) => {
-    const apiError = toApiRequestError(error);
-    toast.error(apiError.message);
-  }, []);
-}

@@ -5,6 +5,57 @@ process.env.DATABASE_URL ??= 'file:./dev.db';
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.project.upsert({
+    where: { id: 'project_agent_workbench' },
+    update: {
+      name: 'Agent Workbench',
+      description: 'Current monorepo workspace for the personal tool.',
+      gitUrl: 'git@github.com:pood1e/code-code.git',
+      workspacePath: '/Users/pood1e/workspace/code-code'
+    },
+    create: {
+      id: 'project_agent_workbench',
+      name: 'Agent Workbench',
+      description: 'Current monorepo workspace for the personal tool.',
+      gitUrl: 'git@github.com:pood1e/code-code.git',
+      workspacePath: '/Users/pood1e/workspace/code-code'
+    }
+  });
+
+  await prisma.project.upsert({
+    where: { id: 'project_workspace_root' },
+    update: {
+      name: 'Workspace Root',
+      description: 'Parent workspace used for local development.',
+      gitUrl: 'git@github.com:pood1e/workspace-root.git',
+      workspacePath: '/Users/pood1e/workspace'
+    },
+    create: {
+      id: 'project_workspace_root',
+      name: 'Workspace Root',
+      description: 'Parent workspace used for local development.',
+      gitUrl: 'git@github.com:pood1e/workspace-root.git',
+      workspacePath: '/Users/pood1e/workspace'
+    }
+  });
+
+  await prisma.project.upsert({
+    where: { id: 'project_home_sandbox' },
+    update: {
+      name: 'Home Sandbox',
+      description: 'General-purpose local sandbox rooted at the user home.',
+      gitUrl: 'git@github.com:pood1e/home-sandbox.git',
+      workspacePath: '/Users/pood1e'
+    },
+    create: {
+      id: 'project_home_sandbox',
+      name: 'Home Sandbox',
+      description: 'General-purpose local sandbox rooted at the user home.',
+      gitUrl: 'git@github.com:pood1e/home-sandbox.git',
+      workspacePath: '/Users/pood1e'
+    }
+  });
+
   const skillA = await prisma.skill.upsert({
     where: { id: 'skill_web_search' },
     update: {
