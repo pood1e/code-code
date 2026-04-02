@@ -38,6 +38,7 @@ export class RunnerTypeRegistry {
       inputSchema: convertZodSchemaToJsonSchema(
         runnerType.inputSchema
       ),
+      // taskConfigSchema currently maps to inputSchema — will diverge when a dedicated task config schema is added
       taskConfigSchema: convertZodSchemaToJsonSchema(runnerType.inputSchema),
       runtimeConfigSchema: convertZodSchemaToJsonSchema(
         runnerType.runtimeConfigSchema

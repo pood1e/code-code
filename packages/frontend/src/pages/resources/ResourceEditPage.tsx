@@ -12,9 +12,9 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
-  isNotFoundApiError,
-  useErrorMessage
+  isNotFoundApiError
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { getResource, saveResourceByKind } from '@/api/resources';
 import { EditorToolbar } from '@/components/app/EditorToolbar';
 import { EmptyState } from '@/components/app/EmptyState';

@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
-import { toApiRequestError, useErrorMessage } from '@/api/client';
+import { toApiRequestError } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { deleteProject, updateProject } from '@/api/projects';
 import { ConfirmDialog } from '@/components/app/ConfirmDialog';
 import { EditorToolbar } from '@/components/app/EditorToolbar';

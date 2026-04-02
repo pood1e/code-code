@@ -7,9 +7,9 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
-  isNotFoundApiError,
-  useErrorMessage
+  isNotFoundApiError
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import {
   createAgentRunner,
   getAgentRunner,

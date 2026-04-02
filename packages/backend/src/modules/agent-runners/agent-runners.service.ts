@@ -108,6 +108,16 @@ export class AgentRunnersService {
 
   async remove(id: string) {
     await this.getById(id);
+
+    const sessionCount = await this.prisma.agentSession.count({
+      where: { runnerId: id }
+    });
+    if (sessionCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete runner: ${sessionCount} session(s) still reference it`
+      );
+    }
+
     await this.prisma.agentRunner.delete({ where: { id } });
     return null;
   }

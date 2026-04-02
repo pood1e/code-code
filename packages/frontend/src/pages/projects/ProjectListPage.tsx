@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { useErrorMessage } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { listProjects } from '@/api/projects';
 import { EmptyState } from '@/components/app/EmptyState';
 import { SurfaceCard } from '@/components/app/SurfaceCard';

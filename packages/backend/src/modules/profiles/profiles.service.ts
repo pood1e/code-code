@@ -16,8 +16,9 @@ import { dump } from 'js-yaml';
 import {
   asPlainObject,
   sanitizeJson,
-  toNullableInputJson
+  toOptionalInputJson
 } from '../../common/json.utils';
+import { assertResourceIdsExist } from '../../common/resource.utils';
 import { parseSchemaOrThrow } from '../../common/schema.utils';
 import {
   ProfileMutationDto,
@@ -103,15 +104,18 @@ export class ProfilesService {
     const normalizedRules = this.normalizeProfileItems(parsedProfile.rules);
 
     await Promise.all([
-      this.assertResourceIdsExist(
+      assertResourceIdsExist(
+        this.prisma,
         'skill',
         normalizedSkills.map((item) => item.resourceId)
       ),
-      this.assertResourceIdsExist(
-        'mCP',
+      assertResourceIdsExist(
+        this.prisma,
+        'mcp',
         normalizedMcps.map((item) => item.resourceId)
       ),
-      this.assertResourceIdsExist(
+      assertResourceIdsExist(
+        this.prisma,
         'rule',
         normalizedRules.map((item) => item.resourceId)
       )
@@ -147,7 +151,7 @@ export class ProfilesService {
             profileId: id,
             mcpId: item.resourceId,
             order: item.order,
-            configOverride: toNullableInputJson(item.configOverride)
+            configOverride: toOptionalInputJson(item.configOverride)
           }))
         });
       }
@@ -218,39 +222,7 @@ export class ProfilesService {
     }));
   }
 
-  private async assertResourceIdsExist(
-    type: 'skill' | 'mCP' | 'rule',
-    ids: string[]
-  ) {
-    if (ids.length === 0) {
-      return;
-    }
 
-    const uniqueIds = Array.from(new Set(ids));
-    const existing =
-      type === 'skill'
-        ? await this.prisma.skill.findMany({
-            where: { id: { in: uniqueIds } },
-            select: { id: true }
-          })
-        : type === 'mCP'
-          ? await this.prisma.mCP.findMany({
-              where: { id: { in: uniqueIds } },
-              select: { id: true }
-            })
-          : await this.prisma.rule.findMany({
-              where: { id: { in: uniqueIds } },
-              select: { id: true }
-            });
-    const existingIds = new Set(existing.map((item) => item.id));
-    const missing = uniqueIds.filter((id) => !existingIds.has(id));
-
-    if (missing.length > 0) {
-      throw new NotFoundException(
-        `Referenced resources not found: ${missing.join(', ')}`
-      );
-    }
-  }
 
   private toSkillResolvedItem(
     resource: {

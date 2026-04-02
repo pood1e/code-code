@@ -5,7 +5,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { useErrorMessage } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import {
   deleteAgentRunner,
   listAgentRunners,
