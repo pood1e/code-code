@@ -17,9 +17,9 @@ export function CodeEditor(props: CodeEditorProps) {
   return (
     <Suspense
       fallback={
-        <div className="space-y-3 rounded-[calc(var(--radius)*1.2)] border border-border/70 bg-background/70 p-4">
+        <div className="space-y-3 rounded-2xl border border-border/40 bg-background/70 p-4">
           <Skeleton className="h-4 w-28 rounded-full" />
-          <Skeleton className="h-56 rounded-[calc(var(--radius)*1.1)]" />
+          <Skeleton className="h-56 rounded-2xl" />
         </div>
       }
     >

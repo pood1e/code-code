@@ -22,14 +22,18 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className={cn('flex flex-col gap-2.5', className)}>
-      <div className="space-y-1">
-        <Label htmlFor={htmlFor} className="text-sm font-semibold">
-          {label}
-        </Label>
-        {description ? (
-          <p className="text-xs leading-5 text-muted-foreground">{description}</p>
-        ) : null}
-      </div>
+      {label ? (
+        <div className="space-y-1">
+          <Label htmlFor={htmlFor} className="text-sm font-semibold">
+            {label}
+          </Label>
+          {description ? (
+            <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
+      ) : description ? (
+        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+      ) : null}
       {children}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>

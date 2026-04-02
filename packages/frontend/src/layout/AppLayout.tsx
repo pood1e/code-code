@@ -3,7 +3,7 @@ import {
   Bot,
   CircuitBoard,
   FolderKanban,
-  PanelLeftOpen,
+  Menu,
   ShieldCheck,
   SlidersHorizontal
 } from 'lucide-react';
@@ -29,177 +29,92 @@ import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
 
 const resourceItems = [
-  {
-    key: '/skills',
-    label: 'Skills',
-    icon: SlidersHorizontal
-  },
-  {
-    key: '/mcps',
-    label: 'MCPs',
-    icon: CircuitBoard
-  },
-  {
-    key: '/rules',
-    label: 'Rules',
-    icon: ShieldCheck
-  },
-  {
-    key: '/profiles',
-    label: 'Profiles',
-    icon: Blocks
-  },
-  {
-    key: '/agent-runners',
-    label: 'AgentRunner',
-    icon: Bot
-  }
+  { key: '/skills', label: 'Skills', icon: SlidersHorizontal },
+  { key: '/mcps', label: 'MCPs', icon: CircuitBoard },
+  { key: '/rules', label: 'Rules', icon: ShieldCheck },
+  { key: '/profiles', label: 'Profiles', icon: Blocks },
+  { key: '/agent-runners', label: 'Runners', icon: Bot }
 ] as const;
 
 const primaryItems = [
-  {
-    key: 'projects',
-    path: projectConfig.path,
-    label: 'Project',
-    icon: FolderKanban
-  },
-  {
-    key: 'resources',
-    path: '/skills',
-    label: '资源库',
-    icon: Blocks
-  }
+  { key: 'projects', path: projectConfig.path, label: 'Projects', icon: FolderKanban },
+  { key: 'resources', path: '/skills', label: '资源库', icon: Blocks }
 ] as const;
-
-function SecondaryNavigation({
-  selectedKey,
-  onNavigate,
-  mobile
-}: {
-  selectedKey: string;
-  onNavigate: (key: string) => void;
-  mobile?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        'overflow-x-auto',
-        mobile
-          ? 'rounded-[calc(var(--radius)*1.1)] border border-white/10 bg-white/6 p-1.5'
-          : ''
-      )}
-    >
-      <div
-        className={cn(
-          'flex gap-1.5',
-          mobile ? 'flex-col' : 'min-w-max border-b border-border/70'
-        )}
-      >
-        {resourceItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.key === selectedKey;
-
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => onNavigate(item.key)}
-              className={cn(
-                'flex items-center gap-2 text-left transition-colors',
-                mobile ? 'rounded-[calc(var(--radius)*0.8)] px-3 py-2.5' : '',
-                isActive
-                  ? mobile
-                    ? 'border border-white/15 bg-white/14 text-white shadow-[0_18px_44px_-24px_rgba(15,23,42,0.55)]'
-                    : 'border-b-2 border-primary px-1 pb-3 text-foreground'
-                  : mobile
-                    ? 'border border-transparent bg-transparent text-white/82 hover:border-white/10 hover:bg-white/8'
-                    : 'border-b-2 border-transparent px-1 pb-3 text-muted-foreground hover:border-border hover:text-foreground'
-              )}
-            >
-              <span
-                className={cn(
-                  'flex size-4 items-center justify-center',
-                  mobile ? 'size-8 rounded-xl border' : '',
-                  isActive
-                    ? mobile
-                      ? 'border-white/12 bg-white/10 text-white'
-                      : 'text-primary'
-                    : mobile
-                      ? 'border-white/10 bg-white/6 text-white/72'
-                      : 'text-muted-foreground'
-                )}
-              >
-                <Icon className="size-4" />
-              </span>
-              <span className="min-w-0 text-sm font-medium">{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function DesktopSidebar({
   selectedPrimaryKey,
+  selectedResourceKey,
   onNavigate
 }: {
   selectedPrimaryKey: (typeof primaryItems)[number]['key'];
+  selectedResourceKey: string;
   onNavigate: (path: string) => void;
 }) {
   return (
-    <aside className="hidden min-h-screen w-[184px] flex-col border-r border-sidebar-border/70 bg-[linear-gradient(180deg,rgba(13,24,48,0.98),rgba(17,31,58,0.98))] px-2.5 py-3 text-sidebar-foreground lg:flex">
-      <button
-        type="button"
-        onClick={() => onNavigate(projectConfig.path)}
-        className="flex items-center gap-2.5 rounded-[calc(var(--radius)*0.85)] px-2.5 py-2 text-left transition-colors hover:bg-white/5"
-      >
-        <div className="flex size-9 items-center justify-center rounded-xl bg-white/7 text-xs font-semibold tracking-[0.24em] text-white">
-          AW
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-[0.82rem] font-semibold text-white">
+    <aside className="hidden w-56 shrink-0 border-r border-border/50 bg-sidebar lg:block">
+      <div className="sticky top-0 flex h-screen flex-col px-4 py-6">
+        <button
+          type="button"
+          onClick={() => onNavigate(projectConfig.path)}
+          className="mb-8 px-2 text-left"
+        >
+          <p className="text-sm font-semibold text-foreground tracking-tight">
             Agent Workbench
           </p>
-        </div>
-      </button>
+        </button>
 
-      <div className="mt-5 space-y-1.5">
-        {primaryItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.key === selectedPrimaryKey;
+        <nav className="flex-1 space-y-1">
+          {primaryItems.map((item) => {
+            const isActive = item.key === selectedPrimaryKey;
 
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => onNavigate(item.path)}
-              className={cn(
-                'flex w-full items-center gap-2.5 rounded-[calc(var(--radius)*0.9)] px-2.5 py-2.5 text-left transition-colors',
-                isActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/82 hover:bg-white/5'
-              )}
-            >
-              <span
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => onNavigate(item.path)}
                 className={cn(
-                  'flex size-8 items-center justify-center rounded-lg border',
+                  'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors duration-150',
                   isActive
-                    ? 'border-white/12 bg-white/10 text-white'
-                    : 'border-white/8 bg-white/6 text-white/90'
+                    ? 'bg-accent font-medium text-foreground'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
-                <Icon className="size-4" />
-              </span>
-              <span className="min-w-0 flex-1 text-sm font-medium">
+                <item.icon className="size-4" />
                 {item.label}
-              </span>
-              {isActive ? (
-                <span className="h-1.5 w-1.5 rounded-full bg-primary/90" />
-              ) : null}
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </nav>
+
+        {selectedPrimaryKey === 'resources' ? (
+          <div className="mt-auto border-t border-border/50 pt-4">
+            <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+              资源
+            </p>
+            <nav className="space-y-0.5">
+              {resourceItems.map((item) => {
+                const isActive = item.key === selectedResourceKey;
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => onNavigate(item.key)}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors duration-150',
+                      isActive
+                        ? 'bg-accent font-medium text-foreground'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                    )}
+                  >
+                    <item.icon className="size-3.5" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        ) : null}
       </div>
     </aside>
   );
@@ -208,13 +123,13 @@ function DesktopSidebar({
 function MobileNavigation({
   open,
   selectedPrimaryKey,
-  selectedKey,
+  selectedResourceKey,
   onOpenChange,
   onNavigate
 }: {
   open: boolean;
   selectedPrimaryKey: (typeof primaryItems)[number]['key'];
-  selectedKey: string;
+  selectedResourceKey: string;
   onOpenChange: (open: boolean) => void;
   onNavigate: (path: string) => void;
 }) {
@@ -222,21 +137,16 @@ function MobileNavigation({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="w-[90vw] max-w-[340px] border-border/70 bg-sidebar px-0 text-sidebar-foreground"
+        className="w-72 border-border/50 bg-sidebar px-0"
       >
         <SheetHeader className="px-6 text-left">
-          <SheetTitle className="text-sidebar-foreground">
-            Agent Workbench
-          </SheetTitle>
-          <SheetDescription className="sr-only">
-            Primary navigation
-          </SheetDescription>
+          <SheetTitle>Agent Workbench</SheetTitle>
+          <SheetDescription className="sr-only">导航</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-8 px-4">
-          <div className="space-y-2">
+        <div className="mt-6 px-4">
+          <nav className="space-y-1">
             {primaryItems.map((item) => {
-              const Icon = item.icon;
               const isActive = item.key === selectedPrimaryKey;
 
               return (
@@ -248,31 +158,49 @@ function MobileNavigation({
                     onOpenChange(false);
                   }}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-[calc(var(--radius)*1.05)] border px-4 py-3 text-left',
+                    'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',
                     isActive
-                      ? 'border-white/10 bg-white/10 text-white'
-                      : 'border-white/8 bg-white/6 text-white/82'
+                      ? 'bg-accent font-medium text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50'
                   )}
                 >
-                  <span className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white">
-                    <Icon className="size-4" />
-                  </span>
-                  <span className="text-sm font-semibold">{item.label}</span>
+                  <item.icon className="size-4" />
+                  {item.label}
                 </button>
               );
             })}
-          </div>
+          </nav>
 
           {selectedPrimaryKey === 'resources' ? (
-            <div className="mt-5">
-              <SecondaryNavigation
-                mobile
-                selectedKey={selectedKey}
-                onNavigate={(key) => {
-                  onNavigate(key);
-                  onOpenChange(false);
-                }}
-              />
+            <div className="mt-4 border-t border-border/50 pt-4">
+              <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                资源
+              </p>
+              <nav className="space-y-0.5">
+                {resourceItems.map((item) => {
+                  const isActive = item.key === selectedResourceKey;
+
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => {
+                        onNavigate(item.key);
+                        onOpenChange(false);
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors',
+                        isActive
+                          ? 'bg-accent font-medium text-foreground'
+                          : 'text-muted-foreground hover:bg-accent/50'
+                      )}
+                    >
+                      <item.icon className="size-3.5" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </nav>
             </div>
           ) : null}
         </div>
@@ -299,12 +227,6 @@ export function AppLayout() {
     () =>
       resourceItems.find((item) => location.pathname.startsWith(item.key))
         ?.key ?? '/skills',
-    [location.pathname]
-  );
-  const isWideListPage = useMemo(
-    () =>
-      location.pathname === projectConfig.path ||
-      resourceItems.some((item) => location.pathname === item.key),
     [location.pathname]
   );
 
@@ -353,58 +275,33 @@ export function AppLayout() {
     ]);
   }, [queryClient]);
 
-  const currentModuleLabel =
-    selectedPrimaryKey === 'projects' ? 'Project' : '资源库';
-
   return (
     <div className="relative min-h-screen lg:flex">
       <DesktopSidebar
         selectedPrimaryKey={selectedPrimaryKey}
+        selectedResourceKey={selectedResourceKey}
         onNavigate={handleNavigate}
       />
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 px-4 py-3 backdrop-blur lg:hidden">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Agent Workbench
-              </p>
-              <p className="truncate text-sm font-semibold text-foreground">
-                {currentModuleLabel}
-              </p>
-            </div>
+        <header className="sticky top-0 z-30 border-b border-border/50 bg-background/95 px-4 py-3 backdrop-blur-sm lg:hidden">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm font-semibold text-foreground">
+              Agent Workbench
+            </p>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon-sm"
               onClick={() => setMobileOpen(true)}
             >
-              <PanelLeftOpen />
+              <Menu />
             </Button>
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div
-            className={cn(
-              'mx-auto w-full',
-              isWideListPage ? 'max-w-[96rem]' : 'max-w-7xl'
-            )}
-          >
-            {selectedPrimaryKey === 'resources' ? (
-              <SecondaryNavigation
-                selectedKey={selectedResourceKey}
-                onNavigate={handleNavigate}
-              />
-            ) : null}
-            <div
-              className={cn(
-                'min-h-[32rem]',
-                selectedPrimaryKey === 'resources' ? 'pt-5 sm:pt-6' : ''
-              )}
-            >
-              <Outlet />
-            </div>
+        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-5xl">
+            <Outlet />
           </div>
         </main>
       </div>
@@ -412,7 +309,7 @@ export function AppLayout() {
       <MobileNavigation
         open={mobileOpen}
         selectedPrimaryKey={selectedPrimaryKey}
-        selectedKey={selectedResourceKey}
+        selectedResourceKey={selectedResourceKey}
         onOpenChange={setMobileOpen}
         onNavigate={handleNavigate}
       />

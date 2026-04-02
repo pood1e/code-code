@@ -25,7 +25,7 @@ export function EditorToolbar({
   saveDisabled = false
 }: EditorToolbarProps) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-4">
+    <div className="flex items-center justify-between gap-3 border-b border-border/40 pb-4">
       <p className="truncate text-sm font-medium text-foreground">{title}</p>
       <div className="flex items-center gap-2">
         {showBack ? (

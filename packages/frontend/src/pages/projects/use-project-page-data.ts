@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useErrorMessage } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { listProjects } from '@/api/projects';
 import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
 
-type ProjectTab = 'config' | 'dashboard';
+type ProjectTab = 'config' | 'sessions' | 'dashboard';
 
 export function useProjectPageData() {
   const { id } = useParams<{ id: string }>();
