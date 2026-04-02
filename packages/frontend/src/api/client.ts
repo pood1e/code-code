@@ -1,5 +1,4 @@
 import type { ApiResponse } from '@agent-workbench/shared';
-import { useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
 import { toast } from 'sonner';
 
@@ -104,9 +103,3 @@ apiClient.interceptors.response.use(
   (error) => Promise.reject(toApiRequestError(error))
 );
 
-export function useErrorMessage() {
-  return useCallback((error: unknown) => {
-    const apiError = toApiRequestError(error);
-    toast.error(apiError.message);
-  }, []);
-}

@@ -7,9 +7,9 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   ApiRequestError,
-  getReferencedProfiles,
-  useErrorMessage
+  getReferencedProfiles
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { deleteResource, listResources } from '@/api/resources';
 import { ConfirmDialog } from '@/components/app/ConfirmDialog';
 import { DataTable } from '@/components/app/DataTable';

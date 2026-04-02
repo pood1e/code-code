@@ -4,7 +4,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
-import { toApiRequestError, useErrorMessage } from '@/api/client';
+import { toApiRequestError } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { createProject } from '@/api/projects';
 import { FormField } from '@/components/app/FormField';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

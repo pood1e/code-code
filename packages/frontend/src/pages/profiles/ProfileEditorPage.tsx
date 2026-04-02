@@ -21,9 +21,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import {
-  isNotFoundApiError,
-  useErrorMessage
+  isNotFoundApiError
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import {
   getProfile,
   saveProfile

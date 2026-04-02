@@ -34,13 +34,6 @@ export class ProfilesController {
 
   constructor(profilesService: ProfilesService) {
     this.profilesService = profilesService;
-    this.list = this.list.bind(this);
-    this.getById = this.getById.bind(this);
-    this.create = this.create.bind(this);
-    this.update = this.update.bind(this);
-    this.remove = this.remove.bind(this);
-    this.render = this.render.bind(this);
-    this.export = this.export.bind(this);
   }
 
   @Get()

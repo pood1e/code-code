@@ -58,9 +58,9 @@ import {
 } from '@/api/sessions';
 import {
   ApiRequestError,
-  toApiRequestError,
-  useErrorMessage
+  toApiRequestError
 } from '@/api/client';
+import { useErrorMessage } from '@/hooks/use-error-message';
 import { EmptyState } from '@/components/app/EmptyState';
 import { FormField } from '@/components/app/FormField';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
