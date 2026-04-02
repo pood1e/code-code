@@ -1,4 +1,4 @@
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, type Control, type FieldValues } from 'react-hook-form';
 import { FormField } from '@/components/app/FormField';
 import { Input } from '@/components/ui/input';
 import {
@@ -6,19 +6,19 @@ import {
   type RunnerConfigField
 } from '@/lib/runner-config-schema';
 
-export function DynamicConfigFieldInput({
+export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
   field,
   namePrefix,
   control
 }: {
   field: RunnerConfigField;
   namePrefix: string;
-  control: ReturnType<typeof useForm<any>>['control'];
+  control: Control<TFieldValues>;
 }) {
   return (
     <Controller
       control={control}
-      name={`${namePrefix}.${field.name}`}
+      name={`${namePrefix}.${field.name}` as import('react-hook-form').Path<TFieldValues>}
       render={({ field: controllerField, fieldState }) => {
         if (field.kind === 'boolean') {
           return (

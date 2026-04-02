@@ -310,7 +310,7 @@ export function CreateSessionPanel({
         ) : null}
 
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col pt-10 sm:pt-14">
-          <div className="rounded-[30px] border border-border/40 bg-background/95 p-5 shadow-[0_28px_80px_-36px_hsl(var(--foreground)/0.18)] sm:p-6">
+          <div className="rounded-3xl border border-border/40 bg-background/95 p-5 shadow-[0_28px_80px_-36px_hsl(var(--foreground)/0.18)] sm:p-6">
             {supportsStructuredInitialInput ? (
               <FormField label="" error={form.formState.errors.initialMessageText?.message}>
                 <Textarea
@@ -335,7 +335,7 @@ export function CreateSessionPanel({
               </FormField>
             )}
 
-            <div className="mt-4 grid gap-3 border-t border-border/40 pt-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div className="flex flex-wrap items-center gap-2 xl:flex-nowrap">
                 <select
                   className={`${selectClassName} h-9 w-auto min-w-[8.5rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap`}

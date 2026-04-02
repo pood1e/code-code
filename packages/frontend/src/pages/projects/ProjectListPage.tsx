@@ -91,7 +91,7 @@ export function ProjectListPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-4xl space-y-4">
+      <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-semibold text-foreground">
@@ -114,7 +114,7 @@ export function ProjectListPage() {
             return (
               <SurfaceCard
                 key={project.id}
-                className="p-0 transition-colors hover:border-foreground/15"
+                className="p-0 transition-colors hover:bg-muted/30"
               >
                 <button
                   type="button"
@@ -127,7 +127,7 @@ export function ProjectListPage() {
                         {project.name}
                       </span>
                       {isCurrent ? (
-                        <span className="inline-flex rounded-full bg-foreground/5 px-2 py-0.5 text-xs font-medium text-foreground">
+                        <span className="inline-flex rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
                           当前
                         </span>
                       ) : null}
@@ -138,8 +138,8 @@ export function ProjectListPage() {
                   </div>
 
                   <div className="min-w-0 space-y-1 text-sm text-muted-foreground sm:max-w-[24rem] sm:text-right">
-                    <p className="truncate">{project.workspacePath}</p>
-                    <p className="truncate">{project.gitUrl}</p>
+                    <p className="truncate font-mono text-xs">{project.workspacePath}</p>
+                    <p className="truncate font-mono text-xs">{project.gitUrl}</p>
                   </div>
                 </button>
               </SurfaceCard>

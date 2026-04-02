@@ -181,7 +181,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
               value={searchValue}
               onChange={(event) => setSearchValue(kind, event.target.value)}
               placeholder="按名称搜索"
-              className="h-10 rounded-xl pl-10"
+              className="h-9 rounded-xl pl-10"
             />
           </div>
           <div className="flex shrink-0 items-center justify-end gap-2">
@@ -212,7 +212,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
         </div>
       ) : null}
 
-      <div className={showToolbar ? 'pt-4' : ''}>
+      <div className={showToolbar ? 'pt-3' : ''}>
         <DataTable
           columns={columns}
           data={items}

@@ -86,6 +86,7 @@ export function DataTable<TData>({
         title={emptyTitle}
         description={emptyDescription}
         action={emptyAction}
+        size="compact"
       />
     );
   }
@@ -97,7 +98,7 @@ export function DataTable<TData>({
           {table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
-              className="rounded-2xl border border-border/50 bg-card p-4"
+              className="rounded-xl border border-border/40 bg-card p-4"
             >
               {mobileCardRenderer(row.original)}
             </div>
@@ -145,7 +146,7 @@ export function DataTable<TData>({
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className="px-4 py-4 align-top"
+                        className="px-4 py-3 align-top"
                         style={{
                           width: cell.column.columnDef.size
                             ? `${cell.column.columnDef.size}px`
@@ -166,29 +167,31 @@ export function DataTable<TData>({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-          aria-label="Previous page"
-        >
-          <ChevronLeft />
-        </Button>
-        <div className="px-3 py-1 text-xs text-muted-foreground">
-          {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+      {table.getPageCount() > 1 ? (
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            aria-label="Previous page"
+          >
+            <ChevronLeft />
+          </Button>
+          <div className="px-3 py-1 text-xs text-muted-foreground">
+            {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+          </div>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            aria-label="Next page"
+          >
+            <ChevronRight />
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-          aria-label="Next page"
-        >
-          <ChevronRight />
-        </Button>
-      </div>
+      ) : null}
     </div>
   );
 }

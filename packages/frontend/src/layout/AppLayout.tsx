@@ -73,7 +73,7 @@ function DesktopSidebar({
                 type="button"
                 onClick={() => onNavigate(item.path)}
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors',
+                  'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors duration-150',
                   isActive
                     ? 'bg-accent font-medium text-foreground'
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
@@ -101,7 +101,7 @@ function DesktopSidebar({
                     type="button"
                     onClick={() => onNavigate(item.key)}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors',
+                      'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors duration-150',
                       isActive
                         ? 'bg-accent font-medium text-foreground'
                         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
@@ -299,7 +299,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
+        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-5xl">
             <Outlet />
           </div>

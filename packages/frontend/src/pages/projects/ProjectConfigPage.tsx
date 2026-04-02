@@ -233,7 +233,7 @@ export function ProjectConfigPage() {
             </div>
           </SurfaceCard>
 
-          <SurfaceCard className="border-destructive/15 bg-destructive/3">
+          <SurfaceCard className="border-destructive/20 bg-destructive/5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="font-medium text-foreground">删除当前 Project</p>
