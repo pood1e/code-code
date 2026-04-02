@@ -1,9 +1,9 @@
 import { useCallback, startTransition, useEffect, useMemo, useState } from 'react';
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { PanelRightOpen, RefreshCw, Trash2, Plus } from 'lucide-react';
 import type { SessionMessageRuntimeMap } from '@/features/chat/runtime/assistant-ui/thread-adapter';
-import type { SendSessionMessageInput } from '@agent-workbench/shared';
+import type { SendSessionMessageInput, PagedSessionMessages } from '@agent-workbench/shared';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 
 import { getAgentRunner, listAgentRunners, listAgentRunnerTypes } from '@/api/agent-runners';
@@ -118,13 +118,27 @@ export function ProjectSessionsPage() {
     queryFn: () => getSession(selectedSessionId!),
     enabled: Boolean(selectedSessionId)
   });
-  const sessionMessagesQuery = useQuery({
+  const sessionMessagesQuery = useInfiniteQuery({
     queryKey: selectedSessionId
       ? sessionQueryKeys.messages(selectedSessionId)
       : sessionQueryKeys.all,
-    queryFn: () => listSessionMessages(selectedSessionId!),
+    queryFn: ({ pageParam }) => listSessionMessages(selectedSessionId!, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
     enabled: Boolean(selectedSessionId)
   });
+  const flatMessages = useMemo(() => {
+    if (!sessionMessagesQuery.data) return [];
+    // pages are ordered from newest batch to oldest batch.
+    // wait, what does `listSessionMessages` return?
+    // it returns chronological messages. So page 0 is [oldest in batch ... newest in batch].
+    // if we load next page, the next page has OLDER messages.
+    // to flatten them chronologially, we should do: older pages first, then newer pages.
+    // since `pages[0]` is the newest batch, `pages[1]` is an older batch,
+    // reversing the `pages` array before flattening yields correct chronological order.
+    return [...sessionMessagesQuery.data.pages].reverse().flatMap(page => page.data);
+  }, [sessionMessagesQuery.data]);
+
   const selectedRunnerQuery = useQuery({
     queryKey: sessionDetailQuery.data?.runnerId
       ? queryKeys.agentRunners.detail(sessionDetailQuery.data.runnerId)
@@ -262,7 +276,7 @@ export function ProjectSessionsPage() {
   useSessionEventStream({
     scopeId: id,
     session: selectedSession,
-    messages: sessionMessagesQuery.data ?? [],
+    messages: flatMessages,
     messagesReady: selectedSessionMessagesReady,
     queryClient,
     setRuntimeStateBySessionId,
@@ -273,12 +287,18 @@ export function ProjectSessionsPage() {
     mutationFn: async (payload: SendSessionMessageInput) => {
       return sendSessionMessage(selectedSessionId!, payload);
     },
-    onSuccess: (messages) => {
+    onSuccess: (messages: PagedSessionMessages) => {
       if (!selectedSessionId) {
         return;
       }
 
-      queryClient.setQueryData(sessionQueryKeys.messages(selectedSessionId), messages);
+      queryClient.setQueryData<InfiniteData<PagedSessionMessages>>(
+        sessionQueryKeys.messages(selectedSessionId),
+        (current) => current ? {
+          pageParams: [undefined],
+          pages: [messages]
+        } : current
+      );
     }
   });
   const cancelMutation = useMutation({
@@ -480,7 +500,12 @@ export function ProjectSessionsPage() {
               <SessionAssistantThread
                 key={selectedSession.id}
                 session={selectedSession}
-                messages={sessionMessagesQuery.data ?? []}
+                messages={flatMessages}
+                onLoadMore={async () => {
+                   if (sessionMessagesQuery.hasNextPage) {
+                     await sessionMessagesQuery.fetchNextPage();
+                   }
+                }}
                 runnerType={selectedRunnerType}
                 runtimeState={selectedRuntimeState}
                 onSend={async (payload) => {

@@ -1,3 +1,4 @@
+import { execFile } from 'child_process';
 import { z } from 'zod';
 
 import { createCliRunnerType, type CliRunnerState } from '../cli/cli-runner-base';
@@ -21,6 +22,7 @@ export const cursorCliInputSchema = z.object({
 });
 
 export const cursorCliRuntimeConfigSchema = z.object({
+  model: z.string().optional().describe('context:models'),
   mode: z.enum(['agent', 'ask', 'plan']).default('agent'),
   force: z.boolean().default(false),
   approveMcps: z.boolean().optional()
@@ -45,6 +47,44 @@ export const CursorCliRunnerType = createCliRunnerType({
     return probeCursorCliHealth(config.executorUser);
   },
 
+  async probeContext(runnerConfig: unknown) {
+    const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
+    const command = config.executorUser ? 'sudo' : 'agent';
+    const args = config.executorUser ? ['-u', config.executorUser, '-i', 'agent', '--list-models'] : ['--list-models'];
+
+    return new Promise((resolve) => {
+      execFile(
+        command,
+        args,
+        {
+          timeout: 10_000,
+          env: {
+            PATH: process.env.PATH,
+            HOME: process.env.HOME,
+            USER: process.env.USER,
+            LANG: process.env.LANG
+          }
+        },
+        (error, stdout) => {
+          if (error) {
+            resolve({});
+            return;
+          }
+
+          const models: string[] = [];
+          const lines = stdout.split('\n');
+          for (const line of lines) {
+            const match = line.match(/^([a-z0-9\-\.]+)\s+-/);
+            if (match) {
+              models.push(match[1]);
+            }
+          }
+          resolve({ models });
+        }
+      );
+    });
+  },
+
   buildCommand(
     runnerConfig: Record<string, unknown>,
     _runnerSessionConfig: Record<string, unknown>,
@@ -52,9 +92,11 @@ export const CursorCliRunnerType = createCliRunnerType({
     payload: RunnerSendPayload
   ): CliProcessOptions {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
-    // const sessionConfig = cursorCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const sessionConfig = cursorCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
     const runtimeConfig = cursorCliRuntimeConfigSchema.parse(payload.runtimeConfig);
     const input = cursorCliInputSchema.parse(payload.input);
+
+    void sessionConfig;
 
     const args: string[] = [
       '-p', // non-interactive print mode

@@ -1,5 +1,8 @@
+import React from 'react';
 import type { ToolCallMessagePartProps } from '@assistant-ui/react';
+import { ChevronRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { CollapsibleReasoning } from '../../components/CollapsibleReasoning';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 import { stringifyValue } from '../context';
@@ -18,45 +21,56 @@ export function AssistantReasoningPart({ text }: { text: string }) {
 
 export function AssistantToolPart({
   toolName,
-  toolCallId,
   args,
   result,
   isError
 }: ToolCallMessagePartProps) {
-  return (
-    <div className="rounded-lg border border-border/40 bg-muted/25 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Tool Use
-          </p>
-          <p className="mt-1 text-sm font-medium text-foreground">{toolName}</p>
-        </div>
-        {toolCallId ? (
-          <span className="text-xs text-muted-foreground">{toolCallId}</span>
-        ) : null}
-      </div>
+  const [isOpen, setIsOpen] = React.useState(false);
 
-      <div className="mt-3 space-y-3 text-xs text-foreground">
-        <div>
-          <p className="mb-1 font-medium text-muted-foreground">Args</p>
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-background/80 p-2">
-            {stringifyValue(args)}
-          </pre>
-        </div>
-        {result != null ? (
-          <div>
-            <p className="mb-1 font-medium text-muted-foreground">Result</p>
-            <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-background/80 p-2">
-              {stringifyValue(result)}
-            </pre>
+  return (
+    <div className="mb-2">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex w-fit items-center gap-1.5 rounded-full px-2 py-1 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none",
+          isError ? "text-destructive/80" : "text-muted-foreground/60"
+        )}
+      >
+        <ChevronRight
+          className={cn(
+            "h-3 w-3 transition-transform duration-200",
+            isOpen && "rotate-90"
+          )}
+        />
+        <span className="text-[11px] font-medium uppercase tracking-wider">
+          Tool • {toolName}
+        </span>
+      </button>
+      
+      <div
+        className={cn(
+          "grid transition-all duration-300 ease-in-out ml-1",
+          isOpen ? "grid-rows-[1fr] opacity-100 mt-1" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="border-l-2 border-border/40 pl-3 py-1 mb-2 space-y-2">
+            <div>
+              <p className="mb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Args</p>
+              <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted/30 p-2 text-[11px] text-foreground/70">
+                {stringifyValue(args)}
+              </pre>
+            </div>
+            {result != null ? (
+              <div>
+                <p className="mb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Result</p>
+                <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted/30 p-2 text-[11px] text-foreground/70">
+                  {stringifyValue(result)}
+                </pre>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-        {isError ? (
-          <Badge variant="destructive" className="rounded-md">
-            Tool Error
-          </Badge>
-        ) : null}
+        </div>
       </div>
     </div>
   );
@@ -72,6 +86,8 @@ export function AssistantEmptyPart({
   }
 
   return (
-    <p className="text-sm leading-6 text-muted-foreground">等待输出...</p>
+    <div className="flex items-center text-muted-foreground/50 py-2">
+      <Loader2 className="size-4 animate-spin" />
+    </div>
   );
 }

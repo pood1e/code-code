@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -7,7 +7,7 @@ interface CollapsibleReasoningProps {
   text: string;
 }
 
-export function CollapsibleReasoning({ text }: CollapsibleReasoningProps) {
+export const CollapsibleReasoning = memo(function CollapsibleReasoning({ text }: CollapsibleReasoningProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -41,4 +41,4 @@ export function CollapsibleReasoning({ text }: CollapsibleReasoningProps) {
       </div>
     </div>
   );
-}
+});

@@ -35,8 +35,8 @@ export class SessionsService implements OnModuleInit {
     return this.sessionsCommandService.create(dto);
   }
 
-  listMessages(sessionId: string) {
-    return this.sessionsQueryService.listMessages(sessionId);
+  listMessages(sessionId: string, cursor?: string, limit?: number) {
+    return this.sessionsQueryService.listMessages(sessionId, cursor, limit);
   }
 
   sendMessage(sessionId: string, dto: SendSessionMessageDto) {

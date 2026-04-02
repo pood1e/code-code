@@ -9,7 +9,8 @@ import {
   type SessionMessageDetail,
   type SessionMessageMetric,
   type SessionSummary,
-  type SessionToolUse
+  type SessionToolUse,
+  type PagedSessionMessages
 } from '@agent-workbench/shared';
 
 import { sanitizeJson } from '../../common/json.utils';
@@ -53,19 +54,31 @@ export class SessionsQueryService {
     return this.sessionMapper.toSessionDetail(session);
   }
 
-  async listMessages(sessionId: string): Promise<SessionMessageDetail[]> {
+  async listMessages(
+    sessionId: string,
+    cursor?: string,
+    limit: number = 50
+  ): Promise<PagedSessionMessages> {
     await this.getSessionOrThrow(sessionId);
 
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: sessionMessageAscendingOrder()
+      orderBy: sessionMessageDescendingOrder(),
+      take: limit,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined
     });
+    
+    const chronologicalMessages = messages.reverse();
+    const nextCursor = messages.length === limit ? chronologicalMessages[0].id : null;
+    const messageIds = chronologicalMessages.map((m) => m.id);
+
     const toolUses = await this.prisma.messageToolUse.findMany({
-      where: { sessionId },
+      where: { sessionId, messageId: { in: messageIds } },
       orderBy: eventAscendingOrder()
     });
     const metrics = await this.prisma.sessionMetric.findMany({
-      where: { sessionId },
+      where: { sessionId, messageId: { in: messageIds } },
       orderBy: eventAscendingOrder()
     });
     const toolUsesByMessageId = new Map<string, SessionToolUse[]>();
@@ -96,13 +109,16 @@ export class SessionsQueryService {
       metricsByMessageId.set(metric.messageId, list);
     }
 
-    return messages.map((message) =>
-      this.sessionMapper.toSessionMessageDetail(
-        message,
-        toolUsesByMessageId.get(message.id) ?? [],
-        metricsByMessageId.get(message.id) ?? []
-      )
-    );
+    return {
+      data: chronologicalMessages.map((message) =>
+        this.sessionMapper.toSessionMessageDetail(
+          message,
+          toolUsesByMessageId.get(message.id) ?? [],
+          metricsByMessageId.get(message.id) ?? []
+        )
+      ),
+      nextCursor
+    };
   }
 
   getSessionMessageOrder() {

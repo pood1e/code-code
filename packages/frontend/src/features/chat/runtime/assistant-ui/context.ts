@@ -8,16 +8,13 @@ export const ThreadConfigContext = React.createContext<{ assistantName?: string 
 
 export function formatDomainMessageStatus(status: MessageStatus) {
   switch (status) {
-    case MessageStatusEnum.Sent:
-      return '已发送';
-    case MessageStatusEnum.Streaming:
-      return '输出中';
-    case MessageStatusEnum.Complete:
-      return '完成';
     case MessageStatusEnum.Error:
       return '异常';
+    case MessageStatusEnum.Sent:
+    case MessageStatusEnum.Streaming:
+    case MessageStatusEnum.Complete:
     default:
-      return status;
+      return null;
   }
 }
 

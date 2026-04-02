@@ -22,6 +22,7 @@ import {
 } from '@/pages/projects/project-sessions.utils';
 import { createSession } from '@/api/sessions';
 import { getProfile } from '@/api/profiles';
+import { probeAgentRunnerContext } from '@/api/agent-runners';
 import { toApiRequestError } from '@/api/client';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { queryKeys } from '@/query/query-keys';
@@ -158,6 +159,13 @@ export function CreateSessionPanel({
       : queryKeys.profiles.list(),
     queryFn: () => getProfile(selectedProfileId!),
     enabled: Boolean(selectedProfileId)
+  });
+
+  const { data: runnerContext } = useQuery({
+    queryKey: selectedRunnerId ? queryKeys.agentRunners.context(selectedRunnerId) : ['agent-runners', 'context', 'empty'],
+    queryFn: () => probeAgentRunnerContext(selectedRunnerId!),
+    enabled: Boolean(selectedRunnerId),
+    staleTime: 60 * 1000
   });
 
   useEffect(() => {
@@ -431,6 +439,7 @@ export function CreateSessionPanel({
                       field={field}
                       namePrefix="initialInputConfig"
                       control={form.control}
+                      discoveredOptions={runnerContext}
                     />
                   ))}
                 </div>
@@ -446,6 +455,7 @@ export function CreateSessionPanel({
                       field={field}
                       namePrefix="runnerSessionConfig"
                       control={form.control}
+                      discoveredOptions={runnerContext}
                     />
                   ))}
                 </div>
@@ -461,6 +471,7 @@ export function CreateSessionPanel({
                       field={field}
                       namePrefix="initialRuntimeConfig"
                       control={form.control}
+                      discoveredOptions={runnerContext}
                     />
                   ))}
                 </div>

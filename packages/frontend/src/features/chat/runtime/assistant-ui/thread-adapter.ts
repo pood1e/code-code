@@ -29,21 +29,53 @@ export type SessionAssistantMessageRecord = {
 
 export function buildSessionAssistantMessageRecords(
   messages: SessionMessageDetail[],
-  runtimeState: SessionMessageRuntimeMap
+  runtimeState: SessionMessageRuntimeMap,
+  previousRecords?: SessionAssistantMessageRecord[]
 ): SessionAssistantMessageRecord[] {
-  return messages.map((message) => ({
-    message,
-    runtime: {
-      thinkingText: runtimeState[message.id]?.thinkingText ?? message.thinkingText ?? undefined,
-      usage:
-        runtimeState[message.id]?.usage ??
-        message.metrics.find(
-          (metric) => metric.kind === (MetricKindEnum.TokenUsage as MetricKind)
-        )?.data,
-      cancelledAt:
-        runtimeState[message.id]?.cancelledAt ?? message.cancelledAt ?? undefined
+  let hasChanges = false;
+  const newRecords: SessionAssistantMessageRecord[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+    const prevRecord = previousRecords?.[i];
+    const state = runtimeState[message.id];
+
+    const thinkingText = state?.thinkingText ?? message.thinkingText ?? undefined;
+    const usage =
+      state?.usage ??
+      message.metrics.find(
+        (metric) => metric.kind === (MetricKindEnum.TokenUsage as MetricKind)
+      )?.data;
+    const cancelledAt = state?.cancelledAt ?? message.cancelledAt ?? undefined;
+
+    // 如果与前一个记录的依赖完全一致，复用旧引用
+    if (
+      prevRecord &&
+      prevRecord.message === message &&
+      prevRecord.runtime?.thinkingText === thinkingText &&
+      prevRecord.runtime?.usage === usage &&
+      prevRecord.runtime?.cancelledAt === cancelledAt
+    ) {
+      newRecords.push(prevRecord);
+    } else {
+      hasChanges = true;
+      newRecords.push({
+        message,
+        runtime: {
+          thinkingText,
+          usage,
+          cancelledAt
+        }
+      });
     }
-  }));
+  }
+
+  // 如果数组长度一致且没有任何子级改变，直接复用上一次的整个数组引用
+  if (!hasChanges && previousRecords && previousRecords.length === messages.length) {
+    return previousRecords;
+  }
+
+  return newRecords;
 }
 
 export function getSessionLastEventId(

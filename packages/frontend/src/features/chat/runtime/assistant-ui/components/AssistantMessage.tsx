@@ -80,6 +80,7 @@ function AssistantMessageFooterInfo() {
 
 function MessageErrorAlert() {
   const metadata = useCurrentMessageMetadata();
+  const isLast = useAuiState((state) => state.message.isLast);
 
   if (!metadata?.recoverableError && !metadata?.nonRecoverableError) {
     return null;
@@ -97,13 +98,29 @@ function MessageErrorAlert() {
           : 'mt-3'
       }
     >
-      <AlertTitle>{errorPayload?.code}</AlertTitle>
-      <AlertDescription className="space-y-1">
-        <p>{errorPayload?.message}</p>
-        <p>
-          {isRecoverable ? '可恢复错误' : '不可恢复错误'}
-        </p>
-      </AlertDescription>
+      <div className="flex w-full items-start justify-between">
+        <div className="flex flex-col gap-1">
+          <AlertTitle>{errorPayload?.code}</AlertTitle>
+          <AlertDescription className="space-y-1">
+            <p>{errorPayload?.message}</p>
+            <p className="opacity-80">
+              {isRecoverable ? '可恢复错误' : '严重终端错误'}
+            </p>
+          </AlertDescription>
+        </div>
+        {isLast ? (
+          <ActionBarPrimitive.Reload asChild>
+            <Button
+              variant={isRecoverable ? 'outline' : 'default'}
+              size="sm"
+              className={isRecoverable ? 'border-amber-400 bg-transparent hover:bg-amber-100' : ''}
+            >
+              <RotateCcw className="mr-2 size-3" />
+              重试操作
+            </Button>
+          </ActionBarPrimitive.Reload>
+        ) : null}
+      </div>
     </Alert>
   );
 }

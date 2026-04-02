@@ -21,7 +21,6 @@ export const qwenCliInputSchema = z.object({
 });
 
 export const qwenCliRuntimeConfigSchema = z.object({
-  model: z.string().optional(),
   approvalMode: z
     .enum(['plan', 'default', 'auto-edit', 'yolo'])
     .default('plan')
@@ -53,9 +52,11 @@ export const QwenCliRunnerType = createCliRunnerType({
     payload: RunnerSendPayload
   ): CliProcessOptions {
     const config = qwenCliRunnerConfigSchema.parse(runnerConfig);
-    // const sessionConfig = qwenCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const sessionConfig = qwenCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
     const runtimeConfig = qwenCliRuntimeConfigSchema.parse(payload.runtimeConfig);
     const input = qwenCliInputSchema.parse(payload.input);
+
+    void sessionConfig;
 
     const args: string[] = [
       '-o', 'stream-json',
@@ -65,10 +66,6 @@ export const QwenCliRunnerType = createCliRunnerType({
     // Approval mode
     args.push('--approval-mode', runtimeConfig.approvalMode);
 
-    // Model
-    if (runtimeConfig.model) {
-      args.push('-m', runtimeConfig.model);
-    }
 
     // Session continuation
     if (cliState.cliSessionId) {

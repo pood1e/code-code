@@ -62,3 +62,5 @@ export type UpdateAgentRunnerInput = {
   description?: string | null;
   runnerConfig?: Record<string, unknown>;
 };
+
+export type RunnerContext = Record<string, Array<{ label: string; value: string } | string>>;

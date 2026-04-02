@@ -1,8 +1,44 @@
-import React from 'react';
+import React, { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+import ts from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import js from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
+import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
+import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
+import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import sql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
+
+SyntaxHighlighter.registerLanguage('typescript', ts);
+SyntaxHighlighter.registerLanguage('ts', ts);
+SyntaxHighlighter.registerLanguage('javascript', js);
+SyntaxHighlighter.registerLanguage('js', js);
+SyntaxHighlighter.registerLanguage('jsx', jsx);
+SyntaxHighlighter.registerLanguage('tsx', tsx);
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('sh', bash);
+SyntaxHighlighter.registerLanguage('json', json);
+SyntaxHighlighter.registerLanguage('yaml', yaml);
+SyntaxHighlighter.registerLanguage('yml', yaml);
+SyntaxHighlighter.registerLanguage('python', python);
+SyntaxHighlighter.registerLanguage('py', python);
+SyntaxHighlighter.registerLanguage('go', go);
+SyntaxHighlighter.registerLanguage('rust', rust);
+SyntaxHighlighter.registerLanguage('css', css);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('md', markdown);
+SyntaxHighlighter.registerLanguage('sql', sql);
+
+const remarkPlugins = [remarkGfm];
 import { useTheme } from 'next-themes';
 import { Check, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +49,7 @@ export interface MarkdownRendererProps {
   className?: string;
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -28,7 +64,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       )}
     >
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={remarkPlugins}
         components={{
           code({ node, inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '');
@@ -94,9 +130,9 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       </ReactMarkdown>
     </div>
   );
-}
+});
 
-function CodeBlock({
+const CodeBlock = memo(function CodeBlock({
   language,
   value,
   isDark
@@ -148,4 +184,4 @@ function CodeBlock({
       </div>
     </div>
   );
-}
+});

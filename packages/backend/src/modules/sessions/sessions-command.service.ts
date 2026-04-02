@@ -156,8 +156,9 @@ export class SessionsCommandService {
 
     await this.sessionRuntimeService.cancelRuntimeOutput(sessionId);
 
+    const runtimeSession = await this.sessionRuntimeService.ensureRuntime(sessionId);
     await this.sessionRuntimeService.handleRecoverableMessageError(
-      sessionId,
+      runtimeSession,
       streamingMessage.id,
       {
         message: '当前输出已中止',
@@ -270,8 +271,9 @@ export class SessionsCommandService {
         await this.sessionsQueryService.getLatestStreamingAssistantMessage(sessionId);
 
       if (streamingMessage) {
+        const runtimeSession = await this.sessionRuntimeService.ensureRuntime(sessionId);
         await this.sessionRuntimeService.handleNonRecoverableMessageError(
-          sessionId,
+          runtimeSession,
           streamingMessage.id,
           {
             message: '会话被强制销毁',
