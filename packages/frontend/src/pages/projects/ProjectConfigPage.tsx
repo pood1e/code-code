@@ -25,18 +25,11 @@ import {
 import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
 import { queryKeys } from '@/query/query-keys';
+import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
 
-function LoadingState() {
-  return (
-    <div className="space-y-4">
-      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
-      <div className="h-10 w-40 animate-pulse rounded-xl bg-muted" />
-      <div className="h-64 animate-pulse rounded-2xl bg-muted/60" />
-    </div>
-  );
-}
+
 
 function isWorkspacePathError(message: string) {
   return (
@@ -126,7 +119,7 @@ export function ProjectConfigPage() {
   });
 
   if (isLoading) {
-    return <LoadingState />;
+    return <PageLoadingSkeleton />;
   }
 
   if (isNotFound) {

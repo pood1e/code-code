@@ -12,7 +12,7 @@ import type { ReactNode } from 'react';
 import { z } from 'zod';
 
 import type { ProfilePayload } from '../../api/profiles';
-import { normalizeDescription } from '../../utils/normalizers';
+import { normalizeDescription } from '@/utils/format-display';
 
 export type ProfileEditorFormValues = {
   name: string;

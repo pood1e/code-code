@@ -12,7 +12,7 @@ import {
 import { z } from 'zod';
 
 import type { ResourcePayloadByKind } from '../../api/resources';
-import { normalizeDescription } from '../../utils/normalizers';
+import { normalizeDescription } from '@/utils/format-display';
 
 export type EnvEntry = {
   key: string;

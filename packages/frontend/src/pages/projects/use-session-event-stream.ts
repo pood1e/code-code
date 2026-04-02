@@ -17,7 +17,7 @@ import type { SessionMessageRuntimeMap } from '@/features/chat/runtime/assistant
 import { getSessionLastEventId } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { queryKeys } from '@/query/query-keys';
 
-import { applyOutputChunkToMessages } from './project-sessions.utils';
+import { applyOutputChunkToMessages } from './project-sessions.form';
 
 type UseSessionEventStreamOptions = {
   scopeId?: string;

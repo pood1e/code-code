@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { getSessionStatusLabel } from '@/pages/projects/project-sessions.utils';
+import { getSessionStatusLabel } from '@/pages/projects/project-sessions.form';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 import type { SessionStatus } from '@agent-workbench/shared';
 

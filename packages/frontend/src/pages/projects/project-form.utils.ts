@@ -8,7 +8,7 @@ import {
 } from '@agent-workbench/shared';
 import { z } from 'zod';
 
-import { normalizeDescription } from '@/utils/normalizers';
+import { normalizeDescription } from '@/utils/format-display';
 
 const projectNameSchema = z
   .string()

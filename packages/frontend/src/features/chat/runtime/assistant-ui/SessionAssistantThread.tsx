@@ -41,7 +41,7 @@ import { UserMessageBubble, UserMessageEditComposer } from './components/UserMes
 import { AssistantMessageBubble } from './components/AssistantMessage';
 import { ThreadComposerUI } from './components/ThreadComposerUI';
 
-const VirtuosoScroller = React.forwardRef<HTMLDivElement, any>((props, ref) => {
+const VirtuosoScroller = React.forwardRef<HTMLDivElement, React.ComponentPropsWithoutRef<'div'>>((props, ref) => {
   return (
     <>
       <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>

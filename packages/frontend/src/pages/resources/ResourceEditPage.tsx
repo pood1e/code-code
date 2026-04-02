@@ -36,7 +36,7 @@ import {
   type ResourceMarkdownFormValues,
   type ResourceMcpFormValues,
   type ResourceMutationPayload
-} from './resource-edit.utils';
+} from './resource-edit.form';
 
 type ResourceEditPageProps = {
   kind: ResourceKind;

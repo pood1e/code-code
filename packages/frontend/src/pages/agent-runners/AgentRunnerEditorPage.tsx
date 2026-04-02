@@ -18,12 +18,14 @@ import {
 } from '@/api/agent-runners';
 import { EditorToolbar } from '@/components/app/EditorToolbar';
 import { EmptyState } from '@/components/app/EmptyState';
+import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { FormField } from '@/components/app/FormField';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { JsonEditor } from '@/components/JsonEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { queryKeys } from '@/query/query-keys';
 import { agentRunnerConfig } from '@/types/agent-runners';
@@ -41,20 +43,11 @@ import {
   stringifyRunnerConfig,
   type AgentRunnerEditorFormValues,
   type RunnerConfigField
-} from './agent-runner.utils';
+} from './agent-runner.form';
 
-const selectClassName =
-  'flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50';
 
-function LoadingState() {
-  return (
-    <div className="space-y-4">
-      <div className="h-8 w-40 animate-pulse rounded-xl bg-muted" />
-      <div className="h-24 animate-pulse rounded-2xl bg-muted/80" />
-      <div className="h-64 animate-pulse rounded-2xl bg-muted/60" />
-    </div>
-  );
-}
+
+
 
 function RunnerConfigFieldInput({
   field,
@@ -97,10 +90,9 @@ function RunnerConfigFieldInput({
               description={field.description}
               error={fieldState.error?.message}
             >
-              <select
+              <NativeSelect
                 value={getRunnerConfigFieldValue(field, controllerField.value)}
                 onChange={(event) => controllerField.onChange(event.target.value)}
-                className={selectClassName}
               >
                 {!field.required ? <option value="">未设置</option> : null}
                 {field.enumOptions?.map((option) => (
@@ -108,7 +100,7 @@ function RunnerConfigFieldInput({
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </FormField>
           );
         }
@@ -296,7 +288,6 @@ function AgentRunnerEditorContent({
       }
 
       setSubmitError(error instanceof Error ? error.message : '保存失败');
-      handleError(error);
     }
   });
 
@@ -341,18 +332,17 @@ function AgentRunnerEditorContent({
                   readOnly
                 />
               ) : (
-                <select
+                <NativeSelect
                   id="agent-runner-type"
                   value={selectedTypeId ?? ''}
                   onChange={(event) => handleTypeChange(event.target.value)}
-                  className={selectClassName}
                 >
                   {runnerTypes.map((runnerType) => (
                     <option key={runnerType.id} value={runnerType.id}>
                       {runnerType.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               )}
             </FormField>
           </div>
@@ -481,7 +471,7 @@ export function AgentRunnerEditorPage() {
   }
 
   if (runnerTypesQuery.isPending || (isEditing && agentRunnerQuery.isPending)) {
-    return <LoadingState />;
+    return <PageLoadingSkeleton />;
   }
 
   if (runnerTypesQuery.error || !runnerTypesQuery.data) {
@@ -518,7 +508,7 @@ export function AgentRunnerEditorPage() {
   }
 
   if (isEditing && (agentRunnerQuery.error || !agentRunnerQuery.data)) {
-    return <LoadingState />;
+    return <PageLoadingSkeleton />;
   }
 
   return (
