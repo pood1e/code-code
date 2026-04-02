@@ -35,7 +35,7 @@ import type {
   McpSectionConfig,
   SelectedBaseItem,
   SelectedResourceListProps
-} from './profile-editor.utils';
+} from './profile-editor.form';
 
 const panelItemClassName =
   'flex items-start justify-between gap-3 rounded-2xl border border-border/40 bg-background/80 p-3.5';

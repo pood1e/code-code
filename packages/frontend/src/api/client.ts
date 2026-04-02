@@ -1,6 +1,5 @@
 import type { ApiResponse } from '@agent-workbench/shared';
 import axios, { AxiosError } from 'axios';
-import { toast } from 'sonner';
 
 type ApiErrorPayload = {
   code: number;
@@ -20,21 +19,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-export type ReferencedProfile = {
-  id: string;
-  name: string;
-};
 
-function isReferencedProfile(value: unknown): value is ReferencedProfile {
-  return Boolean(
-    value &&
-      typeof value === 'object' &&
-      'id' in value &&
-      typeof value.id === 'string' &&
-      'name' in value &&
-      typeof value.name === 'string'
-  );
-}
 
 export function toApiRequestError(error: unknown) {
   if (error instanceof ApiRequestError) {
@@ -67,18 +52,7 @@ export function isNotFoundApiError(error: unknown) {
   return getApiErrorCode(error) === 404;
 }
 
-export function getReferencedProfiles(data: unknown) {
-  if (
-    !data ||
-    typeof data !== 'object' ||
-    !('referencedBy' in data) ||
-    !Array.isArray(data.referencedBy)
-  ) {
-    return [];
-  }
 
-  return data.referencedBy.filter(isReferencedProfile);
-}
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api'

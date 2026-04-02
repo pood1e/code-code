@@ -19,7 +19,7 @@ import {
   buildCreateSessionPayload,
   createSessionFormSchema,
   type CreateSessionFormValues
-} from '@/pages/projects/project-sessions.utils';
+} from '@/pages/projects/project-sessions.form';
 import { createSession } from '@/api/sessions';
 import { getProfile } from '@/api/profiles';
 import { probeAgentRunnerContext } from '@/api/agent-runners';
@@ -33,12 +33,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/app/FormField';
 import { Button } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/native-select';
 import { ChevronDown, LoaderCircle, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgentRunnerSummary, Profile, ResourceByKind, RunnerTypeResponse, SessionDetail } from '@agent-workbench/shared';
 
-const selectClassName =
-  'flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50';
+
 
 export function CreateSessionPanel({
   projectId,
@@ -232,7 +232,7 @@ export function CreateSessionPanel({
           for (const issue of validationResult.error.issues) {
             const fieldName = issue.path[0];
             if (typeof fieldName === 'string') {
-              form.setError(`runnerSessionConfig.${fieldName}` as any, {
+              form.setError(`runnerSessionConfig.${fieldName}` as `runnerSessionConfig.${string}`, {
                 message: issue.message
               });
             }
@@ -359,8 +359,8 @@ export function CreateSessionPanel({
 
             <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div className="flex flex-wrap items-center gap-2 xl:flex-nowrap">
-                <select
-                  className={`${selectClassName} h-9 w-auto min-w-[8.5rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap`}
+                <NativeSelect
+                  className="h-9 w-auto min-w-[8.5rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap"
                   value={selectedRunnerId}
                   onChange={(event) => form.setValue('runnerId', event.target.value)}
                 >
@@ -369,10 +369,10 @@ export function CreateSessionPanel({
                       {runner.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
 
-                <select
-                  className={`${selectClassName} h-9 w-auto min-w-[8rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap`}
+                <NativeSelect
+                  className="h-9 w-auto min-w-[8rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap"
                   value={selectedProfileId ?? ''}
                   onChange={(event) => form.setValue('profileId', event.target.value)}
                 >
@@ -382,7 +382,7 @@ export function CreateSessionPanel({
                       {profile.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
 
                 <Button
                   type="button"
