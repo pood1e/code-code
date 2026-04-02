@@ -70,6 +70,17 @@ export class CreateSessionDto {
   })
   @IsObject()
   runnerSessionConfig!: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    example: {
+      prompt: 'Summarize the last run'
+    }
+  })
+  @IsOptional()
+  @IsObject()
+  initialInput?: Record<string, unknown>;
 }
 
 export class SendSessionMessageDto {
@@ -77,8 +88,7 @@ export class SendSessionMessageDto {
     type: 'object',
     additionalProperties: true,
     example: {
-      prompt: 'Summarize the last run',
-      systemPrompt: 'Be concise'
+      prompt: 'Summarize the last run'
     }
   })
   @IsObject()

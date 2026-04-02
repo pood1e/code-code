@@ -4,7 +4,6 @@ import {
   startTransition,
   useEffect,
   useMemo,
-  useRef,
   useState
 } from 'react';
 import {
@@ -14,18 +13,17 @@ import {
   useQueryClient
 } from '@tanstack/react-query';
 import type {
+  AgentRunnerDetail,
   Profile,
   ResourceByKind,
+  RunnerConfigJsonSchema,
   RunnerTypeResponse,
+  SendSessionMessageInput,
   SessionDetail,
-  SessionMessageDetail,
   SessionStatus,
   SessionSummary
 } from '@agent-workbench/shared';
-import {
-  SessionStatus as SessionStatusEnum,
-  sendSessionMessageInputSchema
-} from '@agent-workbench/shared';
+import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   LoaderCircle,
@@ -33,25 +31,28 @@ import {
   PanelRightOpen,
   Plus,
   RefreshCw,
+  SlidersHorizontal,
   Trash2,
   X
 } from 'lucide-react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
 
-import { listAgentRunners, listAgentRunnerTypes } from '@/api/agent-runners';
+import {
+  getAgentRunner,
+  listAgentRunners,
+  listAgentRunnerTypes
+} from '@/api/agent-runners';
 import { getProfile, listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
 import {
   cancelSession,
   createSession,
-  createSessionEventSource,
   disposeSession,
   editSessionMessage,
   getSession,
   listSessionMessages,
   listSessions,
-  parseSessionEvent,
   reloadSession,
   sendSessionMessage
 } from '@/api/sessions';
@@ -74,12 +75,17 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { parseSessionInputText } from '@/features/chat/runtime/assistant-ui/input-payload';
 import { SessionAssistantThread } from '@/features/chat/runtime/assistant-ui/SessionAssistantThread';
+import {
+  buildAdditionalInputInitialValues,
+  buildStructuredMessagePayload,
+  getAdditionalInputFields,
+  getPrimaryInputField
+} from '@/features/chat/runtime/assistant-ui/input-schema';
 import type {
   SessionMessageRuntimeMap
-} from '@/features/chat/runtime/assistant-ui/thread-adapter';
-import {
-  getSessionLastEventId
 } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import {
   buildRunnerConfigInitialValues,
@@ -87,27 +93,47 @@ import {
   normalizeRunnerConfigValues,
   parseRunnerConfigSchema,
   type RunnerConfigField
-} from '@/pages/agent-runners/agent-runner.utils';
+} from '@/lib/runner-config-schema';
 import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import {
-  applyOutputChunkToMessages,
   buildCreateSessionFormValues,
   buildCreateSessionPayload,
   createSessionFormSchema,
   getSessionStatusLabel,
   type CreateSessionFormValues
 } from '@/pages/projects/project-sessions.utils';
+import { useSessionEventStream } from '@/pages/projects/use-session-event-stream';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
 import { queryKeys } from '@/query/query-keys';
 
 const selectClassName =
   'flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50';
 const emptyRunnerTypes: RunnerTypeResponse[] = [];
+const emptyRunnerSummaries: Awaited<ReturnType<typeof listAgentRunners>> = [];
 const emptyProfiles: Profile[] = [];
 const emptySkills: ResourceByKind['skills'][] = [];
 const emptyMcps: ResourceByKind['mcps'][] = [];
 const emptyRules: ResourceByKind['rules'][] = [];
 const sessionQueryKeys = queryKeys.sessions;
+
+function formatRelativeTime(value: string) {
+  const targetTime = new Date(value).getTime();
+  const deltaMs = targetTime - Date.now();
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+  const formatter = new Intl.RelativeTimeFormat('zh-CN', { numeric: 'auto' });
+
+  if (Math.abs(deltaMs) < hourMs) {
+    return formatter.format(Math.round(deltaMs / minuteMs), 'minute');
+  }
+
+  if (Math.abs(deltaMs) < dayMs) {
+    return formatter.format(Math.round(deltaMs / hourMs), 'hour');
+  }
+
+  return formatter.format(Math.round(deltaMs / dayMs), 'day');
+}
 
 function LoadingState() {
   return (
@@ -315,6 +341,83 @@ function RunnerSessionConfigFieldInput({
   );
 }
 
+function InitialInputConfigFieldInput({
+  field,
+  control
+}: {
+  field: RunnerConfigField;
+  control: ReturnType<typeof useForm<CreateSessionFormValues>>['control'];
+}) {
+  return (
+    <Controller
+      control={control}
+      name={`initialInputConfig.${field.name}`}
+      render={({ field: controllerField, fieldState }) => {
+        if (field.kind === 'boolean') {
+          return (
+            <FormField
+              label={field.label}
+              description={field.description}
+              error={fieldState.error?.message}
+            >
+              <label className="flex items-center gap-3 rounded-lg border border-border/70 px-3 py-3">
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={Boolean(controllerField.value)}
+                  onChange={(event) => controllerField.onChange(event.target.checked)}
+                />
+                <span className="text-sm text-foreground">启用</span>
+              </label>
+            </FormField>
+          );
+        }
+
+        if (field.kind === 'enum') {
+          return (
+            <FormField
+              label={field.label}
+              description={field.description}
+              error={fieldState.error?.message}
+            >
+              <select
+                className={selectClassName}
+                value={getRunnerConfigFieldValue(field, controllerField.value)}
+                onChange={(event) => controllerField.onChange(event.target.value)}
+              >
+                {!field.required ? <option value="">未设置</option> : null}
+                {field.enumOptions?.map((option) => (
+                  <option key={String(option.value)} value={String(option.value)}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          );
+        }
+
+        return (
+          <FormField
+            label={field.label}
+            description={field.description}
+            error={fieldState.error?.message}
+          >
+            <Input
+              type={
+                field.kind === 'number' || field.kind === 'integer'
+                  ? 'number'
+                  : 'text'
+              }
+              value={getRunnerConfigFieldValue(field, controllerField.value)}
+              onChange={(event) => controllerField.onChange(event.target.value)}
+            />
+          </FormField>
+        );
+      }}
+    />
+  );
+}
+
 function SetupSection({
   title,
   description,
@@ -338,6 +441,157 @@ function SetupSection({
       </div>
       {children}
     </section>
+  );
+}
+
+function formatConfigValue(value: unknown) {
+  if (value == null) {
+    return '未设置';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? '启用' : '关闭';
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return Object.prototype.toString.call(value);
+  }
+}
+
+function formatFieldKindLabel(field: RunnerConfigField) {
+  switch (field.kind) {
+    case 'string':
+      return 'string';
+    case 'url':
+      return 'url';
+    case 'number':
+      return 'number';
+    case 'integer':
+      return 'integer';
+    case 'boolean':
+      return 'boolean';
+    case 'enum':
+      return 'enum';
+    default:
+      return field.kind;
+  }
+}
+
+function isRunnerConfigJsonSchema(value: unknown): value is RunnerConfigJsonSchema {
+  return typeof value === 'object' && value !== null;
+}
+
+function toRunnerConfigJsonSchema(value: unknown): RunnerConfigJsonSchema | undefined {
+  return isRunnerConfigJsonSchema(value) ? value : undefined;
+}
+
+function ReadonlyRunnerConfigSection({
+  title,
+  schema,
+  values,
+  emptyLabel = '未配置'
+}: {
+  title: string;
+  schema: RunnerConfigJsonSchema | undefined;
+  values: Record<string, unknown> | undefined;
+  emptyLabel?: string;
+}) {
+  const parsedSchema = useMemo(() => parseRunnerConfigSchema(schema), [schema]);
+  const hasValues = Boolean(values && Object.keys(values).length > 0);
+
+  return (
+    <SetupSection title={title}>
+      {!hasValues ? (
+        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+      ) : parsedSchema.supported && parsedSchema.fields.length > 0 ? (
+        <div className="space-y-3">
+          {parsedSchema.fields.map((field) => (
+            <div
+              key={field.name}
+              className="rounded-lg border border-border/70 bg-background/70 px-3 py-2.5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-foreground">{field.label}</p>
+                <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {formatFieldKindLabel(field)}
+                </span>
+              </div>
+              {field.description ? (
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {field.description}
+                </p>
+              ) : null}
+              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-md bg-muted/30 px-2 py-1.5 text-xs text-foreground">
+                {formatConfigValue(values?.[field.name])}
+              </pre>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <pre className="overflow-x-auto rounded-lg bg-background p-3 text-xs text-foreground">
+          {JSON.stringify(values, null, 2)}
+        </pre>
+      )}
+    </SetupSection>
+  );
+}
+
+function RunnerSchemaSection({
+  title,
+  schema,
+  description,
+  emptyLabel = '当前未提供 schema'
+}: {
+  title: string;
+  schema: RunnerConfigJsonSchema | undefined;
+  description?: string;
+  emptyLabel?: string;
+}) {
+  const parsedSchema = useMemo(() => parseRunnerConfigSchema(schema), [schema]);
+
+  return (
+    <SetupSection title={title} description={description}>
+      {!schema ? (
+        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+      ) : parsedSchema.supported && parsedSchema.fields.length > 0 ? (
+        <div className="space-y-3">
+          {parsedSchema.fields.map((field) => (
+            <div
+              key={field.name}
+              className="rounded-lg border border-border/70 bg-background/70 px-3 py-2.5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-foreground">{field.label}</p>
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <span>{formatFieldKindLabel(field)}</span>
+                  {field.required ? <span>required</span> : null}
+                </div>
+              </div>
+              {field.description ? (
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {field.description}
+                </p>
+              ) : null}
+              {field.defaultValue !== undefined ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  默认值: {formatConfigValue(field.defaultValue)}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <pre className="overflow-x-auto rounded-lg bg-background p-3 text-xs text-foreground">
+          {JSON.stringify(schema, null, 2)}
+        </pre>
+      )}
+    </SetupSection>
   );
 }
 
@@ -375,6 +629,8 @@ function SessionDetailsSheet({
   onOpenChange,
   projectName,
   session,
+  runnerDetail,
+  runnerType,
   runners,
   resources
 }: {
@@ -382,6 +638,8 @@ function SessionDetailsSheet({
   onOpenChange: (open: boolean) => void;
   projectName: string;
   session: SessionDetail;
+  runnerDetail?: AgentRunnerDetail;
+  runnerType?: RunnerTypeResponse;
   runners: Awaited<ReturnType<typeof listAgentRunners>>;
   resources: {
     skills: ResourceByKind['skills'][];
@@ -405,10 +663,6 @@ function SessionDetailsSheet({
       item.resourceId;
     return item.configOverride ? `${name} · override` : name;
   });
-  const runnerSessionConfigText =
-    Object.keys(session.runnerSessionConfig).length > 0
-      ? JSON.stringify(session.runnerSessionConfig, null, 2)
-      : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -456,6 +710,18 @@ function SessionDetailsSheet({
             </div>
           </SetupSection>
 
+          <ReadonlyRunnerConfigSection
+            title="Runner Config"
+            schema={runnerType?.runnerConfigSchema}
+            values={runnerDetail?.runnerConfig}
+          />
+
+          <ReadonlyRunnerConfigSection
+            title="Runner Session Config"
+            schema={runnerType?.runnerSessionConfigSchema}
+            values={session.runnerSessionConfig}
+          />
+
           <SetupSection title="资源快照">
             <div className="space-y-4">
               <SessionDetailList label="Skills" values={skillNames} />
@@ -464,13 +730,17 @@ function SessionDetailsSheet({
             </div>
           </SetupSection>
 
-          {runnerSessionConfigText ? (
-            <SetupSection title="Runner Session Config">
-              <pre className="overflow-x-auto rounded-lg bg-background p-3 text-xs text-foreground">
-                {runnerSessionConfigText}
-              </pre>
-            </SetupSection>
-          ) : null}
+          <RunnerSchemaSection
+            title="Input Schema"
+            schema={toRunnerConfigJsonSchema(runnerType?.inputSchema)}
+            description="消息输入按 RunnerType 的 input schema 解释。"
+          />
+
+          <RunnerSchemaSection
+            title="Runtime Schema"
+            schema={toRunnerConfigJsonSchema(runnerType?.runtimeConfigSchema)}
+            description="运行时动态参数 schema，当前页面只展示，不直接编辑。"
+          />
         </div>
       </SheetContent>
     </Sheet>
@@ -502,6 +772,7 @@ function CreateSessionPanel({
 }) {
   const queryClient = useQueryClient();
   const handleError = useErrorMessage();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<CreateSessionFormValues>({
     resolver: zodResolver(createSessionFormSchema),
@@ -527,6 +798,14 @@ function CreateSessionPanel({
     control: form.control,
     name: 'mcpIds'
   });
+  const initialMessageText = useWatch({
+    control: form.control,
+    name: 'initialMessageText'
+  });
+  const initialRawInput = useWatch({
+    control: form.control,
+    name: 'initialRawInput'
+  });
 
   const selectedRunner = useMemo(
     () => runners.find((runner) => runner.id === selectedRunnerId),
@@ -541,6 +820,31 @@ function CreateSessionPanel({
     () => parseRunnerConfigSchema(selectedRunnerType?.runnerSessionConfigSchema),
     [selectedRunnerType]
   );
+  const inputConfigSchema = useMemo(
+    () => parseRunnerConfigSchema(selectedRunnerType?.inputSchema),
+    [selectedRunnerType]
+  );
+  const structuredInputSchema = inputConfigSchema.supported ? inputConfigSchema : undefined;
+  const primaryInputField = useMemo(() => {
+    if (!structuredInputSchema) {
+      return undefined;
+    }
+
+    return getPrimaryInputField(structuredInputSchema.fields);
+  }, [structuredInputSchema]);
+  const additionalInputFields = useMemo(() => {
+    if (!structuredInputSchema) {
+      return [];
+    }
+
+    return getAdditionalInputFields(structuredInputSchema, primaryInputField);
+  }, [primaryInputField, structuredInputSchema]);
+  const supportsStructuredInitialInput = Boolean(
+    structuredInputSchema && primaryInputField
+  );
+  const hasInitialMessageDraft = supportsStructuredInitialInput
+    ? (initialMessageText?.trim().length ?? 0) > 0
+    : (initialRawInput?.trim().length ?? 0) > 0;
 
   const profileDetailQuery = useQuery({
     queryKey: selectedProfileId
@@ -567,6 +871,22 @@ function CreateSessionPanel({
       buildRunnerConfigInitialValues(sessionConfigSchema.fields)
     );
   }, [form, selectedRunnerType?.id, sessionConfigSchema]);
+
+  useEffect(() => {
+    if (!structuredInputSchema) {
+      form.setValue('initialInputConfig', {});
+      form.setValue('initialMessageText', '');
+      form.setValue('initialRawInput', '');
+      return;
+    }
+
+    form.setValue(
+      'initialInputConfig',
+      buildAdditionalInputInitialValues(additionalInputFields)
+    );
+    form.setValue('initialMessageText', '');
+    form.setValue('initialRawInput', '');
+  }, [additionalInputFields, form, selectedRunnerType?.id, structuredInputSchema]);
 
   useEffect(() => {
     if (!selectedProfileId || !profileDetailQuery.data) {
@@ -613,11 +933,32 @@ function CreateSessionPanel({
         runnerSessionConfig = validationResult.data;
       }
 
+      const initialMessageTextValue = values.initialMessageText?.trim() ?? '';
+      const initialRawInputValue = values.initialRawInput?.trim() ?? '';
+      const initialInput = supportsStructuredInitialInput
+        ? initialMessageTextValue.length > 0
+          ? buildStructuredMessagePayload({
+              schema: structuredInputSchema!,
+              primaryField: primaryInputField!,
+              composerText: initialMessageTextValue,
+              additionalValues: values.initialInputConfig
+            }).input
+          : undefined
+        : initialRawInputValue.length > 0
+          ? (() => {
+              const parsed = parseSessionInputText(initialRawInputValue);
+              if (!parsed.data) {
+                throw new Error(parsed.error ?? '首条消息输入校验失败');
+              }
+              return parsed.data.input;
+            })()
+          : undefined;
+
       return createSession(
         buildCreateSessionPayload(projectId, {
           ...values,
           runnerSessionConfig
-        }, profileDetailQuery.data)
+        }, profileDetailQuery.data, initialInput)
       );
     },
     onSuccess: async (session) => {
@@ -647,7 +988,11 @@ function CreateSessionPanel({
     try {
       await createMutation.mutateAsync(values);
     } catch (error) {
-      if (error instanceof Error && error.message === 'Session 配置校验失败') {
+      if (
+        error instanceof Error &&
+        (error.message === 'Session 配置校验失败' ||
+          error.message === '首条消息输入校验失败')
+      ) {
         return;
       }
       const apiError = toApiRequestError(error);
@@ -657,21 +1002,8 @@ function CreateSessionPanel({
   });
 
   return (
-    <SurfaceCard className="overflow-hidden p-0">
-      <div className="border-b border-border/70 px-5 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">新建 Session</h1>
-          </div>
-          {canCancel ? (
-            <Button variant="outline" onClick={onCancel}>
-              取消
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="space-y-5 px-5 py-5">
+    <div className="flex min-h-[36rem] flex-col xl:min-h-[calc(100vh-14rem)]">
+      <div className="flex flex-1 flex-col px-2 py-2 sm:px-4 sm:py-4">
         {submitError ? (
           <Alert variant="destructive">
             <AlertTitle>创建失败</AlertTitle>
@@ -679,46 +1011,115 @@ function CreateSessionPanel({
           </Alert>
         ) : null}
 
-        <div className="grid gap-5 2xl:grid-cols-[minmax(0,21rem)_minmax(0,1fr)]">
-          <div className="space-y-5">
-            <SetupSection title="基础设置">
-              <div className="space-y-4">
-                <FormField
-                  label="AgentRunner"
-                  error={form.formState.errors.runnerId?.message}
-                >
-                  <select
-                    className={selectClassName}
-                    value={selectedRunnerId}
-                    onChange={(event) => form.setValue('runnerId', event.target.value)}
-                  >
-                    {runners.map((runner) => (
-                      <option key={runner.id} value={runner.id}>
-                        {runner.name}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col pt-10 sm:pt-14">
+          <div className="rounded-[30px] border border-border/60 bg-background/95 p-5 shadow-[0_28px_80px_-36px_hsl(var(--foreground)/0.18)] sm:p-6">
+            {supportsStructuredInitialInput ? (
+              <FormField label="" error={form.formState.errors.initialMessageText?.message}>
+                <Textarea
+                  rows={9}
+                  placeholder="发一条消息开始新会话"
+                  className="min-h-40 resize-none border-0 bg-transparent px-0 py-0 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-44"
+                  {...form.register('initialMessageText')}
+                />
+              </FormField>
+            ) : (
+              <FormField
+                label=""
+                error={form.formState.errors.initialRawInput?.message}
+                description="当前 RunnerType 的 input schema 不适合文本输入，请直接填写原始 JSON。"
+              >
+                <Textarea
+                  rows={10}
+                  placeholder='{\n  "prompt": ""\n}'
+                  className="min-h-36 resize-none border-0 bg-transparent px-0 py-0 font-mono text-sm shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-40"
+                  {...form.register('initialRawInput')}
+                />
+              </FormField>
+            )}
 
-                <FormField label="Profile 快捷填充">
-                  <select
-                    className={selectClassName}
-                    value={selectedProfileId ?? ''}
-                    onChange={(event) => form.setValue('profileId', event.target.value)}
-                  >
-                    <option value="">不使用 Profile</option>
-                    {profiles.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.name}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
+            <div className="mt-4 grid gap-3 border-t border-border/60 pt-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div className="flex flex-wrap items-center gap-2 xl:flex-nowrap">
+                <select
+                  className={`${selectClassName} h-9 w-auto min-w-[8.5rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap`}
+                  value={selectedRunnerId}
+                  onChange={(event) => form.setValue('runnerId', event.target.value)}
+                >
+                  {runners.map((runner) => (
+                    <option key={runner.id} value={runner.id}>
+                      {runner.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className={`${selectClassName} h-9 w-auto min-w-[8rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap`}
+                  value={selectedProfileId ?? ''}
+                  onChange={(event) => form.setValue('profileId', event.target.value)}
+                >
+                  <option value="">Profile</option>
+                  {profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 rounded-full px-3 text-xs text-muted-foreground whitespace-nowrap"
+                  onClick={() => setAdvancedOpen(true)}
+                >
+                  <SlidersHorizontal />
+                  高级设置
+                </Button>
               </div>
-            </SetupSection>
+
+              <div className="flex items-center justify-end gap-2">
+                {canCancel ? (
+                  <Button variant="ghost" size="sm" onClick={onCancel}>
+                    取消
+                  </Button>
+                ) : null}
+                <Button
+                  onClick={() => void handleSubmit()}
+                  disabled={createMutation.isPending || !hasInitialMessageDraft}
+                  className="h-10 min-w-24 rounded-full px-5 shadow-sm"
+                >
+                  {createMutation.isPending ? <LoaderCircle className="animate-spin" /> : null}
+                  发送
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Sheet open={advancedOpen} onOpenChange={setAdvancedOpen}>
+        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
+          <SheetHeader className="border-b border-border/70 px-5 py-4 text-left">
+            <SheetTitle>高级设置</SheetTitle>
+            <SheetDescription>资源、输入参数和会话参数。</SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-5 px-5 py-5">
+            {additionalInputFields.length > 0 ? (
+              <SetupSection title="输入参数">
+                <div className="grid gap-4">
+                  {additionalInputFields.map((field) => (
+                    <InitialInputConfigFieldInput
+                      key={field.name}
+                      field={field}
+                      control={form.control}
+                    />
+                  ))}
+                </div>
+              </SetupSection>
+            ) : null}
 
             {sessionConfigSchema.supported && sessionConfigSchema.fields.length > 0 ? (
-              <SetupSection title="Runner Session Config">
+              <SetupSection title="会话参数">
                 <div className="grid gap-4">
                   {sessionConfigSchema.fields.map((field) => (
                     <RunnerSessionConfigFieldInput
@@ -730,62 +1131,51 @@ function CreateSessionPanel({
                 </div>
               </SetupSection>
             ) : null}
+
+            <SetupSection title="资源">
+              <div className="grid gap-5 xl:grid-cols-2">
+                <ResourceSelectionSection
+                  label="技能"
+                  items={resources.skills}
+                  value={selectedSkillIds}
+                  onToggle={(resourceId) => toggleSelection('skillIds', resourceId)}
+                />
+                <ResourceSelectionSection
+                  label="规则"
+                  items={resources.rules}
+                  value={selectedRuleIds}
+                  onToggle={(resourceId) => toggleSelection('ruleIds', resourceId)}
+                />
+                <ResourceSelectionSection
+                  label="MCP"
+                  items={resources.mcps}
+                  value={selectedMcpIds}
+                  onToggle={(resourceId) => toggleSelection('mcpIds', resourceId)}
+                  getHint={(item) =>
+                    typeof item.content === 'object' && item.content
+                      ? item.content.command
+                      : undefined
+                  }
+                />
+              </div>
+            </SetupSection>
           </div>
-
-          <SetupSection title="资源">
-            <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
-              <ResourceSelectionSection
-                label="Skills"
-                items={resources.skills}
-                value={selectedSkillIds}
-                onToggle={(resourceId) => toggleSelection('skillIds', resourceId)}
-              />
-              <ResourceSelectionSection
-                label="Rules"
-                items={resources.rules}
-                value={selectedRuleIds}
-                onToggle={(resourceId) => toggleSelection('ruleIds', resourceId)}
-              />
-              <ResourceSelectionSection
-                label="MCPs"
-                items={resources.mcps}
-                value={selectedMcpIds}
-                onToggle={(resourceId) => toggleSelection('mcpIds', resourceId)}
-                getHint={(item) =>
-                  typeof item.content === 'object' && item.content
-                    ? item.content.command
-                    : undefined
-                }
-              />
-            </div>
-          </SetupSection>
-        </div>
-      </div>
-
-      <div className="border-t border-border/70 px-5 py-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            已选 {selectedSkillIds.length} Skills · {selectedRuleIds.length} Rules ·{' '}
-            {selectedMcpIds.length} MCPs
-          </p>
-          <Button onClick={() => void handleSubmit()} disabled={createMutation.isPending}>
-            {createMutation.isPending ? <LoaderCircle className="animate-spin" /> : null}
-            创建并进入会话
-          </Button>
-        </div>
-      </div>
-    </SurfaceCard>
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
 
 function SessionList({
   sessions,
+  runnerNameById,
   selectedSessionId,
   isCreating,
   onSelect,
   onCreate
 }: {
   sessions: SessionSummary[];
+  runnerNameById: Record<string, string>;
   selectedSessionId: string | null;
   isCreating: boolean;
   onSelect: (sessionId: string) => void;
@@ -796,8 +1186,8 @@ function SessionList({
       <div className="border-b border-border/70 px-4 py-4 sm:px-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-foreground">Sessions</p>
-            <p className="text-xs text-muted-foreground">{sessions.length}</p>
+            <p className="text-sm font-semibold text-foreground">会话</p>
+            <p className="text-xs text-muted-foreground">{sessions.length} 条</p>
           </div>
           <Button size="sm" onClick={onCreate} variant={isCreating ? 'secondary' : 'default'}>
             <Plus />
@@ -832,12 +1222,13 @@ function SessionList({
         <div className="flex-1 overflow-y-auto">
           {sessions.map((session) => {
             const isSelected = session.id === selectedSessionId;
+            const title = runnerNameById[session.runnerId] ?? session.runnerType;
             return (
               <button
                 key={session.id}
                 type="button"
                 onClick={() => onSelect(session.id)}
-                className={`w-full border-b border-border/60 px-4 py-4 text-left transition-colors sm:px-5 ${
+                className={`w-full border-b border-border/60 px-4 py-3.5 text-left transition-colors sm:px-5 ${
                   isSelected
                     ? 'bg-muted/35 shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
                     : 'hover:bg-muted/20'
@@ -846,14 +1237,15 @@ function SessionList({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
-                      {session.runnerType}
+                      {title}
                     </p>
                     <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {session.id.slice(0, 8)} ·{' '}
-                      {new Date(session.updatedAt).toLocaleString()}
+                      {formatRelativeTime(session.updatedAt)}
                     </p>
                   </div>
-                  <SessionStatusBadge status={session.status} />
+                  <Badge variant={isSelected ? 'secondary' : 'outline'} className="rounded-full">
+                    {getSessionStatusLabel(session.status)}
+                  </Badge>
                 </div>
               </button>
             );
@@ -870,12 +1262,9 @@ export function ProjectSessionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [createPanelOpen, setCreatePanelOpen] = useState(false);
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
-  const [streamNonce, setStreamNonce] = useState(0);
   const [runtimeStateBySessionId, setRuntimeStateBySessionId] = useState<
     Record<string, SessionMessageRuntimeMap>
   >({});
-  const reconnectTimerRef = useRef<number | null>(null);
-  const lastEventIdRef = useRef(0);
   const {
     id,
     project,
@@ -942,10 +1331,17 @@ export function ProjectSessionsPage() {
     queryFn: () => listSessionMessages(selectedSessionId!),
     enabled: Boolean(selectedSessionId)
   });
+  const selectedRunnerQuery = useQuery({
+    queryKey: sessionDetailQuery.data?.runnerId
+      ? queryKeys.agentRunners.detail(sessionDetailQuery.data.runnerId)
+      : queryKeys.agentRunners.all,
+    queryFn: () => getAgentRunner(sessionDetailQuery.data!.runnerId),
+    enabled: Boolean(sessionDetailQuery.data?.runnerId)
+  });
 
   const selectedSession = sessionDetailQuery.data;
   const runnerTypes = runnerTypesQuery.data ?? emptyRunnerTypes;
-  const runners = runnersQuery.data ?? [];
+  const runners = runnersQuery.data ?? emptyRunnerSummaries;
   const profiles = profilesQuery.data ?? emptyProfiles;
   const resources = useMemo(
     () => ({
@@ -970,6 +1366,21 @@ export function ProjectSessionsPage() {
         ? runtimeStateBySessionId[selectedSessionId]
         : undefined) ?? {},
     [runtimeStateBySessionId, selectedSessionId]
+  );
+  const selectedRunnerLabel = useMemo(() => {
+    if (!selectedSession) {
+      return '';
+    }
+
+    return (
+      runners.find((runner) => runner.id === selectedSession.runnerId)?.name ??
+      selectedSession.runnerType
+    );
+  }, [runners, selectedSession]);
+  const runnerNameById = useMemo(
+    () =>
+      Object.fromEntries(runners.map((runner) => [runner.id, runner.name] as const)),
+    [runners]
   );
   const selectedSessionMessagesReady = sessionMessagesQuery.status === 'success';
   const showCreatePanel =
@@ -999,6 +1410,7 @@ export function ProjectSessionsPage() {
       sessionsQuery.error ??
       sessionDetailQuery.error ??
       sessionMessagesQuery.error ??
+      selectedRunnerQuery.error ??
       runnerTypesQuery.error ??
       runnersQuery.error ??
       profilesQuery.error ??
@@ -1016,6 +1428,7 @@ export function ProjectSessionsPage() {
     mcpsQuery.error,
     profilesQuery.error,
     rulesQuery.error,
+    selectedRunnerQuery.error,
     runnerTypesQuery.error,
     runnersQuery.error,
     sessionDetailQuery.error,
@@ -1052,163 +1465,18 @@ export function ProjectSessionsPage() {
     });
   }, [selectedSessionId, sessionsQuery.data, setSearchParams]);
 
-  useEffect(() => {
-    const messages = sessionMessagesQuery.data ?? [];
-    lastEventIdRef.current = getSessionLastEventId(messages);
-  }, [sessionMessagesQuery.data, selectedSessionId]);
-
-  useEffect(() => {
-    if (!selectedSessionId || !selectedSessionMessagesReady) {
-      return;
-    }
-
-    const sessionId = selectedSessionId;
-    let cancelled = false;
-    const source = createSessionEventSource(sessionId, lastEventIdRef.current);
-
-    const onChunk = (event: Event) => {
-      if (cancelled) {
-        return;
-      }
-
-      if (!(event instanceof MessageEvent) || typeof event.data !== 'string') {
-        return;
-      }
-
-      const chunk = parseSessionEvent(event);
-      lastEventIdRef.current = Math.max(lastEventIdRef.current, chunk.eventId);
-
-      if (chunk.kind === 'session_status') {
-        queryClient.setQueryData<SessionDetail | undefined>(
-          sessionQueryKeys.detail(sessionId),
-          (current) =>
-            current
-              ? {
-                  ...current,
-                  status: chunk.data.status
-                }
-              : current
-        );
-        queryClient.setQueryData<SessionSummary[] | undefined>(
-          id ? sessionQueryKeys.list(id) : sessionQueryKeys.lists(),
-          (current) =>
-            current?.map((session) =>
-              session.id === sessionId
-                ? {
-                    ...session,
-                    status: chunk.data.status
-                  }
-                : session
-            )
-        );
-        if (chunk.data.status !== SessionStatusEnum.Running) {
-          setRuntimeStateBySessionId((current) => ({
-            ...current,
-            [sessionId]: Object.fromEntries(
-              Object.entries(current[sessionId] ?? {}).map(
-                ([messageId, value]) => [
-                  messageId,
-                  value
-                    ? {
-                        ...value,
-                        thinkingText: undefined
-                      }
-                    : value
-                ]
-              )
-            )
-          }));
-        }
-        return;
-      }
-
-      if (chunk.kind === 'thinking_delta' && chunk.messageId) {
-        const messageId = chunk.messageId;
-        updateSessionRuntimeMessageState(sessionId, messageId, (current) => ({
-          ...(current ?? {}),
-          thinkingText:
-            chunk.data.accumulatedText ??
-            `${current?.thinkingText ?? ''}${chunk.data.deltaText}`
-        }));
-        return;
-      }
-
-      if (chunk.kind === 'usage' && chunk.messageId) {
-        const messageId = chunk.messageId;
-        updateSessionRuntimeMessageState(sessionId, messageId, (current) => ({
-          ...(current ?? {}),
-          usage: chunk.data
-        }));
-        return;
-      }
-
-      if (
-        chunk.kind === 'message_delta' ||
-        chunk.kind === 'message_result' ||
-        chunk.kind === 'error' ||
-        chunk.kind === 'tool_use'
-      ) {
-        queryClient.setQueryData<SessionMessageDetail[] | undefined>(
-          sessionQueryKeys.messages(sessionId),
-          (current) =>
-            current ? applyOutputChunkToMessages(current, chunk) : current
-        );
-
-        if (
-          (chunk.kind === 'message_result' || chunk.kind === 'error') &&
-          chunk.messageId
-        ) {
-          const messageId = chunk.messageId;
-          updateSessionRuntimeMessageState(sessionId, messageId, (current) => ({
-            ...(current ?? {}),
-            thinkingText: undefined,
-            cancelledAt:
-              chunk.kind === 'error' && chunk.data.code === 'USER_CANCELLED'
-                ? new Date(chunk.timestampMs).toISOString()
-                : undefined
-          }));
-        }
-      }
-    };
-
-    source.addEventListener('thinking_delta', onChunk);
-    source.addEventListener('message_delta', onChunk);
-    source.addEventListener('message_result', onChunk);
-    source.addEventListener('error', onChunk);
-    source.addEventListener('tool_use', onChunk);
-    source.addEventListener('usage', onChunk);
-    source.addEventListener('session_status', onChunk);
-    source.addEventListener('done', onChunk);
-    source.addEventListener('heartbeat', () => {});
-    source.onerror = () => {
-      source.close();
-      if (cancelled) {
-        return;
-      }
-
-      reconnectTimerRef.current = window.setTimeout(() => {
-        setStreamNonce((value) => value + 1);
-      }, 1000);
-    };
-
-    return () => {
-      cancelled = true;
-      if (reconnectTimerRef.current !== null) {
-        window.clearTimeout(reconnectTimerRef.current);
-      }
-      source.close();
-    };
-  }, [
-    id,
+  useSessionEventStream({
+    scopeId: id,
+    session: selectedSession,
+    messages: sessionMessagesQuery.data ?? [],
+    messagesReady: selectedSessionMessagesReady,
     queryClient,
-    selectedSessionId,
-    selectedSessionMessagesReady,
-    streamNonce,
+    setRuntimeStateBySessionId,
     updateSessionRuntimeMessageState
-  ]);
+  });
 
   const sendMutation = useMutation({
-    mutationFn: async (payload: ReturnType<typeof sendSessionMessageInputSchema.parse>) => {
+    mutationFn: async (payload: SendSessionMessageInput) => {
       return sendSessionMessage(selectedSessionId!, payload);
     },
     onSuccess: (messages) => {
@@ -1231,7 +1499,7 @@ export function ProjectSessionsPage() {
       payload
     }: {
       messageId: string;
-      payload: ReturnType<typeof sendSessionMessageInputSchema.parse>;
+      payload: SendSessionMessageInput;
     }) => editSessionMessage(selectedSessionId!, messageId, payload)
   });
   const disposeMutation = useMutation({
@@ -1299,9 +1567,10 @@ export function ProjectSessionsPage() {
         onTabChange={(tab) => goToProjectTab(id, tab)}
       />
 
-      <div className="grid items-start gap-4 xl:grid-cols-[16.5rem_minmax(0,1fr)]">
+      <div className="grid items-start gap-4 xl:grid-cols-[15rem_minmax(0,1fr)]">
         <SessionList
           sessions={sessionsQuery.data ?? []}
+          runnerNameById={runnerNameById}
           selectedSessionId={selectedSessionId}
           isCreating={showCreatePanel}
           onSelect={(sessionId) => {
@@ -1347,34 +1616,36 @@ export function ProjectSessionsPage() {
               }}
             />
           ) : selectedSession ? (
-            <SurfaceCard className="flex min-h-[42rem] flex-col overflow-hidden p-0 xl:h-[calc(100vh-14rem)]">
+            <SurfaceCard className="flex min-h-[44rem] flex-col overflow-hidden p-0 xl:h-[calc(100vh-11.5rem)]">
               <div className="border-b border-border/70 px-5 py-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {selectedRunnerLabel}
+                      </span>
                       <SessionStatusBadge status={selectedSession.status} />
-                      <span className="text-sm font-medium text-foreground">
-                        {selectedSession.runnerType}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {selectedSession.id.slice(0, 8)}
-                      </span>
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {new Date(selectedSession.updatedAt).toLocaleString()}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatRelativeTime(selectedSession.updatedAt)}
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Button
-                      variant="outline"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="查看配置"
+                      title="查看配置"
                       onClick={() => setDetailsSheetOpen(true)}
                     >
                       <PanelRightOpen />
-                      配置
                     </Button>
                     <Button
-                      variant="outline"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="刷新会话"
+                      title="刷新会话"
                       onClick={() => {
                         void Promise.all([
                           queryClient.invalidateQueries({
@@ -1390,10 +1661,12 @@ export function ProjectSessionsPage() {
                       }}
                     >
                       <RefreshCw />
-                      刷新
                     </Button>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="销毁会话"
+                      title="销毁会话"
                       disabled={
                         selectedSession.status === SessionStatusEnum.Disposing ||
                         selectedSession.status === SessionStatusEnum.Disposed ||
@@ -1402,9 +1675,9 @@ export function ProjectSessionsPage() {
                       onClick={() => {
                         void disposeMutation.mutateAsync().catch(handleError);
                       }}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 />
-                      销毁
                     </Button>
                   </div>
                 </div>
@@ -1484,6 +1757,8 @@ export function ProjectSessionsPage() {
                 onOpenChange={setDetailsSheetOpen}
                 projectName={project.name}
                 session={selectedSession}
+                runnerDetail={selectedRunnerQuery.data}
+                runnerType={selectedRunnerType}
                 runners={runners}
                 resources={resources}
               />

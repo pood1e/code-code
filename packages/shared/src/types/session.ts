@@ -146,6 +146,7 @@ export type SessionSummary = {
   runnerId: string;
   runnerType: string;
   status: SessionStatus;
+  lastEventId: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -199,6 +200,7 @@ export type CreateSessionInput = {
   ruleIds: string[];
   mcps: PlatformSessionMcp[];
   runnerSessionConfig: Record<string, unknown>;
+  initialInput?: Record<string, unknown>;
 };
 
 export type SendSessionMessageInput = {

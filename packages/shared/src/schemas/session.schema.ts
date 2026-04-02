@@ -34,7 +34,8 @@ export const createSessionInputSchema = z.object({
   skillIds: z.array(idSchema),
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema),
-  runnerSessionConfig: jsonObjectSchema
+  runnerSessionConfig: jsonObjectSchema,
+  initialInput: jsonObjectSchema.optional()
 });
 
 export const sendSessionMessageInputSchema = z.object({

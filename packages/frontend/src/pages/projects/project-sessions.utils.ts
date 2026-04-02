@@ -21,12 +21,14 @@ export const createSessionFormSchema = z.object({
   skillIds: z.array(z.string()),
   ruleIds: z.array(z.string()),
   mcpIds: z.array(z.string()),
-  runnerSessionConfig: z.record(z.string(), z.unknown())
+  runnerSessionConfig: z.record(z.string(), z.unknown()),
+  initialMessageText: z.string().trim().optional(),
+  initialInputConfig: z.record(z.string(), z.unknown()),
+  initialRawInput: z.string().optional()
 });
 
 export const sessionTextInputSchema = z.object({
-  prompt: z.string().trim().min(1, '请输入消息内容'),
-  systemPrompt: z.string().trim().optional()
+  prompt: z.string().trim().min(1, '请输入消息内容')
 });
 
 export type CreateSessionFormValues = z.infer<typeof createSessionFormSchema>;
@@ -39,14 +41,18 @@ export function buildCreateSessionFormValues(): CreateSessionFormValues {
     skillIds: [],
     ruleIds: [],
     mcpIds: [],
-    runnerSessionConfig: {}
+    runnerSessionConfig: {},
+    initialMessageText: '',
+    initialInputConfig: {},
+    initialRawInput: ''
   };
 }
 
 export function buildCreateSessionPayload(
   scopeId: string,
   values: CreateSessionFormValues,
-  profileDetail?: ProfileDetail
+  profileDetail?: ProfileDetail,
+  initialInput?: Record<string, unknown>
 ): CreateSessionInput {
   const profileMcpOverrides = new Map(
     (profileDetail?.mcps ?? []).map((item) => [item.id, item.configOverride])
@@ -61,7 +67,8 @@ export function buildCreateSessionPayload(
       resourceId,
       configOverride: profileMcpOverrides.get(resourceId)
     })),
-    runnerSessionConfig: values.runnerSessionConfig
+    runnerSessionConfig: values.runnerSessionConfig,
+    initialInput
   });
 }
 
@@ -70,31 +77,9 @@ export function buildTextMessagePayload(
 ): SendSessionMessageInput {
   return sendSessionMessageInputSchema.parse({
     input: {
-      prompt: values.prompt.trim(),
-      systemPrompt: values.systemPrompt?.trim() || undefined
+      prompt: values.prompt.trim()
     }
   });
-}
-
-export function parseRawInputText(value: string) {
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return {
-        error: '消息输入必须是 JSON 对象。'
-      };
-    }
-
-    return {
-      data: sendSessionMessageInputSchema.parse({
-        input: parsed
-      })
-    };
-  } catch {
-    return {
-      error: '消息输入不是有效的 JSON。'
-    };
-  }
 }
 
 export function getSessionStatusLabel(status: SessionStatus) {

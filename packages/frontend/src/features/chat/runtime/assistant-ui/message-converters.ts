@@ -55,6 +55,13 @@ function getPromptText(message: SessionMessageDetail) {
     return message.inputContent.prompt;
   }
 
+  const firstTextValue = Object.values(message.inputContent).find(
+    (value) => typeof value === 'string' && value.trim().length > 0
+  );
+  if (typeof firstTextValue === 'string') {
+    return firstTextValue;
+  }
+
   return stringifyValue(message.inputContent);
 }
 

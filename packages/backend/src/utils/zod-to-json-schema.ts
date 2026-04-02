@@ -1,14 +1,11 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import type {
   ReferenceObject,
   SchemaObject
 } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 export function convertZodSchemaToJsonSchema(schema: z.ZodTypeAny): object {
-  return zodToJsonSchema(
-    schema as unknown as Parameters<typeof zodToJsonSchema>[0]
-  ) as object;
+  return z.toJSONSchema(schema);
 }
 
 type SwaggerSchemaType =

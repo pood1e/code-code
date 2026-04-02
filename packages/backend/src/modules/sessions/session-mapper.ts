@@ -1,0 +1,83 @@
+import { Injectable } from '@nestjs/common';
+import {
+  MessageStatus,
+  MetricKind,
+  errorPayloadSchema,
+  platformSessionConfigSchema,
+  type SessionDetail,
+  type SessionMessageDetail,
+  type SessionMessageMetric,
+  type SessionSummary,
+  type SessionToolUse
+} from '@agent-workbench/shared';
+
+import { asPlainObject, sanitizeJson } from '../../common/json.utils';
+import type {
+  SessionMessageRow,
+  SessionMetricRow,
+  SessionRow
+} from './session.types';
+
+@Injectable()
+export class SessionMapper {
+  toSessionSummary(session: SessionRow): SessionSummary {
+    return {
+      id: session.id,
+      scopeId: session.scopeId,
+      runnerId: session.runnerId,
+      runnerType: session.runnerType,
+      status: session.status as SessionSummary['status'],
+      lastEventId: session.lastEventId,
+      createdAt: session.createdAt.toISOString(),
+      updatedAt: session.updatedAt.toISOString()
+    };
+  }
+
+  toSessionDetail(session: SessionRow): SessionDetail {
+    return {
+      ...this.toSessionSummary(session),
+      platformSessionConfig: platformSessionConfigSchema.parse(
+        sanitizeJson(session.platformSessionConfig)
+      ),
+      runnerSessionConfig: asPlainObject(session.runnerSessionConfig)
+    };
+  }
+
+  toSessionMessageDetail(
+    message: SessionMessageRow,
+    toolUses: SessionToolUse[],
+    metrics: SessionMessageMetric[]
+  ): SessionMessageDetail {
+    return {
+      id: message.id,
+      sessionId: message.sessionId,
+      role: message.role as SessionMessageDetail['role'],
+      status: message.status as MessageStatus,
+      inputContent: message.inputContent
+        ? asPlainObject(message.inputContent)
+        : null,
+      outputText: message.outputText,
+      thinkingText: message.thinkingText,
+      errorPayload: message.errorPayload
+        ? errorPayloadSchema.parse(sanitizeJson(message.errorPayload))
+        : null,
+      cancelledAt: message.cancelledAt?.toISOString() ?? null,
+      eventId: message.eventId,
+      toolUses,
+      metrics,
+      createdAt: message.createdAt.toISOString()
+    };
+  }
+
+  toSessionMessageMetric(metric: SessionMetricRow): SessionMessageMetric {
+    return {
+      id: metric.id,
+      sessionId: metric.sessionId,
+      messageId: metric.messageId,
+      eventId: metric.eventId,
+      kind: metric.kind as MetricKind,
+      data: sanitizeJson(metric.data) as SessionMessageMetric['data'],
+      createdAt: metric.createdAt.toISOString()
+    };
+  }
+}
