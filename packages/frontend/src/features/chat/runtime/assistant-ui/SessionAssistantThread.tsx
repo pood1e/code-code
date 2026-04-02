@@ -24,18 +24,28 @@ import {
   Square
 } from 'lucide-react';
 
-import { EmptyState } from '@/components/app/EmptyState';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import {
-  buildTextMessagePayload,
-  parseRawInputText
-} from '@/pages/projects/project-sessions.utils';
-import { parseRunnerConfigSchema } from '@/pages/agent-runners/agent-runner.utils';
+  getRunnerConfigFieldValue,
+  parseRunnerConfigSchema,
+  type RunnerConfigField
+} from '@/lib/runner-config-schema';
+import {
+  parseSessionInputText
+} from '@/features/chat/runtime/assistant-ui/input-payload';
 
+import {
+  buildAdditionalInputInitialValues,
+  buildStructuredMessagePayload,
+  getAdditionalInputFields,
+  getPrimaryInputField,
+  omitPrimaryFieldValue
+} from './input-schema';
 import { SessionAssistantRuntimeProvider } from './SessionAssistantRuntimeProvider';
 import type { SessionAssistantMessageMetadata } from './message-converters';
 import type {
@@ -395,70 +405,168 @@ function RawJsonTemplateSync({ enabled }: { enabled: boolean }) {
   return null;
 }
 
+function AdditionalInputFields({
+  fields,
+  values,
+  disabled,
+  onChange
+}: {
+  fields: RunnerConfigField[];
+  values: Record<string, unknown>;
+  disabled: boolean;
+  onChange: (fieldName: string, value: unknown) => void;
+}) {
+  if (fields.length === 0) {
+    return null;
+  }
+
+  return (
+    <details className="rounded-xl border border-border/70 bg-muted/20">
+      <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium text-foreground">
+        高级输入参数
+      </summary>
+      <div className="space-y-3 border-t border-border/60 px-3 py-3">
+        {fields.map((field) => {
+          if (field.kind === 'boolean') {
+            return (
+              <label
+                key={field.name}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/70 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{field.label}</p>
+                  {field.description ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {field.description}
+                    </p>
+                  ) : null}
+                </div>
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={Boolean(values[field.name])}
+                  disabled={disabled}
+                  onChange={(event) => onChange(field.name, event.target.checked)}
+                />
+              </label>
+            );
+          }
+
+          if (field.kind === 'enum') {
+            return (
+              <div key={field.name} className="space-y-2">
+                <p className="text-sm font-medium text-foreground">{field.label}</p>
+                {field.description ? (
+                  <p className="text-xs text-muted-foreground">{field.description}</p>
+                ) : null}
+                <select
+                  className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50"
+                  value={getRunnerConfigFieldValue(field, values[field.name])}
+                  disabled={disabled}
+                  onChange={(event) => onChange(field.name, event.target.value)}
+                >
+                  {!field.required ? <option value="">未设置</option> : null}
+                  {field.enumOptions?.map((option) => (
+                    <option key={String(option.value)} value={String(option.value)}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
+
+          const value = getRunnerConfigFieldValue(field, values[field.name]);
+          const isMultiline = field.kind === 'string';
+
+          return (
+            <div key={field.name} className="space-y-2">
+              <p className="text-sm font-medium text-foreground">{field.label}</p>
+              {field.description ? (
+                <p className="text-xs text-muted-foreground">{field.description}</p>
+              ) : null}
+              {isMultiline ? (
+                <Textarea
+                  rows={3}
+                  value={value}
+                  disabled={disabled}
+                  onChange={(event) => onChange(field.name, event.target.value)}
+                />
+              ) : (
+                <Input
+                  type={
+                    field.kind === 'url'
+                      ? 'url'
+                      : field.kind === 'number' || field.kind === 'integer'
+                        ? 'number'
+                        : 'text'
+                  }
+                  value={value}
+                  disabled={disabled}
+                  onChange={(event) => onChange(field.name, event.target.value)}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
 function ThreadComposer({
   mode,
-  hasSystemPrompt,
-  systemPrompt,
+  additionalFields,
+  additionalValues,
   composerError,
-  onSystemPromptChange
+  onAdditionalValueChange
 }: {
   mode: 'text' | 'raw-json';
-  hasSystemPrompt: boolean;
-  systemPrompt: string;
+  additionalFields: RunnerConfigField[];
+  additionalValues: Record<string, unknown>;
   composerError: string | null;
-  onSystemPromptChange: (value: string) => void;
+  onAdditionalValueChange: (fieldName: string, value: unknown) => void;
 }) {
   const isRunning = useAuiState((state) => state.thread.isRunning);
   const isDisabled = useAuiState((state) => state.thread.isDisabled);
 
   return (
-    <ThreadPrimitive.ViewportFooter className="sticky bottom-0 z-10 pt-4">
-      <div className="border-t border-border/70 bg-background/95 px-4 py-4 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <div />
-          {isRunning ? (
+    <div className="border-t border-border/70 bg-background/98 px-5 py-4 backdrop-blur">
+        {isRunning ? (
+          <div className="flex justify-end">
             <Badge variant="secondary">
               <LoaderCircle className="mr-1 size-3 animate-spin" />
               输出中
             </Badge>
-          ) : null}
-        </div>
-
-        {hasSystemPrompt ? (
-          <div className="mt-4 space-y-2">
-            <p className="text-sm font-medium text-foreground">System Prompt</p>
-            <Textarea
-              rows={3}
-              value={systemPrompt}
-              disabled={isDisabled}
-              onChange={(event) => onSystemPromptChange(event.target.value)}
-              placeholder="可选"
-            />
           </div>
         ) : null}
 
-          {composerError ? (
-          <Alert variant="destructive" className="mt-4">
+        {composerError ? (
+          <Alert variant="destructive" className={cn(isRunning ? 'mt-4' : undefined)}>
             <AlertTitle>发送失败</AlertTitle>
             <AlertDescription>{composerError}</AlertDescription>
           </Alert>
         ) : null}
 
-        <ComposerPrimitive.Root className="mt-4 space-y-3">
+        <ComposerPrimitive.Root className={cn(isRunning || composerError ? 'mt-4' : undefined, 'space-y-3')}>
           <RawJsonTemplateSync enabled={mode === 'raw-json'} />
           <ComposerPrimitive.Input
             className={cn(
-              'flex min-h-28 w-full rounded-xl border border-input bg-background px-3 py-3 text-sm leading-6 outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50'
+              'flex min-h-24 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm leading-6 outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50'
             )}
-            placeholder={
-              mode === 'text'
-                ? '输入消息'
-                : '输入 JSON'
-            }
-            minRows={mode === 'text' ? 5 : 8}
-            maxRows={16}
+            placeholder={mode === 'text' ? '输入消息' : '输入 JSON'}
+            minRows={mode === 'text' ? 4 : 7}
+            maxRows={14}
             submitMode="enter"
           />
+          {mode === 'text' ? (
+            <AdditionalInputFields
+              fields={additionalFields}
+              values={additionalValues}
+              disabled={isDisabled}
+              onChange={onAdditionalValueChange}
+            />
+          ) : null}
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs text-muted-foreground">
               {isDisabled && !isRunning ? '当前 Session 暂不可发送。' : null}
@@ -481,8 +589,7 @@ function ThreadComposer({
             </div>
           </div>
         </ComposerPrimitive.Root>
-      </div>
-    </ThreadPrimitive.ViewportFooter>
+    </div>
   );
 }
 
@@ -505,27 +612,33 @@ export function SessionAssistantThread({
   onReload: () => Promise<void>;
   onEdit: (messageId: string, payload: SendSessionMessageInput) => Promise<void>;
 }) {
-  const [systemPrompt, setSystemPrompt] = useState('');
-  const [composerError, setComposerError] = useState<string | null>(null);
   const inputSchema = useMemo(
     () => parseRunnerConfigSchema(runnerType?.inputSchema),
     [runnerType]
   );
-  const supportsTextComposer = useMemo(() => {
-    if (!inputSchema.supported) {
-      return false;
+  const structuredInputSchema = inputSchema.supported ? inputSchema : undefined;
+  const primaryInputField = useMemo(() => {
+    if (!structuredInputSchema) {
+      return undefined;
     }
 
-    const fieldNames = new Set(inputSchema.fields.map((field) => field.name));
-    return fieldNames.has('prompt');
-  }, [inputSchema]);
-  const hasSystemPrompt = useMemo(() => {
-    if (!inputSchema.supported) {
-      return false;
+    return getPrimaryInputField(structuredInputSchema.fields);
+  }, [structuredInputSchema]);
+  const additionalInputFields = useMemo(() => {
+    if (!structuredInputSchema) {
+      return [];
     }
 
-    return inputSchema.fields.some((field) => field.name === 'systemPrompt');
-  }, [inputSchema]);
+    return getAdditionalInputFields(structuredInputSchema, primaryInputField);
+  }, [primaryInputField, structuredInputSchema]);
+  const initialAdditionalInputValues = useMemo(
+    () => buildAdditionalInputInitialValues(additionalInputFields),
+    [additionalInputFields]
+  );
+  const [additionalInputValues, setAdditionalInputValues] =
+    useState<Record<string, unknown>>(initialAdditionalInputValues);
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const supportsTextComposer = Boolean(structuredInputSchema && primaryInputField);
   const runtimeMessages = useMemo(
     () => buildSessionAssistantMessageRecords(messages, runtimeState),
     [messages, runtimeState]
@@ -540,12 +653,14 @@ export function SessionAssistantThread({
 
         try {
           const payload = supportsTextComposer
-            ? buildTextMessagePayload({
-                prompt: composerText,
-                systemPrompt: hasSystemPrompt ? systemPrompt : ''
+            ? buildStructuredMessagePayload({
+                schema: structuredInputSchema!,
+                primaryField: primaryInputField!,
+                composerText,
+                additionalValues: additionalInputValues
               })
             : (() => {
-                const parsed = parseRawInputText(composerText);
+                const parsed = parseSessionInputText(composerText);
                 if (!parsed.data) {
                   throw new Error(parsed.error ?? '消息输入校验失败');
                 }
@@ -553,8 +668,8 @@ export function SessionAssistantThread({
               })();
 
           await onSend(payload);
-          if (supportsTextComposer && hasSystemPrompt) {
-            setSystemPrompt('');
+          if (supportsTextComposer) {
+            setAdditionalInputValues(initialAdditionalInputValues);
           }
         } catch (error) {
           const message =
@@ -572,15 +687,17 @@ export function SessionAssistantThread({
         }
 
         const payload = supportsTextComposer
-          ? buildTextMessagePayload({
-              prompt: composerText,
-              systemPrompt:
-                typeof originalMessage.inputContent?.systemPrompt === 'string'
-                  ? originalMessage.inputContent.systemPrompt
-                  : ''
+          ? buildStructuredMessagePayload({
+              schema: structuredInputSchema!,
+              primaryField: primaryInputField!,
+              composerText,
+              additionalValues: omitPrimaryFieldValue(
+                originalMessage.inputContent,
+                primaryInputField?.name
+              )
             })
           : (() => {
-              const parsed = parseRawInputText(composerText);
+              const parsed = parseSessionInputText(composerText);
               if (!parsed.data) {
                 throw new Error(parsed.error ?? '消息输入校验失败');
               }
@@ -592,15 +709,14 @@ export function SessionAssistantThread({
     >
       <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
         <ThreadPrimitive.Viewport
-          className="flex-1 overflow-y-auto px-5 py-5"
+          className="min-h-0 flex-1 overflow-y-auto px-5 py-5"
           autoScroll
         >
           {messages.length === 0 ? (
-            <EmptyState
-              title="还没有消息"
-              description="发送第一条消息"
-              className="min-h-[18rem]"
-            />
+            <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 text-center">
+              <p className="text-base font-medium text-foreground">开始对话</p>
+              <p className="text-sm text-muted-foreground">消息会显示在这里</p>
+            </div>
           ) : (
             <div className="space-y-3">
               <ThreadPrimitive.Messages
@@ -612,15 +728,20 @@ export function SessionAssistantThread({
               />
             </div>
           )}
-
-          <ThreadComposer
-            mode={supportsTextComposer ? 'text' : 'raw-json'}
-            hasSystemPrompt={hasSystemPrompt && supportsTextComposer}
-            systemPrompt={systemPrompt}
-            composerError={composerError}
-            onSystemPromptChange={setSystemPrompt}
-          />
         </ThreadPrimitive.Viewport>
+
+        <ThreadComposer
+          mode={supportsTextComposer ? 'text' : 'raw-json'}
+          additionalFields={additionalInputFields}
+          additionalValues={additionalInputValues}
+          composerError={composerError}
+          onAdditionalValueChange={(fieldName, value) => {
+            setAdditionalInputValues((current) => ({
+              ...current,
+              [fieldName]: value
+            }));
+          }}
+        />
       </ThreadPrimitive.Root>
     </SessionAssistantRuntimeProvider>
   );

@@ -18,8 +18,7 @@ export const claudeCodeRunnerSessionConfigSchema = z.object({
 });
 
 export const claudeCodeInputSchema = z.object({
-  prompt: z.string().min(1),
-  systemPrompt: z.string().optional()
+  prompt: z.string().min(1)
 });
 
 export const claudeCodeRuntimeConfigSchema = z.object({
@@ -166,12 +165,8 @@ class MockRunnerSession {
   ) {
     const runVersion = ++this.runVersion;
     const prompt = input.prompt.trim();
-    const summary = input.systemPrompt?.trim()
-      ? `系统提示已设置，按要求处理：${input.systemPrompt.trim()}`
-      : '未提供系统提示，按默认行为处理。';
     const messageChunks = [
       '这是一个 Mock Session，用于打通 Session 运行时链路。',
-      summary,
       `收到输入：${prompt}`,
       '当前响应来自 claude-code 的本地模拟流，不会调用外部模型。'
     ];

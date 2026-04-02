@@ -46,15 +46,22 @@ export function buildSessionAssistantMessageRecords(
   }));
 }
 
-export function getSessionLastEventId(messages: SessionMessageDetail[]) {
+export function getSessionLastEventId(
+  messages: SessionMessageDetail[],
+  seed = 0
+) {
   return messages.reduce((maxValue, message) => {
     const toolEventId = message.toolUses.reduce(
       (toolMaxValue, toolUse) => Math.max(toolMaxValue, toolUse.eventId),
       0
     );
+    const metricEventId = message.metrics.reduce(
+      (metricMaxValue, metric) => Math.max(metricMaxValue, metric.eventId),
+      0
+    );
 
-    return Math.max(maxValue, message.eventId ?? 0, toolEventId);
-  }, 0);
+    return Math.max(maxValue, message.eventId ?? 0, toolEventId, metricEventId);
+  }, seed);
 }
 
 export function isSessionRunning(status: SessionStatus) {
