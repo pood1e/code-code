@@ -37,12 +37,6 @@ export class AgentRunnersController {
   ) {
     this.agentRunnersService = agentRunnersService;
     this.runnerTypeRegistry = runnerTypeRegistry;
-    this.listRunnerTypes = this.listRunnerTypes.bind(this);
-    this.list = this.list.bind(this);
-    this.getById = this.getById.bind(this);
-    this.create = this.create.bind(this);
-    this.update = this.update.bind(this);
-    this.remove = this.remove.bind(this);
   }
 
   @Get('agent-runner-types')
@@ -98,5 +92,23 @@ export class AgentRunnersController {
   @ResponseMessage('Agent runner deleted')
   remove(@Param('id') id: string) {
     return this.agentRunnersService.remove(id);
+  }
+
+  @Get('agent-runners/:id/health')
+  @ApiOperation({ summary: 'Check health status of an agent runner' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Health status fetched.' })
+  @ResponseMessage('Health status fetched')
+  checkHealth(@Param('id') id: string) {
+    return this.agentRunnersService.checkHealth(id);
+  }
+
+  @Get('agent-runners/:id/context')
+  @ApiOperation({ summary: 'Probe underlying CLI for available context options (e.g. models)' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Runner context options fetched.' })
+  @ResponseMessage('Runner context options fetched')
+  probeContext(@Param('id') id: string) {
+    return this.agentRunnersService.probeRunnerContext(id);
   }
 }

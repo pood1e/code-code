@@ -53,6 +53,7 @@ export function DataTable<TData>({
     [pageSize]
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is the intended state owner for this grid component.
   const table = useReactTable({
     data,
     columns,
@@ -85,6 +86,7 @@ export function DataTable<TData>({
         title={emptyTitle}
         description={emptyDescription}
         action={emptyAction}
+        size="compact"
       />
     );
   }
@@ -96,7 +98,7 @@ export function DataTable<TData>({
           {table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
-              className="rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-card/80 p-4"
+              className="rounded-xl border border-border/40 bg-card p-4"
             >
               {mobileCardRenderer(row.original)}
             </div>
@@ -105,19 +107,19 @@ export function DataTable<TData>({
       ) : null}
 
       <div className={mobileCardRenderer ? 'hidden md:block' : undefined}>
-        <div className="overflow-hidden rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-card/80">
+        <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
           <div className="overflow-x-auto">
             <Table className="min-w-[760px]">
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow
                     key={headerGroup.id}
-                    className="border-border/70 hover:bg-transparent"
+                    className="border-border/40 hover:bg-transparent"
                   >
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
-                        className="h-11 bg-muted/45 px-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+                        className="h-10 bg-muted/40 px-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
                         style={{
                           width: header.column.columnDef.size
                             ? `${header.column.columnDef.size}px`
@@ -139,12 +141,12 @@ export function DataTable<TData>({
                 {table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="group border-border/70 transition-colors hover:bg-muted/20"
+                    className="group border-border/40 transition-colors hover:bg-muted/30"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className="px-4 py-4 align-top"
+                        className="px-4 py-3 align-top"
                         style={{
                           width: cell.column.columnDef.size
                             ? `${cell.column.columnDef.size}px`
@@ -165,29 +167,31 @@ export function DataTable<TData>({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-          aria-label="Previous page"
-        >
-          <ChevronLeft />
-        </Button>
-        <div className="rounded-full border border-border/80 bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground">
-          {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+      {table.getPageCount() > 1 ? (
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            aria-label="Previous page"
+          >
+            <ChevronLeft />
+          </Button>
+          <div className="px-3 py-1 text-xs text-muted-foreground">
+            {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+          </div>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            aria-label="Next page"
+          >
+            <ChevronRight />
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-          aria-label="Next page"
-        >
-          <ChevronRight />
-        </Button>
-      </div>
+      ) : null}
     </div>
   );
 }

@@ -53,6 +53,17 @@ model Profile {
   rules       ProfileRule[]
 }
 
+model Project {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  gitUrl        String
+  workspacePath String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sessions      AgentSession[]
+}
+
 model AgentRunner {
   id           String   @id @default(cuid())
   name         String
@@ -98,4 +109,95 @@ model ProfileRule {
 
   @@unique([profileId, ruleId])
   @@unique([profileId, order])
+}
+
+model AgentSession {
+  id                     String           @id @default(cuid())
+  runnerId               String
+  runnerType             String
+  scopeId                String
+  status                 String
+  lastEventId            Int              @default(0)
+  activeAssistantMessageId String?
+  platformSessionConfig  Json
+  runnerSessionConfig    Json
+  defaultRuntimeConfig   Json?
+  runnerState            Json?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  project                Project          @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  messages               SessionMessage[]
+  toolUses               MessageToolUse[]
+  metrics                SessionMetric[]
+  events                 SessionEvent[]
+
+  @@index([scopeId])
+}
+
+model SessionMessage {
+  id           String        @id @default(cuid())
+  sessionId    String
+  role         String
+  status       String
+  inputContent Json?
+  outputText   String?
+  thinkingText String?
+  errorPayload Json?
+  cancelledAt  DateTime?
+  eventId      Int?
+  createdAt    DateTime      @default(now())
+  session      AgentSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  metrics      SessionMetric[]
+
+  @@index([sessionId])
+  @@unique([sessionId, eventId])
+}
+
+model MessageToolUse {
+  id        String       @id @default(cuid())
+  sessionId String
+  messageId String
+  eventId   Int
+  callId    String?
+  toolName  String
+  args      Json?
+  result    Json?
+  error     Json?
+  createdAt DateTime     @default(now())
+  session   AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([messageId])
+  @@unique([sessionId, eventId])
+}
+
+model SessionMetric {
+  id        String       @id @default(cuid())
+  sessionId String
+  messageId String?
+  eventId   Int
+  kind      String
+  data      Json
+  createdAt DateTime     @default(now())
+  session   AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  message   SessionMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([sessionId, messageId])
+  @@unique([sessionId, eventId])
+}
+
+model SessionEvent {
+  id          String       @id @default(cuid())
+  sessionId   String
+  eventId     Int
+  kind        String
+  messageId   String?
+  timestampMs BigInt
+  data        Json?
+  createdAt   DateTime     @default(now())
+  session     AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@unique([sessionId, eventId])
 }
