@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException
 } from '@nestjs/common';
+import type { AgentRunner } from '@prisma/client';
 import {
   MessageRole,
   MessageStatus,
@@ -10,9 +11,9 @@ import {
   type SessionSummary,
   type SessionToolUse
 } from '@agent-workbench/shared';
-import type { AgentRunner } from '@prisma/client';
 
 import { sanitizeJson } from '../../common/json.utils';
+import { assertResourceIdsExist, type ResourceIdType } from '../../common/resource.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SessionMapper } from './session-mapper';
 import type { SessionRow } from './session.types';
@@ -173,38 +174,7 @@ export class SessionsQueryService {
     return project;
   }
 
-  async assertResourceIdsExist(type: 'skill' | 'rule' | 'mcp', ids: string[]) {
-    if (ids.length === 0) {
-      return;
-    }
-
-    const uniqueIds = Array.from(new Set(ids));
-    const existing =
-      type === 'skill'
-        ? await this.prisma.skill.findMany({
-            where: { id: { in: uniqueIds } },
-            select: { id: true }
-          })
-        : type === 'rule'
-          ? await this.prisma.rule.findMany({
-              where: { id: { in: uniqueIds } },
-              select: { id: true }
-            })
-          : await this.prisma.mCP.findMany({
-              where: { id: { in: uniqueIds } },
-              select: { id: true }
-            });
-    const existingIds = new Set(existing.map((item) => item.id));
-    const missingIds = uniqueIds.filter((id) => !existingIds.has(id));
-
-    if (missingIds.length > 0) {
-      throw new NotFoundException(
-        `Referenced ${type} resources not found: ${missingIds.join(', ')}`
-      );
-    }
-  }
-
-  isSessionReadyForSend(session: SessionRow) {
-    return session.status;
+  async assertResourceIdsExist(type: ResourceIdType, ids: string[]) {
+    return assertResourceIdsExist(this.prisma, type, ids);
   }
 }

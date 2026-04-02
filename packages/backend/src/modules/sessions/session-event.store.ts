@@ -11,7 +11,7 @@ import type { Prisma } from '@prisma/client';
 
 import {
   sanitizeJson,
-  toNullableInputJson
+  toOptionalInputJson
 } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { SessionEventRow } from './session.types';
@@ -46,7 +46,7 @@ export class SessionEventStore {
         kind: chunk.kind,
         messageId: chunk.messageId ?? null,
         timestampMs: chunk.timestampMs,
-        data: toNullableInputJson(
+        data: toOptionalInputJson(
           ('data' in chunk ? chunk.data : undefined) as
             | Prisma.InputJsonValue
             | undefined
@@ -159,7 +159,7 @@ export class SessionEventStore {
     const common = {
       sessionId: event.sessionId,
       eventId: event.eventId,
-      timestampMs: event.timestampMs
+      timestampMs: Number(event.timestampMs)
     };
     const sanitizedData = event.data ? sanitizeJson(event.data) : undefined;
 
