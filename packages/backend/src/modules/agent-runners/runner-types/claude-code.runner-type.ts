@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { CliRunnerTypeBase, type CliRunnerState } from '../cli/cli-runner-base';
-import type { CliSessionRegistry } from '../cli/cli-session-registry';
+import { CliSessionRegistry } from '../cli/cli-session-registry';
 import type { CliProcessOptions } from '../cli/cli-process';
 import { probeClaudeCodeHealth } from '../cli/health-probes';
 import {
