@@ -1,8 +1,6 @@
 import { Logger } from '@nestjs/common';
 import type {
   PlatformSessionConfig,
-  McpStdioContent,
-  McpConfigOverride,
   RunnerTypeCapabilities,
   RunnerContext
 } from '@agent-workbench/shared';
@@ -19,6 +17,7 @@ import {
   cleanupContext,
   type MaterializerTarget
 } from './context-materializer';
+import type { CliSessionRegistry } from './cli-session-registry';
 
 const logger = new Logger('CliRunnerBase');
 
@@ -101,28 +100,23 @@ export type CliSessionHandle = {
   cancelled: boolean;
 };
 
-/** Registry of active CLI sessions (in-memory, not persisted). */
-const activeSessions = new Map<string, CliSessionHandle>();
-
-export function getCliSessionHandle(session: RunnerSessionRecord): CliSessionHandle {
-  const state = session.runnerState as CliRunnerState;
-  const handleId = `cli:${session.id}`;
-  let handle = activeSessions.get(handleId);
+export function getCliSessionHandle(session: RunnerSessionRecord, registry: CliSessionRegistry): CliSessionHandle {
+  const handleId = session.id;
+  let handle = registry.get(handleId);
   if (!handle) {
     handle = {
-      id: handleId,
+      id: `cli:${handleId}`,
       queue: new AsyncChunkQueue(),
       process: null,
       cancelled: false
     };
-    activeSessions.set(handleId, handle);
+    registry.register(handleId, handle);
   }
-  void state; // reference to avoid unused
   return handle;
 }
 
-export function removeCliSessionHandle(session: RunnerSessionRecord): void {
-  activeSessions.delete(`cli:${session.id}`);
+export function removeCliSessionHandle(session: RunnerSessionRecord, registry: CliSessionRegistry): void {
+  registry.remove(session.id);
 }
 
 /**
@@ -132,182 +126,127 @@ export function removeCliSessionHandle(session: RunnerSessionRecord): void {
 export type ResolvedResources = {
   skills: Array<{ name: string; content: string }>;
   rules: Array<{ name: string; content: string }>;
-  mcps: Array<{ name: string; content: McpStdioContent; configOverride?: McpConfigOverride }>;
+  mcps: Array<{ name: string; content: import('@agent-workbench/shared').McpStdioContent; configOverride?: import('@agent-workbench/shared').McpConfigOverride }>;
 };
 
 /**
- * Common configuration for CLI-based runner types.
+ * Abstract base class for CLI-backed RunnerType implementations.
+ * Subclasses must implement buildCommand(), parseLine(), createParserState(),
+ * checkHealth(), and optionally extractSessionId() / probeContext().
+ *
+ * The base class handles session lifecycle (create/destroy/send/output/cancel)
+ * by managing CLI processes and async output queues.
  */
-export type CliRunnerTypeConfig = {
-  id: string;
-  name: string;
-  materializerTarget: MaterializerTarget;
-  capabilities: RunnerTypeCapabilities;
-  runnerConfigSchema: ZodTypeAny;
-  runnerSessionConfigSchema: ZodTypeAny;
-  inputSchema: ZodTypeAny;
-  runtimeConfigSchema: ZodTypeAny;
+export abstract class CliRunnerTypeBase implements RunnerType {
+  abstract readonly id: string;
+  abstract readonly name: string;
+  abstract readonly capabilities: RunnerTypeCapabilities;
+  abstract readonly materializerTarget: MaterializerTarget;
+  abstract readonly runnerConfigSchema: ZodTypeAny;
+  abstract readonly runnerSessionConfigSchema: ZodTypeAny;
+  abstract readonly inputSchema: ZodTypeAny;
+  abstract readonly runtimeConfigSchema: ZodTypeAny;
 
-  checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
+  constructor(protected readonly cliSessionRegistry: CliSessionRegistry) {}
+
+  abstract checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
+
   probeContext?(runnerConfig: unknown): Promise<RunnerContext>;
 
-  /**
-   * Build the CLI command and arguments for a single execution.
-   */
-  buildCommand(
+  abstract buildCommand(
     runnerConfig: Record<string, unknown>,
     runnerSessionConfig: Record<string, unknown>,
     cliState: CliRunnerState,
     payload: RunnerSendPayload
   ): CliProcessOptions;
 
-  /**
-   * Parse a single line of CLI stdout into RawOutputChunks.
-   */
-  parseLine(
+  abstract parseLine(
     line: string,
     messageId: string,
     parserState: Record<string, unknown>
   ): RawOutputChunk[];
 
-  /**
-   * Called after the CLI process exits to get the CLI-side session ID
-   * (if one was extracted by the parser).
-   */
+  abstract createParserState(messageId: string): Record<string, unknown>;
+
   extractSessionId?(parserState: Record<string, unknown>): string | null;
 
-  /**
-   * Create the initial parser state for a new execution.
-   */
-  createParserState(messageId: string): Record<string, unknown>;
-};
+  createSession(
+    sessionId: string,
+    _runnerConfig: unknown,
+    _platformSessionConfig: PlatformSessionConfig,
+    _runnerSessionConfig: unknown
+  ): Promise<Record<string, unknown>> {
+    void _runnerConfig;
+    void _platformSessionConfig;
+    void _runnerSessionConfig;
+    
+    const state: CliRunnerState = {
+      contextDir: null,
+      mcpConfigPath: null,
+      cliSessionId: null
+    };
 
-/**
- * Creates a RunnerType implementation backed by an external CLI process.
- */
-export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
-  return {
-    id: config.id,
-    name: config.name,
-    capabilities: config.capabilities,
-    materializerTarget: config.materializerTarget,
-    runnerConfigSchema: config.runnerConfigSchema,
-    runnerSessionConfigSchema: config.runnerSessionConfigSchema,
-    inputSchema: config.inputSchema,
-    runtimeConfigSchema: config.runtimeConfigSchema,
+    logger.log(`CLI session created: ${sessionId} (type: ${this.id})`);
+    return Promise.resolve(state as unknown as Record<string, unknown>);
+  }
 
-    checkHealth: (runnerConfig: unknown) => config.checkHealth(runnerConfig),
-    probeContext: config.probeContext ? (runnerConfig: unknown) => config.probeContext!(runnerConfig) : undefined,
+  async destroySession(session: RunnerSessionRecord): Promise<void> {
+    const handle = this.cliSessionRegistry.get(session.id);
+    if (handle) {
+      handle.cancelled = true;
+      handle.process?.kill();
+      handle.queue.close();
+      removeCliSessionHandle(session, this.cliSessionRegistry);
+    }
 
-    createSession(
-      sessionId: string,
-      _runnerConfig: unknown,
-      _platformSessionConfig: PlatformSessionConfig,
-      _runnerSessionConfig: unknown
-    ): Promise<Record<string, unknown>> {
-      void _runnerConfig;
-      void _platformSessionConfig;
-      void _runnerSessionConfig;
-      
-      const state: CliRunnerState = {
-        contextDir: null,
-        mcpConfigPath: null,
-        cliSessionId: null
-      };
+    const state = session.runnerState as CliRunnerState;
+    if (state.contextDir) {
+      await cleanupContext(state.contextDir);
+    }
 
-      logger.log(`CLI session created: ${sessionId} (type: ${config.id})`);
-      return Promise.resolve(state as unknown as Record<string, unknown>);
-    },
+    logger.log(`CLI session destroyed: ${session.id}`);
+  }
 
-    async destroySession(session: RunnerSessionRecord): Promise<void> {
-      const handle = activeSessions.get(`cli:${session.id}`);
-      if (handle) {
-        handle.cancelled = true;
-        handle.process?.kill();
-        handle.queue.close();
-        removeCliSessionHandle(session);
-      }
+  async send(
+    session: RunnerSessionRecord,
+    payload: RunnerSendPayload
+  ): Promise<void> {
+    const handle = getCliSessionHandle(session, this.cliSessionRegistry);
+    const state = session.runnerState as CliRunnerState;
+    const runnerConfig = session.runnerConfig;
+    const runnerSessionConfig = session.runnerSessionConfig;
 
-      const state = session.runnerState as CliRunnerState;
-      if (state.contextDir) {
-        await cleanupContext(state.contextDir);
-      }
+    // Kill any previous process from this session
+    if (handle.process?.isRunning) {
+      handle.process.kill();
+      await handle.process.waitForExit();
+    }
 
-      logger.log(`CLI session destroyed: ${session.id}`);
-    },
+    handle.cancelled = false;
 
-    async send(
-      session: RunnerSessionRecord,
-      payload: RunnerSendPayload
-    ): Promise<void> {
-      const handle = getCliSessionHandle(session);
-      const state = session.runnerState as CliRunnerState;
-      const runnerConfig = session.runnerConfig;
-      const runnerSessionConfig = session.runnerSessionConfig;
+    const processOptions = this.buildCommand(
+      runnerConfig,
+      runnerSessionConfig,
+      state,
+      payload
+    );
 
-      // Kill any previous process from this session
-      if (handle.process?.isRunning) {
-        handle.process.kill();
-        await handle.process.waitForExit();
-      }
+    const cliProcess = new CliProcess(processOptions);
+    handle.process = cliProcess;
 
-      handle.cancelled = false;
+    const parserState = this.createParserState(payload.messageId);
 
-      const processOptions = config.buildCommand(
-        runnerConfig,
-        runnerSessionConfig,
-        state,
-        payload
-      );
+    cliProcess.onLine((line) => {
+      if (handle.cancelled) return;
 
-      const cliProcess = new CliProcess(processOptions);
-      handle.process = cliProcess;
-
-      const parserState = config.createParserState(payload.messageId);
-
-      cliProcess.onLine((line) => {
-        if (handle.cancelled) return;
-
-        try {
-          const chunks = config.parseLine(line, payload.messageId, parserState);
-          
-          // Eagerly update CLI session ID if extracted, so it's available 
-          // before the chunks are processed by the runtime.
-          if (config.extractSessionId) {
-            const cliSessionId = config.extractSessionId(parserState);
-            if (cliSessionId && (session.runnerState as CliRunnerState).cliSessionId !== cliSessionId) {
-              (session.runnerState as CliRunnerState).cliSessionId = cliSessionId;
-              handle.queue.push({
-                kind: 'state_update',
-                messageId: payload.messageId,
-                timestampMs: Date.now(),
-                data: { cliSessionId }
-              });
-            }
-          }
-
-          for (const chunk of chunks) {
-            handle.queue.push(chunk);
-          }
-        } catch (error) {
-          logger.warn(
-            `Parse error in ${config.id}: ${
-              error instanceof Error ? error.message : 'unknown'
-            } — line: ${line.slice(0, 200)}`
-          );
-        }
-      });
-
-      cliProcess.start();
-
-      // Wait for exit in background
-      void cliProcess.waitForExit().then((result) => {
-        if (handle.cancelled) return;
-
-        // Update CLI session ID if extracted
-        if (config.extractSessionId) {
-          const cliSessionId = config.extractSessionId(parserState);
-          if (cliSessionId) {
+      try {
+        const chunks = this.parseLine(line, payload.messageId, parserState);
+        
+        // Eagerly update CLI session ID if extracted, so it's available 
+        // before the chunks are processed by the runtime.
+        if (this.extractSessionId) {
+          const cliSessionId = this.extractSessionId(parserState);
+          if (cliSessionId && (session.runnerState as CliRunnerState).cliSessionId !== cliSessionId) {
             (session.runnerState as CliRunnerState).cliSessionId = cliSessionId;
             handle.queue.push({
               kind: 'state_update',
@@ -318,35 +257,69 @@ export function createCliRunnerType(config: CliRunnerTypeConfig): RunnerType {
           }
         }
 
-        // If process exited unexpectedly without producing a result event,
-        // emit an error chunk
-        if (result.exitCode !== 0 && result.exitCode !== null) {
-          const stderr = cliProcess.getStderr().trim();
+        for (const chunk of chunks) {
+          handle.queue.push(chunk);
+        }
+      } catch (error) {
+        logger.warn(
+          `Parse error in ${this.id}: ${
+            error instanceof Error ? error.message : 'unknown'
+          } — line: ${line.slice(0, 200)}`
+        );
+      }
+    });
+
+    cliProcess.start();
+
+    // Wait for exit in background
+    void cliProcess.waitForExit().then((result) => {
+      if (handle.cancelled) return;
+
+      // Update CLI session ID if extracted
+      if (this.extractSessionId) {
+        const cliSessionId = this.extractSessionId(parserState);
+        if (cliSessionId) {
+          (session.runnerState as CliRunnerState).cliSessionId = cliSessionId;
           handle.queue.push({
-            kind: 'error',
+            kind: 'state_update',
             messageId: payload.messageId,
             timestampMs: Date.now(),
-            data: {
-              message: stderr || `CLI exited with code ${result.exitCode}`,
-              code: 'CLI_EXIT_ERROR',
-              recoverable: false
-            }
+            data: { cliSessionId }
           });
         }
-      });
-    },
-
-    output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk> {
-      return getCliSessionHandle(session).queue;
-    },
-
-    cancelOutput(session: RunnerSessionRecord): Promise<void> {
-      const handle = activeSessions.get(`cli:${session.id}`);
-      if (handle) {
-        handle.cancelled = true;
-        handle.process?.kill();
       }
-      return Promise.resolve();
+
+      // If process exited unexpectedly without producing a result event,
+      // emit an error chunk
+      if (result.exitCode !== 0 && result.exitCode !== null) {
+        const stderr = cliProcess.getStderr().trim();
+        handle.queue.push({
+          kind: 'error',
+          messageId: payload.messageId,
+          timestampMs: Date.now(),
+          data: {
+            message: stderr || `CLI exited with code ${result.exitCode}`,
+            code: 'CLI_EXIT_ERROR',
+            recoverable: false
+          }
+        });
+      }
+
+      // Always close the queue so consumeRunnerOutput() can exit its for-await loop
+      handle.queue.close();
+    });
+  }
+
+  output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk> {
+    return getCliSessionHandle(session, this.cliSessionRegistry).queue;
+  }
+
+  cancelOutput(session: RunnerSessionRecord): Promise<void> {
+    const handle = this.cliSessionRegistry.get(session.id);
+    if (handle) {
+      handle.cancelled = true;
+      handle.process?.kill();
     }
-  };
+    return Promise.resolve();
+  }
 }

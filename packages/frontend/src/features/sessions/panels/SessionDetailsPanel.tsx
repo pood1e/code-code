@@ -4,7 +4,7 @@ import { SessionStatusBadge } from '../components/SessionStatusBadge';
 import { SetupSection } from '../components/SetupSection';
 import { ReadonlyRunnerConfigSection, RunnerSchemaSection } from '../components/RunnerConfigSections';
 import { cn } from '@/lib/utils';
-import type { AgentRunnerDetail, ResourceByKind, RunnerConfigJsonSchema, RunnerTypeResponse, SessionDetail } from '@agent-workbench/shared';
+import type { AgentRunnerDetail, ResourceByKind, RunnerTypeResponse, SessionDetail } from '@agent-workbench/shared';
 import { listAgentRunners } from '@/api/agent-runners';
 
 function SessionDetailList({
@@ -36,13 +36,7 @@ function SessionDetailList({
   );
 }
 
-function isRunnerConfigJsonSchema(value: unknown): value is RunnerConfigJsonSchema {
-  return typeof value === 'object' && value !== null;
-}
 
-function toRunnerConfigJsonSchema(value: unknown): RunnerConfigJsonSchema | undefined {
-  return isRunnerConfigJsonSchema(value) ? value : undefined;
-}
 
 export function SessionDetailsPanel({
   open,
@@ -171,7 +165,7 @@ export function SessionDetailsPanel({
 
               <RunnerSchemaSection
                 title="Input Schema"
-                schema={toRunnerConfigJsonSchema(runnerType?.inputSchema)}
+                schema={runnerType?.inputSchema}
                 description="消息输入按 RunnerType 的 input schema 解释。"
               />
             </div>

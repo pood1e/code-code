@@ -12,6 +12,7 @@ import type { Prisma } from '@prisma/client';
 
 import {
   asPlainObject,
+  castEnum,
   toInputJson
 } from '../../common/json.utils';
 import { parseSchemaOrThrow } from '../../common/schema.utils';
@@ -26,6 +27,10 @@ import { SessionsQueryService } from './sessions-query.service';
 
 @Injectable()
 export class SessionsCommandService {
+  /**
+   * In-memory per-session send lock. Safe for single-process deployment.
+   * For multi-process, migrate to Redis distributed lock.
+   */
   private readonly sendLocks = new Map<string, boolean>();
 
   constructor(
@@ -130,7 +135,7 @@ export class SessionsCommandService {
 
   async cancel(sessionId: string) {
     const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
-    const sessionStatus = session.status as SessionStatus;
+    const sessionStatus = castEnum(SessionStatus, session.status, 'SessionStatus');
 
     if (sessionStatus !== SessionStatus.Running) {
       return this.sessionsQueryService.getById(sessionId);
@@ -248,7 +253,7 @@ export class SessionsCommandService {
 
   async dispose(sessionId: string) {
     const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
-    const sessionStatus = session.status as SessionStatus;
+    const sessionStatus = castEnum(SessionStatus, session.status, 'SessionStatus');
 
     if (sessionStatus === SessionStatus.Disposed) {
       return this.sessionsQueryService.getById(sessionId);
@@ -308,6 +313,11 @@ export class SessionsCommandService {
     );
     this.sessionRuntimeService.completeEvents(sessionId);
 
+    // Clean up session events — they are no longer needed after dispose
+    await this.prisma.sessionEvent.deleteMany({
+      where: { sessionId }
+    });
+
     return this.sessionsQueryService.getById(sessionId);
   }
 
@@ -329,7 +339,7 @@ export class SessionsCommandService {
   }
 
   private assertSendableStatus(status: string) {
-    const sessionStatus = status as SessionStatus;
+    const sessionStatus = castEnum(SessionStatus, status, 'SessionStatus');
 
     if (sessionStatus === SessionStatus.Ready) {
       return;
