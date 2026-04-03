@@ -135,7 +135,7 @@ test.describe('页面健壮性', () => {
     await page.goto('/agent-runners');
 
     // 最终页面应正常渲染
-    await expect(page.getByPlaceholder(/按名称搜索/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /新建/i }).first()).toBeVisible();
   });
 
   test('刷新页面不应丢失当前路由', async ({ page }) => {
@@ -144,6 +144,6 @@ test.describe('页面健壮性', () => {
 
     await page.reload();
     await expect(page).toHaveURL(/\/rules/);
-    await expect(page.getByPlaceholder(/按名称搜索/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /新建/i }).first()).toBeVisible();
   });
 });

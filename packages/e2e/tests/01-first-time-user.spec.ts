@@ -50,9 +50,14 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
     // 点击创建
     await dialog.getByRole('button', { name: /创建/i }).click();
 
-    // 创建成功后对话框关闭，项目应出现在列表中
+    // 创建成功后对话框关闭，项目应重定向到其配置页
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('My First Project')).toBeVisible({
+    
+    // 应由于自动重定向而跳转到 config 页面
+    await expect(page).toHaveURL(/\/projects\/[^/]+\/config/);
+    
+    // Config页面的Name输入框中应包含"My First Project"
+    await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('My First Project', {
       timeout: 5000
     });
   });
@@ -70,9 +75,9 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
     await page.getByRole('textbox', { name: 'Name' }).fill('Code Review Skill');
 
     // Content 是 CodeMirror 编辑器，需要特殊处理
-    // 用户期望：有一个可输入的内容区域
-    const contentEditor = page.locator('.cm-editor, [class*="editor"]').first();
+    const contentEditor = page.locator('.cm-content').first();
     await expect(contentEditor).toBeVisible();
+    await contentEditor.fill('This is a skill for code review.');
 
     // 点击保存
     await page.getByRole('button', { name: /保存/i }).click();
@@ -91,6 +96,10 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
     await page
       .getByRole('textbox', { name: 'Name' })
       .fill('Always Cite Sources');
+
+    const ruleContentEditor = page.locator('.cm-content').first();
+    await expect(ruleContentEditor).toBeVisible();
+    await ruleContentEditor.fill('You must always cite sources.');
 
     await page.getByRole('button', { name: /保存/i }).click();
 
