@@ -2,8 +2,10 @@ import { test, expect } from '@playwright/test';
 import {
   cleanupTestData,
   apiPost,
+  apiPut,
   seedProject,
-  seedMockRunner
+  seedMockRunner,
+  apiDelete
 } from './helpers';
 
 /**
@@ -39,12 +41,7 @@ test.describe('跨页面数据一致性', () => {
     await page.goto('/skills');
     await expect(page.getByText('Old Name Skill')).toBeVisible();
 
-    // 通过 API 修改名称
-    await fetch(`http://localhost:3001/api/skills/${skill.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'New Name Skill' })
-    });
+    await apiPut(`/skills/${skill.id}`, { name: 'New Name Skill', content: 'content' });
 
     await page.reload();
     await expect(page.getByText('New Name Skill')).toBeVisible();
@@ -60,9 +57,7 @@ test.describe('跨页面数据一致性', () => {
     await page.goto('/skills');
     await expect(page.getByText('Temporary Skill')).toBeVisible();
 
-    await fetch(`http://localhost:3001/api/skills/${skill.id}`, {
-      method: 'DELETE'
-    });
+    await apiDelete(`/skills/${skill.id}`);
 
     await page.reload();
     await expect(page.getByText('Temporary Skill')).not.toBeVisible();
@@ -74,15 +69,11 @@ test.describe('跨页面数据一致性', () => {
       content: 'content'
     });
     const profile = await apiPost('/profiles', { name: 'Consistency Check' });
-    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'Consistency Check',
-        skills: [{ resourceId: skill.id, order: 0 }],
-        mcps: [],
-        rules: []
-      })
+    await apiPut(`/profiles/${profile.id}`, {
+      name: 'Consistency Check',
+      skills: [{ resourceId: skill.id, order: 0 }],
+      mcps: [],
+      rules: []
     });
 
     // Skills 列表中的名称
@@ -98,6 +89,13 @@ test.describe('跨页面数据一致性', () => {
 test.describe('多资源类型交叉验证', () => {
   test.beforeAll(async () => {
     await cleanupTestData();
+    await seedMockRunner();
+    await apiPost('/skills', { name: 'Seed Skill', content: 'content' });
+    await apiPost('/rules', { name: 'Seed Rule', content: 'content' });
+    await apiPost('/mcps', {
+      name: 'Seed MCP',
+      content: { type: 'stdio', command: 'node', args: [] }
+    });
   });
 
   test.afterAll(async () => {

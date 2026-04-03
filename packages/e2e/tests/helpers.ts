@@ -38,7 +38,11 @@ async function apiGet(path: string) {
 }
 
 async function apiDelete(path: string) {
-  await fetch(`${API_BASE}${path}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    console.warn(`[WARN] DELETE ${path} failed with ${res.status}: ${text}`);
+  }
 }
 
 /**

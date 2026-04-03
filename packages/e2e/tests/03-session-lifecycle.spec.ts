@@ -46,9 +46,9 @@ test.describe('Session 会话生命周期', () => {
   test('Sessions 页面无数据时应有创建引导', async ({ page }) => {
     await page.goto(`/projects/${project.id}/sessions`);
 
-    // 用户期望：空状态下有明确的引导创建按钮或提示
+    // 用户期望：空状态下直接展示 Session 创建面板，包含发送按钮
     const createBtn = page
-      .getByRole('button', { name: /create|new|新建|开始/i })
+      .getByRole('button', { name: /send|发送/i })
       .first();
     await expect(createBtn).toBeVisible();
   });
@@ -132,8 +132,8 @@ test.describe('Project 配置与导航', () => {
   test('Project 配置页应可访问', async ({ page }) => {
     await page.goto(`/projects/${project.id}/config`);
 
-    // 用户期望：配置页展示项目的配置信息
-    await expect(page.getByText('Config Test Project')).toBeVisible();
+    // 用户期望：配置页展示项目的配置信息 (配置页里有 Name 输入框)
+    await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Config Test Project');
   });
 
   test('Project Dashboard 页应可访问', async ({ page }) => {
