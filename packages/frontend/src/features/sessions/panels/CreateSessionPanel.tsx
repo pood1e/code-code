@@ -32,9 +32,13 @@ import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/native-select';
 import { ChevronDown, LoaderCircle, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { AgentRunnerSummary, Profile, ResourceByKind, RunnerTypeResponse, SessionDetail } from '@agent-workbench/shared';
-
-
+import type {
+  AgentRunnerSummary,
+  Profile,
+  ResourceByKind,
+  RunnerTypeResponse,
+  SessionDetail
+} from '@agent-workbench/shared';
 
 export function CreateSessionPanel({
   projectId,
@@ -105,21 +109,29 @@ export function CreateSessionPanel({
     [runnerTypes, selectedRunner?.type]
   );
   const sessionConfigSchema = useMemo(
-    () => parseRunnerConfigSchema(selectedRunnerType?.runnerSessionConfigSchema),
+    () =>
+      parseRunnerConfigSchema(selectedRunnerType?.runnerSessionConfigSchema),
     [selectedRunnerType]
   );
   const inputConfigSchema = useMemo(
     () => parseRunnerConfigSchema(selectedRunnerType?.inputSchema),
     [selectedRunnerType]
   );
-  const structuredInputSchema = inputConfigSchema.supported ? inputConfigSchema : undefined;
-  
+  const structuredInputSchema = inputConfigSchema.supported
+    ? inputConfigSchema
+    : undefined;
+
   const runtimeConfigSchema = useMemo(
     () => parseRunnerConfigSchema(selectedRunnerType?.runtimeConfigSchema),
     [selectedRunnerType]
   );
-  const structuredRuntimeSchema = runtimeConfigSchema.supported ? runtimeConfigSchema : undefined;
-  const runtimeFields = useMemo(() => structuredRuntimeSchema?.fields ?? [], [structuredRuntimeSchema]);
+  const structuredRuntimeSchema = runtimeConfigSchema.supported
+    ? runtimeConfigSchema
+    : undefined;
+  const runtimeFields = useMemo(
+    () => structuredRuntimeSchema?.fields ?? [],
+    [structuredRuntimeSchema]
+  );
 
   const primaryInputField = useMemo(() => {
     if (!structuredInputSchema) {
@@ -151,7 +163,9 @@ export function CreateSessionPanel({
   });
 
   const { data: runnerContext } = useQuery({
-    queryKey: selectedRunnerId ? queryKeys.agentRunners.context(selectedRunnerId) : ['agent-runners', 'context', 'empty'],
+    queryKey: selectedRunnerId
+      ? queryKeys.agentRunners.context(selectedRunnerId)
+      : ['agent-runners', 'context', 'empty'],
     queryFn: () => probeAgentRunnerContext(selectedRunnerId!),
     enabled: Boolean(selectedRunnerId),
     staleTime: 60 * 1000
@@ -178,7 +192,10 @@ export function CreateSessionPanel({
   useEffect(() => {
     if (!structuredInputSchema) {
       form.setValue('initialInputConfig', {});
-      form.setValue('initialRuntimeConfig', buildAdditionalInputInitialValues(runtimeFields));
+      form.setValue(
+        'initialRuntimeConfig',
+        buildAdditionalInputInitialValues(runtimeFields)
+      );
       form.setValue('initialMessageText', '');
       form.setValue('initialRawInput', '');
       return;
@@ -188,10 +205,19 @@ export function CreateSessionPanel({
       'initialInputConfig',
       buildAdditionalInputInitialValues(additionalInputFields)
     );
-    form.setValue('initialRuntimeConfig', buildAdditionalInputInitialValues(runtimeFields));
+    form.setValue(
+      'initialRuntimeConfig',
+      buildAdditionalInputInitialValues(runtimeFields)
+    );
     form.setValue('initialMessageText', '');
     form.setValue('initialRawInput', '');
-  }, [additionalInputFields, runtimeFields, form, selectedRunnerType?.id, structuredInputSchema]);
+  }, [
+    additionalInputFields,
+    runtimeFields,
+    form,
+    selectedRunnerType?.id,
+    structuredInputSchema
+  ]);
 
   useEffect(() => {
     if (!selectedProfileId || !profileDetailQuery.data) {
@@ -268,7 +294,10 @@ export function CreateSessionPanel({
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col pt-10 sm:pt-14">
           <div className="rounded-3xl border border-border/40 bg-background/95 p-5 shadow-[0_28px_80px_-36px_hsl(var(--foreground)/0.18)] sm:p-6">
             {supportsStructuredInitialInput ? (
-              <FormField label="" error={form.formState.errors.initialMessageText?.message}>
+              <FormField
+                label=""
+                error={form.formState.errors.initialMessageText?.message}
+              >
                 <Textarea
                   rows={9}
                   placeholder="发一条消息开始新会话"
@@ -296,7 +325,9 @@ export function CreateSessionPanel({
                 <NativeSelect
                   className="h-9 w-auto min-w-[8.5rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap"
                   value={selectedRunnerId}
-                  onChange={(event) => form.setValue('runnerId', event.target.value)}
+                  onChange={(event) =>
+                    form.setValue('runnerId', event.target.value)
+                  }
                 >
                   {runners.map((runner) => (
                     <option key={runner.id} value={runner.id}>
@@ -308,7 +339,9 @@ export function CreateSessionPanel({
                 <NativeSelect
                   className="h-9 w-auto min-w-[8rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap"
                   value={selectedProfileId ?? ''}
-                  onChange={(event) => form.setValue('profileId', event.target.value)}
+                  onChange={(event) =>
+                    form.setValue('profileId', event.target.value)
+                  }
                 >
                   <option value="">Profile</option>
                   {profiles.map((profile) => (
@@ -330,10 +363,12 @@ export function CreateSessionPanel({
                 >
                   <SlidersHorizontal />
                   高级设置
-                  <ChevronDown className={cn(
-                    'size-3 transition-transform duration-200',
-                    advancedOpen && 'rotate-180'
-                  )} />
+                  <ChevronDown
+                    className={cn(
+                      'size-3 transition-transform duration-200',
+                      advancedOpen && 'rotate-180'
+                    )}
+                  />
                 </Button>
               </div>
 
@@ -348,7 +383,9 @@ export function CreateSessionPanel({
                   disabled={createMutation.isPending || !hasInitialMessageDraft}
                   className="h-10 min-w-24 rounded-full px-5 shadow-sm"
                 >
-                  {createMutation.isPending ? <LoaderCircle className="animate-spin" /> : null}
+                  {createMutation.isPending ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : null}
                   发送
                 </Button>
               </div>
@@ -361,7 +398,9 @@ export function CreateSessionPanel({
       <div
         className={cn(
           'grid transition-all duration-300 ease-in-out',
-          advancedOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          advancedOpen
+            ? 'grid-rows-[1fr] opacity-100'
+            : 'grid-rows-[0fr] opacity-0'
         )}
       >
         <div className="overflow-hidden">
@@ -369,7 +408,9 @@ export function CreateSessionPanel({
             <div className="mb-4 flex items-center gap-2">
               <SlidersHorizontal className="size-4 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">高级设置</p>
-              <p className="text-xs text-muted-foreground">资源、输入参数和会话参数</p>
+              <p className="text-xs text-muted-foreground">
+                资源、输入参数和会话参数
+              </p>
             </div>
 
             <div className="space-y-5">
@@ -389,7 +430,8 @@ export function CreateSessionPanel({
                 </SetupSection>
               ) : null}
 
-              {sessionConfigSchema.supported && sessionConfigSchema.fields.length > 0 ? (
+              {sessionConfigSchema.supported &&
+              sessionConfigSchema.fields.length > 0 ? (
                 <SetupSection title="会话参数 (Session Config)">
                   <div className="grid gap-4">
                     {sessionConfigSchema.fields.map((field) => (
@@ -427,19 +469,25 @@ export function CreateSessionPanel({
                     label="技能"
                     items={resources.skills}
                     value={selectedSkillIds}
-                    onToggle={(resourceId) => toggleSelection('skillIds', resourceId)}
+                    onToggle={(resourceId) =>
+                      toggleSelection('skillIds', resourceId)
+                    }
                   />
                   <ResourceSelectionSection
                     label="规则"
                     items={resources.rules}
                     value={selectedRuleIds}
-                    onToggle={(resourceId) => toggleSelection('ruleIds', resourceId)}
+                    onToggle={(resourceId) =>
+                      toggleSelection('ruleIds', resourceId)
+                    }
                   />
                   <ResourceSelectionSection
                     label="MCP"
                     items={resources.mcps}
                     value={selectedMcpIds}
-                    onToggle={(resourceId) => toggleSelection('mcpIds', resourceId)}
+                    onToggle={(resourceId) =>
+                      toggleSelection('mcpIds', resourceId)
+                    }
                     getHint={(item) =>
                       typeof item.content === 'object' && item.content
                         ? item.content.command

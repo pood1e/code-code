@@ -1,18 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { MessageEvent } from '@nestjs/common';
-import {
-  Observable,
-  Subject
-} from 'rxjs';
-import {
-  type OutputChunk
-} from '@agent-workbench/shared';
+import { Observable, Subject } from 'rxjs';
+import { type OutputChunk } from '@agent-workbench/shared';
 import type { Prisma } from '@prisma/client';
 
-import {
-  sanitizeJson,
-  toOptionalInputJson
-} from '../../common/json.utils';
+import { sanitizeJson, toOptionalInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { SessionEventRow } from './session.types';
 
@@ -101,7 +93,9 @@ export class SessionEventStore {
           });
 
           for (const replayEvent of replayEvents) {
-            subscriber.next(this.toMessageEvent(this.toOutputChunk(replayEvent)));
+            subscriber.next(
+              this.toMessageEvent(this.toOutputChunk(replayEvent))
+            );
           }
 
           for (const event of bufferedEvents) {
@@ -172,35 +166,50 @@ export class SessionEventStore {
         return {
           ...common,
           kind: 'session_status',
-          data: sanitizedData as Extract<OutputChunk, { kind: 'session_status' }>['data']
+          data: sanitizedData as Extract<
+            OutputChunk,
+            { kind: 'session_status' }
+          >['data']
         };
       case 'thinking_delta':
         return {
           ...common,
           kind: 'thinking_delta',
           messageId: event.messageId ?? '',
-          data: sanitizedData as Extract<OutputChunk, { kind: 'thinking_delta' }>['data']
+          data: sanitizedData as Extract<
+            OutputChunk,
+            { kind: 'thinking_delta' }
+          >['data']
         };
       case 'message_delta':
         return {
           ...common,
           kind: 'message_delta',
           messageId: event.messageId ?? '',
-          data: sanitizedData as Extract<OutputChunk, { kind: 'message_delta' }>['data']
+          data: sanitizedData as Extract<
+            OutputChunk,
+            { kind: 'message_delta' }
+          >['data']
         };
       case 'message_result':
         return {
           ...common,
           kind: 'message_result',
           messageId: event.messageId ?? '',
-          data: sanitizedData as Extract<OutputChunk, { kind: 'message_result' }>['data']
+          data: sanitizedData as Extract<
+            OutputChunk,
+            { kind: 'message_result' }
+          >['data']
         };
       case 'tool_use':
         return {
           ...common,
           kind: 'tool_use',
           messageId: event.messageId ?? '',
-          data: sanitizedData as Extract<OutputChunk, { kind: 'tool_use' }>['data']
+          data: sanitizedData as Extract<
+            OutputChunk,
+            { kind: 'tool_use' }
+          >['data']
         };
       case 'usage':
         return {

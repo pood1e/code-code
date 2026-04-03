@@ -24,8 +24,10 @@ export class ApiResponseInterceptor<T> implements NestInterceptor<T, unknown> {
     next: CallHandler<T>
   ): Observable<unknown> {
     const skipResponseWrapper =
-      this.reflector.get<boolean>(SKIP_API_RESPONSE_KEY, context.getHandler()) ??
-      false;
+      this.reflector.get<boolean>(
+        SKIP_API_RESPONSE_KEY,
+        context.getHandler()
+      ) ?? false;
 
     if (skipResponseWrapper) {
       return next.handle();

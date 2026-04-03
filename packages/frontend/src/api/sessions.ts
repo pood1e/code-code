@@ -59,12 +59,16 @@ export async function sendSessionMessage(
 }
 
 export async function cancelSession(id: string) {
-  const response = await apiClient.post<SessionDetail>(`/sessions/${id}/cancel`);
+  const response = await apiClient.post<SessionDetail>(
+    `/sessions/${id}/cancel`
+  );
   return response.data;
 }
 
 export async function reloadSession(id: string) {
-  const response = await apiClient.post<SessionDetail>(`/sessions/${id}/reload`);
+  const response = await apiClient.post<SessionDetail>(
+    `/sessions/${id}/reload`
+  );
   return response.data;
 }
 
@@ -85,7 +89,9 @@ export function createSessionEventSource(id: string, afterEventId: number) {
     afterEventId: String(afterEventId)
   });
 
-  return new EventSource(`${apiBaseUrl}/sessions/${id}/events?${query.toString()}`);
+  return new EventSource(
+    `${apiBaseUrl}/sessions/${id}/events?${query.toString()}`
+  );
 }
 
 export function parseSessionEvent(event: { data: string }) {

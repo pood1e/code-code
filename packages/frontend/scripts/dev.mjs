@@ -6,13 +6,9 @@ const viteEntrypoint = fileURLToPath(
   new URL('../node_modules/vite/bin/vite.js', import.meta.url)
 );
 
-const child = spawn(
-  process.execPath,
-  [viteEntrypoint, '--clearScreen=false'],
-  {
-    stdio: ['inherit', 'pipe', 'pipe']
-  }
-);
+const child = spawn(process.execPath, [viteEntrypoint, '--clearScreen=false'], {
+  stdio: ['inherit', 'pipe', 'pipe']
+});
 
 let lastProxyErrorAt = 0;
 let suppressProxyTrace = false;
@@ -32,7 +28,7 @@ function forwardLine(line, write) {
     suppressProxyTrace = true;
     if (!shouldThrottleProxyError()) {
       write(
-        'frontend dev: api proxy unavailable, backend may still be starting on http://localhost:3000\n'
+        `frontend dev: api proxy unavailable, backend may still be starting on ${process.env.VITE_API_URL || 'http://localhost:3000'}\n`
       );
     }
     return;

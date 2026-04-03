@@ -18,9 +18,7 @@ export function PageLoadingSkeleton({
 
   if (variant === 'fullscreen') {
     return (
-      <div className="flex h-screen items-center justify-center">
-        {content}
-      </div>
+      <div className="flex h-screen items-center justify-center">{content}</div>
     );
   }
 

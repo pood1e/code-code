@@ -2,7 +2,10 @@ import React, { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+  oneLight,
+  oneDark
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import ts from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
 import js from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
@@ -49,7 +52,10 @@ export interface MarkdownRendererProps {
   className?: string;
 }
 
-export const MarkdownRenderer = memo(function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({
+  content,
+  className
+}: MarkdownRendererProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -101,13 +107,19 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content, classN
             );
           },
           thead({ children }) {
-            return <thead className="bg-muted/50 text-muted-foreground">{children}</thead>;
+            return (
+              <thead className="bg-muted/50 text-muted-foreground">
+                {children}
+              </thead>
+            );
           },
           tr({ children }) {
             return <tr className="border-b last:border-b-0">{children}</tr>;
           },
           th({ children }) {
-            return <th className="px-4 py-2 text-left font-semibold">{children}</th>;
+            return (
+              <th className="px-4 py-2 text-left font-semibold">{children}</th>
+            );
           },
           td({ children }) {
             return <td className="px-4 py-2">{children}</td>;
@@ -163,7 +175,11 @@ const CodeBlock = memo(function CodeBlock({
           className="h-6 w-6 text-zinc-400 hover:text-zinc-100 transition-colors"
           onClick={() => void copyToClipboard()}
         >
-          {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {isCopied ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
           <span className="sr-only">Copy code</span>
         </Button>
       </div>

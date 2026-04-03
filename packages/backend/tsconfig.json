@@ -12,5 +12,10 @@
     "baseUrl": ".",
     "types": ["vitest/globals"]
   },
-  "include": ["src/**/*.ts", "prisma/**/*.ts", "prisma.config.ts", "test/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "prisma/**/*.ts",
+    "prisma.config.ts",
+    "test/**/*.ts"
+  ]
 }

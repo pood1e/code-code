@@ -6,6 +6,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm --parallel --filter @agent-workbench/shared --filter @agent-workbench/backend --filter @agent-workbench/frontend dev",
+    "start:e2e": "pnpm --filter @agent-workbench/backend prisma db push --accept-data-loss --skip-generate && pnpm --filter @agent-workbench/backend seed && (pnpm --filter @agent-workbench/frontend preview & pnpm --filter @agent-workbench/backend start)",
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:write": "prettier --write .",

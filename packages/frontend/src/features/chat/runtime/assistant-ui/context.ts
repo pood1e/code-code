@@ -4,7 +4,9 @@ import type { MessageStatus } from '@agent-workbench/shared';
 import { MessageStatus as MessageStatusEnum } from '@agent-workbench/shared';
 import type { SessionAssistantMessageMetadata } from './message-converters';
 
-export const ThreadConfigContext = React.createContext<{ assistantName?: string }>({});
+export const ThreadConfigContext = React.createContext<{
+  assistantName?: string;
+}>({});
 
 export function formatDomainMessageStatus(status: MessageStatus) {
   switch (status) {

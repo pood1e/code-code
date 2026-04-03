@@ -4,7 +4,9 @@ import type { ResourceByKind } from '@agent-workbench/shared';
 
 import { Button } from '@/components/ui/button';
 
-export function ResourceSelectionSection<K extends 'skills' | 'mcps' | 'rules'>({
+export function ResourceSelectionSection<
+  K extends 'skills' | 'mcps' | 'rules'
+>({
   label,
   items,
   value,
@@ -19,7 +21,10 @@ export function ResourceSelectionSection<K extends 'skills' | 'mcps' | 'rules'>(
 }) {
   const [pendingResourceId, setPendingResourceId] = useState('');
   const selectedItems = useMemo(
-    () => value.map((resourceId) => items.find((item) => item.id === resourceId)).filter(Boolean),
+    () =>
+      value
+        .map((resourceId) => items.find((item) => item.id === resourceId))
+        .filter(Boolean),
     [items, value]
   );
   const availableItems = useMemo(
@@ -40,7 +45,9 @@ export function ResourceSelectionSection<K extends 'skills' | 'mcps' | 'rules'>(
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-foreground">{label}</p>
-        <span className="text-xs text-muted-foreground">已选 {value.length}</span>
+        <span className="text-xs text-muted-foreground">
+          已选 {value.length}
+        </span>
       </div>
 
       <div className="flex gap-2">
@@ -51,7 +58,9 @@ export function ResourceSelectionSection<K extends 'skills' | 'mcps' | 'rules'>(
           disabled={availableItems.length === 0}
         >
           <option value="">
-            {availableItems.length === 0 ? `没有可添加的${label}` : `选择一个${label}`}
+            {availableItems.length === 0
+              ? `没有可添加的${label}`
+              : `选择一个${label}`}
           </option>
           {availableItems.map((item) => (
             <option key={item.id} value={item.id}>
@@ -85,7 +94,9 @@ export function ResourceSelectionSection<K extends 'skills' | 'mcps' | 'rules'>(
                 className="flex items-start justify-between gap-3 rounded-lg border border-border/40 bg-background/75 px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">{item.name}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {item.name}
+                  </p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     {getHint?.(item) ?? item.description?.trim() ?? item.id}
                   </p>

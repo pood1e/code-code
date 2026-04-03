@@ -17,19 +17,21 @@ Follow this order when adding a new domain entity or feature spanning all layers
 ## Phase 2: Backend
 
 4. Add Prisma model to `packages/backend/prisma/schema.prisma`
-// turbo
+   // turbo
 5. Run migration:
+
 ```bash
 pnpm db:migrate
 ```
+
 6. Create module: DTOs → Service → Controller → Module (under `packages/backend/src/modules/<module>/`)
 7. Register module in `packages/backend/src/app.module.ts`
 8. Add seed data to `packages/backend/prisma/seed.ts`
 
 > Use the `add-backend-module` skill for reference.
 
-// turbo
-9. Verify backend via Swagger:
+// turbo 9. Verify backend via Swagger:
+
 ```bash
 curl -s http://localhost:3000/api/docs | head -5
 ```
@@ -47,9 +49,10 @@ curl -s http://localhost:3000/api/docs | head -5
 
 ## Phase 4: Verify
 
-// turbo
-16. Type-check all packages:
+// turbo 16. Type-check all packages:
+
 ```bash
 pnpm build
 ```
+
 17. Test the full flow in browser at http://localhost:5173

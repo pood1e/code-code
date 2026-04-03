@@ -6,9 +6,7 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import {
-  isNotFoundApiError
-} from '@/api/client';
+import { isNotFoundApiError } from '@/api/client';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import {
   createAgentRunner,
@@ -45,10 +43,6 @@ import {
   type RunnerConfigField
 } from './agent-runner.form';
 
-
-
-
-
 function RunnerConfigFieldInput({
   field,
   control
@@ -72,7 +66,9 @@ function RunnerConfigFieldInput({
                 <input
                   type="checkbox"
                   checked={Boolean(controllerField.value)}
-                  onChange={(event) => controllerField.onChange(event.target.checked)}
+                  onChange={(event) =>
+                    controllerField.onChange(event.target.checked)
+                  }
                   className="size-4 rounded border border-input text-primary accent-[var(--primary)]"
                 />
                 <span className="text-sm text-foreground">
@@ -92,11 +88,16 @@ function RunnerConfigFieldInput({
             >
               <NativeSelect
                 value={getRunnerConfigFieldValue(field, controllerField.value)}
-                onChange={(event) => controllerField.onChange(event.target.value)}
+                onChange={(event) =>
+                  controllerField.onChange(event.target.value)
+                }
               >
                 {!field.required ? <option value="">未设置</option> : null}
                 {field.enumOptions?.map((option) => (
-                  <option key={String(option.value)} value={String(option.value)}>
+                  <option
+                    key={String(option.value)}
+                    value={String(option.value)}
+                  >
                     {option.label}
                   </option>
                 ))}
@@ -153,9 +154,9 @@ function AgentRunnerEditorContent({
   const [rawRunnerConfigText, setRawRunnerConfigText] = useState(() =>
     stringifyRunnerConfig(initialValues.runnerConfig)
   );
-  const [rawRunnerConfigError, setRawRunnerConfigError] = useState<string | null>(
-    null
-  );
+  const [rawRunnerConfigError, setRawRunnerConfigError] = useState<
+    string | null
+  >(null);
   const isEditing = Boolean(runnerId);
 
   const form = useForm<AgentRunnerEditorFormValues>({
@@ -187,9 +188,8 @@ function AgentRunnerEditorContent({
           parsedSchema.fields,
           values.runnerConfig ?? {}
         );
-        const validationResult = parsedSchema.validationSchema.safeParse(
-          runnerConfig
-        );
+        const validationResult =
+          parsedSchema.validationSchema.safeParse(runnerConfig);
 
         if (!validationResult.success) {
           for (const issue of validationResult.error.issues) {
@@ -213,7 +213,8 @@ function AgentRunnerEditorContent({
             );
       }
 
-      const rawRunnerConfigResult = parseRawRunnerConfigText(rawRunnerConfigText);
+      const rawRunnerConfigResult =
+        parseRawRunnerConfigText(rawRunnerConfigText);
       if (!rawRunnerConfigResult.data) {
         setRawRunnerConfigError(
           rawRunnerConfigResult.error ?? 'Runner Config 校验失败'
@@ -251,7 +252,9 @@ function AgentRunnerEditorContent({
     const nextRunnerType = runnerTypes.find(
       (runnerType) => runnerType.id === nextTypeId
     );
-    const nextSchema = parseRunnerConfigSchema(nextRunnerType?.runnerConfigSchema);
+    const nextSchema = parseRunnerConfigSchema(
+      nextRunnerType?.runnerConfigSchema
+    );
     const currentValues = form.getValues();
 
     form.reset({
@@ -264,7 +267,9 @@ function AgentRunnerEditorContent({
     });
     setRawRunnerConfigText(
       nextSchema.supported
-        ? stringifyRunnerConfig(buildRunnerConfigInitialValues(nextSchema.fields))
+        ? stringifyRunnerConfig(
+            buildRunnerConfigInitialValues(nextSchema.fields)
+          )
         : stringifyRunnerConfig()
     );
     setRawRunnerConfigError(null);
@@ -432,13 +437,12 @@ export function AgentRunnerEditorPage() {
     queryFn: listAgentRunnerTypes
   });
   const agentRunnerQuery = useQuery({
-    queryKey: id
-      ? queryKeys.agentRunners.detail(id)
-      : NOOP_QUERY_KEY,
+    queryKey: id ? queryKeys.agentRunners.detail(id) : NOOP_QUERY_KEY,
     queryFn: () => getAgentRunner(id!),
     enabled: isEditing
   });
-  const agentRunnerNotFound = isEditing && isNotFoundApiError(agentRunnerQuery.error);
+  const agentRunnerNotFound =
+    isEditing && isNotFoundApiError(agentRunnerQuery.error);
 
   useEffect(() => {
     if (runnerTypesQuery.error) {
@@ -480,7 +484,10 @@ export function AgentRunnerEditorPage() {
         title="无法加载 Runner Types"
         description="当前无法获取 RunnerType 注册信息，请刷新后重试。"
         action={
-          <Button variant="outline" onClick={() => void runnerTypesQuery.refetch()}>
+          <Button
+            variant="outline"
+            onClick={() => void runnerTypesQuery.refetch()}
+          >
             <RefreshCw data-icon="inline-start" />
             重试
           </Button>

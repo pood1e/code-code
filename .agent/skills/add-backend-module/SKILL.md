@@ -55,7 +55,7 @@ import { z } from 'zod';
 export const createEntityInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
   description: z.string().trim().max(500).nullable().optional(),
-  content: z.string().min(1),
+  content: z.string().min(1)
 });
 ```
 
@@ -119,7 +119,7 @@ export class EntityController {
 @Module({
   controllers: [EntityController],
   providers: [EntityService],
-  exports: [EntityService],
+  exports: [EntityService]
 })
 export class EntityModule {}
 ```

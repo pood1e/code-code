@@ -9,11 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
 import { useErrorMessage } from '@/hooks/use-error-message';
-import {
-  createProfile,
-  deleteProfile,
-  listProfiles
-} from '@/api/profiles';
+import { createProfile, deleteProfile, listProfiles } from '@/api/profiles';
 import { ConfirmDialog } from '@/components/app/ConfirmDialog';
 import { DataTable } from '@/components/app/DataTable';
 import { FormField } from '@/components/app/FormField';
@@ -235,7 +231,9 @@ export function ProfilesPage() {
                     size="sm"
                     aria-label={`编辑 ${profile.name}`}
                     title={`编辑 ${profile.name}`}
-                    onClick={() => void navigate(`/profiles/${profile.id}/edit`)}
+                    onClick={() =>
+                      void navigate(`/profiles/${profile.id}/edit`)
+                    }
                   >
                     编辑
                   </Button>
@@ -293,7 +291,11 @@ export function ProfilesPage() {
               htmlFor="profile-description"
               error={form.formState.errors.description?.message}
             >
-              <Textarea id="profile-description" rows={4} {...form.register('description')} />
+              <Textarea
+                id="profile-description"
+                rows={4}
+                {...form.register('description')}
+              />
             </FormField>
           </form>
 
@@ -321,9 +323,7 @@ export function ProfilesPage() {
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         title={
-          pendingDelete
-            ? `删除 ${pendingDelete.name}？`
-            : '删除 Profile？'
+          pendingDelete ? `删除 ${pendingDelete.name}？` : '删除 Profile？'
         }
         description="删除后不可恢复，绑定在该 Profile 上的资源组合也会一起移除。"
         confirmLabel="删除"

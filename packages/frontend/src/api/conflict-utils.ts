@@ -6,11 +6,11 @@ export type ReferencedProfile = {
 function isReferencedProfile(value: unknown): value is ReferencedProfile {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      'id' in value &&
-      typeof value.id === 'string' &&
-      'name' in value &&
-      typeof value.name === 'string'
+    typeof value === 'object' &&
+    'id' in value &&
+    typeof value.id === 'string' &&
+    'name' in value &&
+    typeof value.name === 'string'
   );
 }
 

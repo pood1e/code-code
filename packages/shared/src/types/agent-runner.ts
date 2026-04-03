@@ -93,4 +93,7 @@ export type UpdateAgentRunnerInput = {
   runnerConfig?: Record<string, unknown>;
 };
 
-export type RunnerContext = Record<string, Array<{ label: string; value: string } | string>>;
+export type RunnerContext = Record<
+  string,
+  Array<{ label: string; value: string } | string>
+>;

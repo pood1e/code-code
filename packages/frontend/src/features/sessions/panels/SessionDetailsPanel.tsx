@@ -2,9 +2,17 @@ import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { SessionStatusBadge } from '../components/SessionStatusBadge';
 import { SetupSection } from '../components/SetupSection';
-import { ReadonlyRunnerConfigSection, RunnerSchemaSection } from '../components/RunnerConfigSections';
+import {
+  ReadonlyRunnerConfigSection,
+  RunnerSchemaSection
+} from '../components/RunnerConfigSections';
 import { cn } from '@/lib/utils';
-import type { AgentRunnerDetail, ResourceByKind, RunnerTypeResponse, SessionDetail } from '@agent-workbench/shared';
+import type {
+  AgentRunnerDetail,
+  ResourceByKind,
+  RunnerTypeResponse,
+  SessionDetail
+} from '@agent-workbench/shared';
 import { listAgentRunners } from '@/api/agent-runners';
 
 function SessionDetailList({
@@ -26,7 +34,11 @@ function SessionDetailList({
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {values.map((value) => (
-            <Badge key={`${label}-${value}`} variant="outline" className="rounded-md text-xs">
+            <Badge
+              key={`${label}-${value}`}
+              variant="outline"
+              className="rounded-md text-xs"
+            >
               {value}
             </Badge>
           ))}
@@ -35,8 +47,6 @@ function SessionDetailList({
     </div>
   );
 }
-
-
 
 export function SessionDetailsPanel({
   open,
@@ -57,31 +67,38 @@ export function SessionDetailsPanel({
     rules: ResourceByKind['rules'][];
   };
 }) {
-  const runnerName = useMemo(() => 
-    runners.find((runner) => runner.id === session.runnerId)?.name ?? session.runnerId,
+  const runnerName = useMemo(
+    () =>
+      runners.find((runner) => runner.id === session.runnerId)?.name ??
+      session.runnerId,
     [runners, session.runnerId]
   );
-  const skillNames = useMemo(() => 
-    session.platformSessionConfig.skillIds.map(
-      (resourceId) =>
-        resources.skills.find((item) => item.id === resourceId)?.name ?? resourceId
-    ),
+  const skillNames = useMemo(
+    () =>
+      session.platformSessionConfig.skillIds.map(
+        (resourceId) =>
+          resources.skills.find((item) => item.id === resourceId)?.name ??
+          resourceId
+      ),
     [resources.skills, session.platformSessionConfig.skillIds]
   );
-  const ruleNames = useMemo(() => 
-    session.platformSessionConfig.ruleIds.map(
-      (resourceId) =>
-        resources.rules.find((item) => item.id === resourceId)?.name ?? resourceId
-    ),
+  const ruleNames = useMemo(
+    () =>
+      session.platformSessionConfig.ruleIds.map(
+        (resourceId) =>
+          resources.rules.find((item) => item.id === resourceId)?.name ??
+          resourceId
+      ),
     [resources.rules, session.platformSessionConfig.ruleIds]
   );
-  const mcpNames = useMemo(() => 
-    session.platformSessionConfig.mcps.map((item) => {
-      const name =
-        resources.mcps.find((resource) => resource.id === item.resourceId)?.name ??
-        item.resourceId;
-      return item.configOverride ? `${name} · override` : name;
-    }),
+  const mcpNames = useMemo(
+    () =>
+      session.platformSessionConfig.mcps.map((item) => {
+        const name =
+          resources.mcps.find((resource) => resource.id === item.resourceId)
+            ?.name ?? item.resourceId;
+        return item.configOverride ? `${name} · override` : name;
+      }),
     [resources.mcps, session.platformSessionConfig.mcps]
   );
 
@@ -108,7 +125,9 @@ export function SessionDetailsPanel({
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Runner
               </p>
-              <p className="mt-1 truncate text-sm text-foreground">{runnerName}</p>
+              <p className="mt-1 truncate text-sm text-foreground">
+                {runnerName}
+              </p>
             </div>
             <div className="rounded-lg border border-border/30 bg-background/70 px-3 py-2">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">

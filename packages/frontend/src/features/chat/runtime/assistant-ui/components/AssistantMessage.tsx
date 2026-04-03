@@ -27,7 +27,7 @@ function MessageHeader({ isUser }: { isUser: boolean }) {
   return (
     <div className="flex items-center gap-2 mb-1">
       <span className="text-[14px] font-semibold text-foreground/80">
-        {isUser ? 'You' : (assistantName || 'Assistant')}
+        {isUser ? 'You' : assistantName || 'Assistant'}
       </span>
     </div>
   );
@@ -38,7 +38,7 @@ function AssistantMessageFooterInfo() {
   const createdAt = useAuiState((state) => state.message.createdAt);
   const metadata = useCurrentMessageMetadata();
   const usage = metadata?.usage;
-  
+
   const statusLabel = metadata?.cancelledAt
     ? '已中止'
     : metadata
@@ -63,9 +63,9 @@ function AssistantMessageFooterInfo() {
       {isLast ? (
         <div className="opacity-0 transition-opacity group-hover:opacity-100 flex items-center">
           <ActionBarPrimitive.Reload asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="size-6 text-muted-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
               title="重跑"
             >
@@ -86,7 +86,8 @@ function MessageErrorAlert() {
     return null;
   }
 
-  const errorPayload = metadata?.recoverableError ?? metadata?.nonRecoverableError;
+  const errorPayload =
+    metadata?.recoverableError ?? metadata?.nonRecoverableError;
   const isRecoverable = Boolean(metadata?.recoverableError);
 
   return (
@@ -113,7 +114,11 @@ function MessageErrorAlert() {
             <Button
               variant={isRecoverable ? 'outline' : 'default'}
               size="sm"
-              className={isRecoverable ? 'border-amber-400 bg-transparent hover:bg-amber-100' : ''}
+              className={
+                isRecoverable
+                  ? 'border-amber-400 bg-transparent hover:bg-amber-100'
+                  : ''
+              }
             >
               <RotateCcw className="mr-2 size-3" />
               重试操作

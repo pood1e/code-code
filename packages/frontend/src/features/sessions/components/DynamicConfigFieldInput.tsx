@@ -15,12 +15,17 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
   field: RunnerConfigField;
   namePrefix: string;
   control: Control<TFieldValues>;
-  discoveredOptions?: Record<string, Array<{ label: string; value: string } | string>>;
+  discoveredOptions?: Record<
+    string,
+    Array<{ label: string; value: string } | string>
+  >;
 }) {
   return (
     <Controller
       control={control}
-      name={`${namePrefix}.${field.name}` as import('react-hook-form').Path<TFieldValues>}
+      name={
+        `${namePrefix}.${field.name}` as import('react-hook-form').Path<TFieldValues>
+      }
       render={({ field: controllerField, fieldState }) => {
         if (field.kind === 'boolean') {
           return (
@@ -34,7 +39,9 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
                   type="checkbox"
                   className="size-4"
                   checked={Boolean(controllerField.value)}
-                  onChange={(event) => controllerField.onChange(event.target.checked)}
+                  onChange={(event) =>
+                    controllerField.onChange(event.target.checked)
+                  }
                 />
                 <span className="text-sm text-foreground">启用</span>
               </label>
@@ -42,17 +49,21 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
           );
         }
 
-        const discoveredEnumList = field.contextKey && discoveredOptions ? discoveredOptions[field.contextKey] : undefined;
-        const hasDiscoveredEnums = Array.isArray(discoveredEnumList) && discoveredEnumList.length > 0;
+        const discoveredEnumList =
+          field.contextKey && discoveredOptions
+            ? discoveredOptions[field.contextKey]
+            : undefined;
+        const hasDiscoveredEnums =
+          Array.isArray(discoveredEnumList) && discoveredEnumList.length > 0;
 
         if (field.kind === 'enum' || hasDiscoveredEnums) {
           let optionsToRender: { label: string; value: string }[] = [];
           if (hasDiscoveredEnums) {
-            optionsToRender = discoveredEnumList.map(item =>
+            optionsToRender = discoveredEnumList.map((item) =>
               typeof item === 'string' ? { label: item, value: item } : item
             );
           } else if (field.enumOptions) {
-            optionsToRender = field.enumOptions.map(opt => ({
+            optionsToRender = field.enumOptions.map((opt) => ({
               label: opt.label,
               value: String(opt.value)
             }));
@@ -67,7 +78,9 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
               <select
                 className="flex h-9 w-full rounded-xl border border-input bg-transparent px-3 py-1.5 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-50"
                 value={getRunnerConfigFieldValue(field, controllerField.value)}
-                onChange={(event) => controllerField.onChange(event.target.value)}
+                onChange={(event) =>
+                  controllerField.onChange(event.target.value)
+                }
               >
                 {!field.required ? <option value="">未设置</option> : null}
                 {optionsToRender.map((option) => (
