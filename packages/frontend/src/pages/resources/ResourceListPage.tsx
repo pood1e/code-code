@@ -56,6 +56,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
   const [pendingDelete, setPendingDelete] = useState<ResourceRecord | null>(
     null
   );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [referencedState, setReferencedState] =
     useState<ReferencedProfilesDialogState>({
       open: false,
@@ -91,10 +92,12 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
     }
 
     try {
+      setDeleteError(null);
       await deleteMutation.mutateAsync(pendingDelete.id);
     } catch (error) {
       if (error instanceof ApiRequestError && error.code === 409) {
         setPendingDelete(null);
+        setDeleteError(null);
         setReferencedState({
           open: true,
           message: error.message,
@@ -103,9 +106,11 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
         return;
       }
 
-      handleError(error);
+      setDeleteError(
+        error instanceof Error ? error.message : `删除 ${config.singularLabel} 失败`
+      );
     }
-  }, [deleteMutation, handleError, pendingDelete]);
+  }, [config.singularLabel, deleteMutation, pendingDelete]);
 
   const items = resourceListQuery.data ?? [];
   const loading = resourceListQuery.isPending || deleteMutation.isPending;
@@ -290,12 +295,14 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
             : `删除 ${config.singularLabel}？`
         }
         description="删除后不可恢复，相关配置将立即失效。"
+        errorMessage={deleteError}
         confirmLabel="删除"
         destructive
         pending={deleteMutation.isPending}
         onOpenChange={(open) => {
           if (!open) {
             setPendingDelete(null);
+            setDeleteError(null);
           }
         }}
         onConfirm={() => {

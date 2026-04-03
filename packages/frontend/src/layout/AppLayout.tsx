@@ -3,6 +3,8 @@ import {
   Bot,
   CircuitBoard,
   FolderKanban,
+  LayoutDashboard,
+  MessageSquareText,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -10,14 +12,16 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import { startTransition, useEffect, useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { listAgentRunners, listAgentRunnerTypes } from '@/api/agent-runners';
 import { listProjects } from '@/api/projects';
 import { listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
+import { ThemeToggle } from '@/components/app/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { CompactNativeSelect } from '@/components/ui/native-select';
 import {
   Sheet,
   SheetContent,
@@ -49,19 +53,43 @@ const primaryItems = [
   { key: 'resources', path: '/skills', label: '资源库', icon: Blocks }
 ] as const;
 
+const projectTabItems = [
+  { key: 'dashboard', label: '概览', icon: LayoutDashboard },
+  { key: 'sessions', label: '会话', icon: MessageSquareText },
+  { key: 'config', label: '配置', icon: SlidersHorizontal }
+] as const;
+
+type ProjectTabKey = (typeof projectTabItems)[number]['key'];
+
+function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
+  return `${projectConfig.path}/${projectId}/${tab}`;
+}
+
 function DesktopSidebar({
   collapsed,
   selectedPrimaryKey,
   selectedResourceKey,
+  projects,
+  selectedProjectId,
+  selectedProjectTab,
   onNavigate,
   onToggle
 }: {
   collapsed: boolean;
   selectedPrimaryKey: (typeof primaryItems)[number]['key'];
   selectedResourceKey: string;
+  projects: Array<{ id: string; name: string }>;
+  selectedProjectId: string | null;
+  selectedProjectTab: ProjectTabKey;
   onNavigate: (path: string) => void;
   onToggle: () => void;
 }) {
+  const showProjectSubNav =
+    selectedPrimaryKey === 'projects' &&
+    Boolean(selectedProjectId) &&
+    projects.length > 0;
+  const showResourceSubNav = selectedPrimaryKey === 'resources';
+
   return (
     <aside
       className={cn(
@@ -74,7 +102,7 @@ function DesktopSidebar({
         <div
           className={cn(
             'mb-6 flex items-center',
-            collapsed ? 'justify-center px-2' : 'justify-between px-4'
+            collapsed ? 'justify-center gap-1 px-2' : 'justify-between px-4'
           )}
         >
           {collapsed ? null : (
@@ -88,19 +116,22 @@ function DesktopSidebar({
               </p>
             </button>
           )}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onToggle}
-            className="shrink-0 text-muted-foreground"
-            title={collapsed ? '展开侧栏' : '收起侧栏'}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="size-4" />
-            ) : (
-              <PanelLeftClose className="size-4" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onToggle}
+              className="shrink-0 text-muted-foreground"
+              title={collapsed ? '展开侧栏' : '收起侧栏'}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="size-4" />
+              ) : (
+                <PanelLeftClose className="size-4" />
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Primary Navigation */}
@@ -131,8 +162,68 @@ function DesktopSidebar({
           })}
         </nav>
 
-        {/* Resource Sub-Navigation */}
-        {selectedPrimaryKey === 'resources' ? (
+        {showProjectSubNav ? (
+          <div
+            className={cn(
+              'mt-auto border-t border-border/50 pt-4',
+              collapsed ? 'px-2' : 'px-3'
+            )}
+          >
+            {collapsed ? null : (
+              <div className="mb-2 px-3">
+                <CompactNativeSelect
+                  aria-label="选择当前 Project"
+                  className="h-8 w-full rounded-xl bg-background/70 text-sm"
+                  value={selectedProjectId ?? ''}
+                  onChange={(event) =>
+                    onNavigate(
+                      buildProjectTabPath(event.target.value, selectedProjectTab)
+                    )
+                  }
+                >
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </CompactNativeSelect>
+              </div>
+            )}
+            <nav className="space-y-0.5">
+              {projectTabItems.map((item) => {
+                const isActive = item.key === selectedProjectTab;
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      if (!selectedProjectId) {
+                        return;
+                      }
+                      onNavigate(buildProjectTabPath(selectedProjectId, item.key));
+                    }}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      'flex w-full items-center rounded-lg transition-colors duration-150',
+                      collapsed
+                        ? 'justify-center py-2'
+                        : 'gap-2 px-3 py-1.5 text-left text-[13px]',
+                      isActive
+                        ? 'bg-accent font-medium text-foreground'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                    )}
+                  >
+                    <item.icon className="size-3.5 shrink-0" />
+                    {collapsed ? null : item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        ) : null}
+
+        {showResourceSubNav ? (
           <div
             className={cn(
               'mt-auto border-t border-border/50 pt-4',
@@ -181,15 +272,27 @@ function MobileNavigation({
   open,
   selectedPrimaryKey,
   selectedResourceKey,
+  projects,
+  selectedProjectId,
+  selectedProjectTab,
   onOpenChange,
   onNavigate
 }: {
   open: boolean;
   selectedPrimaryKey: (typeof primaryItems)[number]['key'];
   selectedResourceKey: string;
+  projects: Array<{ id: string; name: string }>;
+  selectedProjectId: string | null;
+  selectedProjectTab: ProjectTabKey;
   onOpenChange: (open: boolean) => void;
   onNavigate: (path: string) => void;
 }) {
+  const showProjectSubNav =
+    selectedPrimaryKey === 'projects' &&
+    Boolean(selectedProjectId) &&
+    projects.length > 0;
+  const showResourceSubNav = selectedPrimaryKey === 'resources';
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -228,7 +331,61 @@ function MobileNavigation({
             })}
           </nav>
 
-          {selectedPrimaryKey === 'resources' ? (
+          {showProjectSubNav ? (
+            <div className="mt-4 border-t border-border/50 pt-4">
+              <div className="mb-2 px-3">
+                <CompactNativeSelect
+                  aria-label="选择当前 Project"
+                  className="w-full bg-background/70 text-sm"
+                  value={selectedProjectId ?? ''}
+                  onChange={(event) => {
+                    onNavigate(
+                      buildProjectTabPath(event.target.value, selectedProjectTab)
+                    );
+                    onOpenChange(false);
+                  }}
+                >
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </CompactNativeSelect>
+              </div>
+              <nav className="space-y-0.5">
+                {projectTabItems.map((item) => {
+                  const isActive = item.key === selectedProjectTab;
+
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => {
+                        if (!selectedProjectId) {
+                          return;
+                        }
+                        onNavigate(
+                          buildProjectTabPath(selectedProjectId, item.key)
+                        );
+                        onOpenChange(false);
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors',
+                        isActive
+                          ? 'bg-accent font-medium text-foreground'
+                          : 'text-muted-foreground hover:bg-accent/50'
+                      )}
+                    >
+                      <item.icon className="size-3.5" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          ) : null}
+
+          {showResourceSubNav ? (
             <div className="mt-4 border-t border-border/50 pt-4">
               <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
                 资源
@@ -292,11 +449,41 @@ export function AppLayout() {
         ?.key ?? '/skills',
     [location.pathname]
   );
+  const routeProjectId = useMemo(
+    () => location.pathname.match(/^\/projects\/([^/]+)/)?.[1] ?? null,
+    [location.pathname]
+  );
+  const selectedProjectTab = useMemo<ProjectTabKey>(
+    () =>
+      (location.pathname.match(
+        /^\/projects\/[^/]+\/(config|sessions|dashboard)/
+      )?.[1] as ProjectTabKey | undefined) ?? 'config',
+    [location.pathname]
+  );
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects.list(),
+    queryFn: () => listProjects(),
+    staleTime: 30_000
+  });
+  const projects = useMemo(
+    () => projectsQuery.data ?? [],
+    [projectsQuery.data]
+  );
+  const selectedProjectId = useMemo(() => {
+    const candidateId = routeProjectId ?? currentProjectId;
+    if (!candidateId) {
+      return null;
+    }
+
+    return projects.some((project) => project.id === candidateId)
+      ? candidateId
+      : null;
+  }, [currentProjectId, projects, routeProjectId]);
 
   const handleNavigate = (path: string) => {
     const nextPath =
       path === projectConfig.path && currentProjectId
-        ? `${projectConfig.path}/${currentProjectId}/config`
+        ? `${projectConfig.path}/${currentProjectId}/dashboard`
         : path;
 
     setMobileOpen(false);
@@ -344,6 +531,9 @@ export function AppLayout() {
         collapsed={sidebarCollapsed}
         selectedPrimaryKey={selectedPrimaryKey}
         selectedResourceKey={selectedResourceKey}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        selectedProjectTab={selectedProjectTab}
         onNavigate={handleNavigate}
         onToggle={toggleSidebar}
       />
@@ -354,13 +544,18 @@ export function AppLayout() {
             <p className="text-sm font-semibold text-foreground">
               Agent Workbench
             </p>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setMobileOpen(true)}
-            >
-              <Menu />
-            </Button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="打开导航菜单"
+                title="打开导航菜单"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu />
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -386,6 +581,9 @@ export function AppLayout() {
         open={mobileOpen}
         selectedPrimaryKey={selectedPrimaryKey}
         selectedResourceKey={selectedResourceKey}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        selectedProjectTab={selectedProjectTab}
         onOpenChange={setMobileOpen}
         onNavigate={handleNavigate}
       />

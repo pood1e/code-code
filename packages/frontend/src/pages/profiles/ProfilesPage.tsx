@@ -46,6 +46,8 @@ export function ProfilesPage() {
   const handleError = useErrorMessage();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Profile | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const form = useForm<ProfileEditorFormValues>({
     resolver: zodResolver(createProfileFormSchema),
@@ -94,17 +96,23 @@ export function ProfilesPage() {
     }
 
     try {
+      setDeleteError(null);
       await deleteMutation.mutateAsync(pendingDelete.id);
     } catch (error) {
-      handleError(error);
+      setDeleteError(
+        error instanceof Error ? error.message : '删除 Profile 失败'
+      );
     }
-  }, [deleteMutation, handleError, pendingDelete]);
+  }, [deleteMutation, pendingDelete]);
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
+      setCreateError(null);
       await createMutation.mutateAsync(buildProfilePayload(values));
     } catch (error) {
-      handleError(error);
+      setCreateError(
+        error instanceof Error ? error.message : '创建 Profile 失败'
+      );
     }
   });
   const items = profilesQuery.data ?? [];
@@ -259,6 +267,7 @@ export function ProfilesPage() {
           setCreateDialogOpen(open);
           if (!open) {
             form.reset();
+            setCreateError(null);
           }
         }}
       >
@@ -305,6 +314,7 @@ export function ProfilesPage() {
               onClick={() => {
                 setCreateDialogOpen(false);
                 form.reset();
+                setCreateError(null);
               }}
             >
               取消
@@ -317,6 +327,9 @@ export function ProfilesPage() {
               新建
             </Button>
           </DialogFooter>
+          {createError ? (
+            <p className="text-sm text-destructive">{createError}</p>
+          ) : null}
         </DialogContent>
       </Dialog>
 
@@ -326,12 +339,14 @@ export function ProfilesPage() {
           pendingDelete ? `删除 ${pendingDelete.name}？` : '删除 Profile？'
         }
         description="删除后不可恢复，绑定在该 Profile 上的资源组合也会一起移除。"
+        errorMessage={deleteError}
         confirmLabel="删除"
         destructive
         pending={deleteMutation.isPending}
         onOpenChange={(open) => {
           if (!open) {
             setPendingDelete(null);
+            setDeleteError(null);
           }
         }}
         onConfirm={() => {

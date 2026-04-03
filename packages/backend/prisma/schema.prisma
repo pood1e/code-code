@@ -142,8 +142,10 @@ model SessionMessage {
   role         String
   status       String
   inputContent Json?
+  runtimeConfig Json?
   outputText   String?
   thinkingText String?
+  contentParts Json?
   errorPayload Json?
   cancelledAt  DateTime?
   eventId      Int?
@@ -162,6 +164,7 @@ model MessageToolUse {
   messageId String
   eventId   Int
   callId    String?
+  toolKind  String         @default("fallback")
   toolName  String
   args      Json?
   result    Json?

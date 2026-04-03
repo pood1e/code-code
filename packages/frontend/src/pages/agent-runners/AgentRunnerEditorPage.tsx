@@ -23,7 +23,7 @@ import { JsonEditor } from '@/components/JsonEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { NativeSelect } from '@/components/ui/native-select';
+import { CompactNativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { NOOP_QUERY_KEY, queryKeys } from '@/query/query-keys';
 import { agentRunnerConfig } from '@/types/agent-runners';
@@ -43,6 +43,10 @@ import {
   type RunnerConfigField
 } from './agent-runner.form';
 
+function shouldRenderEmptyEnumOption(field: RunnerConfigField) {
+  return !field.required && field.defaultValue === undefined;
+}
+
 function RunnerConfigFieldInput({
   field,
   control
@@ -50,6 +54,8 @@ function RunnerConfigFieldInput({
   field: RunnerConfigField;
   control: ReturnType<typeof useForm<AgentRunnerEditorFormValues>>['control'];
 }) {
+  const fieldId = `agent-runner-config-${field.name}`;
+
   return (
     <Controller
       control={control}
@@ -59,11 +65,13 @@ function RunnerConfigFieldInput({
           return (
             <FormField
               label={field.label}
+              htmlFor={fieldId}
               description={field.description}
               error={fieldState.error?.message}
             >
               <label className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/80 px-3 py-3">
                 <input
+                  id={fieldId}
                   type="checkbox"
                   checked={Boolean(controllerField.value)}
                   onChange={(event) =>
@@ -83,16 +91,21 @@ function RunnerConfigFieldInput({
           return (
             <FormField
               label={field.label}
+              htmlFor={fieldId}
               description={field.description}
               error={fieldState.error?.message}
             >
-              <NativeSelect
+              <CompactNativeSelect
+                id={fieldId}
+                className="w-full rounded-xl bg-background"
                 value={getRunnerConfigFieldValue(field, controllerField.value)}
                 onChange={(event) =>
                   controllerField.onChange(event.target.value)
                 }
               >
-                {!field.required ? <option value="">未设置</option> : null}
+                {shouldRenderEmptyEnumOption(field) ? (
+                  <option value="">未设置</option>
+                ) : null}
                 {field.enumOptions?.map((option) => (
                   <option
                     key={String(option.value)}
@@ -101,7 +114,7 @@ function RunnerConfigFieldInput({
                     {option.label}
                   </option>
                 ))}
-              </NativeSelect>
+              </CompactNativeSelect>
             </FormField>
           );
         }
@@ -109,10 +122,12 @@ function RunnerConfigFieldInput({
         return (
           <FormField
             label={field.label}
+            htmlFor={fieldId}
             description={field.description}
             error={fieldState.error?.message}
           >
             <Input
+              id={fieldId}
               type={
                 field.kind === 'url'
                   ? 'url'
@@ -337,8 +352,9 @@ function AgentRunnerEditorContent({
                   readOnly
                 />
               ) : (
-                <NativeSelect
+                <CompactNativeSelect
                   id="agent-runner-type"
+                  className="w-full rounded-xl bg-background"
                   value={selectedTypeId ?? ''}
                   onChange={(event) => handleTypeChange(event.target.value)}
                 >
@@ -347,7 +363,7 @@ function AgentRunnerEditorContent({
                       {runnerType.name}
                     </option>
                   ))}
-                </NativeSelect>
+                </CompactNativeSelect>
               )}
             </FormField>
           </div>

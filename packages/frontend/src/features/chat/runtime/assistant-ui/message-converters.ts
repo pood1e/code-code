@@ -46,7 +46,7 @@ function stringifyValue(value: unknown) {
   }
 }
 
-function getPromptText(message: SessionMessageDetail) {
+export function getSessionMessagePromptText(message: SessionMessageDetail) {
   if (!message.inputContent) {
     return '';
   }
@@ -103,7 +103,7 @@ function normalizeJsonObject(
   );
 }
 
-function toToolArgs(value: unknown) {
+export function toAssistantToolArgs(value: unknown) {
   if (isRecord(value)) {
     return normalizeJsonObject(value);
   }
@@ -161,6 +161,44 @@ function buildAssistantContent(record: SessionAssistantMessageRecord) {
   const parts: AssistantContentPart[] = [];
   const { message, runtime } = record;
 
+  if (message.contentParts && message.contentParts.length > 0) {
+    let runtimeThinkingConsumed = false;
+    for (const part of message.contentParts) {
+      if (part.type === 'thinking') {
+        parts.push({
+          type: 'reasoning',
+          text: runtime?.thinkingText ?? part.text
+        });
+        runtimeThinkingConsumed = true;
+      } else if (part.type === 'text') {
+        parts.push({
+          type: 'text',
+          text: part.text
+        });
+      } else if (part.type === 'tool_call') {
+        parts.push({
+          type: 'tool-call',
+          toolCallId: part.toolCallId ?? `tool_${part.toolName}`,
+          toolName: part.toolName,
+          args: toAssistantToolArgs(part.args),
+          argsText: stringifyValue(part.args),
+          result: part.result,
+          isError: part.isError
+        });
+      }
+    }
+
+    if (runtime?.thinkingText?.trim() && !runtimeThinkingConsumed) {
+      parts.unshift({
+        type: 'reasoning',
+        text: runtime.thinkingText
+      });
+    }
+
+    return parts;
+  }
+
+  // Fallback for legacy messages
   if (runtime?.thinkingText?.trim()) {
     parts.push({
       type: 'reasoning',
@@ -180,7 +218,7 @@ function buildAssistantContent(record: SessionAssistantMessageRecord) {
       type: 'tool-call',
       toolCallId: toolUse.callId ?? `tool_${toolUse.id}`,
       toolName: toolUse.toolName,
-      args: toToolArgs(toolUse.args),
+      args: toAssistantToolArgs(toolUse.args),
       argsText: stringifyValue(toolUse.args),
       result: toolUse.result,
       isError: toolUse.error != null
@@ -232,7 +270,7 @@ export function convertSessionMessageRecord(
       content: [
         {
           type: 'text',
-          text: getPromptText(message)
+          text: getSessionMessagePromptText(message)
         }
       ],
       metadata: {

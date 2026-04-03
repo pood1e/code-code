@@ -6,6 +6,8 @@ import {
   SessionStatus,
   errorPayloadSchema,
   platformSessionConfigSchema,
+  sessionMessageContentPartsSchema,
+  sessionMessageRuntimeConfigSchema,
   type SessionDetail,
   type SessionMessageDetail,
   type SessionMessageMetric,
@@ -69,8 +71,16 @@ export class SessionMapper {
       inputContent: message.inputContent
         ? asPlainObject(message.inputContent)
         : null,
+      runtimeConfig: message.runtimeConfig
+        ? sessionMessageRuntimeConfigSchema.parse(
+            sanitizeJson(message.runtimeConfig)
+          )
+        : null,
       outputText: message.outputText,
       thinkingText: message.thinkingText,
+      contentParts: sessionMessageContentPartsSchema.parse(
+        sanitizeJson(message.contentParts ?? [])
+      ),
       errorPayload: message.errorPayload
         ? errorPayloadSchema.parse(sanitizeJson(message.errorPayload))
         : null,

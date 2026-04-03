@@ -105,9 +105,21 @@ export type MessageResultChunk = OutputChunkBase & {
   };
 };
 
+export const builtInToolCallKinds = [
+  'shell',
+  'file_grep',
+  'web_search',
+  'file_diff',
+  'fallback'
+] as const;
+
+export type BuiltInToolCallKind = (typeof builtInToolCallKinds)[number];
+export type ToolCallKind = string;
+
 export type ToolUseChunk = OutputChunkBase & {
   kind: 'tool_use';
   data: {
+    toolKind: ToolCallKind;
     toolName: string;
     args?: unknown;
     result?: unknown;
@@ -161,6 +173,7 @@ export type SessionToolUse = {
   id: string;
   eventId: number;
   callId: string | null;
+  toolKind: ToolCallKind;
   toolName: string;
   args: unknown;
   result: unknown;
@@ -178,14 +191,41 @@ export type SessionMessageMetric = {
   createdAt: string;
 };
 
+export type TextMessagePart = {
+  type: 'text';
+  text: string;
+};
+
+export type ThinkingMessagePart = {
+  type: 'thinking';
+  text: string;
+};
+
+export type ToolCallMessagePart = {
+  type: 'tool_call';
+  toolCallId: string;
+  toolKind?: ToolCallKind;
+  toolName: string;
+  args: unknown;
+  result?: unknown;
+  isError?: boolean;
+};
+
+export type SessionMessagePart =
+  | TextMessagePart
+  | ThinkingMessagePart
+  | ToolCallMessagePart;
+
 export type SessionMessageDetail = {
   id: string;
   sessionId: string;
   role: MessageRole;
   status: MessageStatus;
   inputContent: Record<string, unknown> | null;
+  runtimeConfig: Record<string, unknown> | null;
   outputText: string | null;
   thinkingText: string | null;
+  contentParts: SessionMessagePart[];
   errorPayload: ErrorPayload | null;
   cancelledAt: string | null;
   eventId: number | null;

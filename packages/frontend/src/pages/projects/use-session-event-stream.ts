@@ -154,7 +154,6 @@ export function useSessionEventStream({
               `${current?.thinkingText ?? ''}${chunk.data.deltaText}`
           })
         );
-        return;
       }
 
       if (chunk.kind === 'usage' && chunk.messageId) {
@@ -170,6 +169,7 @@ export function useSessionEventStream({
       }
 
       if (
+        chunk.kind === 'thinking_delta' ||
         chunk.kind === 'message_delta' ||
         chunk.kind === 'message_result' ||
         chunk.kind === 'error' ||

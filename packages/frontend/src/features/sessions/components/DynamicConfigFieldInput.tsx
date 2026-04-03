@@ -1,8 +1,11 @@
 import { Controller, type Control, type FieldValues } from 'react-hook-form';
 import { FormField } from '@/components/app/FormField';
 import { Input } from '@/components/ui/input';
+import { CompactNativeSelect } from '@/components/ui/native-select';
 import {
   getRunnerConfigFieldValue,
+  getRunnerConfigSelectOptions,
+  shouldRenderEmptyEnumOption,
   type RunnerConfigField
 } from '@/lib/runner-config-schema';
 
@@ -20,6 +23,8 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
     Array<{ label: string; value: string } | string>
   >;
 }) {
+  const fieldId = `${namePrefix.replaceAll('.', '-')}-${field.name}`;
+
   return (
     <Controller
       control={control}
@@ -31,11 +36,13 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
           return (
             <FormField
               label={field.label}
+              htmlFor={fieldId}
               description={field.description}
               error={fieldState.error?.message}
             >
               <label className="flex items-center gap-3 rounded-lg border border-border/40 px-3 py-3">
                 <input
+                  id={fieldId}
                   type="checkbox"
                   className="size-4"
                   checked={Boolean(controllerField.value)}
@@ -57,38 +64,35 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
           Array.isArray(discoveredEnumList) && discoveredEnumList.length > 0;
 
         if (field.kind === 'enum' || hasDiscoveredEnums) {
-          let optionsToRender: { label: string; value: string }[] = [];
-          if (hasDiscoveredEnums) {
-            optionsToRender = discoveredEnumList.map((item) =>
-              typeof item === 'string' ? { label: item, value: item } : item
-            );
-          } else if (field.enumOptions) {
-            optionsToRender = field.enumOptions.map((opt) => ({
-              label: opt.label,
-              value: String(opt.value)
-            }));
-          }
+          const optionsToRender = getRunnerConfigSelectOptions(
+            field,
+            discoveredEnumList
+          );
 
           return (
             <FormField
               label={field.label}
+              htmlFor={fieldId}
               description={field.description}
               error={fieldState.error?.message}
             >
-              <select
-                className="flex h-9 w-full rounded-xl border border-input bg-transparent px-3 py-1.5 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-50"
+              <CompactNativeSelect
+                id={fieldId}
+                className="w-full rounded-xl bg-background"
                 value={getRunnerConfigFieldValue(field, controllerField.value)}
                 onChange={(event) =>
                   controllerField.onChange(event.target.value)
                 }
               >
-                {!field.required ? <option value="">未设置</option> : null}
+                {shouldRenderEmptyEnumOption(field) ? (
+                  <option value="">未设置</option>
+                ) : null}
                 {optionsToRender.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </CompactNativeSelect>
             </FormField>
           );
         }
@@ -96,14 +100,18 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
         return (
           <FormField
             label={field.label}
+            htmlFor={fieldId}
             description={field.description}
             error={fieldState.error?.message}
           >
             <Input
+              id={fieldId}
               type={
-                field.kind === 'number' || field.kind === 'integer'
-                  ? 'number'
-                  : 'text'
+                field.kind === 'url'
+                  ? 'url'
+                  : field.kind === 'number' || field.kind === 'integer'
+                    ? 'number'
+                    : 'text'
               }
               value={getRunnerConfigFieldValue(field, controllerField.value)}
               onChange={(event) => controllerField.onChange(event.target.value)}

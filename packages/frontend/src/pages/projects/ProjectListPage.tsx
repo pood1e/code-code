@@ -34,7 +34,7 @@ export function ProjectListPage() {
   const openProject = useCallback(
     (projectId: string) => {
       setCurrentProject(projectId);
-      void navigate(`${projectConfig.path}/${projectId}/config`);
+      void navigate(`${projectConfig.path}/${projectId}/dashboard`);
     },
     [navigate, setCurrentProject]
   );
@@ -51,7 +51,7 @@ export function ProjectListPage() {
     );
 
     if (currentProject) {
-      void navigate(`${projectConfig.path}/${currentProject.id}/config`, {
+      void navigate(`${projectConfig.path}/${currentProject.id}/dashboard`, {
         replace: true
       });
     }
@@ -72,7 +72,7 @@ export function ProjectListPage() {
         <SurfaceCard className="mx-auto max-w-3xl py-10">
           <EmptyState
             title="暂无 Project"
-            description="先创建一个 Project，之后再进入配置页或 Dashboard。"
+            description="先创建一个 Project，之后再进入概览、会话或配置页。"
             action={
               <Button onClick={() => setCreateDialogOpen(true)}>
                 <Plus data-icon="inline-start" />
@@ -98,7 +98,7 @@ export function ProjectListPage() {
               选择一个 Project
             </h1>
             <p className="text-sm text-muted-foreground">
-              进入选中的 Project 后，再在顶部切换“配置”与“Dashboard”。
+              进入选中的 Project 后，可在侧栏下方切换“概览 / 会话 / 配置”。
             </p>
           </div>
           <Button onClick={() => setCreateDialogOpen(true)}>

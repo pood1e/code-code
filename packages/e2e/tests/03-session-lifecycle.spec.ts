@@ -5,23 +5,24 @@ import {
   seedMockRunner,
   apiPost,
   apiGet,
-  apiDelete
+  apiDelete,
+  type ApiRecord
 } from './helpers';
 
 /**
  * Session 会话生命周期 — 用户最核心的使用路径
  *
  * 正确业务语义：
- * - 进入 Project → 看到 Sessions 入口
- * - Sessions 页面空状态有引导
+ * - 进入 Project → 看到会话入口
+ * - 会话页面空状态有引导
  * - 可以创建 Session 并看到聊天界面
  * - 可以发送消息并看到回复
  *
  * 不做任何隐式等待，有问题直接暴露。
  */
 test.describe('Session 会话生命周期', () => {
-  let project: { id: string; name: string };
-  let runner: { id: string; name: string };
+  let project: ApiRecord;
+  let runner: ApiRecord;
 
   test.beforeAll(async () => {
     await cleanupTestData();
@@ -33,17 +34,18 @@ test.describe('Session 会话生命周期', () => {
     await cleanupTestData();
   });
 
-  test('Project 列表中点击项目应能到达 Sessions 页面', async ({ page }) => {
+  test('Project 列表中点击项目应能进入概览页，并可看到会话入口', async ({
+    page
+  }) => {
     await page.goto('/projects');
     await page.getByText('Session Test Project').click();
 
-    // 进入项目后应有 Sessions 导航
-    // 用户期望：项目详情中可以找到 Sessions 入口
-    const sessionsEntry = page.getByText(/Sessions/i).first();
-    await expect(sessionsEntry).toBeVisible();
+    await expect(page).toHaveURL(`/projects/${project.id}/dashboard`);
+    await expect(page.getByText('会话').first()).toBeVisible();
+    await expect(page.getByText('概览敬请期待')).toBeVisible();
   });
 
-  test('Sessions 页面无数据时应有创建引导', async ({ page }) => {
+  test('会话页面无数据时应有创建引导', async ({ page }) => {
     await page.goto(`/projects/${project.id}/sessions`);
 
     // 用户期望：空状态下直接展示 Session 创建面板，包含发送按钮
@@ -53,19 +55,19 @@ test.describe('Session 会话生命周期', () => {
     await expect(createBtn).toBeVisible();
   });
 
-  test('Sessions 页面应有 Runner 选择和创建 Session 的入口', async ({
+  test('会话页面应有 Runner 选择和创建会话的入口', async ({
     page
   }) => {
     await page.goto(`/projects/${project.id}/sessions`);
 
-    // 用户期望：Session 创建流程中可以选择 Runner
-    // 页面上应能看到 runner 相关的选项或创建面板
-    const pageContent = await page.textContent('body');
-    // 页面不应该完全空白或报错
-    expect(pageContent!.length).toBeGreaterThan(50);
+    await expect(page.getByRole('combobox').nth(1)).toHaveValue(
+      String(runner.id)
+    );
+    await expect(page.getByPlaceholder('发一条消息开始新会话')).toBeVisible();
+    await expect(page.getByRole('button', { name: '发送' })).toBeVisible();
   });
 
-  test('通过 API 创建的 Session 应在 Sessions 列表中可见', async ({ page }) => {
+  test('通过 API 创建的 Session 应在会话列表中可见', async ({ page }) => {
     const session = await apiPost('/sessions', {
       scopeId: project.id,
       runnerId: runner.id,
@@ -77,9 +79,8 @@ test.describe('Session 会话生命周期', () => {
 
     await page.goto(`/projects/${project.id}/sessions`);
 
-    // 用户期望：已创建的 Session 在列表中展示
-    const pageContent = await page.textContent('body');
-    expect(pageContent!.length).toBeGreaterThan(50);
+    await expect(page.getByRole('button', { name: runner.name })).toBeVisible();
+    await expect(page.getByRole('button', { name: '发送' }).first()).toBeVisible();
 
     // 清理
     await apiDelete(`/sessions/${session.id}`);
@@ -99,9 +100,8 @@ test.describe('Session 会话生命周期', () => {
     // 用户期望：通过 /projects/:projectId/sessions/:sessionId 访问具体会话
     await page.goto(`/projects/${project.id}/sessions/${session.id}`);
 
-    // 应展示聊天界面（至少有消息输入区域）
-    const pageContent = await page.textContent('body');
-    expect(pageContent!.length).toBeGreaterThan(50);
+    await expect(page.getByRole('button', { name: runner.name })).toBeVisible();
+    await expect(page.getByRole('button', { name: '发送' }).first()).toBeVisible();
 
     // 清理
     await apiDelete(`/sessions/${session.id}`);
@@ -110,15 +110,15 @@ test.describe('Session 会话生命周期', () => {
   test('访问不存在的项目 Sessions 页应有合理反馈', async ({ page }) => {
     await page.goto('/projects/nonexistent-id/sessions');
 
-    // 用户不应看到空白页面或浏览器崩溃
-    // 应有某种错误提示或回退
-    const body = await page.textContent('body');
-    expect(body!.length).toBeGreaterThan(0);
+    await expect(
+      page.getByRole('heading', { name: 'Project 不存在' })
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: '返回 Projects' })).toBeVisible();
   });
 });
 
 test.describe('Project 配置与导航', () => {
-  let project: { id: string; name: string };
+  let project: ApiRecord;
 
   test.beforeAll(async () => {
     await cleanupTestData();
@@ -139,22 +139,26 @@ test.describe('Project 配置与导航', () => {
   test('Project Dashboard 页应可访问', async ({ page }) => {
     await page.goto(`/projects/${project.id}/dashboard`);
 
-    // 用户期望：Dashboard 页展示项目概览
-    const body = await page.textContent('body');
-    expect(body!.length).toBeGreaterThan(50);
+    await expect(page.getByText('概览敬请期待')).toBeVisible();
+    await expect(page.getByRole('button', { name: '前往配置页' })).toBeVisible();
   });
 
-  test('Project 内应有 Config/Dashboard/Sessions 标签切换', async ({
+  test('Project 内应有 概览/会话/配置 入口切换，且 main 区不重复渲染 Project header', async ({
     page
   }) => {
-    await page.goto(`/projects/${project.id}/config`);
+    await page.goto(`/projects/${project.id}/dashboard`);
 
-    // 用户期望：项目内可以在不同视图之间切换
-    const sessionsTab = page.getByText(/Sessions/i).first();
-    const dashboardTab = page.getByText(/Dashboard/i).first();
+    const projectNavigation = page
+      .getByRole('complementary')
+      .getByRole('button')
+      .filter({ hasText: /^(概览|会话|配置)$/ });
+    const navigationLabels = await projectNavigation.allTextContents();
 
-    // 这些入口应存在
-    await expect(sessionsTab).toBeVisible();
-    await expect(dashboardTab).toBeVisible();
+    expect(navigationLabels).toEqual(['概览', '会话', '配置']);
+    await expect(
+      page.getByRole('main').getByRole('combobox', {
+        name: '选择当前 Project'
+      })
+    ).toHaveCount(0);
   });
 });

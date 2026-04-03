@@ -51,15 +51,17 @@ test.describe('日常资源管理 — CRUD 操作', () => {
     await page.getByRole('button', { name: /编辑 Seed Skill/i }).click();
     await expect(page).toHaveURL(/\/skills\/[^/]+\/edit/);
 
-    const nameInput = page.getByRole('textbox', { name: 'Name' });
-    await nameInput.clear();
-    await nameInput.fill('Updated Skill');
+    // 使用 pressSequentially 确保 React Hook Form 正确接收输入
+    const nameInput = page.locator('#resource-name');
+    await nameInput.click();
+    await nameInput.selectText();
+    await nameInput.pressSequentially('Updated Skill');
 
     await page.getByRole('button', { name: /保存/i }).click();
 
-    // 保存成功后应跳回列表
-    await expect(page).toHaveURL(/\/skills$/);
-    await expect(page.getByText('Updated Skill')).toBeVisible();
+    // 保存成功后实现会自动导航回列表，等待 URL 变化
+    await page.waitForURL(/\/skills$/, { timeout: 10_000 });
+    await expect(page.getByText('Updated Skill')).toBeVisible({ timeout: 10_000 });
   });
 
   test('Rules 列表应展示预置的 Rule', async ({ page }) => {

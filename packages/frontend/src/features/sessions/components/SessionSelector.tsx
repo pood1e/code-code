@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown, Trash2 } from 'lucide-react';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 
 import { cn } from '@/lib/utils';
@@ -17,25 +17,29 @@ type SessionSelectorItem = {
 type SessionSelectorProps = {
   sessions: SessionSelectorItem[];
   selectedSessionId: string | null;
+  placeholder?: string;
   runnerNameById: Record<string, string>;
   onSelect: (id: string) => void;
-  onCreate: () => void;
+  onDispose: (id: string) => void;
+  disposingSessionId: string | null;
 };
 
 export function SessionSelector({
   sessions,
   selectedSessionId,
+  placeholder = '选择会话',
   runnerNameById,
   onSelect,
-  onCreate
+  onDispose,
+  disposingSessionId
 }: SessionSelectorProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const selectedTitle = useMemo(() => {
-    if (!selectedSessionId) return '选择 Session';
+    if (!selectedSessionId) return placeholder;
     const session = sessions.find((s) => s.id === selectedSessionId);
-    if (!session) return '选择 Session';
+    if (!session) return placeholder;
     return runnerNameById[session.runnerId] ?? session.runnerType;
-  }, [selectedSessionId, sessions, runnerNameById]);
+  }, [placeholder, selectedSessionId, sessions, runnerNameById]);
 
   return (
     <div className="relative">
@@ -59,56 +63,68 @@ export function SessionSelector({
             className="fixed inset-0 z-10"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="absolute left-0 top-full z-20 mt-1 w-72 rounded-xl border border-border/60 bg-background/98 py-1 shadow-xl backdrop-blur">
+          <div className="absolute left-0 top-full z-20 mt-0.5 w-72 overflow-hidden rounded-xl border border-border/60 bg-background/98 shadow-xl backdrop-blur">
             <div className="max-h-64 overflow-y-auto">
               {sessions.map((session) => {
                 const title =
                   runnerNameById[session.runnerId] ?? session.runnerType;
                 const isSelected = session.id === selectedSessionId;
+                const sessionStatus = session.status as SessionStatusEnum;
+                const isDisposing =
+                  disposingSessionId === session.id ||
+                  sessionStatus === SessionStatusEnum.Disposing ||
+                  sessionStatus === SessionStatusEnum.Disposed;
+
                 return (
-                  <button
+                  <div
                     key={session.id}
-                    type="button"
-                    onClick={() => {
-                      onSelect(session.id);
-                      setDropdownOpen(false);
-                    }}
                     className={cn(
-                      'flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors',
-                      isSelected
-                        ? 'bg-accent/50 font-medium text-foreground'
-                        : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground'
+                      'flex w-full items-center gap-1 transition-colors',
+                      isSelected ? 'bg-accent/50' : 'hover:bg-muted/30'
                     )}
                   >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">
-                        {title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {formatRelativeTime(session.updatedAt)}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {getSessionStatusLabel(
-                        session.status as SessionStatusEnum
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelect(session.id);
+                        setDropdownOpen(false);
+                      }}
+                      className={cn(
+                        'flex min-w-0 flex-1 items-center justify-between gap-3 px-2.5 py-1.5 text-left text-sm transition-colors',
+                        isSelected
+                          ? 'text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
                       )}
-                    </span>
-                  </button>
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">
+                          {title}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {formatRelativeTime(session.updatedAt)}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {getSessionStatusLabel(sessionStatus)}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-label={`删除会话 ${title}`}
+                      title="删除会话"
+                      disabled={isDisposing}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDispose(session.id);
+                      }}
+                      className="inline-flex size-7.5 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
                 );
               })}
-            </div>
-            <div className="border-t border-border/40 px-2 py-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  onCreate();
-                  setDropdownOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
-              >
-                <Plus className="size-3.5" />
-                新建 Session
-              </button>
             </div>
           </div>
         </>

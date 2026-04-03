@@ -38,6 +38,65 @@ describe('AgentRunners API', () => {
       expect(mockType).toBeDefined();
       expect(mockType!.name).toBe('Mock Runner');
     });
+
+    it('CLI mode 类字段应只出现在 runtimeConfigSchema', async () => {
+      const res = await api().get('/api/agent-runner-types');
+      const data = expectSuccess<
+        Array<{
+          id: string;
+          inputSchema: { fields: Array<{ name: string; label: string }> };
+          runtimeConfigSchema: {
+            fields: Array<{
+              name: string;
+              label: string;
+              defaultValue?: string | number | boolean;
+            }>;
+          };
+        }>
+      >(res);
+
+      const cursorType = data.find((item) => item.id === 'cursor-cli');
+      expect(cursorType).toBeDefined();
+      expect(
+        cursorType!.inputSchema.fields.map((field) => field.name)
+      ).not.toContain('mode');
+      expect(
+        cursorType!.runtimeConfigSchema.fields.map((field) => field.name)
+      ).toContain('mode');
+
+      const qwenType = data.find((item) => item.id === 'qwen-cli');
+      expect(qwenType).toBeDefined();
+      expect(
+        qwenType!.inputSchema.fields.map((field) => field.name)
+      ).not.toContain('approvalMode');
+      expect(
+        qwenType!.runtimeConfigSchema.fields.map((field) => field.name)
+      ).toContain('approvalMode');
+      expect(
+        qwenType!.runtimeConfigSchema.fields.find(
+          (field) => field.name === 'approvalMode'
+        )?.label
+      ).toBe('审批模式');
+      expect(
+        qwenType!.runtimeConfigSchema.fields.find(
+          (field) => field.name === 'approvalMode'
+        )?.defaultValue
+      ).toBe('default');
+
+      const claudeType = data.find((item) => item.id === 'claude-code');
+      expect(claudeType).toBeDefined();
+      expect(
+        claudeType!.inputSchema.fields.map((field) => field.name)
+      ).not.toContain('permissionMode');
+      expect(
+        claudeType!.runtimeConfigSchema.fields.map((field) => field.name)
+      ).toContain('permissionMode');
+      expect(
+        claudeType!.runtimeConfigSchema.fields.find(
+          (field) => field.name === 'permissionMode'
+        )?.label
+      ).toBe('权限模式');
+    });
   });
 
   // ---- CRUD 正常路径 ----

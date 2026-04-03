@@ -1,5 +1,6 @@
 import type { Project } from '@agent-workbench/shared';
 
+import { CompactNativeSelect } from '@/components/ui/native-select';
 import { cn } from '@/lib/utils';
 
 type ProjectTab = 'config' | 'sessions' | 'dashboard';
@@ -13,9 +14,9 @@ type ProjectSectionHeaderProps = {
 };
 
 const tabItems: { key: ProjectTab; label: string }[] = [
-  { key: 'config', label: '配置' },
-  { key: 'sessions', label: 'Sessions' },
-  { key: 'dashboard', label: 'Dashboard' }
+  { key: 'dashboard', label: '概览' },
+  { key: 'sessions', label: '会话' },
+  { key: 'config', label: '配置' }
 ];
 
 export function ProjectSectionHeader({
@@ -27,9 +28,10 @@ export function ProjectSectionHeader({
 }: ProjectSectionHeaderProps) {
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-border/40 bg-background/95 px-4 py-2 backdrop-blur-sm sm:px-5">
-      <select
+      <CompactNativeSelect
         aria-label="选择当前 Project"
-        className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 sm:min-w-40"
+        containerClassName="sm:min-w-40"
+        className="h-8 w-full rounded-xl bg-background/80 text-sm"
         value={currentProjectId}
         onChange={(event) => onProjectChange(event.target.value)}
       >
@@ -38,7 +40,7 @@ export function ProjectSectionHeader({
             {project.name}
           </option>
         ))}
-      </select>
+      </CompactNativeSelect>
 
       <div className="ml-auto flex items-center gap-0.5">
         {tabItems.map((tab) => (
