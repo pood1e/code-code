@@ -9,7 +9,8 @@
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
     "outDir": "dist",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "types": ["vitest/globals"]
   },
-  "include": ["src/**/*.ts", "prisma/**/*.ts", "prisma.config.ts"]
+  "include": ["src/**/*.ts", "prisma/**/*.ts", "prisma.config.ts", "test/**/*.ts"]
 }

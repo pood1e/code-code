@@ -1,4 +1,4 @@
-import type { RunnerConfigJsonSchema } from '@agent-workbench/shared';
+import type { SchemaDescriptor } from '@agent-workbench/shared';
 import { useMemo } from 'react';
 import { parseRunnerConfigSchema, type RunnerConfigField } from '@/lib/runner-config-schema';
 import { SetupSection } from './SetupSection';
@@ -49,7 +49,7 @@ export function ReadonlyRunnerConfigSection({
   emptyLabel = '未配置'
 }: {
   title: string;
-  schema: RunnerConfigJsonSchema | undefined;
+  schema: SchemaDescriptor | undefined;
   values: Record<string, unknown> | undefined;
   emptyLabel?: string;
 }) {
@@ -100,7 +100,7 @@ export function RunnerSchemaSection({
   emptyLabel = '当前未提供 schema'
 }: {
   title: string;
-  schema: RunnerConfigJsonSchema | undefined;
+  schema: SchemaDescriptor | undefined;
   description?: string;
   emptyLabel?: string;
 }) {

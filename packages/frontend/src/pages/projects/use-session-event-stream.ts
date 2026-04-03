@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   OutputChunk,
   SessionDetail,
@@ -16,6 +16,7 @@ import {
 import type { SessionMessageRuntimeMap } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { getSessionLastEventId } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { queryKeys } from '@/query/query-keys';
+import { useSessionRuntimeStore } from '@/store/session-runtime-store';
 
 import { applyOutputChunkToMessages } from './project-sessions.form';
 
@@ -25,16 +26,6 @@ type UseSessionEventStreamOptions = {
   messages: SessionMessageDetail[];
   messagesReady: boolean;
   queryClient: QueryClient;
-  setRuntimeStateBySessionId: Dispatch<
-    SetStateAction<Record<string, SessionMessageRuntimeMap>>
-  >;
-  updateSessionRuntimeMessageState: (
-    sessionId: string,
-    messageId: string,
-    updater: (
-      current: SessionMessageRuntimeMap[string]
-    ) => SessionMessageRuntimeMap[string]
-  ) => void;
 };
 
 function updateSessionCaches(
@@ -81,10 +72,11 @@ export function useSessionEventStream({
   session,
   messages,
   messagesReady,
-  queryClient,
-  setRuntimeStateBySessionId,
-  updateSessionRuntimeMessageState
+  queryClient
 }: UseSessionEventStreamOptions) {
+  const updateMessageState = useSessionRuntimeStore((s) => s.updateMessageState);
+  const updateMessageStateRef = useRef(updateMessageState);
+  updateMessageStateRef.current = updateMessageState;
   const [streamNonce, setStreamNonce] = useState(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const lastEventIdRef = useRef(0);
@@ -130,26 +122,24 @@ export function useSessionEventStream({
 
       if (chunk.kind === 'session_status') {
         if (chunk.data.status !== SessionStatusEnum.Running) {
-          setRuntimeStateBySessionId((current) => ({
-            ...current,
-            [sessionId]: Object.fromEntries(
-              Object.entries(current[sessionId] ?? {}).map(([messageId, value]) => [
-                messageId,
-                value
-                  ? {
-                      ...value,
-                      thinkingText: undefined
-                    }
-                  : value
-              ])
-            )
+          const store = useSessionRuntimeStore.getState();
+          const sessionState = store.stateBySessionId[sessionId] ?? {};
+          const cleared: Record<string, SessionMessageRuntimeMap[string]> = {};
+          for (const [messageId, value] of Object.entries(sessionState)) {
+            cleared[messageId] = value ? { ...value, thinkingText: undefined } : value;
+          }
+          useSessionRuntimeStore.setState((state) => ({
+            stateBySessionId: {
+              ...state.stateBySessionId,
+              [sessionId]: cleared
+            }
           }));
         }
         return;
       }
 
       if (chunk.kind === 'thinking_delta' && chunk.messageId) {
-        updateSessionRuntimeMessageState(sessionId, chunk.messageId, (current) => ({
+        updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
           ...(current ?? {}),
           thinkingText:
             chunk.data.accumulatedText ??
@@ -159,7 +149,7 @@ export function useSessionEventStream({
       }
 
       if (chunk.kind === 'usage' && chunk.messageId) {
-        updateSessionRuntimeMessageState(sessionId, chunk.messageId, (current) => ({
+        updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
           ...(current ?? {}),
           usage: chunk.data
         }));
@@ -194,7 +184,7 @@ export function useSessionEventStream({
           (chunk.kind === 'message_result' || chunk.kind === 'error') &&
           chunk.messageId
         ) {
-          updateSessionRuntimeMessageState(sessionId, chunk.messageId, (current) => ({
+          updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
             ...(current ?? {}),
             thinkingText: undefined,
             cancelledAt:
@@ -260,8 +250,6 @@ export function useSessionEventStream({
     queryClient,
     scopeId,
     session?.id,
-    setRuntimeStateBySessionId,
-    streamNonce,
-    updateSessionRuntimeMessageState
+    streamNonce
   ]);
 }

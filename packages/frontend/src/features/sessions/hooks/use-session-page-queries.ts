@@ -10,13 +10,14 @@ import {
   listSessionMessages,
   listSessions
 } from '@/api/sessions';
-import { queryKeys } from '@/query/query-keys';
+import { NOOP_QUERY_KEY, queryKeys } from '@/query/query-keys';
 
 const sessionQueryKeys = queryKeys.sessions;
 
 export function useSessionPageQueries(
   projectId: string | undefined,
-  selectedSessionId: string | null
+  selectedSessionId: string | null,
+  createPanelOpen: boolean
 ) {
   const [
     runnerTypesQuery,
@@ -37,19 +38,23 @@ export function useSessionPageQueries(
       },
       {
         queryKey: queryKeys.profiles.list(),
-        queryFn: listProfiles
+        queryFn: listProfiles,
+        enabled: createPanelOpen
       },
       {
         queryKey: queryKeys.resources.list('skills'),
-        queryFn: () => listResources('skills')
+        queryFn: () => listResources('skills'),
+        enabled: createPanelOpen
       },
       {
         queryKey: queryKeys.resources.list('mcps'),
-        queryFn: () => listResources('mcps')
+        queryFn: () => listResources('mcps'),
+        enabled: createPanelOpen
       },
       {
         queryKey: queryKeys.resources.list('rules'),
-        queryFn: () => listResources('rules')
+        queryFn: () => listResources('rules'),
+        enabled: createPanelOpen
       }
     ]
   });
@@ -63,7 +68,7 @@ export function useSessionPageQueries(
   const sessionDetailQuery = useQuery({
     queryKey: selectedSessionId
       ? sessionQueryKeys.detail(selectedSessionId)
-      : sessionQueryKeys.all,
+      : NOOP_QUERY_KEY,
     queryFn: () => getSession(selectedSessionId!),
     enabled: Boolean(selectedSessionId)
   });
@@ -71,7 +76,7 @@ export function useSessionPageQueries(
   const sessionMessagesQuery = useInfiniteQuery({
     queryKey: selectedSessionId
       ? sessionQueryKeys.messages(selectedSessionId)
-      : sessionQueryKeys.all,
+      : NOOP_QUERY_KEY,
     queryFn: ({ pageParam }) => listSessionMessages(selectedSessionId!, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: PagedSessionMessages) => lastPage.nextCursor || undefined,
@@ -81,7 +86,7 @@ export function useSessionPageQueries(
   const selectedRunnerQuery = useQuery({
     queryKey: sessionDetailQuery.data?.runnerId
       ? queryKeys.agentRunners.detail(sessionDetailQuery.data.runnerId)
-      : queryKeys.agentRunners.all,
+      : NOOP_QUERY_KEY,
     queryFn: () => getAgentRunner(sessionDetailQuery.data!.runnerId),
     enabled: Boolean(sessionDetailQuery.data?.runnerId)
   });

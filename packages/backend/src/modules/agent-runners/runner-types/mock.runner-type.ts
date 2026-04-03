@@ -1,10 +1,13 @@
 import { z } from 'zod';
+import type { PlatformSessionConfig, RunnerTypeCapabilities } from '@agent-workbench/shared';
+import type { ZodTypeAny } from 'zod';
 import type {
   RawOutputChunk,
   RunnerSendPayload,
   RunnerSessionRecord,
   RunnerType
 } from '../runner-type.interface';
+import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const mockRunnerConfigSchema = z.object({});
 export const mockRunnerSessionConfigSchema = z.object({});
@@ -13,35 +16,39 @@ export const mockInputSchema = z.object({
 });
 export const mockRuntimeConfigSchema = z.object({});
 
-export const MockRunnerType: RunnerType = {
-  id: 'mock',
-  name: 'Mock Runner',
-  capabilities: {
+@RunnerTypeProvider()
+export class MockRunnerType implements RunnerType {
+  readonly id = 'mock';
+  readonly name = 'Mock Runner';
+  readonly capabilities: RunnerTypeCapabilities = {
     skill: false,
     rule: false,
     mcp: false
-  },
-  runnerConfigSchema: mockRunnerConfigSchema,
-  runnerSessionConfigSchema: mockRunnerSessionConfigSchema,
-  inputSchema: mockInputSchema,
-  runtimeConfigSchema: mockRuntimeConfigSchema,
+  };
+  readonly runnerConfigSchema: ZodTypeAny = mockRunnerConfigSchema;
+  readonly runnerSessionConfigSchema: ZodTypeAny = mockRunnerSessionConfigSchema;
+  readonly inputSchema: ZodTypeAny = mockInputSchema;
+  readonly runtimeConfigSchema: ZodTypeAny = mockRuntimeConfigSchema;
 
   checkHealth() {
     return Promise.resolve<'online'>('online');
-  },
+  }
 
-  createSession(sessionId: string): Promise<Record<string, unknown>> {
+  createSession(sessionId: string, _runnerConfig: unknown, _platformSessionConfig: PlatformSessionConfig, _runnerSessionConfig: unknown): Promise<Record<string, unknown>> {
     void sessionId;
+    void _runnerConfig;
+    void _platformSessionConfig;
+    void _runnerSessionConfig;
     const handle = new MockRunnerSession();
     mockRunnerSessions.set(handle.id, handle);
     return Promise.resolve({ handleId: handle.id });
-  },
+  }
 
   destroySession(session: RunnerSessionRecord): Promise<void> {
     getMockRunnerSession(session)?.destroy();
     removeMockRunnerSession(session);
     return Promise.resolve();
-  },
+  }
 
   send(
     session: RunnerSessionRecord,
@@ -51,17 +58,17 @@ export const MockRunnerType: RunnerType = {
     const parsedInput = mockInputSchema.parse(payload.input);
     void runnerSession.enqueueResponse(payload.messageId, parsedInput);
     return Promise.resolve();
-  },
+  }
 
   output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk> {
     return getMockRunnerSession(session).stream();
-  },
+  }
 
   cancelOutput(session: RunnerSessionRecord): Promise<void> {
     getMockRunnerSession(session).cancel();
     return Promise.resolve();
   }
-};
+}
 
 // ---- Mock internals (unchanged from original) ----
 

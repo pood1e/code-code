@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
+  MessageRole,
   MessageStatus,
   MetricKind,
+  SessionStatus,
   errorPayloadSchema,
   platformSessionConfigSchema,
   type SessionDetail,
@@ -11,7 +13,7 @@ import {
   type SessionToolUse
 } from '@agent-workbench/shared';
 
-import { asPlainObject, sanitizeJson } from '../../common/json.utils';
+import { asPlainObject, castEnum, sanitizeJson } from '../../common/json.utils';
 import type {
   SessionMessageRow,
   SessionMetricRow,
@@ -26,7 +28,7 @@ export class SessionMapper {
       scopeId: session.scopeId,
       runnerId: session.runnerId,
       runnerType: session.runnerType,
-      status: session.status as SessionSummary['status'],
+      status: castEnum(SessionStatus, session.status, 'SessionStatus') as SessionSummary['status'],
       lastEventId: session.lastEventId,
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString()
@@ -54,8 +56,8 @@ export class SessionMapper {
     return {
       id: message.id,
       sessionId: message.sessionId,
-      role: message.role as SessionMessageDetail['role'],
-      status: message.status as MessageStatus,
+      role: castEnum(MessageRole, message.role, 'MessageRole') as SessionMessageDetail['role'],
+      status: castEnum(MessageStatus, message.status, 'MessageStatus'),
       inputContent: message.inputContent
         ? asPlainObject(message.inputContent)
         : null,
@@ -78,7 +80,7 @@ export class SessionMapper {
       sessionId: metric.sessionId,
       messageId: metric.messageId,
       eventId: metric.eventId,
-      kind: metric.kind as MetricKind,
+      kind: castEnum(MetricKind, metric.kind, 'MetricKind'),
       data: sanitizeJson(metric.data) as SessionMessageMetric['data'],
       createdAt: metric.createdAt.toISOString()
     };

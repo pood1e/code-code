@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { createCliRunnerType, type CliRunnerState } from '../cli/cli-runner-base';
+import { CliRunnerTypeBase, type CliRunnerState } from '../cli/cli-runner-base';
+import { CliSessionRegistry } from '../cli/cli-session-registry';
 import type { CliProcessOptions } from '../cli/cli-process';
 import { probeClaudeCodeHealth } from '../cli/health-probes';
 import {
@@ -8,7 +9,8 @@ import {
   createClaudeParserState,
   type ClaudeParserState
 } from '../cli/parsers/claude-code.parser';
-import type { RunnerSendPayload } from '../runner-type.interface';
+import type { RawOutputChunk, RunnerSendPayload } from '../runner-type.interface';
+import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const claudeCodeRunnerConfigSchema = z.object({
   executorUser: z.string().optional()
@@ -29,24 +31,25 @@ export const claudeCodeRuntimeConfigSchema = z.object({
     .default('plan')
 });
 
-export const ClaudeCodeRunnerType = createCliRunnerType({
-  id: 'claude-code',
-  name: 'Claude Code',
-  materializerTarget: 'claude',
-  capabilities: {
-    skill: true,
-    rule: true,
-    mcp: true
-  },
-  runnerConfigSchema: claudeCodeRunnerConfigSchema,
-  runnerSessionConfigSchema: claudeCodeRunnerSessionConfigSchema,
-  inputSchema: claudeCodeInputSchema,
-  runtimeConfigSchema: claudeCodeRuntimeConfigSchema,
+@RunnerTypeProvider()
+export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
+  readonly id = 'claude-code';
+  readonly name = 'Claude Code';
+  readonly materializerTarget = 'claude' as const;
+  readonly capabilities = { skill: true, rule: true, mcp: true };
+  readonly runnerConfigSchema = claudeCodeRunnerConfigSchema;
+  readonly runnerSessionConfigSchema = claudeCodeRunnerSessionConfigSchema;
+  readonly inputSchema = claudeCodeInputSchema;
+  readonly runtimeConfigSchema = claudeCodeRuntimeConfigSchema;
+
+  constructor(cliSessionRegistry: CliSessionRegistry) {
+    super(cliSessionRegistry);
+  }
 
   async checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'> {
     const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
     return probeClaudeCodeHealth(config.executorUser);
-  },
+  }
 
   buildCommand(
     runnerConfig: Record<string, unknown>,
@@ -115,23 +118,23 @@ export const ClaudeCodeRunnerType = createCliRunnerType({
       args,
       cwd
     };
-  },
+  }
 
   parseLine(
     line: string,
     _messageId: string,
     parserState: Record<string, unknown>
-  ): import('../runner-type.interface').RawOutputChunk[] {
+  ): RawOutputChunk[] {
     return parseClaudeLine(line, parserState as unknown as ClaudeParserState);
-  },
+  }
 
-  extractSessionId(
+  override extractSessionId(
     parserState: Record<string, unknown>
   ): string | null {
     return (parserState as unknown as ClaudeParserState).sessionId ?? null;
-  },
+  }
 
   createParserState(messageId: string): Record<string, unknown> {
     return createClaudeParserState(messageId) as unknown as Record<string, unknown>;
   }
-});
+}
