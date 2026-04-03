@@ -149,10 +149,6 @@ function MarkdownResourceForm({
     defaultValues: initialValues
   });
 
-  useEffect(() => {
-    form.reset(initialValues);
-  }, [form, initialValues]);
-
   return (
     <ResourcePageFrame
       title={title}
@@ -169,7 +165,7 @@ function MarkdownResourceForm({
               htmlFor="resource-name"
               error={form.formState.errors.name?.message}
             >
-              <Input id="resource-name" {...form.register('name')} />
+              <Input id="resource-name" autoFocus {...form.register('name')} />
             </FormField>
 
             <FormField
@@ -247,10 +243,6 @@ function McpResourceForm({
     name: 'envEntries'
   });
 
-  useEffect(() => {
-    form.reset(initialValues);
-  }, [form, initialValues]);
-
   const mcpPreview = useMemo(() => {
     const preview = {
       type: 'stdio' as const,
@@ -287,7 +279,7 @@ function McpResourceForm({
               htmlFor="resource-name"
               error={form.formState.errors.name?.message}
             >
-              <Input id="resource-name" {...form.register('name')} />
+              <Input id="resource-name" autoFocus {...form.register('name')} />
             </FormField>
 
             <FormField
@@ -340,8 +332,8 @@ function McpResourceForm({
                   type="button"
                   variant="outline"
                   size="icon-sm"
-                  aria-label="Add env"
-                  title="Add env"
+                  aria-label="添加环境变量"
+                  title="添加环境变量"
                   onClick={() => envFieldArray.append({ key: '', value: '' })}
                 >
                   <Plus />
@@ -367,6 +359,8 @@ function McpResourceForm({
                         type="button"
                         variant="outline"
                         size="icon-sm"
+                        aria-label={`移除环境变量 ${index + 1}`}
+                        title={`移除环境变量 ${index + 1}`}
                         onClick={() => envFieldArray.remove(index)}
                       >
                         <Trash2 />
@@ -503,6 +497,10 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
   if (kind === 'mcps') {
     return (
       <McpResourceForm
+        // key tied to data identity: remount the form when the resource changes
+        // (same pattern as ProfileEditorPage). This prevents a background refetch
+        // from resetting form state after the user has started editing.
+        key={resourceQuery.data ? `${resourceQuery.data.id}:${resourceQuery.data.updatedAt}` : 'new'}
         title={title}
         initialValues={toMcpFormValues(initialValues)}
         loading={loading}
@@ -517,6 +515,7 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
 
   return (
     <MarkdownResourceForm
+      key={resourceQuery.data ? `${resourceQuery.data.id}:${resourceQuery.data.updatedAt}` : 'new'}
       title={title}
       initialValues={toMarkdownFormValues(initialValues)}
       loading={loading}

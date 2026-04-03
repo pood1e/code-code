@@ -217,6 +217,7 @@ function ProfileEditorContent({
         queryKey: queryKeys.profiles.list()
       });
       toast.success('Profile 已保存');
+      onBack();
     }
   });
 
@@ -520,7 +521,7 @@ function ProfileEditorContent({
             htmlFor="profile-name"
             error={form.formState.errors.name?.message}
           >
-            <Input id="profile-name" {...form.register('name')} />
+            <Input id="profile-name" autoFocus {...form.register('name')} />
           </FormField>
           <FormField
             label="Description"

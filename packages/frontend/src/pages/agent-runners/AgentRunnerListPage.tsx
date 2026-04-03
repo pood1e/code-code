@@ -41,6 +41,7 @@ export function AgentRunnerListPage() {
   const [pendingDelete, setPendingDelete] = useState<AgentRunnerSummary | null>(
     null
   );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const runnerTypesQuery = useQuery({
     queryKey: queryKeys.agentRunnerTypes.all,
@@ -284,16 +285,24 @@ export function AgentRunnerListPage() {
         description="删除后不可恢复，相关配置将立即失效。"
         confirmLabel="删除"
         destructive
+        pending={deleteMutation.isPending}
+        errorMessage={deleteError}
         onOpenChange={(open) => {
           if (!open) {
             setPendingDelete(null);
+            setDeleteError(null);
           }
         }}
         onConfirm={() => {
           if (pendingDelete) {
             void deleteMutation
               .mutateAsync(pendingDelete.id)
-              .catch(handleError);
+              .then(() => setDeleteError(null))
+              .catch((error) =>
+                setDeleteError(
+                  error instanceof Error ? error.message : '删除 AgentRunner 失败'
+                )
+              );
           }
         }}
       />

@@ -1,4 +1,5 @@
 import type { RawOutputChunk } from '../../runner-type.interface';
+import { mapQwenToolKind } from './tool-kind';
 
 /**
  * Parser state maintained across lines for a single Qwen CLI run.
@@ -139,12 +140,14 @@ function parseStreamEvent(
     if (!contentBlock) return [];
 
     if (contentBlock.type === 'tool_use') {
+      const toolName = (contentBlock.name ?? 'unknown') as string;
       chunks.push({
         kind: 'tool_use',
         messageId: state.messageId,
         timestampMs: now,
         data: {
-          toolName: (contentBlock.name ?? 'unknown') as string,
+          toolKind: mapQwenToolKind(toolName),
+          toolName,
           callId: contentBlock.id as string | undefined,
           args: contentBlock.input
         }
@@ -190,13 +193,30 @@ function parseAssistantSnapshot(
           }
         }
 
-        if (block.type === 'tool_result') {
+        if (block.type === 'tool_use') {
+          const toolName = (block.name ?? 'unknown') as string;
           chunks.push({
             kind: 'tool_use',
             messageId: state.messageId,
             timestampMs: now,
             data: {
-              toolName: (block.tool_name ?? 'unknown') as string,
+              toolKind: mapQwenToolKind(toolName),
+              toolName,
+              callId: block.id as string | undefined,
+              args: block.input
+            }
+          });
+        }
+
+        if (block.type === 'tool_result') {
+          const toolName = (block.tool_name ?? 'unknown') as string;
+          chunks.push({
+            kind: 'tool_use',
+            messageId: state.messageId,
+            timestampMs: now,
+            data: {
+              toolKind: mapQwenToolKind(toolName),
+              toolName,
               callId: block.tool_use_id as string | undefined,
               result: block.content
             }

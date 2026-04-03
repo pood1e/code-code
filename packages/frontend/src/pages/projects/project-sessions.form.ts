@@ -4,6 +4,7 @@ import type {
   ProfileDetail,
   SendSessionMessageInput,
   SessionMessageDetail,
+  SessionMessagePart,
   SessionStatus
 } from '@agent-workbench/shared';
 import {
@@ -124,6 +125,134 @@ export function applyOutputChunkToMessages(
   messages: SessionMessageDetail[],
   chunk: OutputChunk
 ) {
+  const upsertToolCallPart = (
+    parts: SessionMessagePart[],
+    toolChunk: Extract<OutputChunk, { kind: 'tool_use' }>
+  ) => {
+    const toolCallId = toolChunk.data.callId ?? String(toolChunk.eventId);
+    const existingIndex = parts.findIndex(
+      (part) =>
+        part.type === 'tool_call' &&
+        (part.toolCallId === toolCallId ||
+          (!toolChunk.data.callId &&
+            part.toolName === toolChunk.data.toolName &&
+            part.result === undefined))
+    );
+
+    if (existingIndex === -1) {
+      return [
+        ...parts,
+        {
+          type: 'tool_call' as const,
+          toolCallId,
+          toolKind: toolChunk.data.toolKind,
+          toolName: toolChunk.data.toolName,
+          args: toolChunk.data.args,
+          result: toolChunk.data.result,
+          isError:
+            toolChunk.data.error !== undefined ? true : undefined
+        }
+      ];
+    }
+
+    const existing = parts[existingIndex];
+    if (existing.type !== 'tool_call') {
+      return parts;
+    }
+
+    const nextParts = [...parts];
+    nextParts[existingIndex] = {
+      ...existing,
+      toolKind: toolChunk.data.toolKind,
+      args: toolChunk.data.args ?? existing.args,
+      result: toolChunk.data.result ?? existing.result,
+      isError:
+        toolChunk.data.error !== undefined
+          ? true
+          : existing.isError
+    };
+    return nextParts;
+  };
+
+  const upsertToolUse = (
+    message: SessionMessageDetail,
+    toolChunk: Extract<OutputChunk, { kind: 'tool_use' }>
+  ) => {
+    const toolCallId = toolChunk.data.callId ?? null;
+    const existingIndex = message.toolUses.findIndex(
+      (toolUse) =>
+        (toolCallId && toolUse.callId === toolCallId) ||
+        (!toolCallId &&
+          toolUse.toolName === toolChunk.data.toolName &&
+          toolUse.result == null &&
+          toolUse.error == null)
+    );
+
+    if (existingIndex === -1) {
+      return [
+        ...message.toolUses.filter(
+          (toolUse) => toolUse.eventId !== toolChunk.eventId
+        ),
+        {
+          id: `event_${toolChunk.eventId}`,
+          eventId: toolChunk.eventId,
+          callId: toolCallId,
+          toolKind: toolChunk.data.toolKind,
+          toolName: toolChunk.data.toolName,
+          args: toolChunk.data.args,
+          result: toolChunk.data.result ?? null,
+          error: toolChunk.data.error ?? null,
+          createdAt: new Date(toolChunk.timestampMs).toISOString()
+        }
+      ];
+    }
+
+    const nextToolUses = [...message.toolUses];
+    const existing = nextToolUses[existingIndex];
+    nextToolUses[existingIndex] = {
+      ...existing,
+      eventId: toolChunk.eventId,
+      toolKind: toolChunk.data.toolKind,
+      args: toolChunk.data.args ?? existing.args,
+      result: toolChunk.data.result ?? existing.result ?? null,
+      error: toolChunk.data.error ?? existing.error ?? null,
+      createdAt: new Date(toolChunk.timestampMs).toISOString()
+    };
+    return nextToolUses;
+  };
+
+  const getNextPartsForChunk = (
+    parts: SessionMessagePart[] | undefined,
+    message: SessionMessageDetail
+  ) => {
+    const currentParts = parts ?? [];
+    if (chunk.kind === 'thinking_delta' || chunk.kind === 'message_delta') {
+      const isThinking = chunk.kind === 'thinking_delta';
+      const currentText = isThinking ? message.thinkingText : message.outputText;
+      const derivedDelta = chunk.data.accumulatedText
+        ? chunk.data.accumulatedText.slice(currentText?.length || 0)
+        : '';
+      const actualDelta = derivedDelta || chunk.data.deltaText;
+      if (!actualDelta) return currentParts;
+      const type = isThinking ? 'thinking' : 'text';
+      const lastPart = currentParts[currentParts.length - 1];
+      const newParts = [...currentParts];
+      if (lastPart?.type === type) {
+        newParts[newParts.length - 1] = {
+          ...lastPart,
+          text: lastPart.text + actualDelta
+        };
+      } else {
+        newParts.push({ type, text: actualDelta });
+      }
+      return newParts;
+    }
+    if (chunk.kind === 'tool_use') {
+      return upsertToolCallPart(currentParts, chunk);
+    }
+    return currentParts;
+  };
+
   switch (chunk.kind) {
     case 'thinking_delta':
       return messages.map((message) =>
@@ -131,6 +260,7 @@ export function applyOutputChunkToMessages(
           ? {
               ...message,
               status: MessageStatusEnum.Streaming,
+              contentParts: getNextPartsForChunk(message.contentParts, message),
               thinkingText:
                 chunk.data.accumulatedText !== undefined
                   ? chunk.data.accumulatedText
@@ -144,6 +274,7 @@ export function applyOutputChunkToMessages(
           ? {
               ...message,
               status: MessageStatusEnum.Streaming,
+              contentParts: getNextPartsForChunk(message.contentParts, message),
               outputText:
                 chunk.data.accumulatedText !== undefined
                   ? chunk.data.accumulatedText
@@ -178,21 +309,8 @@ export function applyOutputChunkToMessages(
         message.id === chunk.messageId
           ? {
               ...message,
-              toolUses: [
-                ...message.toolUses.filter(
-                  (toolUse) => toolUse.eventId !== chunk.eventId
-                ),
-                {
-                  id: `event_${chunk.eventId}`,
-                  eventId: chunk.eventId,
-                  callId: chunk.data.callId ?? null,
-                  toolName: chunk.data.toolName,
-                  args: chunk.data.args,
-                  result: chunk.data.result,
-                  error: chunk.data.error,
-                  createdAt: new Date(chunk.timestampMs).toISOString()
-                }
-              ]
+              contentParts: getNextPartsForChunk(message.contentParts, message),
+              toolUses: upsertToolUse(message, chunk)
             }
           : message
       );

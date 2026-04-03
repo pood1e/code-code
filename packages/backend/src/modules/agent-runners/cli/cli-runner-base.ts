@@ -291,7 +291,14 @@ export abstract class CliRunnerTypeBase implements RunnerType {
 
     // Wait for exit in background
     void cliProcess.waitForExit().then((result) => {
-      if (handle.cancelled) return;
+      if (handle.cancelled) {
+        // The process was explicitly cancelled (cancel() or destroySession()).
+        // Do NOT close the queue — after a user cancel, the session returns to
+        // Ready and the user may send another message. The same output consumer
+        // must stay alive to receive the next send(). Only destroySession()
+        // closes the queue via handle.queue.close() in destroySession().
+        return;
+      }
 
       // Update CLI session ID if extracted
       if (this.extractSessionId) {
@@ -308,7 +315,8 @@ export abstract class CliRunnerTypeBase implements RunnerType {
       }
 
       // If process exited unexpectedly without producing a result event,
-      // emit an error chunk
+      // emit a recoverable error chunk so the session returns to Ready and the
+      // user can retry. The queue stays open for the next message.
       if (result.exitCode !== 0 && result.exitCode !== null) {
         const stderr = cliProcess.getStderr().trim();
         handle.queue.push({
@@ -318,13 +326,18 @@ export abstract class CliRunnerTypeBase implements RunnerType {
           data: {
             message: stderr || `CLI exited with code ${result.exitCode}`,
             code: 'CLI_EXIT_ERROR',
-            recoverable: false
+            recoverable: true
           }
         });
       }
 
-      // Always close the queue so consumeRunnerOutput() can exit its for-await loop
-      handle.queue.close();
+      // Do NOT close the queue here — the output consumer must stay alive
+      // across multiple messages within the same session. Closing the queue
+      // causes consumeRunnerOutput() to exit and removes the outputConsumers
+      // entry. The next send() then incorrectly calls initializeRuntime() which
+      // overwrites the persisted cliSessionId and consumes the already-closed
+      // queue, producing an immediate error. The queue is only closed by
+      // destroySession() when the full session lifecycle ends.
     });
   }
 

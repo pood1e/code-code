@@ -2,7 +2,8 @@ import type { ZodTypeAny } from 'zod';
 import type {
   RunnerTypeMeta,
   PlatformSessionConfig,
-  RunnerContext
+  RunnerContext,
+  ToolCallKind
 } from '@agent-workbench/shared';
 import type { MaterializerTarget } from './cli/context-materializer';
 
@@ -65,6 +66,7 @@ export type RawOutputChunk =
       messageId: string;
       timestampMs: number;
       data: {
+        toolKind: ToolCallKind;
         toolName: string;
         args?: unknown;
         result?: unknown;

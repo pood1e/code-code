@@ -41,6 +41,7 @@ const ResourceEditPage = lazy(() =>
   }))
 );
 
+
 function RouteFallback() {
   return (
     <div className="space-y-4">
@@ -88,6 +89,14 @@ export function App() {
         />
         <Route
           path="/projects/:id/sessions"
+          element={
+            <LazyRoute>
+              <ProjectSessionsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/sessions/:sessionId"
           element={
             <LazyRoute>
               <ProjectSessionsPage />

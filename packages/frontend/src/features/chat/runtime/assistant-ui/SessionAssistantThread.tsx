@@ -1,14 +1,13 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { ThreadPrimitive } from '@assistant-ui/react';
-import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
+import { useQuery } from '@tanstack/react-query';
+import { LoaderCircle } from 'lucide-react';
 import type {
   RunnerTypeResponse,
   SendSessionMessageInput,
   SessionDetail,
   SessionMessageDetail
 } from '@agent-workbench/shared';
-import React from 'react';
 
 import { probeAgentRunnerContext } from '@/api/agent-runners';
 import { queryKeys } from '@/query/query-keys';
@@ -23,46 +22,40 @@ import {
   omitPrimaryFieldValue
 } from './input-schema';
 import { SessionAssistantRuntimeProvider } from './SessionAssistantRuntimeProvider';
-
 import type {
   SessionMessageRuntimeMap,
   SessionAssistantMessageRecord
 } from './thread-adapter';
 import { buildSessionAssistantMessageRecords } from './thread-adapter';
-
 import { ThreadConfigContext } from './context';
-import {
-  UserMessageBubble,
-  UserMessageEditComposer
-} from './components/UserMessage';
-import { AssistantMessageBubble } from './components/AssistantMessage';
 import { ThreadComposerUI } from './components/ThreadComposerUI';
 
-const VirtuosoScroller = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<'div'>
->((props, ref) => {
-  return (
-    <>
-      <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
-      <ThreadPrimitive.Viewport
-        {...props}
-        ref={ref}
-        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto w-full scrollbar-hide"
-        style={{
-          ...props.style,
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}
-      />
-    </>
-  );
+const SessionAssistantThreadHistory = lazy(async () => {
+  const module = await import('./SessionAssistantThreadHistory');
+  return { default: module.SessionAssistantThreadHistory };
 });
-VirtuosoScroller.displayName = 'VirtuosoScroller';
+
+function buildFallbackTextPayload(composerText: string): SendSessionMessageInput {
+  return {
+    input: {
+      prompt: composerText.trim()
+    }
+  };
+}
+
+function buildRawJsonComposerPayload(composerText: string): SendSessionMessageInput {
+  const parsed = parseSessionInputText(composerText);
+  if (!parsed.data) {
+    throw new Error(parsed.error ?? '消息输入校验失败');
+  }
+
+  return parsed.data;
+}
 
 export function SessionAssistantThread({
   session,
   messages,
+  messagesReady,
   runnerType,
   runtimeState,
   onSend,
@@ -73,6 +66,7 @@ export function SessionAssistantThread({
 }: {
   session: SessionDetail;
   messages: SessionMessageDetail[];
+  messagesReady: boolean;
   runnerType: RunnerTypeResponse | undefined;
   runtimeState: SessionMessageRuntimeMap;
   onSend: (payload: SendSessionMessageInput) => Promise<void>;
@@ -92,20 +86,20 @@ export function SessionAssistantThread({
     if (messages.length > 0 && messages[0]?.id !== prevFirstIdRef.current) {
       if (prevFirstIdRef.current !== undefined) {
         const oldFirstIndex = messages.findIndex(
-          (m) => m.id === prevFirstIdRef.current
+          (message) => message.id === prevFirstIdRef.current
         );
-        if (oldFirstIndex > 0) {
-          setFirstItemIndex((prev) => prev - oldFirstIndex);
-        } else {
-          setFirstItemIndex(
-            (prev) =>
-              prev -
-              Math.max(0, messages.length - prevMessagesLengthRef.current)
-          );
-        }
+
+        setFirstItemIndex((current) =>
+          current -
+          (oldFirstIndex > 0
+            ? oldFirstIndex
+            : Math.max(0, messages.length - prevMessagesLengthRef.current))
+        );
       }
+
       prevFirstIdRef.current = messages[0]?.id;
     }
+
     prevMessagesLengthRef.current = messages.length;
   }, [messages]);
 
@@ -169,8 +163,6 @@ export function SessionAssistantThread({
       : 'raw-json';
 
   const previousRecordsRef = useRef<SessionAssistantMessageRecord[]>([]);
-  const virtuosoRef = useRef<VirtuosoHandle>(null);
-
   const runtimeMessages = useMemo(() => {
     return buildSessionAssistantMessageRecords(
       messages,
@@ -197,6 +189,7 @@ export function SessionAssistantThread({
   return (
     <SessionAssistantRuntimeProvider
       messages={runtimeMessages}
+      messagesReady={messagesReady}
       status={session.status}
       onNew={async (composerText) => {
         setComposerError(null);
@@ -214,13 +207,9 @@ export function SessionAssistantThread({
                 additionalValues: additionalValuesRef.current,
                 runtimeValues: runtimeValuesRef.current
               })
-            : (() => {
-                const parsed = parseSessionInputText(composerText);
-                if (!parsed.data) {
-                  throw new Error(parsed.error ?? '消息输入校验失败');
-                }
-                return parsed.data;
-              })();
+            : !runnerType
+              ? buildFallbackTextPayload(composerText)
+              : buildRawJsonComposerPayload(composerText);
 
           await onSend(payload);
           if (supportsTextComposer) {
@@ -259,98 +248,132 @@ export function SessionAssistantThread({
               ),
               runtimeValues: runtimeValuesRef.current
             })
-          : (() => {
-              const parsed = parseSessionInputText(composerText);
-              if (!parsed.data) {
-                throw new Error(parsed.error ?? '消息输入校验失败');
-              }
-              return parsed.data;
-            })();
+          : !runnerType
+            ? buildFallbackTextPayload(composerText)
+            : buildRawJsonComposerPayload(composerText);
 
         await onEdit(messageId, payload);
       }}
     >
       <ThreadConfigContext.Provider value={configContextValue}>
-        <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
-          {messages.length === 0 ? (
-            <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-0">
-              <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 text-center">
-                <p className="text-base font-medium text-foreground">
-                  开始对话
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  消息会显示在这里
-                </p>
-              </div>
-            </ThreadPrimitive.Viewport>
-          ) : (
-            <Virtuoso
-              ref={virtuosoRef}
-              className="min-h-0 flex-1 w-full"
-              data={messages}
-              firstItemIndex={firstItemIndex}
-              initialTopMostItemIndex={
-                messages.length > 0 ? firstItemIndex + messages.length - 1 : 0
-              }
-              alignToBottom={true}
-              computeItemKey={(index, message) => message.id}
-              startReached={onLoadMore}
-              followOutput="smooth"
-              components={{
-                Scroller: VirtuosoScroller,
-                Header: () => <div className="h-5" />,
-                Footer: () => <div className="h-5" />
-              }}
-              itemContent={(index, message) => {
-                const relativeIndex = index - firstItemIndex;
-                if (relativeIndex >= messages.length || relativeIndex < 0) {
-                  return (
-                    <div className="pb-3 px-4 sm:px-5 text-red-500">
-                      Error: Index bounds {index} - {firstItemIndex} ={' '}
-                      {relativeIndex} vs {messages.length}
-                    </div>
-                  );
-                }
-                return (
-                  <div className="pb-3 px-4 sm:px-5">
-                    <ThreadPrimitive.MessageByIndex
-                      index={relativeIndex}
-                      components={{
-                        UserMessage: UserMessageBubble,
-                        UserEditComposer: UserMessageEditComposer,
-                        AssistantMessage: AssistantMessageBubble
-                      }}
-                    />
-                  </div>
-                );
-              }}
-            />
-          )}
-
-          <ThreadComposerUI
-            key={composerKey}
-            mode={composerMode}
-            additionalFields={additionalInputFields}
-            initialAdditionalValues={initialAdditionalInputValues}
-            runtimeFields={runtimeFields}
-            initialRuntimeValues={initialRuntimeValues}
-            composerError={composerError}
-            discoveredOptions={runnerContext}
-            onAdditionalValueChange={(fieldName: string, value: unknown) => {
-              additionalValuesRef.current = {
-                ...additionalValuesRef.current,
-                [fieldName]: value
-              };
-            }}
-            onRuntimeValueChange={(fieldName: string, value: unknown) => {
-              runtimeValuesRef.current = {
-                ...runtimeValuesRef.current,
-                [fieldName]: value
-              };
-            }}
-          />
-        </ThreadPrimitive.Root>
+        <SessionAssistantThreadBody
+          records={runtimeMessages}
+          messagesReady={messagesReady}
+          firstItemIndex={firstItemIndex}
+          onLoadMore={onLoadMore}
+          onReload={onReload}
+          composerKey={composerKey}
+          composerMode={composerMode}
+          additionalInputFields={additionalInputFields}
+          initialAdditionalInputValues={initialAdditionalInputValues}
+          runtimeFields={runtimeFields}
+          initialRuntimeValues={initialRuntimeValues}
+          composerError={composerError}
+          runnerContext={runnerContext}
+          onAdditionalValueChange={(fieldName: string, value: unknown) => {
+            additionalValuesRef.current = {
+              ...additionalValuesRef.current,
+              [fieldName]: value
+            };
+          }}
+          onRuntimeValueChange={(fieldName: string, value: unknown) => {
+            runtimeValuesRef.current = {
+              ...runtimeValuesRef.current,
+              [fieldName]: value
+            };
+          }}
+        />
       </ThreadConfigContext.Provider>
     </SessionAssistantRuntimeProvider>
+  );
+}
+
+function SessionAssistantThreadBody({
+  records,
+  messagesReady,
+  firstItemIndex,
+  onLoadMore,
+  onReload,
+  composerKey,
+  composerMode,
+  additionalInputFields,
+  initialAdditionalInputValues,
+  runtimeFields,
+  initialRuntimeValues,
+  composerError,
+  runnerContext,
+  onAdditionalValueChange,
+  onRuntimeValueChange
+}: {
+  records: SessionAssistantMessageRecord[];
+  messagesReady: boolean;
+  firstItemIndex: number;
+  onLoadMore?: () => void;
+  onReload: () => Promise<void>;
+  composerKey: number;
+  composerMode: 'text' | 'raw-json';
+  additionalInputFields: ReturnType<typeof getAdditionalInputFields>;
+  initialAdditionalInputValues: Record<string, unknown>;
+  runtimeFields: ReturnType<typeof getAdditionalInputFields>;
+  initialRuntimeValues: Record<string, unknown>;
+  composerError: string | null;
+  runnerContext:
+    | Record<string, Array<{ label: string; value: string } | string>>
+    | undefined;
+  onAdditionalValueChange: (fieldName: string, value: unknown) => void;
+  onRuntimeValueChange: (fieldName: string, value: unknown) => void;
+}) {
+  return (
+    <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
+      <style>{`.scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
+      {records.length === 0 ? (
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-0">
+          {messagesReady ? (
+            <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 text-center">
+              <p className="text-base font-medium text-foreground">开始对话</p>
+              <p className="text-sm text-muted-foreground">
+                消息会显示在这里
+              </p>
+            </div>
+          ) : (
+            <div className="flex min-h-[18rem] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+              <LoaderCircle className="size-5 animate-spin" />
+              <p className="text-sm">正在加载历史消息...</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Suspense
+          fallback={
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-0">
+              <div className="flex min-h-[18rem] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+                <LoaderCircle className="size-5 animate-spin" />
+                <p className="text-sm">正在渲染消息...</p>
+              </div>
+            </div>
+          }
+        >
+          <SessionAssistantThreadHistory
+            records={records}
+            firstItemIndex={firstItemIndex}
+            onLoadMore={onLoadMore}
+            onReload={onReload}
+          />
+        </Suspense>
+      )}
+
+      <ThreadComposerUI
+        key={composerKey}
+        mode={composerMode}
+        additionalFields={additionalInputFields}
+        initialAdditionalValues={initialAdditionalInputValues}
+        runtimeFields={runtimeFields}
+        initialRuntimeValues={initialRuntimeValues}
+        composerError={composerError}
+        discoveredOptions={runnerContext}
+        onAdditionalValueChange={onAdditionalValueChange}
+        onRuntimeValueChange={onRuntimeValueChange}
+      />
+    </ThreadPrimitive.Root>
   );
 }

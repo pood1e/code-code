@@ -88,7 +88,10 @@ export function useCreateSessionMutation({
           ? (() => {
               const parsed = parseSessionInputText(initialRawInputValue);
               if (!parsed.data) {
-                throw new Error(parsed.error ?? '首条消息输入校验失败');
+                form.setError('initialRawInput', {
+                  message: parsed.error ?? '首条消息输入校验失败'
+                });
+                throw new Error('首条消息输入校验失败');
               }
               let runtimeConfig: Record<string, unknown> | undefined =
                 undefined;
@@ -104,8 +107,20 @@ export function useCreateSessionMutation({
                   structuredRuntimeSchema.validationSchema.safeParse(
                     normalized
                   );
-                if (!validRuntime.success)
+                if (!validRuntime.success) {
+                  for (const issue of validRuntime.error.issues) {
+                    const fieldName = issue.path[0];
+                    if (typeof fieldName === 'string') {
+                      form.setError(
+                        `initialRuntimeConfig.${fieldName}` as `initialRuntimeConfig.${string}`,
+                        {
+                          message: issue.message
+                        }
+                      );
+                    }
+                  }
                   throw new Error('首条消息运行时参数校验失败');
+                }
                 runtimeConfig = validRuntime.data;
               }
               return { input: parsed.data.input, runtimeConfig };

@@ -74,6 +74,8 @@ function SortableSelectedItem<T extends SelectedBaseItem>({
           variant="outline"
           size="icon-sm"
           className="mt-0.5 shrink-0"
+          aria-label={`拖动排序 ${item.name}`}
+          title={`拖动排序 ${item.name}`}
           {...attributes}
           {...listeners}
         >
@@ -95,8 +97,8 @@ function SortableSelectedItem<T extends SelectedBaseItem>({
         type="button"
         variant="outline"
         size="icon-sm"
-        aria-label={`Remove ${item.name}`}
-        title={`Remove ${item.name}`}
+        aria-label={`移除 ${item.name}`}
+        title={`移除 ${item.name}`}
         onClick={() => onRemove(item.resourceId)}
       >
         <Delete />
@@ -194,6 +196,7 @@ function AvailableResourceList({
       <div className="relative mb-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
+          aria-label={`${title}搜索`}
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="按名称搜索"
@@ -226,8 +229,8 @@ function AvailableResourceList({
                 type="button"
                 variant="outline"
                 size="icon-sm"
-                aria-label={`Add ${item.name}`}
-                title={`Add ${item.name}`}
+                aria-label={`添加 ${item.name}`}
+                title={`添加 ${item.name}`}
                 onClick={() => onAdd(item.id)}
               >
                 <Plus />

@@ -56,7 +56,6 @@ export class RunnerTypeRegistry implements OnModuleInit {
         runnerType.runnerSessionConfigSchema
       ),
       inputSchema: zodToSchemaDescriptor(runnerType.inputSchema),
-      taskConfigSchema: zodToSchemaDescriptor(runnerType.inputSchema),
       runtimeConfigSchema: zodToSchemaDescriptor(runnerType.runtimeConfigSchema)
     }));
   }

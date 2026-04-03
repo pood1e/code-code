@@ -17,7 +17,7 @@ export const mockRunnerSessionConfigSchema = z.object({});
 export const mockInputSchema = z.object({
   prompt: z.string().min(1)
 });
-export const mockRuntimeConfigSchema = z.object({});
+export const mockRuntimeConfigSchema = z.record(z.string(), z.unknown());
 
 @RunnerTypeProvider()
 export class MockRunnerType implements RunnerType {

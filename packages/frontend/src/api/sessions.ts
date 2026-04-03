@@ -29,8 +29,7 @@ export async function createSession(payload: CreateSessionInput) {
 }
 
 export async function disposeSession(id: string) {
-  const response = await apiClient.delete<SessionDetail>(`/sessions/${id}`);
-  return response.data;
+  await apiClient.delete<void>(`/sessions/${id}`);
 }
 
 export async function listSessionMessages(

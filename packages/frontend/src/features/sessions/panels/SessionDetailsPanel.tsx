@@ -1,11 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { SessionStatusBadge } from '../components/SessionStatusBadge';
 import { SetupSection } from '../components/SetupSection';
-import {
-  ReadonlyRunnerConfigSection,
-  RunnerSchemaSection
-} from '../components/RunnerConfigSections';
+import { ReadonlyRunnerConfigSection } from '../components/RunnerConfigSections';
 import { cn } from '@/lib/utils';
 import type {
   AgentRunnerDetail,
@@ -50,6 +48,7 @@ function SessionDetailList({
 
 export function SessionDetailsPanel({
   open,
+  onClose,
   session,
   runnerDetail,
   runnerType,
@@ -57,6 +56,7 @@ export function SessionDetailsPanel({
   resources
 }: {
   open: boolean;
+  onClose?: () => void;
   session: SessionDetail;
   runnerDetail?: AgentRunnerDetail;
   runnerType?: RunnerTypeResponse;
@@ -67,6 +67,7 @@ export function SessionDetailsPanel({
     rules: ResourceByKind['rules'][];
   };
 }) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const runnerName = useMemo(
     () =>
       runners.find((runner) => runner.id === session.runnerId)?.name ??
@@ -101,94 +102,132 @@ export function SessionDetailsPanel({
       }),
     [resources.mcps, session.platformSessionConfig.mcps]
   );
+  const hasSessionConfig =
+    Object.keys(session.runnerSessionConfig).length > 0;
+  const hasRuntimeConfig =
+    Object.keys(session.defaultRuntimeConfig ?? {}).length > 0;
+  const hasResources =
+    skillNames.length > 0 || ruleNames.length > 0 || mcpNames.length > 0;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!panelRef.current?.contains(event.target as Node)) {
+        onClose?.();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose, open]);
+
+  if (!open) {
+    return null;
+  }
 
   return (
     <div
+      ref={panelRef}
+      role="dialog"
+      aria-label="会话设置"
       className={cn(
-        'grid transition-all duration-300 ease-in-out',
-        open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        'absolute top-full right-4 z-20 mt-2 w-[min(36rem,calc(100vw-2rem))] rounded-2xl border border-border/60 bg-background/95 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/90'
       )}
     >
-      <div className="overflow-hidden">
-        <div className="border-b border-border/40 bg-muted/10 px-5 py-4">
-          {/* Compact summary row */}
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border/30 bg-background/70 px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                状态
-              </p>
-              <div className="mt-1">
-                <SessionStatusBadge status={session.status} />
+      <div className="max-h-[min(70vh,42rem)] overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-sm font-semibold text-foreground">会话设置</h2>
+            <p className="text-sm text-muted-foreground">
+              只展示当前会话真正影响运行的配置。
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            aria-label="收起会话设置"
+          >
+            收起
+          </Button>
+        </div>
+
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-border/40 bg-muted/15 px-3 py-2.5">
+            <p className="text-[11px] font-medium text-muted-foreground">状态</p>
+            <div className="mt-1">
+              <SessionStatusBadge status={session.status} />
+            </div>
+          </div>
+          <div className="rounded-xl border border-border/40 bg-muted/15 px-3 py-2.5">
+            <p className="text-[11px] font-medium text-muted-foreground">Runner</p>
+            <p className="mt-1 truncate text-sm text-foreground">{runnerName}</p>
+          </div>
+          <div className="rounded-xl border border-border/40 bg-muted/15 px-3 py-2.5">
+            <p className="text-[11px] font-medium text-muted-foreground">工作目录</p>
+            <p className="mt-1 line-clamp-2 break-all text-sm text-foreground">
+              {session.platformSessionConfig.cwd}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {hasResources ? (
+            <SetupSection title="资源快照">
+              <div className="space-y-3">
+                <SessionDetailList label="Skills" values={skillNames} />
+                <SessionDetailList label="Rules" values={ruleNames} />
+                <SessionDetailList label="MCPs" values={mcpNames} />
               </div>
-            </div>
-            <div className="rounded-lg border border-border/30 bg-background/70 px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Runner
-              </p>
-              <p className="mt-1 truncate text-sm text-foreground">
-                {runnerName}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/30 bg-background/70 px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Type
-              </p>
-              <p className="mt-1 truncate text-sm text-foreground">
-                {session.runnerType}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/30 bg-background/70 px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                更新时间
-              </p>
-              <p className="mt-1 truncate text-sm text-foreground">
-                {new Date(session.updatedAt).toLocaleString()}
-              </p>
-            </div>
-          </div>
+            </SetupSection>
+          ) : null}
 
-          {/* Expandable detail sections */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-4">
-              <ReadonlyRunnerConfigSection
-                title="Runner Config"
-                schema={runnerType?.runnerConfigSchema}
-                values={runnerDetail?.runnerConfig}
-              />
-              <ReadonlyRunnerConfigSection
-                title="Session Config"
-                schema={runnerType?.runnerSessionConfigSchema}
-                values={session.runnerSessionConfig}
-              />
-              <ReadonlyRunnerConfigSection
-                title="Default Runtime Config"
-                schema={runnerType?.runtimeConfigSchema}
-                values={session.defaultRuntimeConfig ?? undefined}
-              />
-            </div>
+          {hasSessionConfig ? (
+            <ReadonlyRunnerConfigSection
+              title="会话参数"
+              schema={runnerType?.runnerSessionConfigSchema}
+              values={session.runnerSessionConfig}
+            />
+          ) : null}
 
-            <div className="space-y-4">
-              <SetupSection title="CWD">
-                <p className="break-all text-sm text-muted-foreground">
-                  {session.platformSessionConfig.cwd}
-                </p>
-              </SetupSection>
+          {hasRuntimeConfig ? (
+            <ReadonlyRunnerConfigSection
+              title="默认运行参数"
+              schema={runnerType?.runtimeConfigSchema}
+              values={session.defaultRuntimeConfig ?? undefined}
+            />
+          ) : null}
 
-              <SetupSection title="资源快照">
-                <div className="space-y-3">
-                  <SessionDetailList label="Skills" values={skillNames} />
-                  <SessionDetailList label="Rules" values={ruleNames} />
-                  <SessionDetailList label="MCPs" values={mcpNames} />
-                </div>
-              </SetupSection>
+          {!hasResources && !hasSessionConfig && !hasRuntimeConfig ? (
+            <SetupSection title="额外设置">
+              <p className="text-sm text-muted-foreground">
+                当前会话没有额外资源或参数覆盖。
+              </p>
+            </SetupSection>
+          ) : null}
 
-              <RunnerSchemaSection
-                title="Input Schema"
-                schema={runnerType?.inputSchema}
-                description="消息输入按 RunnerType 的 input schema 解释。"
-              />
-            </div>
-          </div>
+          {runnerDetail?.description ? (
+            <SetupSection title="Runner 说明">
+              <p className="text-sm text-muted-foreground">
+                {runnerDetail.description}
+              </p>
+            </SetupSection>
+          ) : null}
         </div>
       </div>
     </div>

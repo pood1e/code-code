@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,11 +25,16 @@ import { useCreateSessionMutation } from '../hooks/use-create-session-mutation';
 import { DynamicConfigFieldInput } from '../components/DynamicConfigFieldInput';
 import { ResourceSelectionSection } from '../components/ResourceSelectionSection';
 import { SetupSection } from '../components/SetupSection';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  MessageComposerError,
+  MessageComposerFooterActions,
+  MessageComposerField,
+  MessageComposerInputArea,
+  MessageComposerShell
+} from '@/components/app/MessageComposer';
 import { Textarea } from '@/components/ui/textarea';
-import { FormField } from '@/components/app/FormField';
 import { Button } from '@/components/ui/button';
-import { NativeSelect } from '@/components/ui/native-select';
+import { CompactNativeSelect } from '@/components/ui/native-select';
 import { ChevronDown, LoaderCircle, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type {
@@ -271,7 +276,8 @@ export function CreateSessionPanel({
       if (
         error instanceof Error &&
         (error.message === 'Session 配置校验失败' ||
-          error.message === '首条消息输入校验失败')
+          error.message === '首条消息输入校验失败' ||
+          error.message === '首条消息运行时参数校验失败')
       ) {
         return;
       }
@@ -281,98 +287,102 @@ export function CreateSessionPanel({
     }
   });
 
+  const handlePromptKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!supportsStructuredInitialInput) {
+      return;
+    }
+
+    if (
+      event.key !== 'Enter' ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (createMutation.isPending || !hasInitialMessageDraft) {
+      return;
+    }
+
+    void handleSubmit();
+  };
+
   return (
     <div className="flex min-h-[36rem] flex-col xl:min-h-[calc(100vh-14rem)]">
       <div className="flex flex-1 flex-col px-2 py-2 sm:px-4 sm:py-4">
         {submitError ? (
-          <Alert variant="destructive">
-            <AlertTitle>创建失败</AlertTitle>
-            <AlertDescription>{submitError}</AlertDescription>
-          </Alert>
+          <MessageComposerError title="创建失败" message={submitError} />
         ) : null}
 
-        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col pt-10 sm:pt-14">
-          <div className="rounded-3xl border border-border/40 bg-background/95 p-5 shadow-[0_28px_80px_-36px_hsl(var(--foreground)/0.18)] sm:p-6">
-            {supportsStructuredInitialInput ? (
-              <FormField
-                label=""
-                error={form.formState.errors.initialMessageText?.message}
-              >
-                <Textarea
-                  rows={9}
-                  placeholder="发一条消息开始新会话"
-                  className="min-h-40 resize-none border-0 bg-transparent px-0 py-0 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-44"
-                  {...form.register('initialMessageText')}
-                />
-              </FormField>
-            ) : (
-              <FormField
-                label=""
-                error={form.formState.errors.initialRawInput?.message}
-                description="当前 RunnerType 的 input schema 不适合文本输入，请直接填写原始 JSON。"
-              >
-                <Textarea
-                  rows={10}
-                  placeholder={'{\n  "prompt": ""\n}'}
-                  className="min-h-36 resize-none border-0 bg-transparent px-0 py-0 font-mono text-sm shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-40"
-                  {...form.register('initialRawInput')}
-                />
-              </FormField>
-            )}
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col pt-4 sm:pt-6">
+          <MessageComposerShell
+            header={
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CompactNativeSelect
+                    aria-label="选择 AgentRunner"
+                    containerClassName="min-w-[8.75rem]"
+                    className="w-full whitespace-nowrap bg-background/70"
+                    value={selectedRunnerId}
+                    onChange={(event) =>
+                      form.setValue('runnerId', event.target.value)
+                    }
+                  >
+                    {runners.map((runner) => (
+                      <option key={runner.id} value={runner.id}>
+                        {runner.name}
+                      </option>
+                    ))}
+                  </CompactNativeSelect>
 
-            <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div className="flex flex-wrap items-center gap-2 xl:flex-nowrap">
-                <NativeSelect
-                  className="h-9 w-auto min-w-[8.5rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap"
-                  value={selectedRunnerId}
-                  onChange={(event) =>
-                    form.setValue('runnerId', event.target.value)
-                  }
-                >
-                  {runners.map((runner) => (
-                    <option key={runner.id} value={runner.id}>
-                      {runner.name}
-                    </option>
-                  ))}
-                </NativeSelect>
+                  <CompactNativeSelect
+                    aria-label="选择 Profile"
+                    containerClassName="min-w-[8.25rem]"
+                    className="w-full whitespace-nowrap bg-background/70"
+                    value={selectedProfileId ?? ''}
+                    onChange={(event) =>
+                      form.setValue('profileId', event.target.value)
+                    }
+                  >
+                    <option value="">Profile</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name}
+                      </option>
+                    ))}
+                  </CompactNativeSelect>
 
-                <NativeSelect
-                  className="h-9 w-auto min-w-[8rem] rounded-full bg-background/80 px-3 py-1.5 text-xs whitespace-nowrap"
-                  value={selectedProfileId ?? ''}
-                  onChange={(event) =>
-                    form.setValue('profileId', event.target.value)
-                  }
-                >
-                  <option value="">Profile</option>
-                  {profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.name}
-                    </option>
-                  ))}
-                </NativeSelect>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-9 rounded-full px-3 text-xs text-muted-foreground whitespace-nowrap',
-                    advancedOpen && 'bg-accent text-foreground'
-                  )}
-                  onClick={() => setAdvancedOpen(!advancedOpen)}
-                >
-                  <SlidersHorizontal />
-                  高级设置
-                  <ChevronDown
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     className={cn(
-                      'size-3 transition-transform duration-200',
-                      advancedOpen && 'rotate-180'
+                      'h-9 rounded-full px-3 text-xs text-muted-foreground whitespace-nowrap',
+                      advancedOpen && 'bg-accent text-foreground'
                     )}
-                  />
-                </Button>
+                    onClick={() => setAdvancedOpen(!advancedOpen)}
+                  >
+                    <SlidersHorizontal />
+                    高级设置
+                    <ChevronDown
+                      className={cn(
+                        'size-3 transition-transform duration-200',
+                        advancedOpen && 'rotate-180'
+                      )}
+                    />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {supportsStructuredInitialInput
+                    ? '发送后会创建会话并提交首条消息'
+                    : '请填写完整 JSON 后再发送'}
+                </p>
               </div>
-
-              <div className="flex items-center justify-end gap-2">
+            }
+            footer={
+              <MessageComposerFooterActions className="pl-0">
                 {canCancel ? (
                   <Button variant="ghost" size="sm" onClick={onCancel}>
                     取消
@@ -381,16 +391,55 @@ export function CreateSessionPanel({
                 <Button
                   onClick={() => void handleSubmit()}
                   disabled={createMutation.isPending || !hasInitialMessageDraft}
-                  className="h-10 min-w-24 rounded-full px-5 shadow-sm"
+                  className="h-9 min-w-24 rounded-full px-5 shadow-sm"
                 >
                   {createMutation.isPending ? (
                     <LoaderCircle className="animate-spin" />
                   ) : null}
                   发送
                 </Button>
-              </div>
+              </MessageComposerFooterActions>
+            }
+            className="border-border/40 bg-background/95 shadow-[0_28px_80px_-36px_hsl(var(--foreground)/0.18)]"
+          >
+            <div className="space-y-4 pb-1">
+              {supportsStructuredInitialInput ? (
+                <MessageComposerField
+                  label="首条消息"
+                  error={form.formState.errors.initialMessageText?.message}
+                >
+                  <MessageComposerInputArea hint="Enter 发送，Shift+Enter 换行">
+                    <Textarea
+                      aria-label="首条消息"
+                      rows={9}
+                      autoFocus
+                      placeholder="输入首条消息..."
+                      className="min-h-40 resize-none border-0 bg-transparent px-3 py-3 pb-8 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-44"
+                      onKeyDown={handlePromptKeyDown}
+                      {...form.register('initialMessageText')}
+                    />
+                  </MessageComposerInputArea>
+                </MessageComposerField>
+              ) : (
+                <MessageComposerField
+                  label="首条消息 JSON"
+                  error={form.formState.errors.initialRawInput?.message}
+                >
+                  <MessageComposerInputArea hint="使用发送按钮提交，Enter 仅换行">
+                    <Textarea
+                      aria-label="首条消息 JSON"
+                      rows={10}
+                      autoFocus
+                      placeholder={'{\n  "prompt": ""\n}'}
+                      className="min-h-36 resize-none border-0 bg-transparent px-3 py-3 pb-8 font-mono text-sm shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-40"
+                      onKeyDown={handlePromptKeyDown}
+                      {...form.register('initialRawInput')}
+                    />
+                  </MessageComposerInputArea>
+                </MessageComposerField>
+              )}
             </div>
-          </div>
+          </MessageComposerShell>
         </div>
       </div>
 

@@ -1,71 +1,101 @@
-import React, { memo } from 'react';
+import React, { Suspense, lazy, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
-import {
-  oneLight,
-  oneDark
-} from 'react-syntax-highlighter/dist/esm/styles/prism';
-
-import ts from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
-import js from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
-import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
-import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
-import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
-import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
-import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
-import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
-import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
-import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
-import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
-import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
-import sql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
-
-SyntaxHighlighter.registerLanguage('typescript', ts);
-SyntaxHighlighter.registerLanguage('ts', ts);
-SyntaxHighlighter.registerLanguage('javascript', js);
-SyntaxHighlighter.registerLanguage('js', js);
-SyntaxHighlighter.registerLanguage('jsx', jsx);
-SyntaxHighlighter.registerLanguage('tsx', tsx);
-SyntaxHighlighter.registerLanguage('bash', bash);
-SyntaxHighlighter.registerLanguage('sh', bash);
-SyntaxHighlighter.registerLanguage('json', json);
-SyntaxHighlighter.registerLanguage('yaml', yaml);
-SyntaxHighlighter.registerLanguage('yml', yaml);
-SyntaxHighlighter.registerLanguage('python', python);
-SyntaxHighlighter.registerLanguage('py', python);
-SyntaxHighlighter.registerLanguage('go', go);
-SyntaxHighlighter.registerLanguage('rust', rust);
-SyntaxHighlighter.registerLanguage('css', css);
-SyntaxHighlighter.registerLanguage('markdown', markdown);
-SyntaxHighlighter.registerLanguage('md', markdown);
-SyntaxHighlighter.registerLanguage('sql', sql);
+import { Braces, ListTree, TableProperties } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
+import { InlineCollapsibleBlock } from './InlineCollapsibleBlock';
 
 const remarkPlugins = [remarkGfm];
-import { useTheme } from 'next-themes';
-import { Check, Copy } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+const CodeBlockHighlighter = lazy(async () => {
+  const module = await import('./CodeBlockHighlighter');
+  return { default: module.CodeBlockHighlighter };
+});
+
+function CodeBlockFallback({
+  language,
+  value,
+  density,
+  collapsibleBlocks
+}: {
+  language: string;
+  value: string;
+  density: 'default' | 'compact';
+  collapsibleBlocks: boolean;
+}) {
+  const isCompact = density === 'compact';
+  const fallbackBody = (
+    <pre
+      className={cn(
+        'overflow-x-auto text-foreground/90',
+        isCompact ? 'p-3 text-[13px]' : 'p-4 text-sm'
+      )}
+    >
+      {value}
+    </pre>
+  );
+
+  if (isCompact && collapsibleBlocks) {
+    return (
+      <CollapsibleMarkdownBlock
+        label="代码块"
+        summary={language}
+        icon={<Braces className="h-3.5 w-3.5 shrink-0" />}
+      >
+        <div className="overflow-x-auto rounded-md border border-border bg-card">
+          {fallbackBody}
+        </div>
+      </CollapsibleMarkdownBlock>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        'relative flex flex-col overflow-hidden border border-border bg-card',
+        isCompact ? 'my-2 rounded-md' : 'my-4 rounded-lg'
+      )}
+    >
+      <div
+        className={cn(
+          'flex items-center justify-between border-b border-border/60 bg-muted/60 text-muted-foreground',
+          isCompact ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
+        )}
+      >
+        <span className="font-mono lowercase">{language}</span>
+      </div>
+      {fallbackBody}
+    </div>
+  );
+}
 
 export interface MarkdownRendererProps {
   content: string;
   className?: string;
+  density?: 'default' | 'compact';
+  collapsibleBlocks?: boolean;
 }
 
 export const MarkdownRenderer = memo(function MarkdownRenderer({
   content,
-  className
+  className,
+  density = 'default',
+  collapsibleBlocks = false
 }: MarkdownRendererProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const isCompact = density === 'compact';
 
   return (
     <div
       className={cn(
         'prose prose-sm prose-slate dark:prose-invert max-w-none break-words',
-        'prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent',
+        'prose-pre:p-0 prose-pre:bg-transparent',
         'prose-code:font-geist-mono prose-code:before:content-none prose-code:after:content-none',
         'prose-headings:font-geist-sans prose-headings:font-semibold',
+        isCompact
+          ? 'prose-p:my-1.5 prose-p:leading-6 prose-ul:my-1.5 prose-ol:my-1.5 prose-ul:pl-5 prose-ol:pl-5 prose-li:my-0.5 prose-li:marker:text-muted-foreground/40 prose-pre:my-2 prose-table:my-2 prose-headings:my-2'
+          : 'prose-p:leading-relaxed',
         className
       )}
     >
@@ -75,13 +105,13 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
           code({ node, inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : 'text';
-            const isInline = inline || !match;
+            const isInline = inline === true;
 
             if (isInline) {
               return (
                 <code
                   className={cn(
-                    'bg-muted px-1.5 py-0.5 rounded-md text-sm font-medium',
+                    'rounded bg-muted/60 px-1 py-0.5 text-[0.92em] font-medium text-foreground/80',
                     className
                   )}
                   {...props}
@@ -92,18 +122,80 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
             }
 
             return (
-              <CodeBlock
-                language={language}
-                value={String(children).replace(/\n$/, '')}
-                isDark={isDark}
-              />
+              <Suspense
+                fallback={
+                  <CodeBlockFallback
+                    language={language}
+                    value={String(children).replace(/\n$/, '')}
+                    density={density}
+                    collapsibleBlocks={collapsibleBlocks}
+                  />
+                }
+              >
+                <CodeBlockHighlighter
+                  language={language}
+                  value={String(children).replace(/\n$/, '')}
+                  isDark={isDark}
+                  density={density}
+                  collapsible={collapsibleBlocks}
+                />
+              </Suspense>
             );
           },
           table({ children }) {
+            if (isCompact && collapsibleBlocks) {
+              return (
+                <CollapsibleMarkdownBlock
+                  label="表格"
+                  summary="表格"
+                  icon={<TableProperties className="h-3.5 w-3.5 shrink-0" />}
+                >
+                  <div className="w-full overflow-x-auto rounded-md border">
+                    <table className="w-full text-sm">{children}</table>
+                  </div>
+                </CollapsibleMarkdownBlock>
+              );
+            }
+
             return (
-              <div className="my-4 w-full overflow-y-auto rounded-lg border">
+              <div
+                className={cn(
+                  'w-full overflow-x-auto border',
+                  isCompact ? 'my-2 rounded-md' : 'my-4 rounded-lg'
+                )}
+              >
                 <table className="w-full text-sm">{children}</table>
               </div>
+            );
+          },
+          ul({ children }) {
+            if (!isCompact || !collapsibleBlocks) {
+              return <ul>{children}</ul>;
+            }
+
+            return (
+              <CollapsibleMarkdownBlock
+                label="列表"
+                summary={buildListSummary(children)}
+                icon={<ListTree className="h-3.5 w-3.5 shrink-0" />}
+              >
+                <ul className="my-0 pl-5">{children}</ul>
+              </CollapsibleMarkdownBlock>
+            );
+          },
+          ol({ children }) {
+            if (!isCompact || !collapsibleBlocks) {
+              return <ol>{children}</ol>;
+            }
+
+            return (
+              <CollapsibleMarkdownBlock
+                label="列表"
+                summary={buildListSummary(children)}
+                icon={<ListTree className="h-3.5 w-3.5 shrink-0" />}
+              >
+                <ol className="my-0 pl-5">{children}</ol>
+              </CollapsibleMarkdownBlock>
             );
           },
           thead({ children }) {
@@ -118,11 +210,22 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
           },
           th({ children }) {
             return (
-              <th className="px-4 py-2 text-left font-semibold">{children}</th>
+              <th
+                className={cn(
+                  'text-left font-semibold',
+                  isCompact ? 'px-3 py-1.5' : 'px-4 py-2'
+                )}
+              >
+                {children}
+              </th>
             );
           },
           td({ children }) {
-            return <td className="px-4 py-2">{children}</td>;
+            return (
+              <td className={cn(isCompact ? 'px-3 py-1.5' : 'px-4 py-2')}>
+                {children}
+              </td>
+            );
           },
           a({ href, children }) {
             return (
@@ -144,60 +247,89 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   );
 });
 
-const CodeBlock = memo(function CodeBlock({
-  language,
-  value,
-  isDark
+function countListItems(children: React.ReactNode) {
+  return React.Children.toArray(children).filter((child) => {
+    return React.isValidElement(child) && child.type === 'li';
+  }).length;
+}
+
+function buildListSummary(children: React.ReactNode) {
+  const itemCount = countListItems(children);
+  if (itemCount === 0) {
+    return '列表';
+  }
+
+  const firstItem = React.Children.toArray(children).find((child) => {
+    return React.isValidElement(child) && child.type === 'li';
+  });
+  const firstText =
+    buildCompactSummary(
+      React.isValidElement<{ children?: React.ReactNode }>(firstItem)
+        ? getNodeText(firstItem.props.children)
+        : '',
+      20
+    ) || '首项';
+
+  if (itemCount === 1) {
+    return `列表 · ${firstText}`;
+  }
+
+  return `列表 · ${firstText} 等 ${itemCount} 项`;
+}
+
+function getNodeText(node: React.ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node).replace(/\s+/g, ' ').trim();
+  }
+
+  if (Array.isArray(node)) {
+    return node
+      .map((item) => getNodeText(item))
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  if (!React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return '';
+  }
+
+  return getNodeText(node.props.children);
+}
+
+function buildCompactSummary(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length === 0) {
+    return '';
+  }
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function CollapsibleMarkdownBlock({
+  label,
+  summary,
+  icon,
+  children
 }: {
-  language: string;
-  value: string;
-  isDark: boolean;
+  label: string;
+  summary: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
 }) {
-  const [isCopied, setIsCopied] = React.useState(false);
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
-
   return (
-    <div className="relative my-4 flex flex-col overflow-hidden rounded-lg border bg-zinc-950 dark:bg-zinc-900 border-border">
-      <div className="flex items-center justify-between bg-zinc-900 dark:bg-zinc-950 px-4 py-1.5 text-xs text-zinc-400">
-        <span className="font-mono lowercase">{language}</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-zinc-400 hover:text-zinc-100 transition-colors"
-          onClick={() => void copyToClipboard()}
-        >
-          {isCopied ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-          <span className="sr-only">Copy code</span>
-        </Button>
-      </div>
-      <div className="overflow-x-auto p-4 text-sm [&>pre]:!m-0 [&>pre]:!p-0 [&>pre]:!bg-transparent focus-visible:outline-none">
-        <SyntaxHighlighter
-          language={language}
-          style={isDark ? oneDark : oneLight}
-          customStyle={{
-            margin: 0,
-            padding: 0,
-            background: 'transparent',
-            backgroundColor: 'transparent'
-          }}
-          wrapLines={true}
-        >
-          {value}
-        </SyntaxHighlighter>
-      </div>
-    </div>
+    <InlineCollapsibleBlock
+      expandedLabel={label}
+      summary={summary}
+      icon={icon}
+      widthClassName="my-2"
+    >
+      {children}
+    </InlineCollapsibleBlock>
   );
-});
+}

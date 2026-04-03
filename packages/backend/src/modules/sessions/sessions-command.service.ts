@@ -241,7 +241,9 @@ export class SessionsCommandService {
       await this.sessionRuntimeService.sendParsedInput(
         sessionId,
         asPlainObject(lastUserMessage.inputContent),
-        {},
+        lastUserMessage.runtimeConfig
+          ? asPlainObject(lastUserMessage.runtimeConfig)
+          : {},
         {
           reuseLastUserMessage: true
         }
@@ -302,8 +304,9 @@ export class SessionsCommandService {
       'SessionStatus'
     );
 
+    // Already fully deleted — nothing to do
     if (sessionStatus === SessionStatus.Disposed) {
-      return this.sessionsQueryService.getById(sessionId);
+      throw new BadRequestException(`Session ${sessionId} is already disposed`);
     }
 
     if (sessionStatus !== SessionStatus.Disposing) {
@@ -346,29 +349,16 @@ export class SessionsCommandService {
     }
 
     await this.sessionRuntimeService.destroyRuntime(sessionId);
-
-    await this.prisma.agentSession.update({
-      where: { id: sessionId },
-      data: {
-        status: SessionStatus.Disposed,
-        activeAssistantMessageId: null,
-        runnerState: toInputJson({} as Prisma.InputJsonValue)
-      }
-    });
-
-    await this.sessionRuntimeService.emitSessionStatus(
-      sessionId,
-      SessionStatus.Disposed,
-      SessionStatus.Disposing
-    );
     this.sessionRuntimeService.completeEvents(sessionId);
 
-    // Clean up session events — they are no longer needed after dispose
-    await this.prisma.sessionEvent.deleteMany({
-      where: { sessionId }
-    });
-
-    return this.sessionsQueryService.getById(sessionId);
+    // Hard delete the session and all associated data
+    await this.prisma.$transaction([
+      this.prisma.messageToolUse.deleteMany({ where: { sessionId } }),
+      this.prisma.sessionMetric.deleteMany({ where: { sessionId } }),
+      this.prisma.sessionEvent.deleteMany({ where: { sessionId } }),
+      this.prisma.sessionMessage.deleteMany({ where: { sessionId } }),
+      this.prisma.agentSession.delete({ where: { id: sessionId } })
+    ]);
   }
 
   private async withSessionSendLock<T>(
