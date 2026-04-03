@@ -11,3 +11,11 @@ packages/frontend/tsconfig.tsbuildinfo
 AGENTS.md
 docs/design/
 docs/test_dir/
+
+# Playwright outputs
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+e2e.db
+e2e.db-journal
