@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient
+} from '@tanstack/react-query';
 import type { AgentRunnerSummary } from '@agent-workbench/shared';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
@@ -132,7 +137,9 @@ export function AgentRunnerListPage() {
               aria-label={`编辑 ${row.original.name}`}
               title={`编辑 ${row.original.name}`}
               onClick={() =>
-                void navigate(`${agentRunnerConfig.path}/${row.original.id}/edit`)
+                void navigate(
+                  `${agentRunnerConfig.path}/${row.original.id}/edit`
+                )
               }
             >
               <Pencil data-icon="inline-start" />
@@ -178,7 +185,9 @@ export function AgentRunnerListPage() {
             >
               <RefreshCw
                 data-icon="inline-start"
-                className={agentRunnersQuery.isFetching ? 'animate-spin' : undefined}
+                className={
+                  agentRunnersQuery.isFetching ? 'animate-spin' : undefined
+                }
               />
               <span className="hidden sm:inline">刷新</span>
             </Button>
@@ -205,7 +214,9 @@ export function AgentRunnerListPage() {
           emptyTitle={`暂无 ${agentRunnerConfig.pluralLabel}`}
           emptyDescription={agentRunnerConfig.emptyState}
           emptyAction={
-            <Button onClick={() => void navigate(`${agentRunnerConfig.path}/new`)}>
+            <Button
+              onClick={() => void navigate(`${agentRunnerConfig.path}/new`)}
+            >
               <Plus data-icon="inline-start" />
               新建 {agentRunnerConfig.singularLabel}
             </Button>
@@ -215,7 +226,9 @@ export function AgentRunnerListPage() {
               <button
                 type="button"
                 onClick={() =>
-                  void navigate(`${agentRunnerConfig.path}/${agentRunner.id}/edit`)
+                  void navigate(
+                    `${agentRunnerConfig.path}/${agentRunner.id}/edit`
+                  )
                 }
                 className="text-left font-medium text-foreground transition-colors hover:text-primary"
               >
@@ -224,7 +237,10 @@ export function AgentRunnerListPage() {
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>
                   Type:{' '}
-                  {getRunnerTypeName(runnerTypesQuery.data ?? [], agentRunner.type)}
+                  {getRunnerTypeName(
+                    runnerTypesQuery.data ?? [],
+                    agentRunner.type
+                  )}
                 </p>
                 <p>{formatNullableDescription(agentRunner.description)}</p>
               </div>
@@ -237,7 +253,9 @@ export function AgentRunnerListPage() {
                     variant="outline"
                     size="sm"
                     onClick={() =>
-                      void navigate(`${agentRunnerConfig.path}/${agentRunner.id}/edit`)
+                      void navigate(
+                        `${agentRunnerConfig.path}/${agentRunner.id}/edit`
+                      )
                     }
                   >
                     编辑
@@ -273,7 +291,9 @@ export function AgentRunnerListPage() {
         }}
         onConfirm={() => {
           if (pendingDelete) {
-            void deleteMutation.mutateAsync(pendingDelete.id).catch(handleError);
+            void deleteMutation
+              .mutateAsync(pendingDelete.id)
+              .catch(handleError);
           }
         }}
       />

@@ -3,17 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ResourceKind, ResourceRecord } from '@agent-workbench/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import {
-  Controller,
-  useFieldArray,
-  useForm,
-  useWatch
-} from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import {
-  isNotFoundApiError
-} from '@/api/client';
+import { isNotFoundApiError } from '@/api/client';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { getResource, saveResourceByKind } from '@/api/resources';
 import { EditorToolbar } from '@/components/app/EditorToolbar';
@@ -77,7 +70,9 @@ function saveResourcePayload(
     : saveResourceByKind.rules(payload, id);
 }
 
-function toMarkdownFormValues(values: ResourceFormValues): ResourceMarkdownFormValues {
+function toMarkdownFormValues(
+  values: ResourceFormValues
+): ResourceMarkdownFormValues {
   return {
     name: values.name,
     description: values.description ?? '',
@@ -237,14 +232,16 @@ function McpResourceForm({
     control: form.control,
     name: 'envEntries'
   });
-  const commandValue = useWatch({
-    control: form.control,
-    name: 'command'
-  }) ?? '';
-  const argsTextValue = useWatch({
-    control: form.control,
-    name: 'argsText'
-  }) ?? '';
+  const commandValue =
+    useWatch({
+      control: form.control,
+      name: 'command'
+    }) ?? '';
+  const argsTextValue =
+    useWatch({
+      control: form.control,
+      name: 'argsText'
+    }) ?? '';
   const envEntriesValue = useWatch({
     control: form.control,
     name: 'envEntries'
@@ -326,10 +323,7 @@ function McpResourceForm({
             </SurfaceCard>
 
             <SurfaceCard>
-              <FormField
-                label="Args"
-                htmlFor="resource-args"
-              >
+              <FormField label="Args" htmlFor="resource-args">
                 <Textarea
                   id="resource-args"
                   rows={6}
@@ -380,14 +374,20 @@ function McpResourceForm({
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">暂无环境变量。</p>
+                  <p className="text-sm text-muted-foreground">
+                    暂无环境变量。
+                  </p>
                 )}
               </div>
             </SurfaceCard>
           </div>
 
           <SurfaceCard>
-            <CodeEditor value={mcpPreview} onChange={() => undefined} readOnly />
+            <CodeEditor
+              value={mcpPreview}
+              onChange={() => undefined}
+              readOnly
+            />
           </SurfaceCard>
         </div>
       </form>
@@ -420,7 +420,11 @@ export function ResourceEditPage({ kind }: ResourceEditPageProps) {
     }
   }, [handleError, resourceNotFound, resourceQuery.error]);
 
-  const saveMutation = useMutation<ResourceRecord, Error, ResourceMutationPayload>({
+  const saveMutation = useMutation<
+    ResourceRecord,
+    Error,
+    ResourceMutationPayload
+  >({
     mutationFn: (payload) => saveResourcePayload(kind, payload, id),
     onSuccess: async (resource) => {
       await Promise.all([

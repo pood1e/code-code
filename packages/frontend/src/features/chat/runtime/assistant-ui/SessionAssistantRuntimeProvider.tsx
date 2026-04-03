@@ -12,7 +12,11 @@ type SessionAssistantRuntimeProviderProps = PropsWithChildren<{
   onNew: (composerText: string, message: AppendMessage) => Promise<void>;
   onCancel?: () => Promise<void>;
   onReload?: () => Promise<void>;
-  onEdit?: (messageId: string, composerText: string, message: AppendMessage) => Promise<void>;
+  onEdit?: (
+    messageId: string,
+    composerText: string,
+    message: AppendMessage
+  ) => Promise<void>;
 }>;
 
 export function SessionAssistantRuntimeProvider({

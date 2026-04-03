@@ -73,7 +73,9 @@ export function buildStructuredMessagePayload({
   const validationResult = schema.validationSchema.safeParse(normalizedInput);
 
   if (!validationResult.success) {
-    throw new Error(validationResult.error.issues[0]?.message ?? '消息输入校验失败');
+    throw new Error(
+      validationResult.error.issues[0]?.message ?? '消息输入校验失败'
+    );
   }
 
   let finalRuntimeConfig: Record<string, unknown> | undefined = undefined;
@@ -82,9 +84,8 @@ export function buildStructuredMessagePayload({
       runtimeSchema.fields,
       runtimeValues
     );
-    const runtimeValidationResult = runtimeSchema.validationSchema.safeParse(
-      normalizedRuntime
-    );
+    const runtimeValidationResult =
+      runtimeSchema.validationSchema.safeParse(normalizedRuntime);
     if (!runtimeValidationResult.success) {
       throw new Error(
         runtimeValidationResult.error.issues[0]?.message ?? '运行时参数校验失败'
@@ -108,6 +109,8 @@ export function omitPrimaryFieldValue(
   }
 
   return Object.fromEntries(
-    Object.entries(input).filter(([fieldName]) => fieldName !== primaryFieldName)
+    Object.entries(input).filter(
+      ([fieldName]) => fieldName !== primaryFieldName
+    )
   );
 }

@@ -74,22 +74,6 @@ function validateProfileItemsList(
       });
     }
 
-    if (orders.has(order)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Duplicate order: ${order}`,
-        path: [index, 'order']
-      });
-    }
-
-    if (order !== index) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Order must match the array position',
-        path: [index, 'order']
-      });
-    }
-
     resourceIds.add(resourceId);
     orders.add(order);
   });

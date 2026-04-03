@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * API helper to reset/seed test data via backend REST API.
  */
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = (process.env.VITE_API_URL || 'http://localhost:3001') + '/api';
 
 async function apiPost(path: string, body: Record<string, unknown>) {
   const res = await fetch(`${API_BASE}${path}`, {

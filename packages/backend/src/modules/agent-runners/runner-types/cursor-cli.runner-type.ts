@@ -10,7 +10,10 @@ import {
   createCursorParserState,
   type CursorParserState
 } from '../cli/parsers/cursor-cli.parser';
-import type { RawOutputChunk, RunnerSendPayload } from '../runner-type.interface';
+import type {
+  RawOutputChunk,
+  RunnerSendPayload
+} from '../runner-type.interface';
 import type { RunnerContext } from '@agent-workbench/shared';
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
@@ -46,7 +49,9 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
     super(cliSessionRegistry);
   }
 
-  async checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'> {
+  async checkHealth(
+    runnerConfig: unknown
+  ): Promise<'online' | 'offline' | 'unknown'> {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
     return probeCursorCliHealth(config.executorUser);
   }
@@ -54,7 +59,9 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
   async probeContext(runnerConfig: unknown): Promise<RunnerContext> {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
     const command = config.executorUser ? 'sudo' : 'agent';
-    const args = config.executorUser ? ['-u', config.executorUser, '-i', 'agent', '--list-models'] : ['--list-models'];
+    const args = config.executorUser
+      ? ['-u', config.executorUser, '-i', 'agent', '--list-models']
+      : ['--list-models'];
 
     return new Promise((resolve) => {
       execFile(
@@ -96,15 +103,19 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
     payload: RunnerSendPayload
   ): CliProcessOptions {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
-    const sessionConfig = cursorCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
-    const runtimeConfig = cursorCliRuntimeConfigSchema.parse(payload.runtimeConfig);
+    const sessionConfig =
+      cursorCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const runtimeConfig = cursorCliRuntimeConfigSchema.parse(
+      payload.runtimeConfig
+    );
     const input = cursorCliInputSchema.parse(payload.input);
 
     void sessionConfig;
 
     const args: string[] = [
       '-p', // non-interactive print mode
-      '--output-format', 'stream-json',
+      '--output-format',
+      'stream-json',
       '--stream-partial-output',
       '--trust' // required for non-interactive operation
     ];
@@ -171,6 +182,9 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
   }
 
   createParserState(messageId: string): Record<string, unknown> {
-    return createCursorParserState(messageId) as unknown as Record<string, unknown>;
+    return createCursorParserState(messageId) as unknown as Record<
+      string,
+      unknown
+    >;
   }
 }

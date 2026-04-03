@@ -1,8 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import type {
-  AppendMessage,
-  ExternalStoreAdapter
-} from '@assistant-ui/react';
+import type { AppendMessage, ExternalStoreAdapter } from '@assistant-ui/react';
 import { useExternalStoreRuntime } from '@assistant-ui/react';
 import type { SessionStatus } from '@agent-workbench/shared';
 
@@ -22,7 +19,11 @@ type UseSessionAssistantRuntimeOptions = {
   onNew: (composerText: string, message: AppendMessage) => Promise<void>;
   onCancel?: () => Promise<void>;
   onReload?: () => Promise<void>;
-  onEdit?: (messageId: string, composerText: string, message: AppendMessage) => Promise<void>;
+  onEdit?: (
+    messageId: string,
+    composerText: string,
+    message: AppendMessage
+  ) => Promise<void>;
 };
 
 export function useSessionAssistantRuntime({

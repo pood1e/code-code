@@ -40,7 +40,12 @@ const resourceItems = [
 ] as const;
 
 const primaryItems = [
-  { key: 'projects', path: projectConfig.path, label: 'Projects', icon: FolderKanban },
+  {
+    key: 'projects',
+    path: projectConfig.path,
+    label: 'Projects',
+    icon: FolderKanban
+  },
   { key: 'resources', path: '/skills', label: '资源库', icon: Blocks }
 ] as const;
 
@@ -90,7 +95,11 @@ function DesktopSidebar({
             className="shrink-0 text-muted-foreground"
             title={collapsed ? '展开侧栏' : '收起侧栏'}
           >
-            {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+            {collapsed ? (
+              <PanelLeftOpen className="size-4" />
+            ) : (
+              <PanelLeftClose className="size-4" />
+            )}
           </Button>
         </div>
 

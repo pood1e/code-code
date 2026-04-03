@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   profileInputSchema,
   saveProfileInputSchema,
@@ -20,10 +17,7 @@ import {
 } from '../../common/json.utils';
 import { assertResourceIdsExist } from '../../common/resource.utils';
 import { parseSchemaOrThrow } from '../../common/schema.utils';
-import {
-  ProfileMutationDto,
-  SaveProfileDto
-} from '../../dto/profile.dto';
+import { ProfileMutationDto, SaveProfileDto } from '../../dto/profile.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -208,7 +202,11 @@ export class ProfilesService {
   }
 
   private parseProfileInput(dto: ProfileMutationDto) {
-    return parseSchemaOrThrow(profileInputSchema, dto, 'Invalid profile payload');
+    return parseSchemaOrThrow(
+      profileInputSchema,
+      dto,
+      'Invalid profile payload'
+    );
   }
 
   private normalizeProfileItems<
@@ -216,13 +214,13 @@ export class ProfilesService {
       order: number;
     }
   >(items: TItem[]) {
-    return items.map((item, index) => ({
-      ...item,
-      order: index
-    }));
+    return [...items]
+      .sort((a, b) => a.order - b.order)
+      .map((item, index) => ({
+        ...item,
+        order: index
+      }));
   }
-
-
 
   private toSkillResolvedItem(
     resource: {

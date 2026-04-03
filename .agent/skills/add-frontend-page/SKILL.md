@@ -12,7 +12,11 @@ Create a new route-level page under `packages/frontend/src/pages/<domain>/`.
 ### 1. API module (`src/api/<domain>.ts`)
 
 ```ts
-import type { EntitySummary, EntityDetail, CreateEntityInput } from '@agent-workbench/shared';
+import type {
+  EntitySummary,
+  EntityDetail,
+  CreateEntityInput
+} from '@agent-workbench/shared';
 import { apiClient } from './client';
 
 export async function listEntities() {
@@ -52,7 +56,7 @@ import { listEntities, createEntity } from '../../../api/entities';
 export function useEntities() {
   return useQuery({
     queryKey: queryKeys.entities.list(),
-    queryFn: listEntities,
+    queryFn: listEntities
   });
 }
 
@@ -62,7 +66,7 @@ export function useCreateEntityMutation() {
     mutationFn: createEntity,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.entities.all });
-    },
+    }
   });
 }
 ```
@@ -75,9 +79,9 @@ Every page must handle four states:
 export function EntityListPage() {
   const { data, isLoading, error } = useEntities();
 
-  if (isLoading) return <RouteFallback />;          // loading
-  if (error) return <ErrorState error={error} />;    // error
-  if (!data?.length) return <EmptyState />;           // empty
+  if (isLoading) return <RouteFallback />; // loading
+  if (error) return <ErrorState error={error} />; // error
+  if (!data?.length) return <EmptyState />; // empty
 
   return <div>{/* success content */}</div>;
 }
@@ -88,12 +92,19 @@ export function EntityListPage() {
 ```tsx
 const EntityListPage = lazy(() =>
   import('./pages/entities/EntityListPage').then((m) => ({
-    default: m.EntityListPage,
+    default: m.EntityListPage
   }))
 );
 
 // Inside <Routes>
-<Route path="/entities" element={<LazyRoute><EntityListPage /></LazyRoute>} />
+<Route
+  path="/entities"
+  element={
+    <LazyRoute>
+      <EntityListPage />
+    </LazyRoute>
+  }
+/>;
 ```
 
 ### 6. Sidebar navigation
@@ -114,7 +125,9 @@ src/features/<domain>/
 ```ts
 // BAD: server data in useState
 const [items, setItems] = useState([]);
-useEffect(() => { fetchItems().then(setItems); }, []);
+useEffect(() => {
+  fetchItems().then(setItems);
+}, []);
 
 // GOOD: server data via TanStack Query
 const { data: items } = useEntities();

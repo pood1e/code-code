@@ -60,14 +60,19 @@ export function useSessionPageMutations({
     onSuccess: (session) => {
       queryClient.setQueryData(sessionQueryKeys.detail(session.id), session);
       if (projectId) {
-        queryClient.invalidateQueries({
-          queryKey: sessionQueryKeys.list(projectId)
-        }).catch(() => undefined);
+        queryClient
+          .invalidateQueries({
+            queryKey: sessionQueryKeys.list(projectId)
+          })
+          .catch(() => undefined);
       }
     }
   });
 
-  const invalidateSessionThreadState = async (sessionId: string, scopeId: string) => {
+  const invalidateSessionThreadState = async (
+    sessionId: string,
+    scopeId: string
+  ) => {
     clearSessionRuntimeState(sessionId);
 
     await Promise.all([

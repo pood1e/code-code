@@ -21,7 +21,9 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
     await expect(page).toHaveURL(/\/projects/);
 
     // 空状态时用户应看到引导信息和创建按钮
-    await expect(page.getByRole('button', { name: /新建 Project/i })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /新建 Project/i })
+    ).toBeVisible();
   });
 
   test('用户可以通过对话框创建第一个 Project', async ({ page }) => {
@@ -35,8 +37,12 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
     await expect(dialog).toBeVisible();
 
     // 填写必填字段
-    await dialog.getByRole('textbox', { name: 'Name' }).fill('My First Project');
-    await dialog.getByRole('textbox', { name: 'Git URL' }).fill('git@github.com:test/first-project.git');
+    await dialog
+      .getByRole('textbox', { name: 'Name' })
+      .fill('My First Project');
+    await dialog
+      .getByRole('textbox', { name: 'Git URL' })
+      .fill('git@github.com:test/first-project.git');
     await dialog.getByRole('textbox', { name: 'Workspace Path' }).fill('/tmp');
 
     // 点击创建
@@ -44,7 +50,9 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
 
     // 创建成功后对话框关闭，项目应出现在列表中
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('My First Project')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('My First Project')).toBeVisible({
+      timeout: 5000
+    });
   });
 
   test('用户可以创建 Skill 资源', async ({ page }) => {
@@ -78,7 +86,9 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
     await page.getByRole('button', { name: /新建 Rule/i }).click();
     await expect(page).toHaveURL(/\/rules\/new/);
 
-    await page.getByRole('textbox', { name: 'Name' }).fill('Always Cite Sources');
+    await page
+      .getByRole('textbox', { name: 'Name' })
+      .fill('Always Cite Sources');
 
     await page.getByRole('button', { name: /保存/i }).click();
 

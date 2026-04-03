@@ -19,7 +19,10 @@ export default defineConfig({
             return undefined;
           }
 
-          if (id.includes('@uiw/react-codemirror') || id.includes('@codemirror')) {
+          if (
+            id.includes('@uiw/react-codemirror') ||
+            id.includes('@codemirror')
+          ) {
             return 'codemirror';
           }
 
@@ -61,10 +64,10 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: process.env.VITE_PORT ? Number(process.env.VITE_PORT) : 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: process.env.VITE_API_URL || 'http://localhost:3000',
         changeOrigin: true
       }
     }

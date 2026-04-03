@@ -28,7 +28,9 @@ export function FormField({
             {label}
           </Label>
           {description ? (
-            <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {description}
+            </p>
           ) : null}
         </div>
       ) : description ? (

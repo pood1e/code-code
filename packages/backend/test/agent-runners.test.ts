@@ -28,9 +28,10 @@ describe('AgentRunners API', () => {
   describe('GET /api/agent-runner-types - 列表 Runner Types', () => {
     it('应返回已注册的 runner types（含 mock）', async () => {
       const res = await api().get('/api/agent-runner-types');
-      const data = expectSuccess<
-        { id: string; name: string; runnerConfigSchema: object }[]
-      >(res);
+      const data =
+        expectSuccess<
+          { id: string; name: string; runnerConfigSchema: object }[]
+        >(res);
 
       expect(data.length).toBeGreaterThan(0);
       const mockType = data.find((t) => t.id === 'mock');
@@ -159,9 +160,7 @@ describe('AgentRunners API', () => {
     it('不存在的 runner type 返回 400', async () => {
       const res = await api()
         .post('/api/agent-runners')
-        .send(
-          createAgentRunnerPayload({ type: 'nonexistent-type' })
-        );
+        .send(createAgentRunnerPayload({ type: 'nonexistent-type' }));
       expectError(res, 400);
     });
 
@@ -173,7 +172,10 @@ describe('AgentRunners API', () => {
       const res = await api()
         .post('/api/agent-runners')
         .send(
-          createAgentRunnerPayload({ type: 'does-not-exist', runnerConfig: { model: 'x' } })
+          createAgentRunnerPayload({
+            type: 'does-not-exist',
+            runnerConfig: { model: 'x' }
+          })
         );
       expectError(res, 400);
     });
@@ -185,20 +187,16 @@ describe('AgentRunners API', () => {
       const project = await seedProject();
 
       // Create a session referencing this runner
-      await api()
-        .post('/api/sessions')
-        .send({
-          scopeId: project.id,
-          runnerId: runner.id,
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      await api().post('/api/sessions').send({
+        scopeId: project.id,
+        runnerId: runner.id,
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
 
-      const deleteRes = await api().delete(
-        `/api/agent-runners/${runner.id}`
-      );
+      const deleteRes = await api().delete(`/api/agent-runners/${runner.id}`);
       expectError(deleteRes, 400);
     });
   });
@@ -207,15 +205,10 @@ describe('AgentRunners API', () => {
     it('GET/PATCH/DELETE 不存在的 ID 返回 404', async () => {
       expectError(await api().get('/api/agent-runners/nonexistent'), 404);
       expectError(
-        await api()
-          .patch('/api/agent-runners/nonexistent')
-          .send({ name: 'X' }),
+        await api().patch('/api/agent-runners/nonexistent').send({ name: 'X' }),
         404
       );
-      expectError(
-        await api().delete('/api/agent-runners/nonexistent'),
-        404
-      );
+      expectError(await api().delete('/api/agent-runners/nonexistent'), 404);
     });
 
     it('健康检查不存在的 Runner 返回 404', async () => {

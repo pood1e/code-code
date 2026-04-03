@@ -67,7 +67,11 @@ export function parseClaudeLine(
   }
 
   // --- stream_event (Claude uses Anthropic Messages API shape) ---
-  if (topType === 'stream_event' || topType === 'content_block_delta' || topType === 'content_block_start') {
+  if (
+    topType === 'stream_event' ||
+    topType === 'content_block_delta' ||
+    topType === 'content_block_start'
+  ) {
     return parseStreamEvent(parsed, state, now);
   }
 
@@ -81,7 +85,11 @@ export function parseClaudeLine(
     return parseResult(parsed, state, now);
   }
 
-  if (topType === 'message_start' || topType === 'message_delta' || topType === 'message_stop') {
+  if (
+    topType === 'message_start' ||
+    topType === 'message_delta' ||
+    topType === 'message_stop'
+  ) {
     return parseMessageLifecycle(parsed);
   }
 
@@ -144,7 +152,9 @@ function parseStreamEvent(
   }
 
   if (eventType === 'content_block_start') {
-    const contentBlock = event.content_block as Record<string, unknown> | undefined;
+    const contentBlock = event.content_block as
+      | Record<string, unknown>
+      | undefined;
     if (!contentBlock) return [];
 
     const blockType = contentBlock.type as string | undefined;
@@ -172,11 +182,7 @@ function parseStreamEvent(
 
   // Recursively handle nested event structures
   if (event.event && typeof event.event === 'object') {
-    return parseStreamEvent(
-      event.event as Record<string, unknown>,
-      state,
-      now
-    );
+    return parseStreamEvent(event.event as Record<string, unknown>, state, now);
   }
 
   return chunks;
@@ -270,9 +276,7 @@ function parseResult(
 
   // Final result text
   const resultText =
-    typeof parsed.result === 'string'
-      ? parsed.result
-      : state.assistantBuffer;
+    typeof parsed.result === 'string' ? parsed.result : state.assistantBuffer;
 
   chunks.push({
     kind: 'message_result',

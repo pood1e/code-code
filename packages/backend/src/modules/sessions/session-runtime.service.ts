@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import {
   MessageRole,
   MessageStatus,
@@ -58,7 +54,10 @@ export class SessionRuntimeService {
   >();
 
   /** Runner config cache — runner config is immutable during session lifetime. */
-  private readonly runnerCache = new Map<string, Awaited<ReturnType<SessionsQueryService['getRunnerOrThrow']>>>();
+  private readonly runnerCache = new Map<
+    string,
+    Awaited<ReturnType<SessionsQueryService['getRunnerOrThrow']>>
+  >();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -157,7 +156,8 @@ export class SessionRuntimeService {
   }
 
   async getRuntimeIfPresent(sessionId: string) {
-    const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const session =
+      await this.sessionsQueryService.getSessionOrThrow(sessionId);
     const runnerState = asPlainObject(session.runnerState);
     if (Object.keys(runnerState).length === 0) {
       return null;
@@ -184,13 +184,12 @@ export class SessionRuntimeService {
     const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
     let parsedRuntimeConfig = runtimeConfig;
     if (runnerType.runtimeConfigSchema) {
-      const parseResult = runnerType.runtimeConfigSchema.safeParse(runtimeConfig);
+      const parseResult =
+        runnerType.runtimeConfigSchema.safeParse(runtimeConfig);
       if (parseResult.success) {
         parsedRuntimeConfig = parseResult.data as Record<string, unknown>;
       } else {
-        throw new Error(
-          `Invalid runtime config: ${parseResult.error.message}`
-        );
+        throw new Error(`Invalid runtime config: ${parseResult.error.message}`);
       }
     }
 
@@ -224,7 +223,11 @@ export class SessionRuntimeService {
       return assistantMessage.id;
     });
 
-    this.trackActiveSessionState(sessionId, SessionStatus.Running, assistantMessageId);
+    this.trackActiveSessionState(
+      sessionId,
+      SessionStatus.Running,
+      assistantMessageId
+    );
     this.clearThinkingAccumulator(sessionId, assistantMessageId);
     await this.emitSessionStatus(
       sessionId,
@@ -243,11 +246,16 @@ export class SessionRuntimeService {
         throw error;
       }
 
-      await this.handleRecoverableMessageError(runtimeSession, assistantMessageId, {
-        message: error instanceof Error ? error.message : 'Runner failed to send',
-        code: 'RUNNER_SEND_FAILED',
-        recoverable: true
-      });
+      await this.handleRecoverableMessageError(
+        runtimeSession,
+        assistantMessageId,
+        {
+          message:
+            error instanceof Error ? error.message : 'Runner failed to send',
+          code: 'RUNNER_SEND_FAILED',
+          recoverable: true
+        }
+      );
     }
   }
 
@@ -296,7 +304,8 @@ export class SessionRuntimeService {
     const eventId = await this.sessionEventStore.nextEventId(sessionId);
     const thinkingText = this.consumeThinkingAccumulator(sessionId, messageId);
     const outputText = this.readStoredOutputText(sessionId, messageId);
-    const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const freshSession =
+      await this.sessionsQueryService.getSessionOrThrow(sessionId);
     const freshRunnerState = asPlainObject(freshSession.runnerState);
 
     await this.prisma.$transaction([
@@ -368,9 +377,10 @@ export class SessionRuntimeService {
     });
 
     if (!emitErrorState) {
-      const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+      const freshSession =
+        await this.sessionsQueryService.getSessionOrThrow(sessionId);
       const freshRunnerState = asPlainObject(freshSession.runnerState);
-      
+
       await this.prisma.agentSession.update({
         where: { id: sessionId },
         data: {
@@ -382,7 +392,8 @@ export class SessionRuntimeService {
       return;
     }
 
-    const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const freshSession =
+      await this.sessionsQueryService.getSessionOrThrow(sessionId);
     const freshRunnerState = asPlainObject(freshSession.runnerState);
 
     await this.prisma.agentSession.update({
@@ -407,7 +418,9 @@ export class SessionRuntimeService {
 
   clearTransientState(sessionId: string, messageIds?: string[]) {
     const keys =
-      messageIds?.map((messageId) => this.getThinkingAccumulatorKey(sessionId, messageId)) ??
+      messageIds?.map((messageId) =>
+        this.getThinkingAccumulatorKey(sessionId, messageId)
+      ) ??
       Array.from(this.thinkingAccumulators.keys()).filter((key) =>
         key.startsWith(`${sessionId}:`)
       );
@@ -424,8 +437,12 @@ export class SessionRuntimeService {
   }
 
   private async initializeRuntime(sessionId: string) {
-    const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
-    if (castEnum(SessionStatus, session.status, 'SessionStatus') === SessionStatus.Disposed) {
+    const session =
+      await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    if (
+      castEnum(SessionStatus, session.status, 'SessionStatus') ===
+      SessionStatus.Disposed
+    ) {
       throw new BadRequestException('Disposed session cannot be reinitialized');
     }
 
@@ -454,13 +471,14 @@ export class SessionRuntimeService {
         runnerState: toInputJson(runnerState as Prisma.InputJsonValue)
       }
     });
-    const updatedRuntimeSession = await this.buildRunnerSessionRecord(updatedSession);
+    const updatedRuntimeSession =
+      await this.buildRunnerSessionRecord(updatedSession);
 
-    const outputConsumer = this.consumeRunnerOutput(updatedRuntimeSession).finally(
-      () => {
-        this.outputConsumers.delete(sessionId);
-      }
-    );
+    const outputConsumer = this.consumeRunnerOutput(
+      updatedRuntimeSession
+    ).finally(() => {
+      this.outputConsumers.delete(sessionId);
+    });
     this.outputConsumers.set(sessionId, outputConsumer);
 
     return updatedRuntimeSession;
@@ -507,7 +525,9 @@ export class SessionRuntimeService {
     const foundIds = new Set(records.map((r) => r.id));
     const missingIds = skillIds.filter((id) => !foundIds.has(id));
     if (missingIds.length > 0) {
-      this.logger.warn(`Skills not found during materialization: ${missingIds.join(', ')}`);
+      this.logger.warn(
+        `Skills not found during materialization: ${missingIds.join(', ')}`
+      );
     }
     return records;
   }
@@ -524,14 +544,22 @@ export class SessionRuntimeService {
     const foundIds = new Set(records.map((r) => r.id));
     const missingIds = ruleIds.filter((id) => !foundIds.has(id));
     if (missingIds.length > 0) {
-      this.logger.warn(`Rules not found during materialization: ${missingIds.join(', ')}`);
+      this.logger.warn(
+        `Rules not found during materialization: ${missingIds.join(', ')}`
+      );
     }
     return records;
   }
 
   private async resolveMcps(
     mcps: PlatformSessionConfig['mcps']
-  ): Promise<Array<{ name: string; content: McpStdioContent; configOverride?: McpConfigOverride }>> {
+  ): Promise<
+    Array<{
+      name: string;
+      content: McpStdioContent;
+      configOverride?: McpConfigOverride;
+    }>
+  > {
     if (mcps.length === 0) return [];
 
     const mcpIds = mcps.map((m) => m.resourceId);
@@ -543,7 +571,9 @@ export class SessionRuntimeService {
     const recordMap = new Map(records.map((r) => [r.id, r]));
     const missingMcpIds = mcpIds.filter((id) => !recordMap.has(id));
     if (missingMcpIds.length > 0) {
-      this.logger.warn(`MCPs not found during materialization: ${missingMcpIds.join(', ')}`);
+      this.logger.warn(
+        `MCPs not found during materialization: ${missingMcpIds.join(', ')}`
+      );
     }
     return mcps
       .map((m) => {
@@ -563,7 +593,9 @@ export class SessionRuntimeService {
   ): Promise<RunnerSessionRecord> {
     let runner = this.runnerCache.get(session.runnerId);
     if (!runner) {
-      runner = await this.sessionsQueryService.getRunnerOrThrow(session.runnerId);
+      runner = await this.sessionsQueryService.getRunnerOrThrow(
+        session.runnerId
+      );
       this.runnerCache.set(session.runnerId, runner);
     }
 
@@ -604,8 +636,14 @@ export class SessionRuntimeService {
     runtimeSession: RunnerSessionRecord,
     outputError?: unknown
   ) {
-    const session = await this.sessionsQueryService.getSessionOrNull(runtimeSession.id);
-    if (!session || castEnum(SessionStatus, session.status, 'SessionStatus') !== SessionStatus.Running) {
+    const session = await this.sessionsQueryService.getSessionOrNull(
+      runtimeSession.id
+    );
+    if (
+      !session ||
+      castEnum(SessionStatus, session.status, 'SessionStatus') !==
+        SessionStatus.Running
+    ) {
       return;
     }
 
@@ -629,20 +667,27 @@ export class SessionRuntimeService {
       return;
     }
 
-    await this.handleNonRecoverableMessageError(runtimeSession, streamingMessage.id, {
-      message:
-        outputError instanceof Error
-          ? outputError.message
-          : 'Runner output stopped unexpectedly',
-      code:
-        outputError === undefined
-          ? 'RUNNER_OUTPUT_CLOSED'
-          : 'RUNNER_OUTPUT_CRASHED',
-      recoverable: false
-    });
+    await this.handleNonRecoverableMessageError(
+      runtimeSession,
+      streamingMessage.id,
+      {
+        message:
+          outputError instanceof Error
+            ? outputError.message
+            : 'Runner output stopped unexpectedly',
+        code:
+          outputError === undefined
+            ? 'RUNNER_OUTPUT_CLOSED'
+            : 'RUNNER_OUTPUT_CRASHED',
+        recoverable: false
+      }
+    );
   }
 
-  private async handleRunnerChunk(runtimeSession: RunnerSessionRecord, chunk: RawOutputChunk) {
+  private async handleRunnerChunk(
+    runtimeSession: RunnerSessionRecord,
+    chunk: RawOutputChunk
+  ) {
     const sessionId = runtimeSession.id;
     if (!this.shouldAcceptChunk(sessionId, chunk.messageId)) {
       return;
@@ -775,7 +820,9 @@ export class SessionRuntimeService {
         await this.prisma.agentSession.update({
           where: { id: sessionId },
           data: {
-            runnerState: toInputJson(updatedRunnerState as Prisma.InputJsonValue)
+            runnerState: toInputJson(
+              updatedRunnerState as Prisma.InputJsonValue
+            )
           }
         });
 
@@ -796,8 +843,12 @@ export class SessionRuntimeService {
     }
 
     const eventId = await this.sessionEventStore.nextEventId(sessionId);
-    const thinkingText = this.consumeThinkingAccumulator(sessionId, chunk.messageId);
-    const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const thinkingText = this.consumeThinkingAccumulator(
+      sessionId,
+      chunk.messageId
+    );
+    const freshSession =
+      await this.sessionsQueryService.getSessionOrThrow(sessionId);
     const freshRunnerState = asPlainObject(freshSession.runnerState);
 
     await this.prisma.$transaction([
@@ -854,7 +905,10 @@ export class SessionRuntimeService {
     status: string,
     activeAssistantMessageId: string | null
   ) {
-    this.activeSessionState.set(sessionId, { status, activeAssistantMessageId });
+    this.activeSessionState.set(sessionId, {
+      status,
+      activeAssistantMessageId
+    });
   }
 
   private clearActiveSessionState(sessionId: string) {

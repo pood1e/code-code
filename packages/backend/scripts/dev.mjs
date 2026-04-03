@@ -158,10 +158,18 @@ async function restartServer() {
 // ─── Main ────────────────────────────────────────────────────────────────
 
 async function main() {
-  const usingDefaultDb = process.env.DATABASE_URL === defaultDatabaseUrl;
-  const defaultDatabasePath = path.resolve(packageDir, 'prisma/dev.db');
+  const isLocalSqlite = process.env.DATABASE_URL.startsWith('file:');
+  const databaseFileName = process.env.DATABASE_URL.replace(
+    'file:./',
+    ''
+  ).replace('file:', '');
+  const currentDatabasePath = path.resolve(
+    packageDir,
+    'prisma',
+    databaseFileName
+  );
   const shouldSeed =
-    usingDefaultDb && (await getFileSize(defaultDatabasePath)) === 0;
+    isLocalSqlite && (await getFileSize(currentDatabasePath)) === 0;
 
   if (await isPortInUse(port)) {
     console.error(
@@ -170,7 +178,7 @@ async function main() {
     process.exit(1);
   }
 
-  if (usingDefaultDb) {
+  if (isLocalSqlite) {
     console.info('backend dev: ensuring local sqlite schema');
     await run('pnpm', [
       'prisma',

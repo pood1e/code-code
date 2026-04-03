@@ -9,10 +9,12 @@ import { SkillMutationDto } from '../../dto/resource.dto';
 @Injectable()
 export class SkillsService {
   private readonly prisma: PrismaService;
-  private readonly resourceCrud: ReturnType<typeof createResourceCrudHandlers<
-    SkillInput,
-    NonNullable<Awaited<ReturnType<PrismaService['skill']['findUnique']>>>
-  >>;
+  private readonly resourceCrud: ReturnType<
+    typeof createResourceCrudHandlers<
+      SkillInput,
+      NonNullable<Awaited<ReturnType<PrismaService['skill']['findUnique']>>>
+    >
+  >;
 
   constructor(prisma: PrismaService) {
     this.prisma = prisma;

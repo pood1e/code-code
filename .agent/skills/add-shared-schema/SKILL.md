@@ -47,7 +47,7 @@ import { z } from 'zod';
 export const createEntityInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
   description: z.string().trim().max(500).nullable().optional(),
-  content: z.string().min(1),
+  content: z.string().min(1)
 });
 
 export const updateEntityInputSchema = createEntityInputSchema.partial();
@@ -62,12 +62,12 @@ export * from './schemas/<entity>.schema';
 
 ## Naming Suffixes
 
-| Suffix | Usage |
-|--------|-------|
+| Suffix    | Usage                             |
+| --------- | --------------------------------- |
 | `Summary` | List/table response (lightweight) |
-| `Detail` | Full entity response |
-| `Input` | Mutation payload |
-| `Chunk` | Streaming event payload |
+| `Detail`  | Full entity response              |
+| `Input`   | Mutation payload                  |
+| `Chunk`   | Streaming event payload           |
 
 ## Enums
 
@@ -75,7 +75,10 @@ Define in types file, create Zod schema with `z.nativeEnum()`:
 
 ```ts
 // types/<entity>.ts
-export enum EntityStatus { Active = 'active', Inactive = 'inactive' }
+export enum EntityStatus {
+  Active = 'active',
+  Inactive = 'inactive'
+}
 
 // schemas/<entity>.schema.ts
 export const entityStatusSchema = z.nativeEnum(EntityStatus);

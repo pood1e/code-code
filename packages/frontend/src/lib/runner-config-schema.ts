@@ -1,4 +1,7 @@
-import type { SchemaDescriptor, SchemaFieldDescriptor } from '@agent-workbench/shared';
+import type {
+  SchemaDescriptor,
+  SchemaFieldDescriptor
+} from '@agent-workbench/shared';
 import { z } from 'zod';
 
 // Re-export SchemaFieldDescriptor as RunnerConfigField for backward compatibility
@@ -22,17 +25,21 @@ function buildFieldSchema(field: RunnerConfigField) {
     const values = field.enumOptions?.map((option) => option.value) ?? [];
 
     if (values.length > 0 && typeof values[0] === 'number') {
-      const schema = z.number().refine(
-        (value) => values.includes(value),
-        `${field.label} 不在允许范围内`
-      );
+      const schema = z
+        .number()
+        .refine(
+          (value) => values.includes(value),
+          `${field.label} 不在允许范围内`
+        );
       return field.required ? schema : schema.optional();
     }
 
-    const schema = z.string().refine(
-      (value) => values.includes(value),
-      `${field.label} 不在允许范围内`
-    );
+    const schema = z
+      .string()
+      .refine(
+        (value) => values.includes(value),
+        `${field.label} 不在允许范围内`
+      );
     return field.required ? schema : schema.optional();
   }
 
@@ -89,7 +96,10 @@ export function parseRunnerConfigSchema(
   };
 }
 
-function normalizeRunnerConfigValue(field: RunnerConfigField, rawValue: unknown) {
+function normalizeRunnerConfigValue(
+  field: RunnerConfigField,
+  rawValue: unknown
+) {
   if (field.kind === 'boolean') {
     if (typeof rawValue === 'boolean') {
       return rawValue;
@@ -170,7 +180,10 @@ export function buildRunnerConfigInitialValues(
 
   for (const field of fields) {
     if (source && field.name in source) {
-      values[field.name] = normalizeRunnerConfigValue(field, source[field.name]);
+      values[field.name] = normalizeRunnerConfigValue(
+        field,
+        source[field.name]
+      );
       continue;
     }
 
@@ -187,7 +200,10 @@ export function normalizeRunnerConfigValues(
   const normalizedValues: Record<string, unknown> = {};
 
   for (const field of fields) {
-    const normalizedValue = normalizeRunnerConfigValue(field, values[field.name]);
+    const normalizedValue = normalizeRunnerConfigValue(
+      field,
+      values[field.name]
+    );
     if (normalizedValue !== undefined) {
       normalizedValues[field.name] = normalizedValue;
     }

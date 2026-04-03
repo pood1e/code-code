@@ -18,11 +18,17 @@ export class RunnerTypeRegistry implements OnModuleInit {
       const instance = wrapper.instance;
       if (!instance || !wrapper.metatype) continue;
 
-      const isRunnerType = Reflect.getMetadata(RUNNER_TYPE_METADATA, wrapper.metatype);
+      const isRunnerType = Reflect.getMetadata(
+        RUNNER_TYPE_METADATA,
+        wrapper.metatype
+      );
       if (!isRunnerType) continue;
 
       const runnerType = instance as RunnerType;
-      if (typeof runnerType.id === 'string' && typeof runnerType.name === 'string') {
+      if (
+        typeof runnerType.id === 'string' &&
+        typeof runnerType.name === 'string'
+      ) {
         this.register(runnerType);
       }
     }
@@ -46,7 +52,9 @@ export class RunnerTypeRegistry implements OnModuleInit {
       name: runnerType.name,
       capabilities: runnerType.capabilities,
       runnerConfigSchema: zodToSchemaDescriptor(runnerType.runnerConfigSchema),
-      runnerSessionConfigSchema: zodToSchemaDescriptor(runnerType.runnerSessionConfigSchema),
+      runnerSessionConfigSchema: zodToSchemaDescriptor(
+        runnerType.runnerSessionConfigSchema
+      ),
       inputSchema: zodToSchemaDescriptor(runnerType.inputSchema),
       taskConfigSchema: zodToSchemaDescriptor(runnerType.inputSchema),
       runtimeConfigSchema: zodToSchemaDescriptor(runnerType.runtimeConfigSchema)

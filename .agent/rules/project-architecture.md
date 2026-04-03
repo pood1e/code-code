@@ -6,12 +6,12 @@ Agent Workbench is a personal full-stack TypeScript monorepo for managing agent 
 
 ## Tech Stack
 
-| Layer | Technologies |
-|-------|-------------|
+| Layer    | Technologies                                                                                                                                                                           |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Frontend | React 19, Vite, TypeScript, shadcn/ui, Tailwind CSS, React Hook Form, Zod, Zustand, TanStack Query, TanStack Table, axios, CodeMirror 6, React Router, @dnd-kit/sortable, assistant-ui |
-| Backend | NestJS 11, Prisma, SQLite, class-validator, class-transformer, js-yaml, @nestjs/swagger, rxjs (SSE) |
-| Shared | TypeScript types, Zod schemas, enums, constants, pure functions |
-| Tooling | pnpm workspace, ESLint, Prettier |
+| Backend  | NestJS 11, Prisma, SQLite, class-validator, class-transformer, js-yaml, @nestjs/swagger, rxjs (SSE)                                                                                    |
+| Shared   | TypeScript types, Zod schemas, enums, constants, pure functions                                                                                                                        |
+| Tooling  | pnpm workspace, ESLint, Prettier                                                                                                                                                       |
 
 ## Directory Map
 
@@ -46,15 +46,15 @@ packages/
 
 Each module lives in `packages/backend/src/modules/<name>/` following `controller → service → dto`:
 
-| Module | Responsibility |
-|--------|---------------|
-| `skills` | Skill CRUD — Markdown content resources |
-| `mcps` | MCP server config CRUD — JSON stdio protocol configs |
-| `rules` | Rule CRUD — Markdown content resources |
-| `profiles` | Profile composition — ordered Skill/MCP/Rule references with configOverride |
-| `projects` | Project CRUD — gitUrl (SSH), workspacePath (validated against filesystem) |
-| `agent-runners` | RunnerType registry, AgentRunner CRUD, health checking, context probing |
-| `sessions` | Session lifecycle, message persistence, SSE event streaming, CLI runner orchestration |
+| Module          | Responsibility                                                                        |
+| --------------- | ------------------------------------------------------------------------------------- |
+| `skills`        | Skill CRUD — Markdown content resources                                               |
+| `mcps`          | MCP server config CRUD — JSON stdio protocol configs                                  |
+| `rules`         | Rule CRUD — Markdown content resources                                                |
+| `profiles`      | Profile composition — ordered Skill/MCP/Rule references with configOverride           |
+| `projects`      | Project CRUD — gitUrl (SSH), workspacePath (validated against filesystem)             |
+| `agent-runners` | RunnerType registry, AgentRunner CRUD, health checking, context probing               |
+| `sessions`      | Session lifecycle, message persistence, SSE event streaming, CLI runner orchestration |
 
 The `sessions` module is split into: `sessions-query.service`, `sessions-command.service`, `session-runtime.service`.
 
@@ -83,13 +83,13 @@ Runners are registered via `@RunnerType()` decorator → `RunnerTypeRegistry`.
 
 **Config layers:**
 
-| Layer | Name | Timing | Example |
-|-------|------|--------|---------|
-| L1 | `runnerConfig` | Runner registration | model, baseUrl |
-| L2a | `platformSessionConfig` | Session creation (platform-owned) | cwd, skillIds, ruleIds, mcps |
-| L2b | `runnerSessionConfig` | Session creation (runner-specific) | maxTurns, permissionMode |
-| L3 | `input` | Each message send | prompt text |
-| L4 | `runtimeConfig` | Anytime during session | model override |
+| Layer | Name                    | Timing                             | Example                      |
+| ----- | ----------------------- | ---------------------------------- | ---------------------------- |
+| L1    | `runnerConfig`          | Runner registration                | model, baseUrl               |
+| L2a   | `platformSessionConfig` | Session creation (platform-owned)  | cwd, skillIds, ruleIds, mcps |
+| L2b   | `runnerSessionConfig`   | Session creation (runner-specific) | maxTurns, permissionMode     |
+| L3    | `input`                 | Each message send                  | prompt text                  |
+| L4    | `runtimeConfig`         | Anytime during session             | model override               |
 
 **Inheritance chain:** `RunnerType interface` → `CliRunnerBase` (process management, JSONL parsing, health probes) → concrete runners (`claude-code`, `cursor-cli`, `qwen-cli`, `mock`).
 
@@ -101,12 +101,12 @@ Backend converts Zod schemas → `SchemaDescriptor` (flat field metadata) via `z
 
 ## Frontend State
 
-| Concern | Tool | Location |
-|---------|------|----------|
-| UI state | Zustand | `store/ui-store.ts`, `store/project-store.ts` |
-| Server data | TanStack Query | hooks in `features/*/hooks/` via `api/*.ts` |
-| Chat streaming | Zustand | `store/session-runtime-store.ts` |
-| Form state | React Hook Form + Zod | per-component |
+| Concern        | Tool                  | Location                                      |
+| -------------- | --------------------- | --------------------------------------------- |
+| UI state       | Zustand               | `store/ui-store.ts`, `store/project-store.ts` |
+| Server data    | TanStack Query        | hooks in `features/*/hooks/` via `api/*.ts`   |
+| Chat streaming | Zustand               | `store/session-runtime-store.ts`              |
+| Form state     | React Hook Form + Zod | per-component                                 |
 
 Query keys follow: `queryKeys.{domain}.all` (invalidation root), `.list(...)`, `.detail(id)`.
 

@@ -38,7 +38,9 @@ export type AsyncChunkQueueItem = RawOutputChunk;
  */
 export class AsyncChunkQueue implements AsyncIterable<RawOutputChunk> {
   private readonly values: RawOutputChunk[] = [];
-  private readonly resolvers: Array<(result: IteratorResult<RawOutputChunk>) => void> = [];
+  private readonly resolvers: Array<
+    (result: IteratorResult<RawOutputChunk>) => void
+  > = [];
   private closed = false;
 
   push(value: RawOutputChunk) {
@@ -81,9 +83,9 @@ export class AsyncChunkQueue implements AsyncIterable<RawOutputChunk> {
       },
       return: () => {
         this.close();
-        return Promise.resolve({ 
-          value: undefined as unknown as RawOutputChunk, 
-          done: true 
+        return Promise.resolve({
+          value: undefined as unknown as RawOutputChunk,
+          done: true
         });
       }
     };
@@ -100,7 +102,10 @@ export type CliSessionHandle = {
   cancelled: boolean;
 };
 
-export function getCliSessionHandle(session: RunnerSessionRecord, registry: CliSessionRegistry): CliSessionHandle {
+export function getCliSessionHandle(
+  session: RunnerSessionRecord,
+  registry: CliSessionRegistry
+): CliSessionHandle {
   const handleId = session.id;
   let handle = registry.get(handleId);
   if (!handle) {
@@ -115,7 +120,10 @@ export function getCliSessionHandle(session: RunnerSessionRecord, registry: CliS
   return handle;
 }
 
-export function removeCliSessionHandle(session: RunnerSessionRecord, registry: CliSessionRegistry): void {
+export function removeCliSessionHandle(
+  session: RunnerSessionRecord,
+  registry: CliSessionRegistry
+): void {
   registry.remove(session.id);
 }
 
@@ -126,7 +134,11 @@ export function removeCliSessionHandle(session: RunnerSessionRecord, registry: C
 export type ResolvedResources = {
   skills: Array<{ name: string; content: string }>;
   rules: Array<{ name: string; content: string }>;
-  mcps: Array<{ name: string; content: import('@agent-workbench/shared').McpStdioContent; configOverride?: import('@agent-workbench/shared').McpConfigOverride }>;
+  mcps: Array<{
+    name: string;
+    content: import('@agent-workbench/shared').McpStdioContent;
+    configOverride?: import('@agent-workbench/shared').McpConfigOverride;
+  }>;
 };
 
 /**
@@ -149,7 +161,9 @@ export abstract class CliRunnerTypeBase implements RunnerType {
 
   constructor(protected readonly cliSessionRegistry: CliSessionRegistry) {}
 
-  abstract checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
+  abstract checkHealth(
+    runnerConfig: unknown
+  ): Promise<'online' | 'offline' | 'unknown'>;
 
   probeContext?(runnerConfig: unknown): Promise<RunnerContext>;
 
@@ -179,7 +193,7 @@ export abstract class CliRunnerTypeBase implements RunnerType {
     void _runnerConfig;
     void _platformSessionConfig;
     void _runnerSessionConfig;
-    
+
     const state: CliRunnerState = {
       contextDir: null,
       mcpConfigPath: null,
@@ -241,12 +255,16 @@ export abstract class CliRunnerTypeBase implements RunnerType {
 
       try {
         const chunks = this.parseLine(line, payload.messageId, parserState);
-        
-        // Eagerly update CLI session ID if extracted, so it's available 
+
+        // Eagerly update CLI session ID if extracted, so it's available
         // before the chunks are processed by the runtime.
         if (this.extractSessionId) {
           const cliSessionId = this.extractSessionId(parserState);
-          if (cliSessionId && (session.runnerState as CliRunnerState).cliSessionId !== cliSessionId) {
+          if (
+            cliSessionId &&
+            (session.runnerState as CliRunnerState).cliSessionId !==
+              cliSessionId
+          ) {
             (session.runnerState as CliRunnerState).cliSessionId = cliSessionId;
             handle.queue.push({
               kind: 'state_update',

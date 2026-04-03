@@ -28,7 +28,11 @@ export class SessionMapper {
       scopeId: session.scopeId,
       runnerId: session.runnerId,
       runnerType: session.runnerType,
-      status: castEnum(SessionStatus, session.status, 'SessionStatus') as SessionSummary['status'],
+      status: castEnum(
+        SessionStatus,
+        session.status,
+        'SessionStatus'
+      ) as SessionSummary['status'],
       lastEventId: session.lastEventId,
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString()
@@ -56,7 +60,11 @@ export class SessionMapper {
     return {
       id: message.id,
       sessionId: message.sessionId,
-      role: castEnum(MessageRole, message.role, 'MessageRole') as SessionMessageDetail['role'],
+      role: castEnum(
+        MessageRole,
+        message.role,
+        'MessageRole'
+      ) as SessionMessageDetail['role'],
       status: castEnum(MessageStatus, message.status, 'MessageStatus'),
       inputContent: message.inputContent
         ? asPlainObject(message.inputContent)

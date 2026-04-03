@@ -1,7 +1,11 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Logger } from '@nestjs/common';
-import type { PlatformSessionConfig, McpStdioContent, McpConfigOverride } from '@agent-workbench/shared';
+import type {
+  PlatformSessionConfig,
+  McpStdioContent,
+  McpConfigOverride
+} from '@agent-workbench/shared';
 
 const logger = new Logger('ContextMaterializer');
 
@@ -14,7 +18,11 @@ export type MaterializeInput = {
   platformConfig: PlatformSessionConfig;
   skills: Array<{ name: string; content: string }>;
   rules: Array<{ name: string; content: string }>;
-  mcps: Array<{ name: string; content: McpStdioContent; configOverride?: McpConfigOverride }>;
+  mcps: Array<{
+    name: string;
+    content: McpStdioContent;
+    configOverride?: McpConfigOverride;
+  }>;
 };
 
 export type MaterializeResult = {
@@ -81,7 +89,13 @@ export async function materializeContext(
   // --- MCP ---
   let mcpConfigPath: string | null = null;
   if (mcps.length > 0) {
-    mcpConfigPath = await writeMcpConfig(target, contextDir, configBase, layout, mcps);
+    mcpConfigPath = await writeMcpConfig(
+      target,
+      contextDir,
+      configBase,
+      layout,
+      mcps
+    );
   }
 
   // --- Rules ---
@@ -234,18 +248,16 @@ async function writeSkills(
     const safeName = sanitizeFileName(skill.name);
     const skillDir = path.join(skillsDir, safeName);
     await fs.mkdir(skillDir, { recursive: true });
-    await fs.writeFile(
-      path.join(skillDir, 'SKILL.md'),
-      skill.content,
-      'utf-8'
-    );
+    await fs.writeFile(path.join(skillDir, 'SKILL.md'), skill.content, 'utf-8');
   }
 }
 
 function sanitizeFileName(name: string): string {
-  return name
-    .replace(/[^a-zA-Z0-9_\-\s]/g, '')
-    .replace(/\s+/g, '-')
-    .toLowerCase()
-    .slice(0, 64) || 'unnamed';
+  return (
+    name
+      .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+      .replace(/\s+/g, '-')
+      .toLowerCase()
+      .slice(0, 64) || 'unnamed'
+  );
 }

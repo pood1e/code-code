@@ -10,8 +10,14 @@ import { cleanupTestData, apiPost } from './helpers';
 test.describe('日常资源管理 — CRUD 操作', () => {
   test.beforeAll(async () => {
     await cleanupTestData();
-    await apiPost('/skills', { name: 'Seed Skill', content: 'Skill content for testing' });
-    await apiPost('/rules', { name: 'Seed Rule', content: 'Rule content for testing' });
+    await apiPost('/skills', {
+      name: 'Seed Skill',
+      content: 'Skill content for testing'
+    });
+    await apiPost('/rules', {
+      name: 'Seed Rule',
+      content: 'Rule content for testing'
+    });
     await apiPost('/mcps', {
       name: 'Seed MCP',
       content: { type: 'stdio', command: 'echo', args: ['hello'] }
@@ -34,7 +40,9 @@ test.describe('日常资源管理 — CRUD 操作', () => {
     // 应跳转到编辑页
     await expect(page).toHaveURL(/\/skills\/[^/]+\/edit/);
     // 编辑页应展示 Name 输入框，且值为 Seed Skill
-    await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Seed Skill');
+    await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Seed Skill'
+    );
   });
 
   test('编辑 Skill 名称后保存应跳回列表并展示新名称', async ({ page }) => {
@@ -105,8 +113,14 @@ test.describe('Profile 聚合管理', () => {
   test.beforeAll(async () => {
     await cleanupTestData();
 
-    const skill = await apiPost('/skills', { name: 'Profile Skill', content: 'skill content' });
-    const rule = await apiPost('/rules', { name: 'Profile Rule', content: 'rule content' });
+    const skill = await apiPost('/skills', {
+      name: 'Profile Skill',
+      content: 'skill content'
+    });
+    const rule = await apiPost('/rules', {
+      name: 'Profile Rule',
+      content: 'rule content'
+    });
     const mcp = await apiPost('/mcps', {
       name: 'Profile MCP',
       content: { type: 'stdio', command: 'node', args: ['server.js'] }
@@ -148,9 +162,14 @@ test.describe('Profile 聚合管理', () => {
     await expect(page.getByText('Profile Rule')).toBeVisible();
   });
 
-  test('删除 Profile 中的资源后，资源不应在 Profile 中显示', async ({ page }) => {
+  test('删除 Profile 中的资源后，资源不应在 Profile 中显示', async ({
+    page
+  }) => {
     const profile = await apiPost('/profiles', { name: 'Removal Test' });
-    const skill = await apiPost('/skills', { name: 'Removable Skill', content: 'content' });
+    const skill = await apiPost('/skills', {
+      name: 'Removable Skill',
+      content: 'content'
+    });
     await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

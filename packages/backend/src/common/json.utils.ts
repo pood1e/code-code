@@ -38,4 +38,3 @@ export function castEnum<T extends string>(
   }
   throw new Error(`Invalid ${label}: "${raw}"`);
 }
-

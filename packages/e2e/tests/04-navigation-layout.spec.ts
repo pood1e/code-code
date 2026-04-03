@@ -23,7 +23,9 @@ test.describe('全局导航结构', () => {
     const sidebar = page.locator('aside, [role="complementary"]').first();
     const subItems = ['Skills', 'MCPs', 'Rules', 'Profiles', 'Runners'];
     for (const item of subItems) {
-      await expect(sidebar.getByRole('button', { name: item, exact: true })).toBeVisible();
+      await expect(
+        sidebar.getByRole('button', { name: item, exact: true })
+      ).toBeVisible();
     }
   });
 
@@ -38,7 +40,9 @@ test.describe('全局导航结构', () => {
     await sidebar.getByRole('button', { name: 'MCPs', exact: true }).click();
     await expect(page).toHaveURL(/\/mcps/);
 
-    await sidebar.getByRole('button', { name: 'Profiles', exact: true }).click();
+    await sidebar
+      .getByRole('button', { name: 'Profiles', exact: true })
+      .click();
     await expect(page).toHaveURL(/\/profiles/);
 
     await sidebar.getByRole('button', { name: 'Runners', exact: true }).click();
@@ -58,7 +62,14 @@ test.describe('全局导航结构', () => {
 
 test.describe('页面加载', () => {
   test('每个主要页面应在 5 秒内完成加载', async ({ page }) => {
-    const routes = ['/projects', '/skills', '/rules', '/mcps', '/profiles', '/agent-runners'];
+    const routes = [
+      '/projects',
+      '/skills',
+      '/rules',
+      '/mcps',
+      '/profiles',
+      '/agent-runners'
+    ];
 
     for (const route of routes) {
       const start = Date.now();
@@ -85,7 +96,10 @@ test.describe('资源列表页通用行为', () => {
     await fetch('http://localhost:3000/api/skills', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Nav Test Skill', content: 'content for nav test' })
+      body: JSON.stringify({
+        name: 'Nav Test Skill',
+        content: 'content for nav test'
+      })
     });
   });
 
@@ -93,7 +107,9 @@ test.describe('资源列表页通用行为', () => {
     await page.goto('/skills');
 
     await expect(page.getByPlaceholder(/按名称搜索/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /新建 Skill/i })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /新建 Skill/i })
+    ).toBeVisible();
   });
 
   test('MCPs 列表页应有搜索框和新建按钮', async ({ page }) => {
@@ -107,7 +123,9 @@ test.describe('资源列表页通用行为', () => {
     await page.goto('/rules');
 
     await expect(page.getByPlaceholder(/按名称搜索/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /新建 Rule/i })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /新建 Rule/i })
+    ).toBeVisible();
   });
 
   test('每个列表项应有编辑和删除操作', async ({ page }) => {
@@ -133,13 +151,17 @@ test.describe('删除保护', () => {
     await page.goto('/skills');
 
     // 确保有可删除的项
-    await expect(page.getByRole('button', { name: /删除/i }).first()).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /删除/i }).first()
+    ).toBeVisible();
 
     // 点击第一个删除按钮
     await page.getByRole('button', { name: /删除/i }).first().click();
 
     // 用户应看到确认对话框，防止误删
-    const confirmDialog = page.getByRole('alertdialog').or(page.getByRole('dialog'));
+    const confirmDialog = page
+      .getByRole('alertdialog')
+      .or(page.getByRole('dialog'));
     await expect(confirmDialog).toBeVisible();
   });
 });

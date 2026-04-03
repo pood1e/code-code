@@ -34,28 +34,24 @@ describe('跨模块依赖测试', () => {
       const runner = await seedAgentRunner();
 
       // Create two sessions under this project
-      const session1Res = await api()
-        .post('/api/sessions')
-        .send({
-          scopeId: project.id,
-          runnerId: runner.id,
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      const session1Res = await api().post('/api/sessions').send({
+        scopeId: project.id,
+        runnerId: runner.id,
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
       const session1 = expectSuccess<{ id: string }>(session1Res, 201);
 
-      const session2Res = await api()
-        .post('/api/sessions')
-        .send({
-          scopeId: project.id,
-          runnerId: runner.id,
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      const session2Res = await api().post('/api/sessions').send({
+        scopeId: project.id,
+        runnerId: runner.id,
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
       const session2 = expectSuccess<{ id: string }>(session2Res, 201);
 
       // Delete the project
@@ -86,7 +82,9 @@ describe('跨模块依赖测试', () => {
       const res = await api().delete(`/api/skills/${skill.id}`);
       const error = expectError(res, 409);
 
-      const data = error.data as { referencedBy: { id: string; name: string }[] };
+      const data = error.data as {
+        referencedBy: { id: string; name: string }[];
+      };
       expect(data.referencedBy).toHaveLength(1);
       expect(data.referencedBy[0].name).toBe('Using Profile');
     });
@@ -170,16 +168,14 @@ describe('跨模块依赖测试', () => {
       const project = await seedProject();
       const runner = await seedAgentRunner();
 
-      await api()
-        .post('/api/sessions')
-        .send({
-          scopeId: project.id,
-          runnerId: runner.id,
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      await api().post('/api/sessions').send({
+        scopeId: project.id,
+        runnerId: runner.id,
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
 
       const deleteRes = await api().delete(`/api/agent-runners/${runner.id}`);
       expectError(deleteRes, 400);
@@ -192,16 +188,14 @@ describe('跨模块依赖测试', () => {
       const project = await seedProject();
       const runner = await seedAgentRunner();
 
-      await api()
-        .post('/api/sessions')
-        .send({
-          scopeId: project.id,
-          runnerId: runner.id,
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      await api().post('/api/sessions').send({
+        scopeId: project.id,
+        runnerId: runner.id,
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
 
       // Delete project (cascades sessions)
       expectSuccess(await api().delete(`/api/projects/${project.id}`));
