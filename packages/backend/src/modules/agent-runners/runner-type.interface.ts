@@ -1,5 +1,5 @@
 import type { ZodTypeAny } from 'zod';
-import type { RunnerTypeMeta, PlatformSessionConfig } from '@agent-workbench/shared';
+import type { RunnerTypeMeta, PlatformSessionConfig, RunnerContext } from '@agent-workbench/shared';
 import type { MaterializerTarget } from './cli/context-materializer';
 
 export type RunnerSessionRecord = {
@@ -24,7 +24,8 @@ export type RunnerOutputChunkKind =
   | 'message_result'
   | 'tool_use'
   | 'usage'
-  | 'error';
+  | 'error'
+  | 'state_update';
 
 export type RawOutputChunk =
   | {
@@ -89,6 +90,12 @@ export type RawOutputChunk =
         code: string;
         recoverable: boolean;
       };
+    }
+  | {
+      kind: 'state_update';
+      messageId: string;
+      timestampMs: number;
+      data: Record<string, unknown>;
     };
 
 export interface RunnerType extends RunnerTypeMeta {
@@ -104,6 +111,7 @@ export interface RunnerType extends RunnerTypeMeta {
   materializerTarget?: MaterializerTarget;
 
   checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
+  probeContext?(runnerConfig: unknown): Promise<RunnerContext>;
   createSession(
     sessionId: string,
     runnerConfig: unknown,

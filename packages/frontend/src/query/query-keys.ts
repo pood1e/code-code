@@ -4,6 +4,8 @@ function normalizeSearchValue(value?: string) {
   return value?.trim() ?? '';
 }
 
+export const NOOP_QUERY_KEY = ['__noop__'] as const;
+
 export const queryKeys = {
   projects: {
     all: ['projects'] as const,
@@ -25,7 +27,8 @@ export const queryKeys = {
     all: ['agent-runners'] as const,
     list: (searchValue?: string) =>
       ['agent-runners', 'list', normalizeSearchValue(searchValue)] as const,
-    detail: (id: string) => ['agent-runners', 'detail', id] as const
+    detail: (id: string) => ['agent-runners', 'detail', id] as const,
+    context: (id: string) => ['agent-runners', 'context', id] as const
   },
   resources: {
     all: ['resources'] as const,

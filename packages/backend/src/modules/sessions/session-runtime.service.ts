@@ -20,6 +20,7 @@ import type { Prisma } from '@prisma/client';
 
 import {
   asPlainObject,
+  castEnum,
   toInputJson,
   toOptionalInputJson
 } from '../../common/json.utils';
@@ -48,6 +49,16 @@ export class SessionRuntimeService {
   >();
   private readonly outputConsumers = new Map<string, Promise<void>>();
   private readonly thinkingAccumulators = new Map<string, string>();
+  private readonly outputAccumulators = new Map<string, string>();
+
+  /** In-memory cache for shouldAcceptChunk — avoids per-chunk DB query. */
+  private readonly activeSessionState = new Map<
+    string,
+    { status: string; activeAssistantMessageId: string | null }
+  >();
+
+  /** Runner config cache — runner config is immutable during session lifetime. */
+  private readonly runnerCache = new Map<string, Awaited<ReturnType<SessionsQueryService['getRunnerOrThrow']>>>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -165,9 +176,10 @@ export class SessionRuntimeService {
     }
   ) {
     const runtimeSession = await this.ensureRuntime(sessionId);
-    const previousStatus = (
+    const rawStatus = (
       await this.sessionsQueryService.getSessionOrThrow(sessionId)
-    ).status as SessionStatus;
+    ).status;
+    const previousStatus = castEnum(SessionStatus, rawStatus, 'SessionStatus');
 
     const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
     let parsedRuntimeConfig = runtimeConfig;
@@ -212,6 +224,7 @@ export class SessionRuntimeService {
       return assistantMessage.id;
     });
 
+    this.trackActiveSessionState(sessionId, SessionStatus.Running, assistantMessageId);
     this.clearThinkingAccumulator(sessionId, assistantMessageId);
     await this.emitSessionStatus(
       sessionId,
@@ -230,7 +243,7 @@ export class SessionRuntimeService {
         throw error;
       }
 
-      await this.handleRecoverableMessageError(sessionId, assistantMessageId, {
+      await this.handleRecoverableMessageError(runtimeSession, assistantMessageId, {
         message: error instanceof Error ? error.message : 'Runner failed to send',
         code: 'RUNNER_SEND_FAILED',
         recoverable: true
@@ -272,16 +285,20 @@ export class SessionRuntimeService {
   }
 
   async handleRecoverableMessageError(
-    sessionId: string,
+    runtimeSession: RunnerSessionRecord,
     messageId: string,
     payload: ErrorPayload,
     options?: {
       cancelledAt?: Date;
     }
   ) {
+    const sessionId = runtimeSession.id;
     const eventId = await this.sessionEventStore.nextEventId(sessionId);
     const thinkingText = this.consumeThinkingAccumulator(sessionId, messageId);
-    const outputText = await this.readStoredOutputText(sessionId, messageId);
+    const outputText = this.readStoredOutputText(sessionId, messageId);
+    const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const freshRunnerState = asPlainObject(freshSession.runnerState);
+
     await this.prisma.$transaction([
       this.prisma.sessionMessage.update({
         where: { id: messageId },
@@ -298,11 +315,12 @@ export class SessionRuntimeService {
         where: { id: sessionId },
         data: {
           status: SessionStatus.Ready,
-          activeAssistantMessageId: null
+          activeAssistantMessageId: null,
+          runnerState: toInputJson(freshRunnerState as Prisma.InputJsonValue)
         }
       })
     ]);
-
+    this.trackActiveSessionState(sessionId, SessionStatus.Ready, null);
     await this.emitChunk({
       kind: 'error',
       sessionId,
@@ -320,14 +338,15 @@ export class SessionRuntimeService {
   }
 
   async handleNonRecoverableMessageError(
-    sessionId: string,
+    runtimeSession: RunnerSessionRecord,
     messageId: string,
     payload: ErrorPayload,
     emitErrorState = true
   ) {
+    const sessionId = runtimeSession.id;
     const eventId = await this.sessionEventStore.nextEventId(sessionId);
     const thinkingText = this.consumeThinkingAccumulator(sessionId, messageId);
-    const outputText = await this.readStoredOutputText(sessionId, messageId);
+    const outputText = this.readStoredOutputText(sessionId, messageId);
     await this.prisma.sessionMessage.update({
       where: { id: messageId },
       data: {
@@ -349,22 +368,32 @@ export class SessionRuntimeService {
     });
 
     if (!emitErrorState) {
+      const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+      const freshRunnerState = asPlainObject(freshSession.runnerState);
+      
       await this.prisma.agentSession.update({
         where: { id: sessionId },
         data: {
-          activeAssistantMessageId: null
+          activeAssistantMessageId: null,
+          runnerState: toInputJson(freshRunnerState as Prisma.InputJsonValue)
         }
       });
+      this.trackActiveSessionState(sessionId, SessionStatus.Running, null);
       return;
     }
+
+    const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const freshRunnerState = asPlainObject(freshSession.runnerState);
 
     await this.prisma.agentSession.update({
       where: { id: sessionId },
       data: {
         status: SessionStatus.Error,
-        activeAssistantMessageId: null
+        activeAssistantMessageId: null,
+        runnerState: toInputJson(freshRunnerState as Prisma.InputJsonValue)
       }
     });
+    this.trackActiveSessionState(sessionId, SessionStatus.Error, null);
     await this.emitSessionStatus(
       sessionId,
       SessionStatus.Error,
@@ -396,7 +425,7 @@ export class SessionRuntimeService {
 
   private async initializeRuntime(sessionId: string) {
     const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
-    if ((session.status as SessionStatus) === SessionStatus.Disposed) {
+    if (castEnum(SessionStatus, session.status, 'SessionStatus') === SessionStatus.Disposed) {
       throw new BadRequestException('Disposed session cannot be reinitialized');
     }
 
@@ -473,8 +502,13 @@ export class SessionRuntimeService {
 
     const records = await this.prisma.skill.findMany({
       where: { id: { in: skillIds } },
-      select: { name: true, content: true }
+      select: { id: true, name: true, content: true }
     });
+    const foundIds = new Set(records.map((r) => r.id));
+    const missingIds = skillIds.filter((id) => !foundIds.has(id));
+    if (missingIds.length > 0) {
+      this.logger.warn(`Skills not found during materialization: ${missingIds.join(', ')}`);
+    }
     return records;
   }
 
@@ -485,8 +519,13 @@ export class SessionRuntimeService {
 
     const records = await this.prisma.rule.findMany({
       where: { id: { in: ruleIds } },
-      select: { name: true, content: true }
+      select: { id: true, name: true, content: true }
     });
+    const foundIds = new Set(records.map((r) => r.id));
+    const missingIds = ruleIds.filter((id) => !foundIds.has(id));
+    if (missingIds.length > 0) {
+      this.logger.warn(`Rules not found during materialization: ${missingIds.join(', ')}`);
+    }
     return records;
   }
 
@@ -502,6 +541,10 @@ export class SessionRuntimeService {
     });
 
     const recordMap = new Map(records.map((r) => [r.id, r]));
+    const missingMcpIds = mcpIds.filter((id) => !recordMap.has(id));
+    if (missingMcpIds.length > 0) {
+      this.logger.warn(`MCPs not found during materialization: ${missingMcpIds.join(', ')}`);
+    }
     return mcps
       .map((m) => {
         const record = recordMap.get(m.resourceId);
@@ -518,7 +561,11 @@ export class SessionRuntimeService {
   private async buildRunnerSessionRecord(
     session: SessionRow
   ): Promise<RunnerSessionRecord> {
-    const runner = await this.sessionsQueryService.getRunnerOrThrow(session.runnerId);
+    let runner = this.runnerCache.get(session.runnerId);
+    if (!runner) {
+      runner = await this.sessionsQueryService.getRunnerOrThrow(session.runnerId);
+      this.runnerCache.set(session.runnerId, runner);
+    }
 
     return {
       id: session.id,
@@ -539,7 +586,7 @@ export class SessionRuntimeService {
 
     try {
       for await (const chunk of runnerType.output(runtimeSession)) {
-        await this.handleRunnerChunk(runtimeSession.id, chunk);
+        await this.handleRunnerChunk(runtimeSession, chunk);
       }
     } catch (error) {
       outputError = error;
@@ -558,7 +605,7 @@ export class SessionRuntimeService {
     outputError?: unknown
   ) {
     const session = await this.sessionsQueryService.getSessionOrNull(runtimeSession.id);
-    if (!session || (session.status as SessionStatus) !== SessionStatus.Running) {
+    if (!session || castEnum(SessionStatus, session.status, 'SessionStatus') !== SessionStatus.Running) {
       return;
     }
 
@@ -582,7 +629,7 @@ export class SessionRuntimeService {
       return;
     }
 
-    await this.handleNonRecoverableMessageError(runtimeSession.id, streamingMessage.id, {
+    await this.handleNonRecoverableMessageError(runtimeSession, streamingMessage.id, {
       message:
         outputError instanceof Error
           ? outputError.message
@@ -595,8 +642,9 @@ export class SessionRuntimeService {
     });
   }
 
-  private async handleRunnerChunk(sessionId: string, chunk: RawOutputChunk) {
-    if (!(await this.shouldAcceptChunk(sessionId, chunk.messageId))) {
+  private async handleRunnerChunk(runtimeSession: RunnerSessionRecord, chunk: RawOutputChunk) {
+    const sessionId = runtimeSession.id;
+    if (!this.shouldAcceptChunk(sessionId, chunk.messageId)) {
       return;
     }
 
@@ -624,6 +672,7 @@ export class SessionRuntimeService {
 
       case 'message_delta': {
         const eventId = await this.sessionEventStore.nextEventId(sessionId);
+        this.pushOutputAccumulator(sessionId, chunk.messageId, chunk.data);
         await this.emitChunk({
           kind: 'message_delta',
           sessionId,
@@ -690,7 +739,7 @@ export class SessionRuntimeService {
       }
 
       case 'message_result': {
-        await this.handleMessageResult(sessionId, chunk);
+        await this.handleMessageResult(runtimeSession, chunk);
         return;
       }
 
@@ -698,7 +747,7 @@ export class SessionRuntimeService {
         const payload = errorPayloadSchema.parse(chunk.data);
         if (payload.recoverable) {
           await this.handleRecoverableMessageError(
-            sessionId,
+            runtimeSession,
             chunk.messageId,
             payload
           );
@@ -706,24 +755,51 @@ export class SessionRuntimeService {
         }
 
         await this.handleNonRecoverableMessageError(
-          sessionId,
+          runtimeSession,
           chunk.messageId,
           payload
         );
+        return;
+      }
+
+      case 'state_update': {
+        const session = await this.prisma.agentSession.findUnique({
+          where: { id: sessionId },
+          select: { runnerState: true }
+        });
+        if (!session) return;
+
+        const currentRunnerState = asPlainObject(session.runnerState);
+        const updatedRunnerState = { ...currentRunnerState, ...chunk.data };
+
+        await this.prisma.agentSession.update({
+          where: { id: sessionId },
+          data: {
+            runnerState: toInputJson(updatedRunnerState as Prisma.InputJsonValue)
+          }
+        });
+
+        // Also update the in-memory runtimeSession to avoid it becoming stale
+        runtimeSession.runnerState = updatedRunnerState;
+        return;
       }
     }
   }
 
   private async handleMessageResult(
-    sessionId: string,
+    runtimeSession: RunnerSessionRecord,
     chunk: Extract<RawOutputChunk, { kind: 'message_result' }>
   ) {
-    if (!(await this.shouldAcceptChunk(sessionId, chunk.messageId))) {
+    const sessionId = runtimeSession.id;
+    if (!this.shouldAcceptChunk(sessionId, chunk.messageId)) {
       return;
     }
 
     const eventId = await this.sessionEventStore.nextEventId(sessionId);
     const thinkingText = this.consumeThinkingAccumulator(sessionId, chunk.messageId);
+    const freshSession = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const freshRunnerState = asPlainObject(freshSession.runnerState);
+
     await this.prisma.$transaction([
       this.prisma.sessionMessage.update({
         where: { id: chunk.messageId },
@@ -738,10 +814,12 @@ export class SessionRuntimeService {
         where: { id: sessionId },
         data: {
           status: SessionStatus.Ready,
-          activeAssistantMessageId: null
+          activeAssistantMessageId: null,
+          runnerState: toInputJson(freshRunnerState as Prisma.InputJsonValue)
         }
       })
     ]);
+    this.trackActiveSessionState(sessionId, SessionStatus.Ready, null);
 
     await this.emitChunk({
       kind: 'message_result',
@@ -759,48 +837,28 @@ export class SessionRuntimeService {
     await this.emitDone(sessionId, chunk.messageId);
   }
 
-  private async readStoredOutputText(sessionId: string, messageId: string) {
-    let accumulatedText: string | null = null;
-    let combinedText = '';
-    let hasChunk = false;
-
-    const chunks = await this.sessionEventStore.listMessageDeltas(sessionId, messageId);
-    for (const chunk of chunks) {
-      if (chunk.kind !== 'message_delta') {
-        continue;
-      }
-
-      hasChunk = true;
-      accumulatedText = chunk.data.accumulatedText ?? accumulatedText;
-      if (!chunk.data.accumulatedText) {
-        combinedText += chunk.data.deltaText;
-      }
-    }
-
-    if (accumulatedText && accumulatedText.length > 0) {
-      return accumulatedText;
-    }
-
-    if (hasChunk && combinedText.length > 0) {
-      return combinedText;
-    }
-
-    return null;
+  private readStoredOutputText(sessionId: string, messageId: string) {
+    return this.consumeOutputAccumulator(sessionId, messageId);
   }
 
-  private async shouldAcceptChunk(sessionId: string, messageId: string) {
-    const session = await this.prisma.agentSession.findUnique({
-      where: { id: sessionId },
-      select: {
-        status: true,
-        activeAssistantMessageId: true
-      }
-    });
-
+  private shouldAcceptChunk(sessionId: string, messageId: string) {
+    const state = this.activeSessionState.get(sessionId);
     return (
-      session?.status === SessionStatus.Running &&
-      session.activeAssistantMessageId === messageId
+      state?.status === SessionStatus.Running &&
+      state?.activeAssistantMessageId === messageId
     );
+  }
+
+  private trackActiveSessionState(
+    sessionId: string,
+    status: string,
+    activeAssistantMessageId: string | null
+  ) {
+    this.activeSessionState.set(sessionId, { status, activeAssistantMessageId });
+  }
+
+  private clearActiveSessionState(sessionId: string) {
+    this.activeSessionState.delete(sessionId);
   }
 
   async emitSessionStatus(
@@ -863,6 +921,29 @@ export class SessionRuntimeService {
     const key = this.getThinkingAccumulatorKey(sessionId, messageId);
     const value = this.thinkingAccumulators.get(key) ?? null;
     this.thinkingAccumulators.delete(key);
+    return value;
+  }
+
+  private getOutputAccumulatorKey(sessionId: string, messageId: string) {
+    return `out:${sessionId}:${messageId}`;
+  }
+
+  private pushOutputAccumulator(
+    sessionId: string,
+    messageId: string,
+    data: Extract<OutputChunk, { kind: 'message_delta' }>['data']
+  ) {
+    const key = this.getOutputAccumulatorKey(sessionId, messageId);
+    const nextValue =
+      data.accumulatedText ??
+      `${this.outputAccumulators.get(key) ?? ''}${data.deltaText}`;
+    this.outputAccumulators.set(key, nextValue);
+  }
+
+  private consumeOutputAccumulator(sessionId: string, messageId: string) {
+    const key = this.getOutputAccumulatorKey(sessionId, messageId);
+    const value = this.outputAccumulators.get(key) ?? null;
+    this.outputAccumulators.delete(key);
     return value;
   }
 }

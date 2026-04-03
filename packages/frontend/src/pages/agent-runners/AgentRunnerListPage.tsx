@@ -23,8 +23,8 @@ import { agentRunnerConfig } from '@/types/agent-runners';
 import {
   formatDateTime,
   formatNullableDescription
-} from '@/utils/entity-table';
-import { getRunnerTypeName } from './agent-runner.utils';
+} from '@/utils/format-display';
+import { getRunnerTypeName } from './agent-runner.form';
 
 export function AgentRunnerListPage() {
   const navigate = useNavigate();

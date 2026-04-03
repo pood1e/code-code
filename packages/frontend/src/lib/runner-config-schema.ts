@@ -1,31 +1,10 @@
-import type { RunnerConfigJsonSchema, RunnerConfigJsonSchemaProperty } from '@agent-workbench/shared';
+import type { SchemaDescriptor, SchemaFieldDescriptor } from '@agent-workbench/shared';
 import { z } from 'zod';
 
-export type RunnerConfigFieldKind =
-  | 'string'
-  | 'url'
-  | 'number'
-  | 'integer'
-  | 'boolean'
-  | 'enum';
+// Re-export SchemaFieldDescriptor as RunnerConfigField for backward compatibility
+export type RunnerConfigField = SchemaFieldDescriptor;
 
-type RunnerConfigEnumOption = {
-  label: string;
-  value: string | number;
-};
-
-type RunnerConfigEnumValueType = 'string' | 'number';
-
-export type RunnerConfigField = {
-  name: string;
-  label: string;
-  description?: string;
-  kind: RunnerConfigFieldKind;
-  required: boolean;
-  defaultValue?: string | number | boolean;
-  enumOptions?: RunnerConfigEnumOption[];
-  enumValueType?: RunnerConfigEnumValueType;
-};
+export type RunnerConfigFieldKind = SchemaFieldDescriptor['kind'];
 
 export type SupportedRunnerConfigSchema =
   | {
@@ -38,124 +17,11 @@ export type SupportedRunnerConfigSchema =
       reason: string;
     };
 
-function toFieldLabel(name: string, title?: string) {
-  if (title?.trim()) {
-    return title.trim();
-  }
-
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/[-_]+/g, ' ')
-    .replace(/^\w/, (character) => character.toUpperCase());
-}
-
-function parseEnumProperty(
-  name: string,
-  property: RunnerConfigJsonSchemaProperty,
-  required: boolean
-): RunnerConfigField | null {
-  if (!Array.isArray(property.enum) || property.enum.length === 0) {
-    return null;
-  }
-
-  if (property.enum.every((value) => typeof value === 'string')) {
-    return {
-      name,
-      label: toFieldLabel(name, property.title),
-      description: property.description,
-      kind: 'enum',
-      required,
-      defaultValue:
-        typeof property.default === 'string' ? property.default : undefined,
-      enumValueType: 'string',
-      enumOptions: property.enum.map((value) => ({
-        label: value,
-        value
-      }))
-    };
-  }
-
-  if (property.enum.every((value) => typeof value === 'number')) {
-    return {
-      name,
-      label: toFieldLabel(name, property.title),
-      description: property.description,
-      kind: 'enum',
-      required,
-      defaultValue:
-        typeof property.default === 'number' ? property.default : undefined,
-      enumValueType: 'number',
-      enumOptions: property.enum.map((value) => ({
-        label: String(value),
-        value
-      }))
-    };
-  }
-
-  return null;
-}
-
-function parseProperty(
-  name: string,
-  property: RunnerConfigJsonSchemaProperty,
-  required: boolean
-): RunnerConfigField | null {
-  const enumField = parseEnumProperty(name, property, required);
-  if (enumField) {
-    return enumField;
-  }
-
-  switch (property.type) {
-    case 'string':
-      return {
-        name,
-        label: toFieldLabel(name, property.title),
-        description: property.description,
-        kind: property.format === 'url' ? 'url' : 'string',
-        required,
-        defaultValue:
-          typeof property.default === 'string' ? property.default : undefined
-      };
-    case 'number':
-      return {
-        name,
-        label: toFieldLabel(name, property.title),
-        description: property.description,
-        kind: 'number',
-        required,
-        defaultValue:
-          typeof property.default === 'number' ? property.default : undefined
-      };
-    case 'integer':
-      return {
-        name,
-        label: toFieldLabel(name, property.title),
-        description: property.description,
-        kind: 'integer',
-        required,
-        defaultValue:
-          typeof property.default === 'number' ? property.default : undefined
-      };
-    case 'boolean':
-      return {
-        name,
-        label: toFieldLabel(name, property.title),
-        description: property.description,
-        kind: 'boolean',
-        required,
-        defaultValue:
-          typeof property.default === 'boolean' ? property.default : undefined
-      };
-    default:
-      return null;
-  }
-}
-
 function buildFieldSchema(field: RunnerConfigField) {
   if (field.kind === 'enum') {
     const values = field.enumOptions?.map((option) => option.value) ?? [];
 
-    if (field.enumValueType === 'number') {
+    if (values.length > 0 && typeof values[0] === 'number') {
       const schema = z.number().refine(
         (value) => values.includes(value),
         `${field.label} 不在允许范围内`
@@ -194,30 +60,22 @@ function buildFieldSchema(field: RunnerConfigField) {
   return field.required ? schema : schema.optional();
 }
 
+/**
+ * Parse a SchemaDescriptor into a SupportedRunnerConfigSchema.
+ * Now that the backend sends pre-parsed field descriptors,
+ * this function just builds the Zod validation schema — no JSON Schema parsing needed.
+ */
 export function parseRunnerConfigSchema(
-  schema: RunnerConfigJsonSchema | null | undefined
+  schema: SchemaDescriptor | null | undefined
 ): SupportedRunnerConfigSchema {
-  if (!schema || schema.type !== 'object') {
+  if (!schema || !schema.fields) {
     return {
       supported: false,
       reason: '当前 RunnerType 未提供可编辑的对象结构配置。'
     };
   }
 
-  const properties = schema.properties ?? {};
-  const requiredFields = new Set(schema.required ?? []);
-  const fields: RunnerConfigField[] = [];
-
-  for (const [name, property] of Object.entries(properties)) {
-    const parsed = parseProperty(name, property, requiredFields.has(name));
-    if (!parsed) {
-      return {
-        supported: false,
-        reason: `字段 ${name} 使用了当前工作台尚未支持的 Schema 能力。`
-      };
-    }
-    fields.push(parsed);
-  }
+  const fields = schema.fields;
 
   const shape: Record<string, z.ZodType> = {};
   for (const field of fields) {
@@ -269,7 +127,10 @@ function normalizeRunnerConfigValue(field: RunnerConfigField, rawValue: unknown)
       if (trimmed.length === 0) {
         return undefined;
       }
-      if (field.enumValueType === 'number') {
+      const hasNumericOptions = field.enumOptions?.some(
+        (opt) => typeof opt.value === 'number'
+      );
+      if (hasNumericOptions) {
         const numericValue = Number(trimmed);
         return Number.isNaN(numericValue) ? rawValue : numericValue;
       }

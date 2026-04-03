@@ -5,7 +5,8 @@ import type {
   SessionDetail,
   SessionMessageDetail,
   SessionSummary,
-  SendSessionMessageInput
+  SendSessionMessageInput,
+  PagedSessionMessages
 } from '@agent-workbench/shared';
 
 import { apiBaseUrl, apiClient } from './client';
@@ -32,9 +33,16 @@ export async function disposeSession(id: string) {
   return response.data;
 }
 
-export async function listSessionMessages(id: string) {
-  const response = await apiClient.get<SessionMessageDetail[]>(
-    `/sessions/${id}/messages`
+export async function listSessionMessages(
+  id: string,
+  cursor?: string,
+  limit?: number
+) {
+  const response = await apiClient.get<PagedSessionMessages>(
+    `/sessions/${id}/messages`,
+    {
+      params: { cursor, limit }
+    }
   );
   return response.data;
 }
@@ -43,7 +51,7 @@ export async function sendSessionMessage(
   id: string,
   payload: SendSessionMessageInput
 ) {
-  const response = await apiClient.post<SessionMessageDetail[]>(
+  const response = await apiClient.post<PagedSessionMessages>(
     `/sessions/${id}/messages`,
     payload
   );

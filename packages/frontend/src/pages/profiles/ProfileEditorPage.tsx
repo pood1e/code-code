@@ -32,11 +32,12 @@ import { listResources } from '@/api/resources';
 import { EditorToolbar } from '@/components/app/EditorToolbar';
 import { FormField } from '@/components/app/FormField';
 import { EmptyState } from '@/components/app/EmptyState';
+import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { CodeEditor } from '@/components/JsonEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+
 import { Textarea } from '@/components/ui/textarea';
 import { queryKeys } from '@/query/query-keys';
 import { ResourceSectionCard } from './profile-editor.components';
@@ -60,18 +61,9 @@ import {
   type SearchState,
   type SelectedBaseItem,
   type SelectedMcpItem
-} from './profile-editor.utils';
+} from './profile-editor.form';
 
-function LoadingState() {
-  return (
-    <div className="space-y-4">
-      <Skeleton className="h-10 w-40 rounded-xl" />
-      <Skeleton className="h-28 rounded-2xl" />
-      <Skeleton className="h-80 rounded-2xl" />
-      <Skeleton className="h-80 rounded-2xl" />
-    </div>
-  );
-}
+
 
 export function ProfileEditorPage() {
   const { id } = useParams();
@@ -172,7 +164,7 @@ export function ProfileEditorPage() {
   }
 
   if (loading || !profileDetailQuery.data || !catalog) {
-    return <LoadingState />;
+    return <PageLoadingSkeleton />;
   }
 
   return (
@@ -500,11 +492,6 @@ function ProfileEditorContent({
 
       await saveMutation.mutateAsync(payload);
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-        return;
-      }
-
       handleError(error);
     }
   });

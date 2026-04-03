@@ -102,4 +102,13 @@ export class AgentRunnersController {
   checkHealth(@Param('id') id: string) {
     return this.agentRunnersService.checkHealth(id);
   }
+
+  @Get('agent-runners/:id/context')
+  @ApiOperation({ summary: 'Probe underlying CLI for available context options (e.g. models)' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Runner context options fetched.' })
+  @ResponseMessage('Runner context options fetched')
+  probeContext(@Param('id') id: string) {
+    return this.agentRunnersService.probeRunnerContext(id);
+  }
 }

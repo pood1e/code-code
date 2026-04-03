@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   OutputChunk,
   SessionDetail,
   SessionMessageDetail,
+  PagedSessionMessages,
   SessionSummary
 } from '@agent-workbench/shared';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, InfiniteData } from '@tanstack/react-query';
 
 import {
   createSessionEventSource,
@@ -15,8 +16,9 @@ import {
 import type { SessionMessageRuntimeMap } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { getSessionLastEventId } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { queryKeys } from '@/query/query-keys';
+import { useSessionRuntimeStore } from '@/store/session-runtime-store';
 
-import { applyOutputChunkToMessages } from './project-sessions.utils';
+import { applyOutputChunkToMessages } from './project-sessions.form';
 
 type UseSessionEventStreamOptions = {
   scopeId?: string;
@@ -24,16 +26,6 @@ type UseSessionEventStreamOptions = {
   messages: SessionMessageDetail[];
   messagesReady: boolean;
   queryClient: QueryClient;
-  setRuntimeStateBySessionId: Dispatch<
-    SetStateAction<Record<string, SessionMessageRuntimeMap>>
-  >;
-  updateSessionRuntimeMessageState: (
-    sessionId: string,
-    messageId: string,
-    updater: (
-      current: SessionMessageRuntimeMap[string]
-    ) => SessionMessageRuntimeMap[string]
-  ) => void;
 };
 
 function updateSessionCaches(
@@ -80,10 +72,11 @@ export function useSessionEventStream({
   session,
   messages,
   messagesReady,
-  queryClient,
-  setRuntimeStateBySessionId,
-  updateSessionRuntimeMessageState
+  queryClient
 }: UseSessionEventStreamOptions) {
+  const updateMessageState = useSessionRuntimeStore((s) => s.updateMessageState);
+  const updateMessageStateRef = useRef(updateMessageState);
+  updateMessageStateRef.current = updateMessageState;
   const [streamNonce, setStreamNonce] = useState(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const lastEventIdRef = useRef(0);
@@ -122,28 +115,31 @@ export function useSessionEventStream({
       lastEventIdRef.current = Math.max(lastEventIdRef.current, chunk.eventId);
       updateSessionCaches(queryClient, scopeId, sessionId, chunk);
 
+      if (chunk.kind === 'done') {
+        // done is a message-level completion signal, do not close the session-level SSE connection
+        return;
+      }
+
       if (chunk.kind === 'session_status') {
         if (chunk.data.status !== SessionStatusEnum.Running) {
-          setRuntimeStateBySessionId((current) => ({
-            ...current,
-            [sessionId]: Object.fromEntries(
-              Object.entries(current[sessionId] ?? {}).map(([messageId, value]) => [
-                messageId,
-                value
-                  ? {
-                      ...value,
-                      thinkingText: undefined
-                    }
-                  : value
-              ])
-            )
+          const store = useSessionRuntimeStore.getState();
+          const sessionState = store.stateBySessionId[sessionId] ?? {};
+          const cleared: Record<string, SessionMessageRuntimeMap[string]> = {};
+          for (const [messageId, value] of Object.entries(sessionState)) {
+            cleared[messageId] = value ? { ...value, thinkingText: undefined } : value;
+          }
+          useSessionRuntimeStore.setState((state) => ({
+            stateBySessionId: {
+              ...state.stateBySessionId,
+              [sessionId]: cleared
+            }
           }));
         }
         return;
       }
 
       if (chunk.kind === 'thinking_delta' && chunk.messageId) {
-        updateSessionRuntimeMessageState(sessionId, chunk.messageId, (current) => ({
+        updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
           ...(current ?? {}),
           thinkingText:
             chunk.data.accumulatedText ??
@@ -153,7 +149,7 @@ export function useSessionEventStream({
       }
 
       if (chunk.kind === 'usage' && chunk.messageId) {
-        updateSessionRuntimeMessageState(sessionId, chunk.messageId, (current) => ({
+        updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
           ...(current ?? {}),
           usage: chunk.data
         }));
@@ -166,16 +162,29 @@ export function useSessionEventStream({
         chunk.kind === 'error' ||
         chunk.kind === 'tool_use'
       ) {
-        queryClient.setQueryData<SessionMessageDetail[] | undefined>(
+        queryClient.setQueryData<InfiniteData<PagedSessionMessages> | undefined>(
           queryKeys.sessions.messages(sessionId),
-          (current) => (current ? applyOutputChunkToMessages(current, chunk) : current)
+          (current) => {
+            if (!current || !current.pages.length) return current;
+            
+            const firstPage = current.pages[0];
+            const updatedFirstPage = {
+              ...firstPage,
+              data: applyOutputChunkToMessages(firstPage.data, chunk)
+            };
+            
+            return {
+              ...current,
+              pages: [updatedFirstPage, ...current.pages.slice(1)]
+            };
+          }
         );
 
         if (
           (chunk.kind === 'message_result' || chunk.kind === 'error') &&
           chunk.messageId
         ) {
-          updateSessionRuntimeMessageState(sessionId, chunk.messageId, (current) => ({
+          updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
             ...(current ?? {}),
             thinkingText: undefined,
             cancelledAt:
@@ -202,23 +211,31 @@ export function useSessionEventStream({
         return;
       }
 
-      void Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.sessions.messages(sessionId)
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.sessions.detail(sessionId)
-        }),
-        scopeId
-          ? queryClient.invalidateQueries({
-              queryKey: queryKeys.sessions.list(scopeId)
-            })
-          : Promise.resolve()
-      ]).catch(() => undefined);
+      // Instead of an aggressive immediate refetch on every disconnect, we only invalidate once every few seconds
+      // to avoid request storms on network drop or server restart.
+      if (!reconnectTimerRef.current) {
+        void Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.sessions.messages(sessionId)
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.sessions.detail(sessionId)
+          }),
+          scopeId
+            ? queryClient.invalidateQueries({
+                queryKey: queryKeys.sessions.list(scopeId)
+              })
+            : Promise.resolve()
+        ]).catch(() => undefined);
+      } else {
+        window.clearTimeout(reconnectTimerRef.current);
+      }
 
+      // Linear backoff (or simple fixed interval, e.g. 2s) to avoid spamming the backend
       reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
         setStreamNonce((value) => value + 1);
-      }, 1000);
+      }, 2000);
     };
 
     return () => {
@@ -233,8 +250,6 @@ export function useSessionEventStream({
     queryClient,
     scopeId,
     session?.id,
-    setRuntimeStateBySessionId,
-    streamNonce,
-    updateSessionRuntimeMessageState
+    streamNonce
   ]);
 }

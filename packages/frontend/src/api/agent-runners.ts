@@ -56,3 +56,10 @@ export async function checkAgentRunnerHealth(id: string) {
   );
   return response.data;
 }
+
+export async function probeAgentRunnerContext(id: string) {
+  const response = await apiClient.get<Record<string, Array<{ label: string; value: string } | string>>>(
+    `/agent-runners/${id}/context`
+  );
+  return response.data;
+}

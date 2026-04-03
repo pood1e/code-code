@@ -11,7 +11,7 @@ export function asPlainObject(
 }
 
 export function sanitizeJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+  return structuredClone(value);
 }
 
 export function toInputJson(value: Prisma.InputJsonValue) {
@@ -22,3 +22,20 @@ export function toInputJson(value: Prisma.InputJsonValue) {
 export function toOptionalInputJson(value?: Prisma.InputJsonValue) {
   return value ?? undefined;
 }
+
+/**
+ * Safely cast a Prisma string field to a TypeScript string enum value.
+ * Throws if the value is not a valid enum member.
+ */
+export function castEnum<T extends string>(
+  enumObj: Record<string, T>,
+  raw: string,
+  label: string
+): T {
+  const values = Object.values(enumObj) as string[];
+  if (values.includes(raw)) {
+    return raw as T;
+  }
+  throw new Error(`Invalid ${label}: "${raw}"`);
+}
+

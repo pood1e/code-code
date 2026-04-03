@@ -25,18 +25,11 @@ import {
 import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
 import { queryKeys } from '@/query/query-keys';
+import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
 
-function LoadingState() {
-  return (
-    <div className="space-y-4">
-      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
-      <div className="h-10 w-40 animate-pulse rounded-xl bg-muted" />
-      <div className="h-64 animate-pulse rounded-2xl bg-muted/60" />
-    </div>
-  );
-}
+
 
 function isWorkspacePathError(message: string) {
   return (
@@ -126,7 +119,7 @@ export function ProjectConfigPage() {
   });
 
   if (isLoading) {
-    return <LoadingState />;
+    return <PageLoadingSkeleton />;
   }
 
   if (isNotFound) {
@@ -150,7 +143,7 @@ export function ProjectConfigPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-screen flex-col">
       <ProjectSectionHeader
         projects={projects}
         currentProjectId={id}
@@ -159,112 +152,114 @@ export function ProjectConfigPage() {
         onTabChange={(tab) => goToProjectTab(id, tab)}
       />
 
-      <div className="space-y-4">
-        <EditorToolbar
-          title="Project 配置"
-          onSave={() => void handleSave()}
-          showBack={false}
-          saveDisabled={updateMutation.isPending}
-        />
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
+        <div className="mx-auto w-full max-w-5xl space-y-4">
+          <EditorToolbar
+            title="Project 配置"
+            onSave={() => void handleSave()}
+            showBack={false}
+            saveDisabled={updateMutation.isPending}
+          />
 
-        {submitError ? (
-          <Alert variant="destructive">
-            <AlertTitle>保存失败</AlertTitle>
-            <AlertDescription>{submitError}</AlertDescription>
-          </Alert>
-        ) : null}
+          {submitError ? (
+            <Alert variant="destructive">
+              <AlertTitle>保存失败</AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          ) : null}
 
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void handleSave();
-          }}
-        >
-          <SurfaceCard>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <FormField
-                label="Name"
-                htmlFor="project-config-name"
-                error={form.formState.errors.name?.message}
-              >
-                <Input id="project-config-name" {...form.register('name')} />
-              </FormField>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleSave();
+            }}
+          >
+            <SurfaceCard>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <FormField
+                  label="Name"
+                  htmlFor="project-config-name"
+                  error={form.formState.errors.name?.message}
+                >
+                  <Input id="project-config-name" {...form.register('name')} />
+                </FormField>
 
-              <FormField
-                label="Workspace Path"
-                htmlFor="project-config-workspace-path"
-                description="更新时同样必须是已存在的绝对目录。"
-                error={form.formState.errors.workspacePath?.message}
-              >
-                <Input
-                  id="project-config-workspace-path"
-                  {...form.register('workspacePath')}
-                />
-              </FormField>
+                <FormField
+                  label="Workspace Path"
+                  htmlFor="project-config-workspace-path"
+                  description="更新时同样必须是已存在的绝对目录。"
+                  error={form.formState.errors.workspacePath?.message}
+                >
+                  <Input
+                    id="project-config-workspace-path"
+                    {...form.register('workspacePath')}
+                  />
+                </FormField>
 
-              <FormField
-                label="Git URL"
-                htmlFor="project-config-git-url"
-                description="创建后不可修改。"
-                error={form.formState.errors.gitUrl?.message}
-                className="lg:col-span-2"
-              >
-                <Input
-                  id="project-config-git-url"
-                  readOnly
-                  disabled
-                  {...form.register('gitUrl')}
-                />
-              </FormField>
+                <FormField
+                  label="Git URL"
+                  htmlFor="project-config-git-url"
+                  description="创建后不可修改。"
+                  error={form.formState.errors.gitUrl?.message}
+                  className="lg:col-span-2"
+                >
+                  <Input
+                    id="project-config-git-url"
+                    readOnly
+                    disabled
+                    {...form.register('gitUrl')}
+                  />
+                </FormField>
 
-              <FormField
-                label="Description"
-                htmlFor="project-config-description"
-                error={form.formState.errors.description?.message}
-                className="lg:col-span-2"
-              >
-                <Textarea
-                  id="project-config-description"
-                  rows={5}
-                  {...form.register('description')}
-                />
-              </FormField>
-            </div>
-          </SurfaceCard>
-
-          <SurfaceCard className="border-destructive/20 bg-destructive/5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="font-medium text-foreground">删除当前 Project</p>
-                <p className="text-sm text-muted-foreground">
-                  删除后不可恢复。当前阶段没有关联资源检查。
-                </p>
+                <FormField
+                  label="Description"
+                  htmlFor="project-config-description"
+                  error={form.formState.errors.description?.message}
+                  className="lg:col-span-2"
+                >
+                  <Textarea
+                    id="project-config-description"
+                    rows={5}
+                    {...form.register('description')}
+                  />
+                </FormField>
               </div>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={deleteMutation.isPending}
-              >
-                删除 Project
-              </Button>
-            </div>
-          </SurfaceCard>
-        </form>
-      </div>
+            </SurfaceCard>
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        title={`删除 ${project.name}？`}
-        description="删除后不可恢复。"
-        confirmLabel="删除"
-        pending={deleteMutation.isPending}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={() => {
-          void deleteMutation.mutateAsync().catch(handleError);
-        }}
-      />
+            <SurfaceCard className="border-destructive/20 bg-destructive/5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">删除当前 Project</p>
+                  <p className="text-sm text-muted-foreground">
+                    删除后不可恢复。当前阶段没有关联资源检查。
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={deleteMutation.isPending}
+                >
+                  删除 Project
+                </Button>
+              </div>
+            </SurfaceCard>
+          </form>
+
+          <ConfirmDialog
+            open={deleteDialogOpen}
+            title={`删除 ${project.name}？`}
+            description="删除后不可恢复。"
+            confirmLabel="删除"
+            pending={deleteMutation.isPending}
+            onOpenChange={setDeleteDialogOpen}
+            onConfirm={() => {
+              void deleteMutation.mutateAsync().catch(handleError);
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
