@@ -143,7 +143,7 @@ test.describe('Profile 聚合管理', () => {
   test('Profile 编辑页应展示关联的资源名称', async ({ page }) => {
     // 通过 API 创建一个带资源的 Profile
     const profile = await apiPost('/profiles', { name: 'Full Profile' });
-    await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
+    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -170,7 +170,7 @@ test.describe('Profile 聚合管理', () => {
       name: 'Removable Skill',
       content: 'content'
     });
-    await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
+    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -185,7 +185,7 @@ test.describe('Profile 聚合管理', () => {
     await expect(page.getByText('Removable Skill')).toBeVisible();
 
     // 移除绑定后保存(清空 skills)
-    await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
+    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

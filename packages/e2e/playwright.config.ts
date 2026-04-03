@@ -24,9 +24,9 @@ export default defineConfig({
   },
 
   webServer: {
-    command: 'cd ../../ && pnpm dev',
-    url: 'http://localhost:5174',
-    reuseExistingServer: !process.env.CI
+    command: 'cd ../../ && pnpm build && pnpm start:e2e',
+    url: 'http://localhost:3001/api/docs',
+    timeout: 120 * 1000
   },
 
   projects: [
