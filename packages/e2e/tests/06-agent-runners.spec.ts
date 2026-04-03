@@ -64,6 +64,11 @@ test.describe('Agent Runner 管理', () => {
   });
 
   test('Runner 列表页应有搜索框', async ({ page }) => {
+    await apiPost('/agent-runners', {
+      name: 'Search Test Runner',
+      type: 'mock',
+      runnerConfig: {}
+    });
     await page.goto('/agent-runners');
     await expect(page.getByPlaceholder(/按名称搜索/i)).toBeVisible();
   });

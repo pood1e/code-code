@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { cleanupTestData, apiPost, apiDelete } from './helpers';
+import { cleanupTestData, apiPost, apiDelete, apiPut, getApiUrl } from './helpers';
 
 /**
  * 数据完整性 — 跨模块的用户可见影响
@@ -25,15 +25,11 @@ test.describe('引用冲突保护', () => {
       content: 'content'
     });
     const profile = await apiPost('/profiles', { name: 'Ref Profile' });
-    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'Ref Profile',
-        skills: [{ resourceId: skill.id, order: 0 }],
-        mcps: [],
-        rules: []
-      })
+    await apiPut(`/profiles/${profile.id}`, {
+      name: 'Ref Profile',
+      skills: [{ resourceId: skill.id, order: 0 }],
+      mcps: [],
+      rules: []
     });
 
     await page.goto('/skills');
@@ -79,7 +75,7 @@ test.describe('引用冲突保护', () => {
     await confirmBtn.click();
 
     // 应该删除成功，Skill 不再出现
-    await expect(page.getByText('Orphan Skill')).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Orphan Skill', exact: true })).not.toBeVisible();
   });
 });
 
@@ -163,7 +159,7 @@ test.describe('导出功能', () => {
 
     // 通过 API 直接验证导出端点（E2E 层面确认端点可达）
     const response = await page.request.get(
-      `http://localhost:3001/api/profiles/${profile.id}/export`
+      getApiUrl(`/profiles/${profile.id}/export`)
     );
 
     expect(response.status()).toBe(200);
@@ -178,7 +174,7 @@ test.describe('导出功能', () => {
     const profile = await apiPost('/profiles', { name: 'YAML Export Test' });
 
     const response = await page.request.get(
-      `http://localhost:3001/api/profiles/${profile.id}/export?format=yaml`
+      getApiUrl(`/profiles/${profile.id}/export?format=yaml`)
     );
 
     expect(response.status()).toBe(200);

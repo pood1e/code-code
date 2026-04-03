@@ -1,4 +1,14 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import { apiPost } from './helpers';
+
+async function openSidebar(page: Page, isMobile: boolean) {
+  if (isMobile) {
+    await page.locator('header button').first().click();
+    // Wait for the drawer dialog to become visible
+    await expect(page.locator('[role="dialog"]')).toBeVisible();
+  }
+  return page.locator('aside, [role="complementary"]').or(page.locator('[role="dialog"]')).first();
+}
 
 /**
  * 导航与布局 — 验证应用整体结构
@@ -7,55 +17,66 @@ import { test, expect } from '@playwright/test';
  * 有错误直接暴露，不做超时重试。
  */
 test.describe('全局导航结构', () => {
-  test('侧边栏应有 Projects 和资源库入口', async ({ page }) => {
+  test('侧边栏应有 Projects 和资源库入口', async ({ page, isMobile }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('button', { name: 'Projects' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /资源库/i })).toBeVisible();
+    const sidebar = await openSidebar(page, isMobile);
+
+    await expect(sidebar.getByRole('button', { name: 'Projects' })).toBeVisible();
+    await expect(sidebar.getByRole('button', { name: /资源库/i })).toBeVisible();
   });
 
-  test('点击资源库应跳转并展开子导航', async ({ page }) => {
+  test('点击资源库应跳转并展开子导航', async ({ page, isMobile }) => {
     await page.goto('/');
 
-    await page.getByRole('button', { name: /资源库/i }).click();
+    const sidebar = await openSidebar(page, isMobile);
+
+    await sidebar.getByRole('button', { name: /资源库/i }).click();
     await page.waitForURL(/\/(skills|mcps|rules|profiles|agent-runners)/);
 
-    const sidebar = page.locator('aside, [role="complementary"]').first();
+    // On mobile, the sidebar stays open after expanding sub-nav (it's not a navigation)
+    // Actually, if it navigated to /skills automatically (first item), the sidebar might close on mobile!
+    // So we need to re-open it to check subItems.
+    const newSidebar = await openSidebar(page, isMobile);
+    
     const subItems = ['Skills', 'MCPs', 'Rules', 'Profiles', 'Runners'];
     for (const item of subItems) {
       await expect(
-        sidebar.getByRole('button', { name: item, exact: true })
+        newSidebar.getByRole('button', { name: item, exact: true })
       ).toBeVisible();
     }
   });
 
-  test('点击资源子菜单应切到对应页面', async ({ page }) => {
+  test('点击资源子菜单应切到对应页面', async ({ page, isMobile }) => {
     await page.goto('/skills');
 
-    const sidebar = page.locator('aside, [role="complementary"]').first();
+    let sidebar = await openSidebar(page, isMobile);
 
     await sidebar.getByRole('button', { name: 'Rules', exact: true }).click();
     await expect(page).toHaveURL(/\/rules/);
 
+    sidebar = await openSidebar(page, isMobile);
     await sidebar.getByRole('button', { name: 'MCPs', exact: true }).click();
     await expect(page).toHaveURL(/\/mcps/);
 
-    await sidebar
-      .getByRole('button', { name: 'Profiles', exact: true })
-      .click();
+    sidebar = await openSidebar(page, isMobile);
+    await sidebar.getByRole('button', { name: 'Profiles', exact: true }).click();
     await expect(page).toHaveURL(/\/profiles/);
 
+    sidebar = await openSidebar(page, isMobile);
     await sidebar.getByRole('button', { name: 'Runners', exact: true }).click();
     await expect(page).toHaveURL(/\/agent-runners/);
 
+    sidebar = await openSidebar(page, isMobile);
     await sidebar.getByRole('button', { name: 'Skills', exact: true }).click();
     await expect(page).toHaveURL(/\/skills/);
   });
 
-  test('点击 Projects 应回到项目列表', async ({ page }) => {
+  test('点击 Projects 应回到项目列表', async ({ page, isMobile }) => {
     await page.goto('/skills');
 
-    await page.getByRole('button', { name: 'Projects' }).click();
+    const sidebar = await openSidebar(page, isMobile);
+    await sidebar.getByRole('button', { name: 'Projects' }).click();
     await expect(page).toHaveURL(/\/projects/);
   });
 });
@@ -93,13 +114,17 @@ test.describe('页面加载', () => {
 test.describe('资源列表页通用行为', () => {
   // 先通过 API 确保有数据
   test.beforeAll(async () => {
-    await fetch('http://localhost:3001/api/skills', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'Nav Test Skill',
-        content: 'content for nav test'
-      })
+    await apiPost('/skills', {
+      name: 'Nav Test Skill',
+      content: 'content for nav test'
+    });
+    await apiPost('/mcps', {
+      name: 'Nav Test MCP',
+      content: { type: 'stdio', command: 'node', args: [] }
+    });
+    await apiPost('/rules', {
+      name: 'Nav Test Rule',
+      content: 'some rule'
     });
   });
 
@@ -135,8 +160,8 @@ test.describe('资源列表页通用行为', () => {
     await expect(page.getByText('Nav Test Skill')).toBeVisible();
 
     // 列表项应有编辑和删除按钮
-    const editBtns = page.getByRole('button', { name: /编辑/i });
-    const deleteBtns = page.getByRole('button', { name: /删除/i });
+    const editBtns = page.getByRole('button', { name: /编辑 Nav Test Skill/i });
+    const deleteBtns = page.getByRole('button', { name: /删除 Nav Test Skill/i });
 
     const editCount = await editBtns.count();
     const deleteCount = await deleteBtns.count();
