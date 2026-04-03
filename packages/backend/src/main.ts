@@ -15,6 +15,8 @@ async function bootstrap() {
     cors: true,
     logger: ['warn', 'error']
   });
+  app.enableShutdownHooks();
+
   const reflector = app.get(Reflector);
 
   app.setGlobalPrefix('api');
@@ -40,24 +42,12 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? 3000);
   const host = '0.0.0.0';
+
   await app.listen(port, host);
   console.info(`backend ready at http://${host}:${port}/api`);
 }
 
 void bootstrap().catch((error: unknown) => {
-  const port = Number(process.env.PORT ?? 3000);
-
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === 'EADDRINUSE'
-  ) {
-    console.error(
-      `backend: port ${port} is already in use, stop the existing server or run with PORT=${port + 1}`
-    );
-    process.exit(1);
-  }
-
-  throw error;
+  console.error('Failed to start backend server:', error);
+  process.exit(1);
 });

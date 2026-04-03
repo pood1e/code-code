@@ -76,8 +76,8 @@ export function ProjectSessionsPage() {
   });
 
   const selectedRuntimeState = useSessionRuntimeStore((s) =>
-    selectedSessionId ? (s.stateBySessionId[selectedSessionId] ?? {}) : {}
-  );
+    selectedSessionId ? s.stateBySessionId[selectedSessionId] : undefined
+  ) ?? {};
 
   const showCreatePanel =
     createPanelOpen || (sessionsQuery.data?.length ?? 0) === 0;

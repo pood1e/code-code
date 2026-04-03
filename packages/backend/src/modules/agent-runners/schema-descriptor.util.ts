@@ -55,8 +55,8 @@ function unwrapFieldMeta(schema: z.ZodTypeAny): FieldMeta {
       description = current.description;
     }
 
-    const def = current._zod.def as unknown as Record<string, unknown>;
-    const defType = def.type as string;
+    const def = current._def as unknown as Record<string, unknown>;
+    const defType = def.typeName as string ?? def.type as string;
 
     if (defType === 'optional' || defType === 'nullable') {
       isOptional = true;
@@ -89,7 +89,7 @@ function unwrapFieldMeta(schema: z.ZodTypeAny): FieldMeta {
 function unwrapToCore(schema: z.ZodTypeAny): z.ZodTypeAny {
   let current = schema;
   for (let i = 0; i < 10; i++) {
-    const def = current._zod.def as unknown as Record<string, unknown>;
+    const def = current._def as unknown as Record<string, unknown>;
     if (def.innerType) {
       current = def.innerType as z.ZodTypeAny;
       continue;
@@ -123,8 +123,8 @@ function zodFieldToDescriptor(
   const required = !isOptional;
   const label = toFieldLabel(name);
 
-  const coreDef = core._zod.def as unknown as Record<string, unknown>;
-  const coreType = coreDef.type as string;
+  const coreDef = core._def as unknown as Record<string, unknown>;
+  const coreType = coreDef.typeName as string ?? coreDef.type as string;
 
   // Enum
   if (coreType === 'enum') {
