@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 
 import { EmptyState } from '@/components/app/EmptyState';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -44,6 +45,7 @@ export function DataTable<TData>({
   pageSize = 8,
   mobileCardRenderer
 }: DataTableProps<TData>) {
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const [sorting, setSorting] = useState<SortingState>([]);
   const pagination = useMemo(
     () => ({
@@ -93,8 +95,8 @@ export function DataTable<TData>({
 
   return (
     <div className="space-y-4">
-      {mobileCardRenderer ? (
-        <div className="space-y-3 md:hidden">
+      {mobileCardRenderer && isMobile ? (
+        <div className="space-y-3">
           {table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
@@ -104,10 +106,9 @@ export function DataTable<TData>({
             </div>
           ))}
         </div>
-      ) : null}
-
-      <div className={mobileCardRenderer ? 'hidden md:block' : undefined}>
-        <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
+      ) : (
+        <div>
+          <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
           <div className="overflow-x-auto">
             <Table className="min-w-[760px]">
               <TableHeader>
@@ -165,7 +166,8 @@ export function DataTable<TData>({
             </Table>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {table.getPageCount() > 1 ? (
         <div className="flex items-center justify-end gap-2">
