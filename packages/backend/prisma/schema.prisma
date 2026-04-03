@@ -65,13 +65,14 @@ model Project {
 }
 
 model AgentRunner {
-  id           String   @id @default(cuid())
+  id           String         @id @default(cuid())
   name         String
   description  String?
   type         String
   runnerConfig Json
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AgentSession[]
 }
 
 model ProfileSkill {
@@ -114,6 +115,7 @@ model ProfileRule {
 model AgentSession {
   id                     String           @id @default(cuid())
   runnerId               String
+  runner                 AgentRunner      @relation(fields: [runnerId], references: [id], onDelete: Restrict)
   runnerType             String
   scopeId                String
   status                 String
@@ -135,7 +137,7 @@ model AgentSession {
 }
 
 model SessionMessage {
-  id           String        @id @default(cuid())
+  id           String           @id @default(cuid())
   sessionId    String
   role         String
   status       String
@@ -145,8 +147,9 @@ model SessionMessage {
   errorPayload Json?
   cancelledAt  DateTime?
   eventId      Int?
-  createdAt    DateTime      @default(now())
-  session      AgentSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime         @default(now())
+  session      AgentSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  toolUses     MessageToolUse[]
   metrics      SessionMetric[]
 
   @@index([sessionId])
@@ -154,7 +157,7 @@ model SessionMessage {
 }
 
 model MessageToolUse {
-  id        String       @id @default(cuid())
+  id        String         @id @default(cuid())
   sessionId String
   messageId String
   eventId   Int
@@ -163,8 +166,9 @@ model MessageToolUse {
   args      Json?
   result    Json?
   error     Json?
-  createdAt DateTime     @default(now())
-  session   AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  session   AgentSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  message   SessionMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([messageId])

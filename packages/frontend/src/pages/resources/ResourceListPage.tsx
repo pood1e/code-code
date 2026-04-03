@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   ApiRequestError,
-  getReferencedProfiles
 } from '@/api/client';
+import { getReferencedProfiles } from '@/api/conflict-utils';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { deleteResource, listResources } from '@/api/resources';
 import { ConfirmDialog } from '@/components/app/ConfirmDialog';
@@ -30,7 +30,7 @@ import { resourceConfigMap } from '@/types/resources';
 import {
   formatDateTime,
   formatNullableDescription
-} from '@/utils/entity-table';
+} from '@/utils/format-display';
 
 type ResourceListPageProps = {
   kind: ResourceKind;

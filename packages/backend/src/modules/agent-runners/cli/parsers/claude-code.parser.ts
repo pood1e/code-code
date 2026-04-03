@@ -81,9 +81,8 @@ export function parseClaudeLine(
     return parseResult(parsed, state, now);
   }
 
-  // --- Direct content block events (some Claude versions emit these at top level) ---
   if (topType === 'message_start' || topType === 'message_delta' || topType === 'message_stop') {
-    return parseMessageLifecycle(parsed, state, now);
+    return parseMessageLifecycle(parsed);
   }
 
   return chunks;
@@ -302,9 +301,7 @@ function parseResult(
 }
 
 function parseMessageLifecycle(
-  parsed: Record<string, unknown>,
-  state: ClaudeParserState,
-  _now: number
+  parsed: Record<string, unknown>
 ): RawOutputChunk[] {
   // message_start / message_delta / message_stop are lifecycle markers.
   // For message_start, extract session_id if present.

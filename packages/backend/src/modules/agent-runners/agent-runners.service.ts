@@ -133,4 +133,15 @@ export class AgentRunnersService {
     const status = await runnerType.checkHealth(runner.runnerConfig);
     return { status };
   }
+
+  async probeRunnerContext(id: string): Promise<Record<string, unknown>> {
+    const runner = await this.getById(id);
+    const runnerType = this.runnerTypeRegistry.get(runner.type);
+    
+    if (!runnerType || !runnerType.probeContext) {
+      return {};
+    }
+
+    return runnerType.probeContext(runner.runnerConfig);
+  }
 }

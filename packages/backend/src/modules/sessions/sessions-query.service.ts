@@ -6,17 +6,16 @@ import type { AgentRunner } from '@prisma/client';
 import {
   MessageRole,
   MessageStatus,
-  type SessionMessageDetail,
   type SessionMessageMetric,
   type SessionSummary,
-  type SessionToolUse
+  type SessionToolUse,
+  type PagedSessionMessages
 } from '@agent-workbench/shared';
 
 import { sanitizeJson } from '../../common/json.utils';
 import { assertResourceIdsExist, type ResourceIdType } from '../../common/resource.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SessionMapper } from './session-mapper';
-import type { SessionRow } from './session.types';
 
 function sessionMessageAscendingOrder() {
   return [{ createdAt: 'asc' as const }, { id: 'asc' as const }];
@@ -53,56 +52,52 @@ export class SessionsQueryService {
     return this.sessionMapper.toSessionDetail(session);
   }
 
-  async listMessages(sessionId: string): Promise<SessionMessageDetail[]> {
+  async listMessages(
+    sessionId: string,
+    cursor?: string,
+    limit: number = 50
+  ): Promise<PagedSessionMessages> {
     await this.getSessionOrThrow(sessionId);
 
     const messages = await this.prisma.sessionMessage.findMany({
       where: { sessionId },
-      orderBy: sessionMessageAscendingOrder()
-    });
-    const toolUses = await this.prisma.messageToolUse.findMany({
-      where: { sessionId },
-      orderBy: eventAscendingOrder()
-    });
-    const metrics = await this.prisma.sessionMetric.findMany({
-      where: { sessionId },
-      orderBy: eventAscendingOrder()
-    });
-    const toolUsesByMessageId = new Map<string, SessionToolUse[]>();
-    const metricsByMessageId = new Map<string, SessionMessageMetric[]>();
-
-    for (const toolUse of toolUses) {
-      const list = toolUsesByMessageId.get(toolUse.messageId) ?? [];
-      list.push({
-        id: toolUse.id,
-        eventId: toolUse.eventId,
-        callId: toolUse.callId,
-        toolName: toolUse.toolName,
-        args: sanitizeJson(toolUse.args),
-        result: sanitizeJson(toolUse.result),
-        error: sanitizeJson(toolUse.error),
-        createdAt: toolUse.createdAt.toISOString()
-      });
-      toolUsesByMessageId.set(toolUse.messageId, list);
-    }
-
-    for (const metric of metrics) {
-      if (!metric.messageId) {
-        continue;
+      orderBy: sessionMessageDescendingOrder(),
+      take: limit,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      include: {
+        toolUses: { orderBy: eventAscendingOrder() },
+        metrics: { orderBy: eventAscendingOrder() }
       }
+    });
+    
+    const chronologicalMessages = messages.reverse();
+    const nextCursor = messages.length === limit ? chronologicalMessages[0].id : null;
 
-      const list = metricsByMessageId.get(metric.messageId) ?? [];
-      list.push(this.sessionMapper.toSessionMessageMetric(metric));
-      metricsByMessageId.set(metric.messageId, list);
-    }
+    return {
+      data: chronologicalMessages.map((message) => {
+        const toolUsesForMessage: SessionToolUse[] = message.toolUses.map((tu) => ({
+          id: tu.id,
+          eventId: tu.eventId,
+          callId: tu.callId,
+          toolName: tu.toolName,
+          args: sanitizeJson(tu.args),
+          result: sanitizeJson(tu.result),
+          error: sanitizeJson(tu.error),
+          createdAt: tu.createdAt.toISOString()
+        }));
+        const metricsForMessage = message.metrics
+          .filter((m) => m.messageId !== null)
+          .map((m) => this.sessionMapper.toSessionMessageMetric(m));
 
-    return messages.map((message) =>
-      this.sessionMapper.toSessionMessageDetail(
-        message,
-        toolUsesByMessageId.get(message.id) ?? [],
-        metricsByMessageId.get(message.id) ?? []
-      )
-    );
+        return this.sessionMapper.toSessionMessageDetail(
+          message,
+          toolUsesForMessage,
+          metricsForMessage
+        );
+      }),
+      nextCursor
+    };
   }
 
   getSessionMessageOrder() {

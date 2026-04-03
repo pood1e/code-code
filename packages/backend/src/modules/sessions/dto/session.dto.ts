@@ -116,3 +116,17 @@ export class SessionEventsQueryDto {
   @Min(0)
   afterEventId?: number;
 }
+
+export class SessionMessagesQueryDto {
+  @ApiPropertyOptional({ example: 'clq9z2y...' })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({ example: 50, default: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number = 50;
+}

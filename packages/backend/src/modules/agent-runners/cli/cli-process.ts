@@ -54,7 +54,7 @@ export class CliProcess {
     const baseEnv: Record<string, string> = {};
     for (const key of INHERITED_ENV_KEYS) {
       if (process.env[key]) {
-        baseEnv[key] = process.env[key] as string;
+        baseEnv[key] = process.env[key];
       }
     }
 

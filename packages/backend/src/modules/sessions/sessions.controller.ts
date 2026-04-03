@@ -16,7 +16,7 @@ import {
   ApiResponse,
   ApiTags
 } from '@nestjs/swagger';
-import { interval, map, merge } from 'rxjs';
+import { interval, map, merge, Subject, takeUntil, Observable } from 'rxjs';
 
 import { ResponseMessage } from '../../common/response-message.decorator';
 import { SkipApiResponse } from '../../common/skip-api-response.decorator';
@@ -25,6 +25,7 @@ import {
   EditSessionMessageDto,
   SendSessionMessageDto,
   SessionEventsQueryDto,
+  SessionMessagesQueryDto,
   SessionQueryDto
 } from './dto/session.dto';
 import { SessionsService } from './sessions.service';
@@ -115,8 +116,11 @@ export class SessionsController {
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Session messages fetched.' })
   @ResponseMessage('Session messages fetched')
-  listMessages(@Param('id') id: string) {
-    return this.sessionsService.listMessages(id);
+  listMessages(
+    @Param('id') id: string,
+    @Query() query: SessionMessagesQueryDto
+  ) {
+    return this.sessionsService.listMessages(id, query.cursor, query.limit);
   }
 
   @Sse(':id/events')
@@ -125,7 +129,10 @@ export class SessionsController {
     @Param('id') id: string,
     @Query() query: SessionEventsQueryDto
   ) {
+    const stop$ = new Subject<void>();
+
     const heartbeat$ = interval(30_000).pipe(
+      takeUntil(stop$),
       map(
         () =>
           ({
@@ -140,6 +147,19 @@ export class SessionsController {
       query.afterEventId ?? 0
     );
 
-    return merge(events$, heartbeat$);
+    // When events$ completes (session disposed), stop heartbeat so merge also completes
+    const boundEvents$ = new Observable<MessageEvent>((subscriber) => {
+      events$.subscribe({
+        next: (value) => subscriber.next(value),
+        error: (error) => subscriber.error(error),
+        complete: () => {
+          stop$.next();
+          stop$.complete();
+          subscriber.complete();
+        }
+      });
+    });
+
+    return merge(boundEvents$, heartbeat$);
   }
 }

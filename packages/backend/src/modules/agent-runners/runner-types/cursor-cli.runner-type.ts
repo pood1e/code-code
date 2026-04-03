@@ -1,6 +1,8 @@
+import { execFile } from 'child_process';
 import { z } from 'zod';
 
-import { createCliRunnerType, type CliRunnerState } from '../cli/cli-runner-base';
+import { CliRunnerTypeBase, type CliRunnerState } from '../cli/cli-runner-base';
+import { CliSessionRegistry } from '../cli/cli-session-registry';
 import type { CliProcessOptions } from '../cli/cli-process';
 import { probeCursorCliHealth } from '../cli/health-probes';
 import {
@@ -8,7 +10,9 @@ import {
   createCursorParserState,
   type CursorParserState
 } from '../cli/parsers/cursor-cli.parser';
-import type { RunnerSendPayload } from '../runner-type.interface';
+import type { RawOutputChunk, RunnerSendPayload } from '../runner-type.interface';
+import type { RunnerContext } from '@agent-workbench/shared';
+import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const cursorCliRunnerConfigSchema = z.object({
   executorUser: z.string().optional()
@@ -21,29 +25,69 @@ export const cursorCliInputSchema = z.object({
 });
 
 export const cursorCliRuntimeConfigSchema = z.object({
+  model: z.string().optional().describe('context:models'),
   mode: z.enum(['agent', 'ask', 'plan']).default('agent'),
   force: z.boolean().default(false),
   approveMcps: z.boolean().optional()
 });
 
-export const CursorCliRunnerType = createCliRunnerType({
-  id: 'cursor-cli',
-  name: 'Cursor CLI',
-  materializerTarget: 'cursor',
-  capabilities: {
-    skill: true,
-    rule: true,
-    mcp: true
-  },
-  runnerConfigSchema: cursorCliRunnerConfigSchema,
-  runnerSessionConfigSchema: cursorCliRunnerSessionConfigSchema,
-  inputSchema: cursorCliInputSchema,
-  runtimeConfigSchema: cursorCliRuntimeConfigSchema,
+@RunnerTypeProvider()
+export class CursorCliRunnerType extends CliRunnerTypeBase {
+  readonly id = 'cursor-cli';
+  readonly name = 'Cursor CLI';
+  readonly materializerTarget = 'cursor' as const;
+  readonly capabilities = { skill: true, rule: true, mcp: true };
+  readonly runnerConfigSchema = cursorCliRunnerConfigSchema;
+  readonly runnerSessionConfigSchema = cursorCliRunnerSessionConfigSchema;
+  readonly inputSchema = cursorCliInputSchema;
+  readonly runtimeConfigSchema = cursorCliRuntimeConfigSchema;
+
+  constructor(cliSessionRegistry: CliSessionRegistry) {
+    super(cliSessionRegistry);
+  }
 
   async checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'> {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
     return probeCursorCliHealth(config.executorUser);
-  },
+  }
+
+  async probeContext(runnerConfig: unknown): Promise<RunnerContext> {
+    const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
+    const command = config.executorUser ? 'sudo' : 'agent';
+    const args = config.executorUser ? ['-u', config.executorUser, '-i', 'agent', '--list-models'] : ['--list-models'];
+
+    return new Promise((resolve) => {
+      execFile(
+        command,
+        args,
+        {
+          timeout: 10_000,
+          env: {
+            PATH: process.env.PATH,
+            HOME: process.env.HOME,
+            USER: process.env.USER,
+            LANG: process.env.LANG
+          }
+        },
+        (error, stdout) => {
+          if (error) {
+            resolve({});
+            return;
+          }
+
+          const models: string[] = [];
+          const lines = stdout.split('\n');
+          for (const line of lines) {
+            const match = line.match(/^([a-z0-9\-.]+)\s+-/);
+            if (match) {
+              models.push(match[1]);
+            }
+          }
+          resolve({ models });
+        }
+      );
+    });
+  }
 
   buildCommand(
     runnerConfig: Record<string, unknown>,
@@ -52,9 +96,11 @@ export const CursorCliRunnerType = createCliRunnerType({
     payload: RunnerSendPayload
   ): CliProcessOptions {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
-    // const sessionConfig = cursorCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const sessionConfig = cursorCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
     const runtimeConfig = cursorCliRuntimeConfigSchema.parse(payload.runtimeConfig);
     const input = cursorCliInputSchema.parse(payload.input);
+
+    void sessionConfig;
 
     const args: string[] = [
       '-p', // non-interactive print mode
@@ -108,23 +154,23 @@ export const CursorCliRunnerType = createCliRunnerType({
       args,
       cwd
     };
-  },
+  }
 
   parseLine(
     line: string,
     _messageId: string,
     parserState: Record<string, unknown>
-  ): import('../runner-type.interface').RawOutputChunk[] {
+  ): RawOutputChunk[] {
     return parseCursorLine(line, parserState as unknown as CursorParserState);
-  },
+  }
 
-  extractSessionId(
+  override extractSessionId(
     parserState: Record<string, unknown>
   ): string | null {
     return (parserState as unknown as CursorParserState).sessionId;
-  },
+  }
 
   createParserState(messageId: string): Record<string, unknown> {
     return createCursorParserState(messageId) as unknown as Record<string, unknown>;
   }
-});
+}

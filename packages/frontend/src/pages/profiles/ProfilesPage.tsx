@@ -33,11 +33,11 @@ import { queryKeys } from '@/query/query-keys';
 import {
   buildProfilePayload,
   type ProfileEditorFormValues
-} from '@/pages/profiles/profile-editor.utils';
+} from '@/pages/profiles/profile-editor.form';
 import {
   formatDateTime,
   formatNullableDescription
-} from '@/utils/entity-table';
+} from '@/utils/format-display';
 
 const createProfileFormSchema = z.object({
   name: z.string().trim().min(1, 'Profile name is required').max(100),

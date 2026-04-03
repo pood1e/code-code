@@ -155,7 +155,7 @@ function buildProbeEnv(): Record<string, string> {
   const keys = ['PATH', 'HOME', 'SHELL', 'USER', 'LANG', 'TERM'];
   for (const key of keys) {
     if (process.env[key]) {
-      env[key] = process.env[key] as string;
+      env[key] = process.env[key];
     }
   }
   return env;

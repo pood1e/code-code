@@ -4,6 +4,35 @@ export type RunnerTypeCapabilities = {
   mcp: boolean;
 };
 
+// ---- Schema Field Descriptor protocol ----
+
+export type SchemaFieldKind =
+  | 'string'
+  | 'url'
+  | 'number'
+  | 'integer'
+  | 'boolean'
+  | 'enum';
+
+export type SchemaFieldDescriptor = {
+  name: string;
+  label: string;
+  description?: string;
+  kind: SchemaFieldKind;
+  required: boolean;
+  defaultValue?: string | number | boolean;
+  enumOptions?: Array<{ label: string; value: string | number }>;
+  /** When set, the field value should be fetched from runner context (e.g. 'models'). */
+  contextKey?: string;
+};
+
+export type SchemaDescriptor = {
+  fields: SchemaFieldDescriptor[];
+};
+
+// ---- Legacy JSON Schema types (deprecated — remove after full migration) ----
+
+/** @deprecated Use SchemaDescriptor instead */
 export type RunnerConfigJsonSchemaProperty = {
   type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array';
   title?: string;
@@ -13,6 +42,7 @@ export type RunnerConfigJsonSchemaProperty = {
   format?: string;
 };
 
+/** @deprecated Use SchemaDescriptor instead */
 export type RunnerConfigJsonSchema = {
   $schema?: string;
   type?: 'object';
@@ -30,11 +60,11 @@ export type RunnerTypeMeta = {
 };
 
 export type RunnerTypeResponse = RunnerTypeMeta & {
-  runnerConfigSchema: RunnerConfigJsonSchema;
-  runnerSessionConfigSchema: object;
-  inputSchema: object;
-  taskConfigSchema: object;
-  runtimeConfigSchema: object;
+  runnerConfigSchema: SchemaDescriptor;
+  runnerSessionConfigSchema: SchemaDescriptor;
+  inputSchema: SchemaDescriptor;
+  taskConfigSchema: SchemaDescriptor;
+  runtimeConfigSchema: SchemaDescriptor;
 };
 
 export type AgentRunnerSummary = {
@@ -62,3 +92,5 @@ export type UpdateAgentRunnerInput = {
   description?: string | null;
   runnerConfig?: Record<string, unknown>;
 };
+
+export type RunnerContext = Record<string, Array<{ label: string; value: string } | string>>;

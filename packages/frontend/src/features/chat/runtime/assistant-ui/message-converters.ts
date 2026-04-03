@@ -180,9 +180,15 @@ function buildAssistantContent(record: SessionAssistantMessageRecord) {
   return parts;
 }
 
+const convertCache = new WeakMap<SessionAssistantMessageRecord, ThreadMessageLike>();
+
 export function convertSessionMessageRecord(
   record: SessionAssistantMessageRecord
 ): ThreadMessageLike {
+  if (convertCache.has(record)) {
+    return convertCache.get(record)!;
+  }
+
   const { message, runtime } = record;
   const metadata: SessionAssistantMessageMetadata = {
     domainMessageId: message.id,
@@ -201,8 +207,10 @@ export function convertSessionMessageRecord(
         : null
   };
 
+  let result: ThreadMessageLike;
+
   if (message.role === MessageRoleEnum.User) {
-    return {
+    result = {
       id: message.id,
       role: 'user',
       createdAt: new Date(message.createdAt),
@@ -216,18 +224,21 @@ export function convertSessionMessageRecord(
         custom: metadata
       }
     };
+  } else {
+    result = {
+      id: message.id,
+      role: 'assistant',
+      createdAt: new Date(message.createdAt),
+      status: toAssistantStatus(message),
+      content: buildAssistantContent(record),
+      metadata: {
+        custom: metadata
+      }
+    };
   }
 
-  return {
-    id: message.id,
-    role: 'assistant',
-    createdAt: new Date(message.createdAt),
-    status: toAssistantStatus(message),
-    content: buildAssistantContent(record),
-    metadata: {
-      custom: metadata
-    }
-  };
+  convertCache.set(record, result);
+  return result;
 }
 
 export function getComposerText(message: AppendMessage) {
