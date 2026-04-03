@@ -17,7 +17,9 @@ const sampleData = `
 {"type":"tool_call","subtype":"started","call_id":"call-1","tool_name":"read_file","args":{"path":"foo.txt"}}
 {"type":"tool_call","subtype":"completed","call_id":"call-1","tool_name":"read_file","result":"File content"}
 {"type":"result","is_error":false,"result":"Hello World!","usage":{"input_tokens":5,"output_tokens":3}}
-`.trim().split('\n');
+`
+  .trim()
+  .split('\n');
 
 test('Cursor parser maps stream-json to output chunks correctly (diffs snapshots)', () => {
   const state = createCursorParserState('msg-id-2');
@@ -33,18 +35,18 @@ test('Cursor parser maps stream-json to output chunks correctly (diffs snapshots
   // reasoning buffer should be cleared on thinking_done
   assert.strictEqual(state.reasoningBuffer, '');
 
-  const textDeltas = allChunks.filter(c => c.kind === 'message_delta');
+  const textDeltas = allChunks.filter((c) => c.kind === 'message_delta');
   assert.strictEqual(textDeltas.length, 3);
   assert.strictEqual((textDeltas[0] as any).data.deltaText, 'Hello');
   assert.strictEqual((textDeltas[1] as any).data.deltaText, ' World');
   assert.strictEqual((textDeltas[2] as any).data.deltaText, '!');
 
-  const thinkingDeltas = allChunks.filter(c => c.kind === 'thinking_delta');
+  const thinkingDeltas = allChunks.filter((c) => c.kind === 'thinking_delta');
   assert.strictEqual(thinkingDeltas.length, 2);
   assert.strictEqual((thinkingDeltas[0] as any).data.deltaText, 'Let me think');
   assert.strictEqual((thinkingDeltas[1] as any).data.deltaText, ' about this');
 
-  const toolCalls = allChunks.filter(c => c.kind === 'tool_use');
+  const toolCalls = allChunks.filter((c) => c.kind === 'tool_use');
   assert.strictEqual(toolCalls.length, 2);
   assert.strictEqual((toolCalls[0] as any).data.callId, 'call-1');
   assert.deepStrictEqual((toolCalls[0] as any).data.args, { path: 'foo.txt' });

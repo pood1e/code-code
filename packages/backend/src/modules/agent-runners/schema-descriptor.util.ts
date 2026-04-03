@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { SchemaDescriptor, SchemaFieldDescriptor, SchemaFieldKind } from '@agent-workbench/shared';
+import type {
+  SchemaDescriptor,
+  SchemaFieldDescriptor,
+  SchemaFieldKind
+} from '@agent-workbench/shared';
 
 /**
  * Convert a Zod schema into a SchemaDescriptor for API transmission.
@@ -56,7 +60,7 @@ function unwrapFieldMeta(schema: z.ZodTypeAny): FieldMeta {
     }
 
     const def = current._def as unknown as Record<string, unknown>;
-    const defType = def.typeName as string ?? def.type as string;
+    const defType = (def.typeName as string) ?? (def.type as string);
 
     if (defType === 'optional' || defType === 'nullable') {
       isOptional = true;
@@ -110,7 +114,8 @@ function zodFieldToDescriptor(
   name: string,
   schema: z.ZodTypeAny
 ): SchemaFieldDescriptor | null {
-  const { core, isOptional, defaultValue, description } = unwrapFieldMeta(schema);
+  const { core, isOptional, defaultValue, description } =
+    unwrapFieldMeta(schema);
 
   // Parse context key from description convention "context:<key>"
   let contextKey: string | undefined;
@@ -124,7 +129,7 @@ function zodFieldToDescriptor(
   const label = toFieldLabel(name);
 
   const coreDef = core._def as unknown as Record<string, unknown>;
-  const coreType = coreDef.typeName as string ?? coreDef.type as string;
+  const coreType = (coreDef.typeName as string) ?? (coreDef.type as string);
 
   // Enum
   if (coreType === 'enum') {
@@ -159,10 +164,11 @@ function zodFieldToDescriptor(
   // Number
   if (coreType === 'number') {
     const checks = coreDef.checks as Array<Record<string, unknown>> | undefined;
-    const hasIntCheck = checks?.some((check) => {
-      const isInt = (check as { isInt?: boolean }).isInt;
-      return isInt === true;
-    }) ?? false;
+    const hasIntCheck =
+      checks?.some((check) => {
+        const isInt = (check as { isInt?: boolean }).isInt;
+        return isInt === true;
+      }) ?? false;
     return {
       name,
       label,
@@ -191,8 +197,14 @@ function zodFieldToDescriptor(
   return null;
 }
 
-function normalizeDefault(value: unknown): string | number | boolean | undefined {
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+function normalizeDefault(
+  value: unknown
+): string | number | boolean | undefined {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
     return value;
   }
   return undefined;

@@ -20,7 +20,10 @@ test.describe('引用冲突保护', () => {
 
   test('被 Profile 引用的 Skill 删除应有冲突提示', async ({ page }) => {
     // 创建 Skill + Profile + 关联
-    const skill = await apiPost('/skills', { name: 'Referenced Skill', content: 'content' });
+    const skill = await apiPost('/skills', {
+      name: 'Referenced Skill',
+      content: 'content'
+    });
     const profile = await apiPost('/profiles', { name: 'Ref Profile' });
     await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
       method: 'PUT',
@@ -43,7 +46,9 @@ test.describe('引用冲突保护', () => {
     await expect(dialog).toBeVisible();
 
     // 用户确认删除
-    const confirmBtn = dialog.getByRole('button', { name: /确认|删除|confirm|delete/i }).first();
+    const confirmBtn = dialog
+      .getByRole('button', { name: /确认|删除|confirm|delete/i })
+      .first();
     await confirmBtn.click();
 
     // 因为被引用，应该看到错误提示（409 冲突）
@@ -54,7 +59,10 @@ test.describe('引用冲突保护', () => {
   });
 
   test('未被引用的 Skill 可以成功删除', async ({ page }) => {
-    const skill = await apiPost('/skills', { name: 'Orphan Skill', content: 'content' });
+    const skill = await apiPost('/skills', {
+      name: 'Orphan Skill',
+      content: 'content'
+    });
 
     await page.goto('/skills');
     await expect(page.getByText('Orphan Skill')).toBeVisible();
@@ -65,7 +73,9 @@ test.describe('引用冲突保护', () => {
     // 确认删除
     const dialog = page.getByRole('alertdialog').or(page.getByRole('dialog'));
     await expect(dialog).toBeVisible();
-    const confirmBtn = dialog.getByRole('button', { name: /确认|删除|confirm|delete/i }).first();
+    const confirmBtn = dialog
+      .getByRole('button', { name: /确认|删除|confirm|delete/i })
+      .first();
     await confirmBtn.click();
 
     // 应该删除成功，Skill 不再出现
@@ -103,9 +113,15 @@ test.describe('Project 创建验证', () => {
 
     const dialog = page.getByRole('dialog');
 
-    await dialog.getByRole('textbox', { name: 'Name' }).fill('Bad Path Project');
-    await dialog.getByRole('textbox', { name: 'Git URL' }).fill('git@github.com:test/bad.git');
-    await dialog.getByRole('textbox', { name: 'Workspace Path' }).fill('/nonexistent/path/12345');
+    await dialog
+      .getByRole('textbox', { name: 'Name' })
+      .fill('Bad Path Project');
+    await dialog
+      .getByRole('textbox', { name: 'Git URL' })
+      .fill('git@github.com:test/bad.git');
+    await dialog
+      .getByRole('textbox', { name: 'Workspace Path' })
+      .fill('/nonexistent/path/12345');
 
     await dialog.getByRole('button', { name: /创建/i }).click();
 
@@ -121,7 +137,9 @@ test.describe('Project 创建验证', () => {
     const dialog = page.getByRole('dialog');
 
     await dialog.getByRole('textbox', { name: 'Name' }).fill('Bad Git Project');
-    await dialog.getByRole('textbox', { name: 'Git URL' }).fill('not-a-git-url');
+    await dialog
+      .getByRole('textbox', { name: 'Git URL' })
+      .fill('not-a-git-url');
     await dialog.getByRole('textbox', { name: 'Workspace Path' }).fill('/tmp');
 
     await dialog.getByRole('button', { name: /创建/i }).click();

@@ -40,10 +40,16 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>
+            {cancelLabel}
+          </AlertDialogCancel>
           <AlertDialogAction
             disabled={pending}
-            className={destructive ? 'bg-destructive text-white hover:bg-destructive/90' : undefined}
+            className={
+              destructive
+                ? 'bg-destructive text-white hover:bg-destructive/90'
+                : undefined
+            }
             onClick={(event) => {
               event.preventDefault();
               onConfirm();

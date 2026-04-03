@@ -104,7 +104,10 @@ export async function probeQwenCliHealth(
     const output = await runProbeCommand(command, args);
 
     // Look for the success marker
-    if (output.includes('✓ Authentication Method:') || output.includes('Authentication Method:')) {
+    if (
+      output.includes('✓ Authentication Method:') ||
+      output.includes('Authentication Method:')
+    ) {
       return 'online';
     }
 
@@ -120,10 +123,7 @@ export async function probeQwenCliHealth(
   }
 }
 
-function runProbeCommand(
-  command: string,
-  args: string[]
-): Promise<string> {
+function runProbeCommand(command: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile(
       command,

@@ -88,7 +88,9 @@ test.describe('表单验证反馈', () => {
     await expect(dialog).toBeVisible();
 
     await dialog.getByRole('textbox', { name: 'Name' }).fill('Valid Name');
-    await dialog.getByRole('textbox', { name: 'Git URL' }).fill('https://not-ssh-url.com');
+    await dialog
+      .getByRole('textbox', { name: 'Git URL' })
+      .fill('https://not-ssh-url.com');
     await dialog.getByRole('textbox', { name: 'Workspace Path' }).fill('/tmp');
 
     await dialog.getByRole('button', { name: /创建/i }).click();
@@ -112,11 +114,15 @@ test.describe('页面健壮性', () => {
       await expect(main).toBeVisible();
 
       // 展开侧栏
-      const expandBtn = page.getByRole('button', { name: /展开|侧栏/i }).first();
+      const expandBtn = page
+        .getByRole('button', { name: /展开|侧栏/i })
+        .first();
       await expandBtn.click();
 
       // 导航应恢复
-      await expect(page.getByRole('button', { name: 'Projects' })).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Projects' })
+      ).toBeVisible();
     }
   });
 

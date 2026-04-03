@@ -24,7 +24,11 @@ import {
 } from '@/lib/runner-config-schema';
 
 export const agentRunnerEditorFormSchema = z.object({
-  name: z.string().trim().min(1, 'Name 为必填项').max(100, 'Name 最多 100 个字符'),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Name 为必填项')
+    .max(100, 'Name 最多 100 个字符'),
   description: z
     .string()
     .trim()
@@ -55,7 +59,9 @@ export function buildAgentRunnerInitialValues(
   const selectedType =
     runnerTypes.find((runnerType) => runnerType.id === detail?.type) ??
     runnerTypes[0];
-  const parsedSchema = parseRunnerConfigSchema(selectedType?.runnerConfigSchema);
+  const parsedSchema = parseRunnerConfigSchema(
+    selectedType?.runnerConfigSchema
+  );
 
   return {
     name: detail?.name ?? '',
@@ -100,7 +106,9 @@ export function getRunnerTypeName(
   runnerTypes: RunnerTypeResponse[],
   typeId: string
 ) {
-  return runnerTypes.find((runnerType) => runnerType.id === typeId)?.name ?? typeId;
+  return (
+    runnerTypes.find((runnerType) => runnerType.id === typeId)?.name ?? typeId
+  );
 }
 
 export function isRunnerConfigSchemaSupported(
@@ -126,14 +134,17 @@ export function getRunnerConfigDefaultSummary(
   }
 
   return parsedSchema.fields
-    .filter((field: RunnerConfigField) => isPrimitiveDefault(field.defaultValue))
-    .map((field: RunnerConfigField) => `${field.label}: ${String(field.defaultValue)}`)
+    .filter((field: RunnerConfigField) =>
+      isPrimitiveDefault(field.defaultValue)
+    )
+    .map(
+      (field: RunnerConfigField) =>
+        `${field.label}: ${String(field.defaultValue)}`
+    )
     .join(' · ');
 }
 
-export function stringifyRunnerConfig(
-  runnerConfig?: Record<string, unknown>
-) {
+export function stringifyRunnerConfig(runnerConfig?: Record<string, unknown>) {
   return JSON.stringify(runnerConfig ?? {}, null, 2);
 }
 

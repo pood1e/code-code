@@ -147,7 +147,11 @@ describe('Profiles API', () => {
         mcps: {
           content: { command: string; args: string[] };
           configOverride: { args: string[] };
-          resolved: { command: string; args: string[]; env: Record<string, string> };
+          resolved: {
+            command: string;
+            args: string[];
+            env: Record<string, string>;
+          };
         }[];
       }>(saveRes);
 

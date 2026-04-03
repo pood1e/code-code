@@ -37,7 +37,11 @@ export function saveResource<K extends ResourceKind>(
   switch (kind) {
     case 'skills':
       return id
-        ? updateResource('skills', id, payload as ResourcePayloadByKind['skills'])
+        ? updateResource(
+            'skills',
+            id,
+            payload as ResourcePayloadByKind['skills']
+          )
         : createResource('skills', payload as ResourcePayloadByKind['skills']);
     case 'mcps':
       return id

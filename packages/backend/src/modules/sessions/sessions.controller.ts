@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Query,
@@ -71,6 +72,7 @@ export class SessionsController {
   }
 
   @Post(':id/messages')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Send a message to session' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Session messages updated.' })
@@ -80,6 +82,7 @@ export class SessionsController {
   }
 
   @Post(':id/cancel')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Cancel current session output' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Session output cancelled.' })
@@ -89,6 +92,7 @@ export class SessionsController {
   }
 
   @Post(':id/reload')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Reload last assistant response' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Session reloaded.' })
@@ -98,6 +102,7 @@ export class SessionsController {
   }
 
   @Post(':id/messages/:messageId/edit')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Edit a previous user message and rerun session' })
   @ApiParam({ name: 'id', type: String })
   @ApiParam({ name: 'messageId', type: String })
@@ -125,10 +130,7 @@ export class SessionsController {
 
   @Sse(':id/events')
   @SkipApiResponse()
-  async stream(
-    @Param('id') id: string,
-    @Query() query: SessionEventsQueryDto
-  ) {
+  async stream(@Param('id') id: string, @Query() query: SessionEventsQueryDto) {
     const stop$ = new Subject<void>();
 
     const heartbeat$ = interval(30_000).pipe(

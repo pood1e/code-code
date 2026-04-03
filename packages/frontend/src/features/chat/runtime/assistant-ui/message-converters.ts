@@ -1,7 +1,4 @@
-import type {
-  AppendMessage,
-  ThreadMessageLike
-} from '@assistant-ui/react';
+import type { AppendMessage, ThreadMessageLike } from '@assistant-ui/react';
 import type {
   ErrorPayload,
   MessageStatus,
@@ -32,7 +29,10 @@ export type SessionAssistantMessageMetadata = {
   nonRecoverableError: ErrorPayload | null;
 };
 
-type AssistantContentPart = Exclude<ThreadMessageLike['content'], string>[number];
+type AssistantContentPart = Exclude<
+  ThreadMessageLike['content'],
+  string
+>[number];
 
 function stringifyValue(value: unknown) {
   if (typeof value === 'string') {
@@ -85,14 +85,19 @@ function normalizeJsonValue(value: unknown): ReadonlyJSONValue {
 
   if (isRecord(value)) {
     return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, normalizeJsonValue(item)])
+      Object.entries(value).map(([key, item]) => [
+        key,
+        normalizeJsonValue(item)
+      ])
     );
   }
 
   return stringifyValue(value);
 }
 
-function normalizeJsonObject(value: Record<string, unknown>): ReadonlyJSONObject {
+function normalizeJsonObject(
+  value: Record<string, unknown>
+): ReadonlyJSONObject {
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [key, normalizeJsonValue(item)])
   );
@@ -109,10 +114,15 @@ function toToolArgs(value: unknown) {
 }
 
 function isUserCancelled(message: SessionMessageDetail) {
-  return message.errorPayload?.code === 'USER_CANCELLED' || Boolean(message.cancelledAt);
+  return (
+    message.errorPayload?.code === 'USER_CANCELLED' ||
+    Boolean(message.cancelledAt)
+  );
 }
 
-function toAssistantStatus(message: SessionMessageDetail): ThreadMessageLike['status'] {
+function toAssistantStatus(
+  message: SessionMessageDetail
+): ThreadMessageLike['status'] {
   if (isUserCancelled(message)) {
     return {
       type: 'complete',
@@ -180,7 +190,10 @@ function buildAssistantContent(record: SessionAssistantMessageRecord) {
   return parts;
 }
 
-const convertCache = new WeakMap<SessionAssistantMessageRecord, ThreadMessageLike>();
+const convertCache = new WeakMap<
+  SessionAssistantMessageRecord,
+  ThreadMessageLike
+>();
 
 export function convertSessionMessageRecord(
   record: SessionAssistantMessageRecord
@@ -198,7 +211,9 @@ export function convertSessionMessageRecord(
     inputContent: message.inputContent,
     cancelledAt: runtime?.cancelledAt ?? message.cancelledAt,
     recoverableError:
-      message.errorPayload && message.errorPayload.recoverable && !isUserCancelled(message)
+      message.errorPayload &&
+      message.errorPayload.recoverable &&
+      !isUserCancelled(message)
         ? message.errorPayload
         : null,
     nonRecoverableError:

@@ -118,18 +118,14 @@ export async function seedSkill(
 export async function seedRule(
   overrides: Record<string, unknown> = {}
 ): Promise<{ id: string; name: string }> {
-  const res = await api()
-    .post('/api/rules')
-    .send(createRulePayload(overrides));
+  const res = await api().post('/api/rules').send(createRulePayload(overrides));
   return expectSuccess(res, 201);
 }
 
 export async function seedMcp(
   overrides: Record<string, unknown> = {}
 ): Promise<{ id: string; name: string }> {
-  const res = await api()
-    .post('/api/mcps')
-    .send(createMcpPayload(overrides));
+  const res = await api().post('/api/mcps').send(createMcpPayload(overrides));
   return expectSuccess(res, 201);
 }
 

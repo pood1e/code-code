@@ -19,8 +19,14 @@ test.describe('Profile 编辑器', () => {
   test.beforeAll(async () => {
     await cleanupTestData();
 
-    const skill = await apiPost('/skills', { name: 'Editor Skill', content: 'content' });
-    const rule = await apiPost('/rules', { name: 'Editor Rule', content: 'content' });
+    const skill = await apiPost('/skills', {
+      name: 'Editor Skill',
+      content: 'content'
+    });
+    const rule = await apiPost('/rules', {
+      name: 'Editor Rule',
+      content: 'content'
+    });
     const mcp = await apiPost('/mcps', {
       name: 'Editor MCP',
       content: { type: 'stdio', command: 'echo', args: ['test'] }
@@ -95,7 +101,10 @@ test.describe('Profile 导出与渲染', () => {
 
   test.beforeAll(async () => {
     await cleanupTestData();
-    const skill = await apiPost('/skills', { name: 'Export Skill', content: '# Exported skill' });
+    const skill = await apiPost('/skills', {
+      name: 'Export Skill',
+      content: '# Exported skill'
+    });
     const profile = await apiPost('/profiles', { name: 'Export Profile' });
     await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
       method: 'PUT',

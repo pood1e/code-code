@@ -9,12 +9,7 @@ import {
   Post,
   Query
 } from '@nestjs/common';
-import {
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-  ApiParam
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 
 import { ResponseMessage } from '../../common/response-message.decorator';
 import { RunnerTypeRegistry } from './runner-type.registry';
@@ -104,7 +99,9 @@ export class AgentRunnersController {
   }
 
   @Get('agent-runners/:id/context')
-  @ApiOperation({ summary: 'Probe underlying CLI for available context options (e.g. models)' })
+  @ApiOperation({
+    summary: 'Probe underlying CLI for available context options (e.g. models)'
+  })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Runner context options fetched.' })
   @ResponseMessage('Runner context options fetched')

@@ -131,9 +131,10 @@ export function applyOutputChunkToMessages(
           ? {
               ...message,
               status: MessageStatusEnum.Streaming,
-              thinkingText: chunk.data.accumulatedText !== undefined
-                ? chunk.data.accumulatedText
-                : `${message.thinkingText ?? ''}${chunk.data.deltaText ?? ''}`
+              thinkingText:
+                chunk.data.accumulatedText !== undefined
+                  ? chunk.data.accumulatedText
+                  : `${message.thinkingText ?? ''}${chunk.data.deltaText ?? ''}`
             }
           : message
       );
@@ -143,9 +144,10 @@ export function applyOutputChunkToMessages(
           ? {
               ...message,
               status: MessageStatusEnum.Streaming,
-              outputText: chunk.data.accumulatedText !== undefined
-                ? chunk.data.accumulatedText
-                : `${message.outputText ?? ''}${chunk.data.deltaText ?? ''}`
+              outputText:
+                chunk.data.accumulatedText !== undefined
+                  ? chunk.data.accumulatedText
+                  : `${message.outputText ?? ''}${chunk.data.deltaText ?? ''}`
             }
           : message
       );

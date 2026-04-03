@@ -32,7 +32,7 @@ export function SessionSelector({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const selectedTitle = useMemo(() => {
     if (!selectedSessionId) return '选择 Session';
-    const session = sessions.find(s => s.id === selectedSessionId);
+    const session = sessions.find((s) => s.id === selectedSessionId);
     if (!session) return '选择 Session';
     return runnerNameById[session.runnerId] ?? session.runnerType;
   }, [selectedSessionId, sessions, runnerNameById]);
@@ -45,10 +45,12 @@ export function SessionSelector({
         className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
       >
         <span className="max-w-[12rem] truncate">{selectedTitle}</span>
-        <ChevronDown className={cn(
-          'size-3.5 text-muted-foreground transition-transform duration-200',
-          dropdownOpen && 'rotate-180'
-        )} />
+        <ChevronDown
+          className={cn(
+            'size-3.5 text-muted-foreground transition-transform duration-200',
+            dropdownOpen && 'rotate-180'
+          )}
+        />
       </button>
 
       {dropdownOpen ? (
@@ -60,7 +62,8 @@ export function SessionSelector({
           <div className="absolute left-0 top-full z-20 mt-1 w-72 rounded-xl border border-border/60 bg-background/98 py-1 shadow-xl backdrop-blur">
             <div className="max-h-64 overflow-y-auto">
               {sessions.map((session) => {
-                const title = runnerNameById[session.runnerId] ?? session.runnerType;
+                const title =
+                  runnerNameById[session.runnerId] ?? session.runnerType;
                 const isSelected = session.id === selectedSessionId;
                 return (
                   <button
@@ -78,13 +81,17 @@ export function SessionSelector({
                     )}
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{title}</p>
+                      <p className="truncate font-medium text-foreground">
+                        {title}
+                      </p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {formatRelativeTime(session.updatedAt)}
                       </p>
                     </div>
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      {getSessionStatusLabel(session.status as SessionStatusEnum)}
+                      {getSessionStatusLabel(
+                        session.status as SessionStatusEnum
+                      )}
                     </span>
                   </button>
                 );

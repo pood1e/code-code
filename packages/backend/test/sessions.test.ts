@@ -28,9 +28,7 @@ describe('Sessions API', () => {
 
   // ---- 辅助函数：创建一个可用的 Session ----
 
-  async function createTestSession(options?: {
-    withInitialMessage?: boolean;
-  }) {
+  async function createTestSession(options?: { withInitialMessage?: boolean }) {
     const project = await seedProject();
     const runner = await seedAgentRunner();
 
@@ -169,9 +167,7 @@ describe('Sessions API', () => {
       await new Promise((r) => setTimeout(r, 800));
 
       // Check messages
-      const msgRes = await api().get(
-        `/api/sessions/${session.id}/messages`
-      );
+      const msgRes = await api().get(`/api/sessions/${session.id}/messages`);
       const msgData = expectSuccess<{
         data: { role: string }[];
       }>(msgRes);
@@ -235,8 +231,7 @@ describe('Sessions API', () => {
       return new Promise((resolve) => {
         const server = getApp().getHttpServer();
         const addr = server.address();
-        const port =
-          typeof addr === 'object' && addr ? addr.port : 0;
+        const port = typeof addr === 'object' && addr ? addr.port : 0;
 
         const chunks: string[] = [];
         const req = http.get(
@@ -305,16 +300,14 @@ describe('Sessions API', () => {
     it('scopeId 不存在时应返回错误', async () => {
       const runner = await seedAgentRunner();
 
-      const res = await api()
-        .post('/api/sessions')
-        .send({
-          scopeId: 'nonexistent-project',
-          runnerId: runner.id,
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      const res = await api().post('/api/sessions').send({
+        scopeId: 'nonexistent-project',
+        runnerId: runner.id,
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
 
       expect([400, 404]).toContain(res.status);
     });
@@ -322,16 +315,14 @@ describe('Sessions API', () => {
     it('runnerId 不存在时应返回错误', async () => {
       const project = await seedProject();
 
-      const res = await api()
-        .post('/api/sessions')
-        .send({
-          scopeId: project.id,
-          runnerId: 'nonexistent-runner',
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      const res = await api().post('/api/sessions').send({
+        scopeId: project.id,
+        runnerId: 'nonexistent-runner',
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
 
       expect([400, 404]).toContain(res.status);
     });
@@ -339,15 +330,13 @@ describe('Sessions API', () => {
     it('缺少必填字段 scopeId 返回 400', async () => {
       const runner = await seedAgentRunner();
 
-      const res = await api()
-        .post('/api/sessions')
-        .send({
-          runnerId: runner.id,
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        });
+      const res = await api().post('/api/sessions').send({
+        runnerId: runner.id,
+        skillIds: [],
+        ruleIds: [],
+        mcps: [],
+        runnerSessionConfig: {}
+      });
       expectError(res, 400);
     });
   });

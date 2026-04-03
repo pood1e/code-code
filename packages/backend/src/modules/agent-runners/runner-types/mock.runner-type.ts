@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import type { PlatformSessionConfig, RunnerTypeCapabilities } from '@agent-workbench/shared';
+import type {
+  PlatformSessionConfig,
+  RunnerTypeCapabilities
+} from '@agent-workbench/shared';
 import type { ZodTypeAny } from 'zod';
 import type {
   RawOutputChunk,
@@ -26,7 +29,8 @@ export class MockRunnerType implements RunnerType {
     mcp: false
   };
   readonly runnerConfigSchema: ZodTypeAny = mockRunnerConfigSchema;
-  readonly runnerSessionConfigSchema: ZodTypeAny = mockRunnerSessionConfigSchema;
+  readonly runnerSessionConfigSchema: ZodTypeAny =
+    mockRunnerSessionConfigSchema;
   readonly inputSchema: ZodTypeAny = mockInputSchema;
   readonly runtimeConfigSchema: ZodTypeAny = mockRuntimeConfigSchema;
 
@@ -34,7 +38,12 @@ export class MockRunnerType implements RunnerType {
     return Promise.resolve<'online'>('online');
   }
 
-  createSession(sessionId: string, _runnerConfig: unknown, _platformSessionConfig: PlatformSessionConfig, _runnerSessionConfig: unknown): Promise<Record<string, unknown>> {
+  createSession(
+    sessionId: string,
+    _runnerConfig: unknown,
+    _platformSessionConfig: PlatformSessionConfig,
+    _runnerSessionConfig: unknown
+  ): Promise<Record<string, unknown>> {
     void sessionId;
     void _runnerConfig;
     void _platformSessionConfig;

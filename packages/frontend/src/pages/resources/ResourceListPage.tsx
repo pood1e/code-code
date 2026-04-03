@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient
+} from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ResourceKind, ResourceRecord } from '@agent-workbench/shared';
 import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  ApiRequestError,
-} from '@/api/client';
+import { ApiRequestError } from '@/api/client';
 import { getReferencedProfiles } from '@/api/conflict-utils';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { deleteResource, listResources } from '@/api/resources';
@@ -50,7 +53,9 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
   const searchValue = useUiStore((state) => state.resourceSearch[kind]);
   const setSearchValue = useUiStore((state) => state.setResourceSearch);
   const debouncedSearchValue = useDebouncedValue(searchValue.trim(), 300);
-  const [pendingDelete, setPendingDelete] = useState<ResourceRecord | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ResourceRecord | null>(
+    null
+  );
   const [referencedState, setReferencedState] =
     useState<ReferencedProfilesDialogState>({
       open: false,
@@ -114,7 +119,9 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
         cell: ({ row }) => (
           <button
             type="button"
-            onClick={() => void navigate(`${config.path}/${row.original.id}/edit`)}
+            onClick={() =>
+              void navigate(`${config.path}/${row.original.id}/edit`)
+            }
             className="text-left font-medium text-foreground transition-colors hover:text-primary"
           >
             {row.original.name}
@@ -150,7 +157,9 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
               size="sm"
               aria-label={`编辑 ${row.original.name}`}
               title={`编辑 ${row.original.name}`}
-              onClick={() => void navigate(`${config.path}/${row.original.id}/edit`)}
+              onClick={() =>
+                void navigate(`${config.path}/${row.original.id}/edit`)
+              }
             >
               <Pencil data-icon="inline-start" />
               编辑
@@ -195,7 +204,9 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
             >
               <RefreshCw
                 data-icon="inline-start"
-                className={resourceListQuery.isFetching ? 'animate-spin' : undefined}
+                className={
+                  resourceListQuery.isFetching ? 'animate-spin' : undefined
+                }
               />
               <span className="hidden sm:inline">刷新</span>
             </Button>
@@ -206,7 +217,9 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
               onClick={() => void navigate(`${config.path}/new`)}
             >
               <Plus data-icon="inline-start" />
-              <span className="hidden sm:inline">新建 {config.singularLabel}</span>
+              <span className="hidden sm:inline">
+                新建 {config.singularLabel}
+              </span>
             </Button>
           </div>
         </div>
@@ -220,9 +233,7 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
           emptyTitle={`暂无 ${config.pluralLabel}`}
           emptyDescription={config.emptyState}
           emptyAction={
-            <Button
-              onClick={() => void navigate(`${config.path}/new`)}
-            >
+            <Button onClick={() => void navigate(`${config.path}/new`)}>
               <Plus data-icon="inline-start" />
               新建 {config.singularLabel}
             </Button>
@@ -249,7 +260,9 @@ export function ResourceListPage({ kind }: ResourceListPageProps) {
                     size="sm"
                     aria-label={`编辑 ${item.name}`}
                     title={`编辑 ${item.name}`}
-                    onClick={() => void navigate(`${config.path}/${item.id}/edit`)}
+                    onClick={() =>
+                      void navigate(`${config.path}/${item.id}/edit`)
+                    }
                   >
                     编辑
                   </Button>

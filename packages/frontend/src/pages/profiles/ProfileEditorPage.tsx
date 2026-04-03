@@ -5,11 +5,7 @@ import {
   useMemo,
   useState
 } from 'react';
-import {
-  useMutation,
-  useQueries,
-  useQueryClient
-} from '@tanstack/react-query';
+import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import {
   type ProfileDetail,
   type SaveProfileInput
@@ -20,14 +16,9 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import {
-  isNotFoundApiError
-} from '@/api/client';
+import { isNotFoundApiError } from '@/api/client';
 import { useErrorMessage } from '@/hooks/use-error-message';
-import {
-  getProfile,
-  saveProfile
-} from '@/api/profiles';
+import { getProfile, saveProfile } from '@/api/profiles';
 import { listResources } from '@/api/resources';
 import { EditorToolbar } from '@/components/app/EditorToolbar';
 import { FormField } from '@/components/app/FormField';
@@ -63,8 +54,6 @@ import {
   type SelectedMcpItem
 } from './profile-editor.form';
 
-
-
 export function ProfileEditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -76,15 +65,12 @@ export function ProfileEditorPage() {
     }
   }, [id, navigate]);
 
-  const [
-    profileDetailQuery,
-    skillsQuery,
-    mcpsQuery,
-    rulesQuery
-  ] = useQueries({
+  const [profileDetailQuery, skillsQuery, mcpsQuery, rulesQuery] = useQueries({
     queries: [
       {
-        queryKey: id ? queryKeys.profiles.detail(id) : queryKeys.profiles.list(),
+        queryKey: id
+          ? queryKeys.profiles.detail(id)
+          : queryKeys.profiles.list(),
         queryFn: () => getProfile(id!),
         enabled: Boolean(id)
       },
@@ -281,7 +267,11 @@ function ProfileEditorContent({
   const addBaseResource = useCallback(
     (
       resourceId: string,
-      resources: Array<{ id: string; name: string; description: string | null }>,
+      resources: Array<{
+        id: string;
+        name: string;
+        description: string | null;
+      }>,
       selectedIds: Set<string>,
       setItems: React.Dispatch<React.SetStateAction<SelectedBaseItem[]>>
     ) => {
@@ -307,45 +297,58 @@ function ProfileEditorContent({
 
   const addSkill = useCallback(
     (resourceId: string) => {
-      addBaseResource(resourceId, catalog.skills, selectedSkillIds, setSelectedSkills);
+      addBaseResource(
+        resourceId,
+        catalog.skills,
+        selectedSkillIds,
+        setSelectedSkills
+      );
     },
     [addBaseResource, catalog.skills, selectedSkillIds]
   );
 
   const addRule = useCallback(
     (resourceId: string) => {
-      addBaseResource(resourceId, catalog.rules, selectedRuleIds, setSelectedRules);
+      addBaseResource(
+        resourceId,
+        catalog.rules,
+        selectedRuleIds,
+        setSelectedRules
+      );
     },
     [addBaseResource, catalog.rules, selectedRuleIds]
   );
 
-  const addMcp = useCallback((resourceId: string) => {
-    const resource = catalog.mcps.find((item) => item.id === resourceId);
-    if (!resource || selectedMcpIds.has(resourceId)) {
-      return;
-    }
-
-    setSelectedMcps((current) =>
-      syncOrders([
-        ...current,
-        {
-          resourceId,
-          name: resource.name,
-          description: resource.description,
-          order: current.length,
-          command: resource.content.command,
-          configOverride: undefined
-        }
-      ])
-    );
-    setMcpEditorState((current) => ({
-      ...current,
-      [resourceId]: {
-        value: '',
-        error: null
+  const addMcp = useCallback(
+    (resourceId: string) => {
+      const resource = catalog.mcps.find((item) => item.id === resourceId);
+      if (!resource || selectedMcpIds.has(resourceId)) {
+        return;
       }
-    }));
-  }, [catalog.mcps, selectedMcpIds]);
+
+      setSelectedMcps((current) =>
+        syncOrders([
+          ...current,
+          {
+            resourceId,
+            name: resource.name,
+            description: resource.description,
+            order: current.length,
+            command: resource.content.command,
+            configOverride: undefined
+          }
+        ])
+      );
+      setMcpEditorState((current) => ({
+        ...current,
+        [resourceId]: {
+          value: '',
+          error: null
+        }
+      }));
+    },
+    [catalog.mcps, selectedMcpIds]
+  );
 
   const updateMcpOverride = useCallback((resourceId: string, value: string) => {
     const parsed = parseOverrideEditorValue(value);
@@ -391,7 +394,9 @@ function ProfileEditorContent({
   }, []);
 
   const reorderMcps = useCallback((activeId: string, overId: string) => {
-    setSelectedMcps((current) => reorderSelectedItems(current, activeId, overId));
+    setSelectedMcps((current) =>
+      reorderSelectedItems(current, activeId, overId)
+    );
   }, []);
 
   const reorderRules = useCallback((activeId: string, overId: string) => {
@@ -454,7 +459,10 @@ function ProfileEditorContent({
       emptySelectedText: '还没有选中的 MCP',
       searchValue: searchState.mcps,
       onSearchChange: (value) => updateSearchValue('mcps', value),
-      availableItems: toAvailableItems(availableMcps, (item) => item.content.command),
+      availableItems: toAvailableItems(
+        availableMcps,
+        (item) => item.content.command
+      ),
       selectedItems: selectedMcps,
       onAdd: addMcp,
       onRemove: removeMcp,

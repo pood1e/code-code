@@ -40,7 +40,8 @@ export function buildSessionAssistantMessageRecords(
     const prevRecord = previousRecords?.[i];
     const state = runtimeState[message.id];
 
-    const thinkingText = state?.thinkingText ?? message.thinkingText ?? undefined;
+    const thinkingText =
+      state?.thinkingText ?? message.thinkingText ?? undefined;
     const usage =
       state?.usage ??
       message.metrics.find(
@@ -71,7 +72,11 @@ export function buildSessionAssistantMessageRecords(
   }
 
   // 如果数组长度一致且没有任何子级改变，直接复用上一次的整个数组引用
-  if (!hasChanges && previousRecords && previousRecords.length === messages.length) {
+  if (
+    !hasChanges &&
+    previousRecords &&
+    previousRecords.length === messages.length
+  ) {
     return previousRecords;
   }
 

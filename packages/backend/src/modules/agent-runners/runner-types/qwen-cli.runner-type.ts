@@ -9,7 +9,10 @@ import {
   createQwenParserState,
   type QwenParserState
 } from '../cli/parsers/qwen-cli.parser';
-import type { RawOutputChunk, RunnerSendPayload } from '../runner-type.interface';
+import type {
+  RawOutputChunk,
+  RunnerSendPayload
+} from '../runner-type.interface';
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const qwenCliRunnerConfigSchema = z.object({
@@ -23,9 +26,7 @@ export const qwenCliInputSchema = z.object({
 });
 
 export const qwenCliRuntimeConfigSchema = z.object({
-  approvalMode: z
-    .enum(['plan', 'default', 'auto-edit', 'yolo'])
-    .default('plan')
+  approvalMode: z.enum(['plan', 'default', 'auto-edit', 'yolo']).default('plan')
 });
 
 @RunnerTypeProvider()
@@ -43,7 +44,9 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
     super(cliSessionRegistry);
   }
 
-  async checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'> {
+  async checkHealth(
+    runnerConfig: unknown
+  ): Promise<'online' | 'offline' | 'unknown'> {
     const config = qwenCliRunnerConfigSchema.parse(runnerConfig);
     return probeQwenCliHealth(config.executorUser);
   }
@@ -55,20 +58,19 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
     payload: RunnerSendPayload
   ): CliProcessOptions {
     const config = qwenCliRunnerConfigSchema.parse(runnerConfig);
-    const sessionConfig = qwenCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
-    const runtimeConfig = qwenCliRuntimeConfigSchema.parse(payload.runtimeConfig);
+    const sessionConfig =
+      qwenCliRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const runtimeConfig = qwenCliRuntimeConfigSchema.parse(
+      payload.runtimeConfig
+    );
     const input = qwenCliInputSchema.parse(payload.input);
 
     void sessionConfig;
 
-    const args: string[] = [
-      '-o', 'stream-json',
-      '--include-partial-messages'
-    ];
+    const args: string[] = ['-o', 'stream-json', '--include-partial-messages'];
 
     // Approval mode
     args.push('--approval-mode', runtimeConfig.approvalMode);
-
 
     // Session continuation
     if (cliState.cliSessionId) {
@@ -112,6 +114,9 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
   }
 
   createParserState(messageId: string): Record<string, unknown> {
-    return createQwenParserState(messageId) as unknown as Record<string, unknown>;
+    return createQwenParserState(messageId) as unknown as Record<
+      string,
+      unknown
+    >;
   }
 }

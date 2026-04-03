@@ -167,9 +167,7 @@ type ResourceEditConfig<K extends ResourceKind> = {
   contentMode: 'markdown' | 'mcp';
   createInitialValues: () => ResourceFormValues;
   toFormValues: (resource: ResourceRecord) => ResourceFormValues;
-  buildPayload: (
-    values: ResourceFormValues
-  ) => {
+  buildPayload: (values: ResourceFormValues) => {
     data: ResourcePayloadByKind[K] | null;
     error: string | null;
   };

@@ -29,20 +29,20 @@ import type { MaterializerTarget } from '../cli/context-materializer';
 
 const RUNNER_CONFIG_SCHEMA = z.object({
   model: z.string().default('default-model').describe('context:models'),
-  baseUrl: z.string().optional().describe('url'),
+  baseUrl: z.string().optional().describe('url')
 });
 
 const SESSION_CONFIG_SCHEMA = z.object({
   maxTurns: z.number().int().positive().optional(),
-  permissionMode: z.enum(['auto', 'manual']).default('auto'),
+  permissionMode: z.enum(['auto', 'manual']).default('auto')
 });
 
 const INPUT_SCHEMA = z.object({
-  prompt: z.string().min(1),
+  prompt: z.string().min(1)
 });
 
 const RUNTIME_CONFIG_SCHEMA = z.object({
-  model: z.string().optional().describe('context:models'),
+  model: z.string().optional().describe('context:models')
 });
 
 @RunnerTypeDecorator()
@@ -62,12 +62,12 @@ export class MyCliRunnerType extends CliRunnerBase {
 
 ### 2. Zod schema conventions
 
-| Pattern | Purpose |
-|---------|---------|
+| Pattern                      | Purpose                                                           |
+| ---------------------------- | ----------------------------------------------------------------- |
 | `.describe('context:<key>')` | Field fetches options from runner context API (e.g., models list) |
-| `.describe('url')` | Renders as URL input field |
-| `.default(value)` | Pre-fills form field |
-| `.optional()` | Non-required field |
+| `.describe('url')`           | Renders as URL input field                                        |
+| `.default(value)`            | Pre-fills form field                                              |
+| `.optional()`                | Non-required field                                                |
 
 Schemas are converted to `SchemaDescriptor` via `zodToSchemaDescriptor()`.
 
@@ -75,11 +75,11 @@ Schemas are converted to `SchemaDescriptor` via `zodToSchemaDescriptor()`.
 
 Set `materializerTarget` if the CLI needs MCP/Rule/Skill files on disk:
 
-| Target | Config Dir | MCP File | Rule Ext | Notes |
-|--------|-----------|----------|----------|-------|
-| `claude` | `.claude/` | `mcp.json` | `.mdc` | Frontmatter `alwaysApply: true` added |
-| `cursor` | `.cursor/` | `mcp.json` (workspace root) | `.mdc` | Frontmatter `alwaysApply: true` added |
-| `qwen` | `.qwen/` | `settings.json` | `.md` | Plain markdown |
+| Target   | Config Dir | MCP File                    | Rule Ext | Notes                                 |
+| -------- | ---------- | --------------------------- | -------- | ------------------------------------- |
+| `claude` | `.claude/` | `mcp.json`                  | `.mdc`   | Frontmatter `alwaysApply: true` added |
+| `cursor` | `.cursor/` | `mcp.json` (workspace root) | `.mdc`   | Frontmatter `alwaysApply: true` added |
+| `qwen`   | `.qwen/`   | `settings.json`             | `.md`    | Plain markdown                        |
 
 Add a new target in `context-materializer.ts` if the CLI format is different.
 
@@ -99,14 +99,14 @@ The `@RunnerType()` decorator handles auto-registration with `RunnerTypeRegistry
 
 Implement `parseOutputLine()` to convert CLI output to `RawOutputChunk`:
 
-| Kind | Required Data |
-|------|--------------|
-| `thinking_delta` | `deltaText` |
-| `message_delta` | `deltaText` |
-| `message_result` | `text`, optional `stopReason`, `durationMs` |
-| `tool_use` | `toolName`, optional `args`, `result`, `error`, `callId` |
-| `usage` | optional `inputTokens`, `outputTokens`, `costUsd`, `modelId` |
-| `error` | `message`, `code`, `recoverable` |
+| Kind             | Required Data                                                |
+| ---------------- | ------------------------------------------------------------ |
+| `thinking_delta` | `deltaText`                                                  |
+| `message_delta`  | `deltaText`                                                  |
+| `message_result` | `text`, optional `stopReason`, `durationMs`                  |
+| `tool_use`       | `toolName`, optional `args`, `result`, `error`, `callId`     |
+| `usage`          | optional `inputTokens`, `outputTokens`, `costUsd`, `modelId` |
+| `error`          | `message`, `code`, `recoverable`                             |
 
 Create a parser in `cli/parsers/<name>-parser.ts` if the CLI has a non-standard output format.
 
