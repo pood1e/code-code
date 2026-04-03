@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
-import type { SendSessionMessageInput, PagedSessionMessages } from '@agent-workbench/shared';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { SendSessionMessageInput } from '@agent-workbench/shared';
 
 import {
   cancelSession,
@@ -29,18 +29,11 @@ export function useSessionPageMutations({
     mutationFn: async (payload: SendSessionMessageInput) => {
       return sendSessionMessage(selectedSessionId!, payload);
     },
-    onSuccess: (messages: PagedSessionMessages) => {
-      if (!selectedSessionId) {
-        return;
-      }
-
-      queryClient.setQueryData<InfiniteData<PagedSessionMessages>>(
-        sessionQueryKeys.messages(selectedSessionId),
-        (current) => current ? {
-          pageParams: [undefined],
-          pages: [messages]
-        } : current
-      );
+    onSuccess: async () => {
+      if (!selectedSessionId) return;
+      await queryClient.invalidateQueries({
+        queryKey: sessionQueryKeys.messages(selectedSessionId)
+      });
     }
   });
 

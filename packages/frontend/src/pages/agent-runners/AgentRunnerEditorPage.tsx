@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
-import { queryKeys } from '@/query/query-keys';
+import { NOOP_QUERY_KEY, queryKeys } from '@/query/query-keys';
 import { agentRunnerConfig } from '@/types/agent-runners';
 import {
   agentRunnerEditorFormSchema,
@@ -434,7 +434,7 @@ export function AgentRunnerEditorPage() {
   const agentRunnerQuery = useQuery({
     queryKey: id
       ? queryKeys.agentRunners.detail(id)
-      : queryKeys.agentRunners.all,
+      : NOOP_QUERY_KEY,
     queryFn: () => getAgentRunner(id!),
     enabled: isEditing
   });

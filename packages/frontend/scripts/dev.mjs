@@ -8,7 +8,7 @@ const viteEntrypoint = fileURLToPath(
 
 const child = spawn(
   process.execPath,
-  [viteEntrypoint, '--logLevel', 'warn', '--clearScreen=false'],
+  [viteEntrypoint, '--clearScreen=false'],
   {
     stdio: ['inherit', 'pipe', 'pipe']
   }
