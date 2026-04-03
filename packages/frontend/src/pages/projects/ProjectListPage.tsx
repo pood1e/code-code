@@ -138,8 +138,12 @@ export function ProjectListPage() {
                   </div>
 
                   <div className="min-w-0 space-y-1 text-sm text-muted-foreground sm:max-w-[24rem] sm:text-right">
-                    <p className="truncate font-mono text-xs">{project.workspacePath}</p>
-                    <p className="truncate font-mono text-xs">{project.gitUrl}</p>
+                    <p className="truncate font-mono text-xs">
+                      {project.workspacePath}
+                    </p>
+                    <p className="truncate font-mono text-xs">
+                      {project.gitUrl}
+                    </p>
                   </div>
                 </button>
               </SurfaceCard>

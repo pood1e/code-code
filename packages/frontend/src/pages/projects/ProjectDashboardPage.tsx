@@ -8,8 +8,6 @@ import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
 import { projectConfig } from '@/types/projects';
 
-
-
 export function ProjectDashboardPage() {
   const navigate = useNavigate();
   const {

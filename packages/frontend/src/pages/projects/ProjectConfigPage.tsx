@@ -29,8 +29,6 @@ import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
 
-
-
 function isWorkspacePathError(message: string) {
   return (
     message.includes('workspacePath') ||
@@ -230,7 +228,9 @@ export function ProjectConfigPage() {
             <SurfaceCard className="border-destructive/20 bg-destructive/5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
-                  <p className="font-medium text-foreground">删除当前 Project</p>
+                  <p className="font-medium text-foreground">
+                    删除当前 Project
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     删除后不可恢复。当前阶段没有关联资源检查。
                   </p>

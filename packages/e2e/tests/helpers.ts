@@ -3,7 +3,11 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * API helper to reset/seed test data via backend REST API.
  */
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = (process.env.VITE_API_URL || 'http://localhost:3001') + '/api';
+
+function getApiUrl(path: string) {
+  return `${API_BASE}${path}`;
+}
 
 async function apiPost(path: string, body: Record<string, unknown>) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -11,6 +15,18 @@ async function apiPost(path: string, body: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
+  if (!res.ok) throw new Error(`API error: ${res.status} ${await res.text()}`);
+  const json = await res.json();
+  return json.data;
+}
+
+async function apiPut(path: string, body: Record<string, unknown>) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status} ${await res.text()}`);
   const json = await res.json();
   return json.data;
 }
@@ -103,7 +119,9 @@ export {
   seedMockRunner,
   seedProject,
   apiPost,
+  apiPut,
   apiGet,
   apiDelete,
-  API_BASE
+  API_BASE,
+  getApiUrl
 };

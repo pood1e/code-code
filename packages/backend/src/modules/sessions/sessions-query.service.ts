@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type { AgentRunner } from '@prisma/client';
 import {
   MessageRole,
@@ -13,7 +10,10 @@ import {
 } from '@agent-workbench/shared';
 
 import { sanitizeJson } from '../../common/json.utils';
-import { assertResourceIdsExist, type ResourceIdType } from '../../common/resource.utils';
+import {
+  assertResourceIdsExist,
+  type ResourceIdType
+} from '../../common/resource.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SessionMapper } from './session-mapper';
 
@@ -44,7 +44,9 @@ export class SessionsQueryService {
       orderBy: { updatedAt: 'desc' }
     });
 
-    return sessions.map((session) => this.sessionMapper.toSessionSummary(session));
+    return sessions.map((session) =>
+      this.sessionMapper.toSessionSummary(session)
+    );
   }
 
   async getById(id: string) {
@@ -70,22 +72,25 @@ export class SessionsQueryService {
         metrics: { orderBy: eventAscendingOrder() }
       }
     });
-    
+
     const chronologicalMessages = messages.reverse();
-    const nextCursor = messages.length === limit ? chronologicalMessages[0].id : null;
+    const nextCursor =
+      messages.length === limit ? chronologicalMessages[0].id : null;
 
     return {
       data: chronologicalMessages.map((message) => {
-        const toolUsesForMessage: SessionToolUse[] = message.toolUses.map((tu) => ({
-          id: tu.id,
-          eventId: tu.eventId,
-          callId: tu.callId,
-          toolName: tu.toolName,
-          args: sanitizeJson(tu.args),
-          result: sanitizeJson(tu.result),
-          error: sanitizeJson(tu.error),
-          createdAt: tu.createdAt.toISOString()
-        }));
+        const toolUsesForMessage: SessionToolUse[] = message.toolUses.map(
+          (tu) => ({
+            id: tu.id,
+            eventId: tu.eventId,
+            callId: tu.callId,
+            toolName: tu.toolName,
+            args: sanitizeJson(tu.args),
+            result: sanitizeJson(tu.result),
+            error: sanitizeJson(tu.error),
+            createdAt: tu.createdAt.toISOString()
+          })
+        );
         const metricsForMessage = message.metrics
           .filter((m) => m.messageId !== null)
           .map((m) => this.sessionMapper.toSessionMessageMetric(m));

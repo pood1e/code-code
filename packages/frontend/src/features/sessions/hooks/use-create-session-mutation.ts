@@ -3,17 +3,13 @@ import type { CreateSessionFormValues } from '@/pages/projects/project-sessions.
 import type { UseFormReturn } from 'react-hook-form';
 import type { ProfileDetail, SessionDetail } from '@agent-workbench/shared';
 import { createSession } from '@/api/sessions';
-import {
-  buildCreateSessionPayload,
-} from '@/pages/projects/project-sessions.form';
+import { buildCreateSessionPayload } from '@/pages/projects/project-sessions.form';
 import {
   normalizeRunnerConfigValues,
   type RunnerConfigField,
   type SupportedRunnerConfigSchema
 } from '@/lib/runner-config-schema';
-import {
-  buildStructuredMessagePayload,
-} from '@/features/chat/runtime/assistant-ui/input-schema';
+import { buildStructuredMessagePayload } from '@/features/chat/runtime/assistant-ui/input-schema';
 import { parseSessionInputText } from '@/features/chat/runtime/assistant-ui/input-payload';
 import { queryKeys } from '@/query/query-keys';
 
@@ -21,7 +17,9 @@ type UseCreateSessionMutationArgs = {
   projectId: string;
   form: UseFormReturn<CreateSessionFormValues>;
   sessionConfigSchema: SupportedRunnerConfigSchema;
-  structuredInputSchema: Extract<SupportedRunnerConfigSchema, { supported: true }> | undefined;
+  structuredInputSchema:
+    | Extract<SupportedRunnerConfigSchema, { supported: true }>
+    | undefined;
   structuredRuntimeSchema: SupportedRunnerConfigSchema | undefined;
   primaryInputField: RunnerConfigField | undefined;
   supportsStructuredInitialInput: boolean;
@@ -50,16 +48,18 @@ export function useCreateSessionMutation({
           sessionConfigSchema.fields,
           values.runnerSessionConfig
         );
-        const validationResult = sessionConfigSchema.validationSchema.safeParse(
-          normalized
-        );
+        const validationResult =
+          sessionConfigSchema.validationSchema.safeParse(normalized);
         if (!validationResult.success) {
           for (const issue of validationResult.error.issues) {
             const fieldName = issue.path[0];
             if (typeof fieldName === 'string') {
-              form.setError(`runnerSessionConfig.${fieldName}` as `runnerSessionConfig.${string}`, {
-                message: issue.message
-              });
+              form.setError(
+                `runnerSessionConfig.${fieldName}` as `runnerSessionConfig.${string}`,
+                {
+                  message: issue.message
+                }
+              );
             }
           }
           throw new Error('Session 配置校验失败');
@@ -74,7 +74,10 @@ export function useCreateSessionMutation({
         ? initialMessageTextValue.length > 0
           ? buildStructuredMessagePayload({
               schema: structuredInputSchema!,
-              runtimeSchema: structuredRuntimeSchema ?? { supported: false as const, reason: '不支持' },
+              runtimeSchema: structuredRuntimeSchema ?? {
+                supported: false as const,
+                reason: '不支持'
+              },
               primaryField: primaryInputField!,
               composerText: initialMessageTextValue,
               additionalValues: values.initialInputConfig,
@@ -87,22 +90,38 @@ export function useCreateSessionMutation({
               if (!parsed.data) {
                 throw new Error(parsed.error ?? '首条消息输入校验失败');
               }
-              let runtimeConfig: Record<string, unknown> | undefined = undefined;
-              if (structuredRuntimeSchema?.supported && structuredRuntimeSchema.fields.length > 0) {
-                 const normalized = normalizeRunnerConfigValues(structuredRuntimeSchema.fields, values.initialRuntimeConfig);
-                 const validRuntime = structuredRuntimeSchema.validationSchema.safeParse(normalized);
-                 if (!validRuntime.success) throw new Error('首条消息运行时参数校验失败');
-                 runtimeConfig = validRuntime.data;
+              let runtimeConfig: Record<string, unknown> | undefined =
+                undefined;
+              if (
+                structuredRuntimeSchema?.supported &&
+                structuredRuntimeSchema.fields.length > 0
+              ) {
+                const normalized = normalizeRunnerConfigValues(
+                  structuredRuntimeSchema.fields,
+                  values.initialRuntimeConfig
+                );
+                const validRuntime =
+                  structuredRuntimeSchema.validationSchema.safeParse(
+                    normalized
+                  );
+                if (!validRuntime.success)
+                  throw new Error('首条消息运行时参数校验失败');
+                runtimeConfig = validRuntime.data;
               }
               return { input: parsed.data.input, runtimeConfig };
             })()
           : undefined;
 
       return createSession(
-        buildCreateSessionPayload(projectId, {
-          ...values,
-          runnerSessionConfig
-        }, profileDetail, initialMessage)
+        buildCreateSessionPayload(
+          projectId,
+          {
+            ...values,
+            runnerSessionConfig
+          },
+          profileDetail,
+          initialMessage
+        )
       );
     },
     onSuccess: async (session) => {

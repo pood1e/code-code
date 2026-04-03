@@ -1,6 +1,9 @@
 import type { SchemaDescriptor } from '@agent-workbench/shared';
 import { useMemo } from 'react';
-import { parseRunnerConfigSchema, type RunnerConfigField } from '@/lib/runner-config-schema';
+import {
+  parseRunnerConfigSchema,
+  type RunnerConfigField
+} from '@/lib/runner-config-schema';
 import { SetupSection } from './SetupSection';
 
 function formatConfigValue(value: unknown) {
@@ -68,7 +71,9 @@ export function ReadonlyRunnerConfigSection({
               className="rounded-lg border border-border/40 bg-background/70 px-3 py-2.5"
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-foreground">{field.label}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {field.label}
+                </p>
                 <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   {formatFieldKindLabel(field)}
                 </span>
@@ -118,7 +123,9 @@ export function RunnerSchemaSection({
               className="rounded-lg border border-border/40 bg-background/70 px-3 py-2.5"
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-foreground">{field.label}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {field.label}
+                </p>
                 <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   <span>{formatFieldKindLabel(field)}</span>
                   {field.required ? <span>required</span> : null}

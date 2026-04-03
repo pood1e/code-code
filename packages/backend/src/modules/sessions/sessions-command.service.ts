@@ -10,11 +10,7 @@ import {
 } from '@agent-workbench/shared';
 import type { Prisma } from '@prisma/client';
 
-import {
-  asPlainObject,
-  castEnum,
-  toInputJson
-} from '../../common/json.utils';
+import { asPlainObject, castEnum, toInputJson } from '../../common/json.utils';
 import { parseSchemaOrThrow } from '../../common/schema.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
@@ -46,9 +42,15 @@ export class SessionsCommandService {
       'Invalid session payload'
     );
 
-    const project = await this.sessionsQueryService.assertProjectExists(parsed.scopeId);
-    const runner = await this.sessionsQueryService.getRunnerOrThrow(parsed.runnerId);
-    const runnerType = this.sessionRuntimeService.getRunnerTypeOrThrow(runner.type);
+    const project = await this.sessionsQueryService.assertProjectExists(
+      parsed.scopeId
+    );
+    const runner = await this.sessionsQueryService.getRunnerOrThrow(
+      parsed.runnerId
+    );
+    const runnerType = this.sessionRuntimeService.getRunnerTypeOrThrow(
+      runner.type
+    );
     const runnerSessionConfig = parseSchemaOrThrow(
       runnerType.runnerSessionConfigSchema,
       parsed.runnerSessionConfig,
@@ -63,8 +65,14 @@ export class SessionsCommandService {
       : undefined;
     const initialRuntimeConfig = parsed.initialMessage?.runtimeConfig;
 
-    await this.sessionsQueryService.assertResourceIdsExist('skill', parsed.skillIds);
-    await this.sessionsQueryService.assertResourceIdsExist('rule', parsed.ruleIds);
+    await this.sessionsQueryService.assertResourceIdsExist(
+      'skill',
+      parsed.skillIds
+    );
+    await this.sessionsQueryService.assertResourceIdsExist(
+      'rule',
+      parsed.ruleIds
+    );
     await this.sessionsQueryService.assertResourceIdsExist(
       'mcp',
       parsed.mcps.map((item) => item.resourceId)
@@ -88,7 +96,9 @@ export class SessionsCommandService {
         runnerSessionConfig: toInputJson(
           runnerSessionConfig as Prisma.InputJsonValue
         ),
-        defaultRuntimeConfig: initialRuntimeConfig ? toInputJson(initialRuntimeConfig as Prisma.InputJsonValue) : undefined,
+        defaultRuntimeConfig: initialRuntimeConfig
+          ? toInputJson(initialRuntimeConfig as Prisma.InputJsonValue)
+          : undefined,
         runnerState: toInputJson({} as Prisma.InputJsonValue)
       }
     });
@@ -102,9 +112,14 @@ export class SessionsCommandService {
 
       if (initialInput) {
         await this.withSessionSendLock(created.id, async () => {
-          await this.sessionRuntimeService.sendParsedInput(created.id, initialInput, initialRuntimeConfig, {
-            throwOnSyncSendFailure: true
-          });
+          await this.sessionRuntimeService.sendParsedInput(
+            created.id,
+            initialInput,
+            initialRuntimeConfig,
+            {
+              throwOnSyncSendFailure: true
+            }
+          );
         });
       }
     } catch (error) {
@@ -121,28 +136,40 @@ export class SessionsCommandService {
 
   async sendMessage(sessionId: string, dto: SendSessionMessageDto) {
     return this.withSessionSendLock(sessionId, async () => {
-      const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+      const session =
+        await this.sessionsQueryService.getSessionOrThrow(sessionId);
       this.assertSendableStatus(session.status);
 
       const parsedInput = await this.sessionRuntimeService.parseMessageInput(
         sessionId,
         dto.input
       );
-      await this.sessionRuntimeService.sendParsedInput(sessionId, parsedInput, dto.runtimeConfig);
+      await this.sessionRuntimeService.sendParsedInput(
+        sessionId,
+        parsedInput,
+        dto.runtimeConfig
+      );
       return this.sessionsQueryService.listMessages(sessionId);
     });
   }
 
   async cancel(sessionId: string) {
-    const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
-    const sessionStatus = castEnum(SessionStatus, session.status, 'SessionStatus');
+    const session =
+      await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const sessionStatus = castEnum(
+      SessionStatus,
+      session.status,
+      'SessionStatus'
+    );
 
     if (sessionStatus !== SessionStatus.Running) {
       return this.sessionsQueryService.getById(sessionId);
     }
 
     const streamingMessage =
-      await this.sessionsQueryService.getLatestStreamingAssistantMessage(sessionId);
+      await this.sessionsQueryService.getLatestStreamingAssistantMessage(
+        sessionId
+      );
     if (!streamingMessage) {
       await this.prisma.agentSession.update({
         where: { id: sessionId },
@@ -161,7 +188,8 @@ export class SessionsCommandService {
 
     await this.sessionRuntimeService.cancelRuntimeOutput(sessionId);
 
-    const runtimeSession = await this.sessionRuntimeService.ensureRuntime(sessionId);
+    const runtimeSession =
+      await this.sessionRuntimeService.ensureRuntime(sessionId);
     await this.sessionRuntimeService.handleRecoverableMessageError(
       runtimeSession,
       streamingMessage.id,
@@ -180,10 +208,12 @@ export class SessionsCommandService {
 
   async reload(sessionId: string) {
     return this.withSessionSendLock(sessionId, async () => {
-      const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+      const session =
+        await this.sessionsQueryService.getSessionOrThrow(sessionId);
       this.assertSendableStatus(session.status);
 
-      const messages = await this.sessionsQueryService.getSessionMessages(sessionId);
+      const messages =
+        await this.sessionsQueryService.getSessionMessages(sessionId);
       const lastUserIndex = [...messages]
         .map((message) => message.role)
         .lastIndexOf('user');
@@ -199,10 +229,15 @@ export class SessionsCommandService {
         .find((message) => message.role === 'assistant');
 
       if (!firstAssistantAfterUser) {
-        throw new BadRequestException('No previous assistant message to reload');
+        throw new BadRequestException(
+          'No previous assistant message to reload'
+        );
       }
 
-      await this.truncateSessionHistoryFrom(sessionId, firstAssistantAfterUser.id);
+      await this.truncateSessionHistoryFrom(
+        sessionId,
+        firstAssistantAfterUser.id
+      );
       await this.sessionRuntimeService.sendParsedInput(
         sessionId,
         asPlainObject(lastUserMessage.inputContent),
@@ -222,7 +257,8 @@ export class SessionsCommandService {
     dto: EditSessionMessageDto
   ) {
     return this.withSessionSendLock(sessionId, async () => {
-      const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+      const session =
+        await this.sessionsQueryService.getSessionOrThrow(sessionId);
       this.assertSendableStatus(session.status);
 
       const targetMessage = await this.prisma.sessionMessage.findFirst({
@@ -233,7 +269,9 @@ export class SessionsCommandService {
       });
 
       if (!targetMessage) {
-        throw new BadRequestException(`Session message not found: ${messageId}`);
+        throw new BadRequestException(
+          `Session message not found: ${messageId}`
+        );
       }
 
       if (targetMessage.role !== 'user') {
@@ -245,15 +283,24 @@ export class SessionsCommandService {
         dto.input
       );
       await this.truncateSessionHistoryFrom(sessionId, messageId);
-      await this.sessionRuntimeService.sendParsedInput(sessionId, parsedInput, dto.runtimeConfig);
+      await this.sessionRuntimeService.sendParsedInput(
+        sessionId,
+        parsedInput,
+        dto.runtimeConfig
+      );
 
       return this.sessionsQueryService.getById(sessionId);
     });
   }
 
   async dispose(sessionId: string) {
-    const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
-    const sessionStatus = castEnum(SessionStatus, session.status, 'SessionStatus');
+    const session =
+      await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const sessionStatus = castEnum(
+      SessionStatus,
+      session.status,
+      'SessionStatus'
+    );
 
     if (sessionStatus === SessionStatus.Disposed) {
       return this.sessionsQueryService.getById(sessionId);
@@ -273,10 +320,13 @@ export class SessionsCommandService {
 
     if (sessionStatus === SessionStatus.Running) {
       const streamingMessage =
-        await this.sessionsQueryService.getLatestStreamingAssistantMessage(sessionId);
+        await this.sessionsQueryService.getLatestStreamingAssistantMessage(
+          sessionId
+        );
 
       if (streamingMessage) {
-        const runtimeSession = await this.sessionRuntimeService.ensureRuntime(sessionId);
+        const runtimeSession =
+          await this.sessionRuntimeService.ensureRuntime(sessionId);
         await this.sessionRuntimeService.handleNonRecoverableMessageError(
           runtimeSession,
           streamingMessage.id,
@@ -366,12 +416,20 @@ export class SessionsCommandService {
     });
   }
 
-  private async truncateSessionHistoryFrom(sessionId: string, fromMessageId: string) {
-    const messages = await this.sessionsQueryService.getSessionMessages(sessionId);
-    const startIndex = messages.findIndex((message) => message.id === fromMessageId);
+  private async truncateSessionHistoryFrom(
+    sessionId: string,
+    fromMessageId: string
+  ) {
+    const messages =
+      await this.sessionsQueryService.getSessionMessages(sessionId);
+    const startIndex = messages.findIndex(
+      (message) => message.id === fromMessageId
+    );
 
     if (startIndex === -1) {
-      throw new BadRequestException(`Session message not found: ${fromMessageId}`);
+      throw new BadRequestException(
+        `Session message not found: ${fromMessageId}`
+      );
     }
 
     const messageIds = messages.slice(startIndex).map((message) => message.id);

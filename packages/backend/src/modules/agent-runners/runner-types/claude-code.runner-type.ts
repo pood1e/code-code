@@ -9,7 +9,10 @@ import {
   createClaudeParserState,
   type ClaudeParserState
 } from '../cli/parsers/claude-code.parser';
-import type { RawOutputChunk, RunnerSendPayload } from '../runner-type.interface';
+import type {
+  RawOutputChunk,
+  RunnerSendPayload
+} from '../runner-type.interface';
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const claudeCodeRunnerConfigSchema = z.object({
@@ -26,9 +29,7 @@ export const claudeCodeInputSchema = z.object({
 
 export const claudeCodeRuntimeConfigSchema = z.object({
   model: z.string().default('claude-sonnet-4-5'),
-  permissionMode: z
-    .enum(['plan', 'auto', 'bypassPermissions'])
-    .default('plan')
+  permissionMode: z.enum(['plan', 'auto', 'bypassPermissions']).default('plan')
 });
 
 @RunnerTypeProvider()
@@ -46,7 +47,9 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
     super(cliSessionRegistry);
   }
 
-  async checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'> {
+  async checkHealth(
+    runnerConfig: unknown
+  ): Promise<'online' | 'offline' | 'unknown'> {
     const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
     return probeClaudeCodeHealth(config.executorUser);
   }
@@ -58,13 +61,17 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
     payload: RunnerSendPayload
   ): CliProcessOptions {
     const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
-    const sessionConfig = claudeCodeRunnerSessionConfigSchema.parse(_runnerSessionConfig);
-    const runtimeConfig = claudeCodeRuntimeConfigSchema.parse(payload.runtimeConfig);
+    const sessionConfig =
+      claudeCodeRunnerSessionConfigSchema.parse(_runnerSessionConfig);
+    const runtimeConfig = claudeCodeRuntimeConfigSchema.parse(
+      payload.runtimeConfig
+    );
     const input = claudeCodeInputSchema.parse(payload.input);
 
     const args: string[] = [
       '-p', // non-interactive print mode
-      '--output-format', 'stream-json',
+      '--output-format',
+      'stream-json',
       '--verbose', // required for stream-json with --print
       '--include-partial-messages'
     ];
@@ -102,7 +109,7 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
     // Determine cwd: use the original workspace cwd, not the context dir
     // Claude uses the real workspace as cwd, context dir is added via --add-dir
     const cwd = cliState.contextDir
-      ? cliState.contextDir.split('/.agent-workbench/')[0] ?? '.'
+      ? (cliState.contextDir.split('/.agent-workbench/')[0] ?? '.')
       : '.';
 
     if (config.executorUser) {
@@ -135,6 +142,9 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
   }
 
   createParserState(messageId: string): Record<string, unknown> {
-    return createClaudeParserState(messageId) as unknown as Record<string, unknown>;
+    return createClaudeParserState(messageId) as unknown as Record<
+      string,
+      unknown
+    >;
   }
 }

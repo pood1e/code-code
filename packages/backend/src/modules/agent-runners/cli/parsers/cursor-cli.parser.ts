@@ -87,7 +87,9 @@ function parseCursorEvent(
   // --- assistant (snapshot) ---
   if (topType === 'assistant') {
     const message = parsed.message as Record<string, unknown> | undefined;
-    const content = message?.content as Array<Record<string, unknown>> | undefined;
+    const content = message?.content as
+      | Array<Record<string, unknown>>
+      | undefined;
 
     if (content && Array.isArray(content)) {
       for (const block of content) {
@@ -113,7 +115,9 @@ function parseCursorEvent(
     }
 
     // Check for inline usage
-    const usage = (message?.usage ?? parsed.usage) as Record<string, unknown> | undefined;
+    const usage = (message?.usage ?? parsed.usage) as
+      | Record<string, unknown>
+      | undefined;
     if (usage) {
       chunks.push({
         kind: 'usage',
@@ -263,9 +267,7 @@ function parseResult(
   }
 
   const resultText =
-    typeof parsed.result === 'string'
-      ? parsed.result
-      : state.assistantBuffer;
+    typeof parsed.result === 'string' ? parsed.result : state.assistantBuffer;
 
   chunks.push({
     kind: 'message_result',

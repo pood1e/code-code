@@ -58,7 +58,9 @@ test.describe('Agent Runner 管理', () => {
     await page.goto(`/agent-runners/${runner.id}/edit`);
 
     // 用户期望：编辑页显示已有的名称
-    await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('Editable Runner');
+    await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Editable Runner'
+    );
   });
 
   test('Runner 列表页应有搜索框', async ({ page }) => {

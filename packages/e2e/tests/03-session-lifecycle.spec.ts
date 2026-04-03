@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { cleanupTestData, seedProject, seedMockRunner, apiPost, apiGet, apiDelete } from './helpers';
+import {
+  cleanupTestData,
+  seedProject,
+  seedMockRunner,
+  apiPost,
+  apiGet,
+  apiDelete
+} from './helpers';
 
 /**
  * Session 会话生命周期 — 用户最核心的使用路径
@@ -40,11 +47,15 @@ test.describe('Session 会话生命周期', () => {
     await page.goto(`/projects/${project.id}/sessions`);
 
     // 用户期望：空状态下有明确的引导创建按钮或提示
-    const createBtn = page.getByRole('button', { name: /create|new|新建|开始/i }).first();
+    const createBtn = page
+      .getByRole('button', { name: /create|new|新建|开始/i })
+      .first();
     await expect(createBtn).toBeVisible();
   });
 
-  test('Sessions 页面应有 Runner 选择和创建 Session 的入口', async ({ page }) => {
+  test('Sessions 页面应有 Runner 选择和创建 Session 的入口', async ({
+    page
+  }) => {
     await page.goto(`/projects/${project.id}/sessions`);
 
     // 用户期望：Session 创建流程中可以选择 Runner
@@ -133,7 +144,9 @@ test.describe('Project 配置与导航', () => {
     expect(body!.length).toBeGreaterThan(50);
   });
 
-  test('Project 内应有 Config/Dashboard/Sessions 标签切换', async ({ page }) => {
+  test('Project 内应有 Config/Dashboard/Sessions 标签切换', async ({
+    page
+  }) => {
     await page.goto(`/projects/${project.id}/config`);
 
     // 用户期望：项目内可以在不同视图之间切换

@@ -2,14 +2,14 @@ import { useMemo } from 'react';
 import { useQueries, useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import type { PagedSessionMessages } from '@agent-workbench/shared';
 
-import { getAgentRunner, listAgentRunners, listAgentRunnerTypes } from '@/api/agent-runners';
+import {
+  getAgentRunner,
+  listAgentRunners,
+  listAgentRunnerTypes
+} from '@/api/agent-runners';
 import { listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
-import {
-  getSession,
-  listSessionMessages,
-  listSessions
-} from '@/api/sessions';
+import { getSession, listSessionMessages, listSessions } from '@/api/sessions';
 import { NOOP_QUERY_KEY, queryKeys } from '@/query/query-keys';
 
 const sessionQueryKeys = queryKeys.sessions;
@@ -60,7 +60,9 @@ export function useSessionPageQueries(
   });
 
   const sessionsQuery = useQuery({
-    queryKey: projectId ? sessionQueryKeys.list(projectId) : sessionQueryKeys.lists(),
+    queryKey: projectId
+      ? sessionQueryKeys.list(projectId)
+      : sessionQueryKeys.lists(),
     queryFn: () => listSessions(projectId!),
     enabled: Boolean(projectId)
   });
@@ -77,9 +79,11 @@ export function useSessionPageQueries(
     queryKey: selectedSessionId
       ? sessionQueryKeys.messages(selectedSessionId)
       : NOOP_QUERY_KEY,
-    queryFn: ({ pageParam }) => listSessionMessages(selectedSessionId!, pageParam),
+    queryFn: ({ pageParam }) =>
+      listSessionMessages(selectedSessionId!, pageParam),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage: PagedSessionMessages) => lastPage.nextCursor || undefined,
+    getNextPageParam: (lastPage: PagedSessionMessages) =>
+      lastPage.nextCursor || undefined,
     enabled: Boolean(selectedSessionId)
   });
 
@@ -93,13 +97,21 @@ export function useSessionPageQueries(
 
   const flatMessages = useMemo(() => {
     if (!sessionMessagesQuery.data) return [];
-    return [...sessionMessagesQuery.data.pages].reverse().flatMap(page => page.data);
+    return [...sessionMessagesQuery.data.pages]
+      .reverse()
+      .flatMap((page) => page.data);
   }, [sessionMessagesQuery.data]);
 
   const selectedSession = sessionDetailQuery.data;
-  const runnerTypes = useMemo(() => runnerTypesQuery.data ?? [], [runnerTypesQuery.data]);
+  const runnerTypes = useMemo(
+    () => runnerTypesQuery.data ?? [],
+    [runnerTypesQuery.data]
+  );
   const runners = useMemo(() => runnersQuery.data ?? [], [runnersQuery.data]);
-  const profiles = useMemo(() => profilesQuery.data ?? [], [profilesQuery.data]);
+  const profiles = useMemo(
+    () => profilesQuery.data ?? [],
+    [profilesQuery.data]
+  );
   const resources = useMemo(
     () => ({
       skills: skillsQuery.data ?? [],
@@ -120,11 +132,14 @@ export function useSessionPageQueries(
 
   const runnerNameById = useMemo(
     () =>
-      Object.fromEntries(runners.map((runner) => [runner.id, runner.name] as const)),
+      Object.fromEntries(
+        runners.map((runner) => [runner.id, runner.name] as const)
+      ),
     [runners]
   );
 
-  const selectedSessionMessagesReady = sessionMessagesQuery.status === 'success';
+  const selectedSessionMessagesReady =
+    sessionMessagesQuery.status === 'success';
 
   // Aggregate all query errors for centralized handling
   const queryError =

@@ -4,7 +4,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Info, RefreshCw, Trash2, Plus } from 'lucide-react';
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 
-
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { EmptyState } from '@/components/app/EmptyState';
 import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
@@ -75,9 +74,10 @@ export function ProjectSessionsPage() {
     clearSessionRuntimeState: clearSessionState
   });
 
-  const selectedRuntimeState = useSessionRuntimeStore((s) =>
-    selectedSessionId ? s.stateBySessionId[selectedSessionId] : undefined
-  ) ?? {};
+  const selectedRuntimeState =
+    useSessionRuntimeStore((s) =>
+      selectedSessionId ? s.stateBySessionId[selectedSessionId] : undefined
+    ) ?? {};
 
   const showCreatePanel =
     createPanelOpen || (sessionsQuery.data?.length ?? 0) === 0;
@@ -105,7 +105,10 @@ export function ProjectSessionsPage() {
       return;
     }
 
-    if (selectedSessionId && sessions.some((session) => session.id === selectedSessionId)) {
+    if (
+      selectedSessionId &&
+      sessions.some((session) => session.id === selectedSessionId)
+    ) {
       return;
     }
 
@@ -294,14 +297,18 @@ export function ProjectSessionsPage() {
               session={selectedSession}
               messages={flatMessages}
               onLoadMore={() => {
-                 if (sessionMessagesQuery.hasNextPage) {
-                   void sessionMessagesQuery.fetchNextPage();
-                 }
+                if (sessionMessagesQuery.hasNextPage) {
+                  void sessionMessagesQuery.fetchNextPage();
+                }
               }}
               runnerType={selectedRunnerType}
               runtimeState={selectedRuntimeState}
-              onSend={async (payload) => { await sendMutation.mutateAsync(payload); }}
-              onCancel={async () => { await cancelMutation.mutateAsync(); }}
+              onSend={async (payload) => {
+                await sendMutation.mutateAsync(payload);
+              }}
+              onCancel={async () => {
+                await cancelMutation.mutateAsync();
+              }}
               onReload={async () => {
                 if (!id) {
                   return;

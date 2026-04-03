@@ -106,8 +106,6 @@ export class CreateSessionDto {
   initialMessage?: SendSessionMessageDto;
 }
 
-
-
 export class SessionEventsQueryDto {
   @ApiPropertyOptional({ example: 12 })
   @IsOptional()

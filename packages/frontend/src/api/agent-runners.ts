@@ -9,8 +9,9 @@ import type {
 import { apiClient } from './client';
 
 export async function listAgentRunnerTypes() {
-  const response =
-    await apiClient.get<RunnerTypeResponse[]>('/agent-runner-types');
+  const response = await apiClient.get<RunnerTypeResponse[]>(
+    '/agent-runner-types'
+  );
   return response.data;
 }
 
@@ -22,7 +23,9 @@ export async function listAgentRunners(name?: string) {
 }
 
 export async function getAgentRunner(id: string) {
-  const response = await apiClient.get<AgentRunnerDetail>(`/agent-runners/${id}`);
+  const response = await apiClient.get<AgentRunnerDetail>(
+    `/agent-runners/${id}`
+  );
   return response.data;
 }
 
@@ -51,15 +54,15 @@ export async function deleteAgentRunner(id: string) {
 }
 
 export async function checkAgentRunnerHealth(id: string) {
-  const response = await apiClient.get<{ status: 'online' | 'offline' | 'unknown' }>(
-    `/agent-runners/${id}/health`
-  );
+  const response = await apiClient.get<{
+    status: 'online' | 'offline' | 'unknown';
+  }>(`/agent-runners/${id}/health`);
   return response.data;
 }
 
 export async function probeAgentRunnerContext(id: string) {
-  const response = await apiClient.get<Record<string, Array<{ label: string; value: string } | string>>>(
-    `/agent-runners/${id}/context`
-  );
+  const response = await apiClient.get<
+    Record<string, Array<{ label: string; value: string } | string>>
+  >(`/agent-runners/${id}/context`);
   return response.data;
 }

@@ -115,9 +115,7 @@ export const sessionMessageInputContentSchema = jsonObjectSchema;
 export type PlatformSessionConfigInput = z.infer<
   typeof platformSessionConfigSchema
 >;
-export type CreateSessionInputSchema = z.infer<
-  typeof createSessionInputSchema
->;
+export type CreateSessionInputSchema = z.infer<typeof createSessionInputSchema>;
 export type SendSessionMessageInputSchema = z.infer<
   typeof sendSessionMessageInputSchema
 >;

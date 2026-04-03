@@ -9,10 +9,12 @@ import { RuleMutationDto } from '../../dto/resource.dto';
 @Injectable()
 export class RulesService {
   private readonly prisma: PrismaService;
-  private readonly resourceCrud: ReturnType<typeof createResourceCrudHandlers<
-    RuleInput,
-    NonNullable<Awaited<ReturnType<PrismaService['rule']['findUnique']>>>
-  >>;
+  private readonly resourceCrud: ReturnType<
+    typeof createResourceCrudHandlers<
+      RuleInput,
+      NonNullable<Awaited<ReturnType<PrismaService['rule']['findUnique']>>>
+    >
+  >;
 
   constructor(prisma: PrismaService) {
     this.prisma = prisma;

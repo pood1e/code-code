@@ -9,10 +9,7 @@ import type {
 import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
 import type { QueryClient, InfiniteData } from '@tanstack/react-query';
 
-import {
-  createSessionEventSource,
-  parseSessionEvent
-} from '@/api/sessions';
+import { createSessionEventSource, parseSessionEvent } from '@/api/sessions';
 import type { SessionMessageRuntimeMap } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { getSessionLastEventId } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { queryKeys } from '@/query/query-keys';
@@ -42,7 +39,9 @@ function updateSessionCaches(
             ...current,
             lastEventId: Math.max(current.lastEventId, chunk.eventId),
             status:
-              chunk.kind === 'session_status' ? chunk.data.status : current.status
+              chunk.kind === 'session_status'
+                ? chunk.data.status
+                : current.status
           }
         : current
   );
@@ -60,7 +59,9 @@ function updateSessionCaches(
               ...session,
               lastEventId: Math.max(session.lastEventId, chunk.eventId),
               status:
-                chunk.kind === 'session_status' ? chunk.data.status : session.status
+                chunk.kind === 'session_status'
+                  ? chunk.data.status
+                  : session.status
             }
           : session
       )
@@ -74,7 +75,9 @@ export function useSessionEventStream({
   messagesReady,
   queryClient
 }: UseSessionEventStreamOptions) {
-  const updateMessageState = useSessionRuntimeStore((s) => s.updateMessageState);
+  const updateMessageState = useSessionRuntimeStore(
+    (s) => s.updateMessageState
+  );
   const updateMessageStateRef = useRef(updateMessageState);
   updateMessageStateRef.current = updateMessageState;
   const [streamNonce, setStreamNonce] = useState(0);
@@ -126,7 +129,9 @@ export function useSessionEventStream({
           const sessionState = store.stateBySessionId[sessionId] ?? {};
           const cleared: Record<string, SessionMessageRuntimeMap[string]> = {};
           for (const [messageId, value] of Object.entries(sessionState)) {
-            cleared[messageId] = value ? { ...value, thinkingText: undefined } : value;
+            cleared[messageId] = value
+              ? { ...value, thinkingText: undefined }
+              : value;
           }
           useSessionRuntimeStore.setState((state) => ({
             stateBySessionId: {
@@ -139,20 +144,28 @@ export function useSessionEventStream({
       }
 
       if (chunk.kind === 'thinking_delta' && chunk.messageId) {
-        updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
-          ...(current ?? {}),
-          thinkingText:
-            chunk.data.accumulatedText ??
-            `${current?.thinkingText ?? ''}${chunk.data.deltaText}`
-        }));
+        updateMessageStateRef.current(
+          sessionId,
+          chunk.messageId,
+          (current) => ({
+            ...(current ?? {}),
+            thinkingText:
+              chunk.data.accumulatedText ??
+              `${current?.thinkingText ?? ''}${chunk.data.deltaText}`
+          })
+        );
         return;
       }
 
       if (chunk.kind === 'usage' && chunk.messageId) {
-        updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
-          ...(current ?? {}),
-          usage: chunk.data
-        }));
+        updateMessageStateRef.current(
+          sessionId,
+          chunk.messageId,
+          (current) => ({
+            ...(current ?? {}),
+            usage: chunk.data
+          })
+        );
         return;
       }
 
@@ -162,36 +175,39 @@ export function useSessionEventStream({
         chunk.kind === 'error' ||
         chunk.kind === 'tool_use'
       ) {
-        queryClient.setQueryData<InfiniteData<PagedSessionMessages> | undefined>(
-          queryKeys.sessions.messages(sessionId),
-          (current) => {
-            if (!current || !current.pages.length) return current;
-            
-            const firstPage = current.pages[0];
-            const updatedFirstPage = {
-              ...firstPage,
-              data: applyOutputChunkToMessages(firstPage.data, chunk)
-            };
-            
-            return {
-              ...current,
-              pages: [updatedFirstPage, ...current.pages.slice(1)]
-            };
-          }
-        );
+        queryClient.setQueryData<
+          InfiniteData<PagedSessionMessages> | undefined
+        >(queryKeys.sessions.messages(sessionId), (current) => {
+          if (!current || !current.pages.length) return current;
+
+          const firstPage = current.pages[0];
+          const updatedFirstPage = {
+            ...firstPage,
+            data: applyOutputChunkToMessages(firstPage.data, chunk)
+          };
+
+          return {
+            ...current,
+            pages: [updatedFirstPage, ...current.pages.slice(1)]
+          };
+        });
 
         if (
           (chunk.kind === 'message_result' || chunk.kind === 'error') &&
           chunk.messageId
         ) {
-          updateMessageStateRef.current(sessionId, chunk.messageId, (current) => ({
-            ...(current ?? {}),
-            thinkingText: undefined,
-            cancelledAt:
-              chunk.kind === 'error' && chunk.data.code === 'USER_CANCELLED'
-                ? new Date(chunk.timestampMs).toISOString()
-                : undefined
-          }));
+          updateMessageStateRef.current(
+            sessionId,
+            chunk.messageId,
+            (current) => ({
+              ...(current ?? {}),
+              thinkingText: undefined,
+              cancelledAt:
+                chunk.kind === 'error' && chunk.data.code === 'USER_CANCELLED'
+                  ? new Date(chunk.timestampMs).toISOString()
+                  : undefined
+            })
+          );
         }
       }
     };
@@ -245,11 +261,5 @@ export function useSessionEventStream({
       }
       source.close();
     };
-  }, [
-    messagesReady,
-    queryClient,
-    scopeId,
-    session?.id,
-    streamNonce
-  ]);
+  }, [messagesReady, queryClient, scopeId, session?.id, streamNonce]);
 }

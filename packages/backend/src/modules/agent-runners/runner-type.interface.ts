@@ -1,5 +1,9 @@
 import type { ZodTypeAny } from 'zod';
-import type { RunnerTypeMeta, PlatformSessionConfig, RunnerContext } from '@agent-workbench/shared';
+import type {
+  RunnerTypeMeta,
+  PlatformSessionConfig,
+  RunnerContext
+} from '@agent-workbench/shared';
 import type { MaterializerTarget } from './cli/context-materializer';
 
 export type RunnerSessionRecord = {
@@ -123,4 +127,3 @@ export interface RunnerType extends RunnerTypeMeta {
   output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk>;
   cancelOutput(session: RunnerSessionRecord): Promise<void>;
 }
-

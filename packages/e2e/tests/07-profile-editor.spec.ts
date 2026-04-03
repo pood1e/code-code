@@ -19,8 +19,14 @@ test.describe('Profile 编辑器', () => {
   test.beforeAll(async () => {
     await cleanupTestData();
 
-    const skill = await apiPost('/skills', { name: 'Editor Skill', content: 'content' });
-    const rule = await apiPost('/rules', { name: 'Editor Rule', content: 'content' });
+    const skill = await apiPost('/skills', {
+      name: 'Editor Skill',
+      content: 'content'
+    });
+    const rule = await apiPost('/rules', {
+      name: 'Editor Rule',
+      content: 'content'
+    });
     const mcp = await apiPost('/mcps', {
       name: 'Editor MCP',
       content: { type: 'stdio', command: 'echo', args: ['test'] }
@@ -56,7 +62,7 @@ test.describe('Profile 编辑器', () => {
 
   test('通过 API 关联资源后，编辑页应展示资源名称', async ({ page }) => {
     // 通过 API 关联资源
-    await fetch(`http://localhost:3000/api/profiles/${profileId}`, {
+    await fetch(`http://localhost:3001/api/profiles/${profileId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -95,9 +101,12 @@ test.describe('Profile 导出与渲染', () => {
 
   test.beforeAll(async () => {
     await cleanupTestData();
-    const skill = await apiPost('/skills', { name: 'Export Skill', content: '# Exported skill' });
+    const skill = await apiPost('/skills', {
+      name: 'Export Skill',
+      content: '# Exported skill'
+    });
     const profile = await apiPost('/profiles', { name: 'Export Profile' });
-    await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
+    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -116,7 +125,7 @@ test.describe('Profile 导出与渲染', () => {
 
   test('Profile 渲染 API 应返回完整数据', async ({ page }) => {
     const response = await page.request.get(
-      `http://localhost:3000/api/profiles/${profileId}/render`
+      `http://localhost:3001/api/profiles/${profileId}/render`
     );
     expect(response.status()).toBe(200);
 
@@ -128,7 +137,7 @@ test.describe('Profile 导出与渲染', () => {
 
   test('Profile 导出 JSON 应包含关联资源内容', async ({ page }) => {
     const response = await page.request.get(
-      `http://localhost:3000/api/profiles/${profileId}/export`
+      `http://localhost:3001/api/profiles/${profileId}/export`
     );
     expect(response.status()).toBe(200);
 
@@ -139,7 +148,7 @@ test.describe('Profile 导出与渲染', () => {
 
   test('Profile 导出 YAML 应为有效格式', async ({ page }) => {
     const response = await page.request.get(
-      `http://localhost:3000/api/profiles/${profileId}/export?format=yaml`
+      `http://localhost:3001/api/profiles/${profileId}/export?format=yaml`
     );
     expect(response.status()).toBe(200);
 

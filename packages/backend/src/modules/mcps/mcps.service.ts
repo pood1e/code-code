@@ -10,10 +10,12 @@ import { McpMutationDto } from '../../dto/resource.dto';
 @Injectable()
 export class McpsService {
   private readonly prisma: PrismaService;
-  private readonly resourceCrud: ReturnType<typeof createResourceCrudHandlers<
-    McpInput,
-    NonNullable<Awaited<ReturnType<PrismaService['mCP']['findUnique']>>>
-  >>;
+  private readonly resourceCrud: ReturnType<
+    typeof createResourceCrudHandlers<
+      McpInput,
+      NonNullable<Awaited<ReturnType<PrismaService['mCP']['findUnique']>>>
+    >
+  >;
 
   constructor(prisma: PrismaService) {
     this.prisma = prisma;
@@ -71,13 +73,21 @@ export class McpsService {
   }
 
   create(dto: McpMutationDto) {
-    const parsed = parseSchemaOrThrow(mcpInputSchema, dto, 'Invalid MCP payload');
+    const parsed = parseSchemaOrThrow(
+      mcpInputSchema,
+      dto,
+      'Invalid MCP payload'
+    );
 
     return this.resourceCrud.create(parsed);
   }
 
   update(id: string, dto: McpMutationDto) {
-    const parsed = parseSchemaOrThrow(mcpInputSchema, dto, 'Invalid MCP payload');
+    const parsed = parseSchemaOrThrow(
+      mcpInputSchema,
+      dto,
+      'Invalid MCP payload'
+    );
 
     return this.resourceCrud.update(id, parsed);
   }

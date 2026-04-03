@@ -122,10 +122,12 @@ export class AgentRunnersService {
     return null;
   }
 
-  async checkHealth(id: string): Promise<{ status: 'online' | 'offline' | 'unknown' }> {
+  async checkHealth(
+    id: string
+  ): Promise<{ status: 'online' | 'offline' | 'unknown' }> {
     const runner = await this.getById(id);
     const runnerType = this.runnerTypeRegistry.get(runner.type);
-    
+
     if (!runnerType) {
       return { status: 'unknown' };
     }
@@ -137,7 +139,7 @@ export class AgentRunnersService {
   async probeRunnerContext(id: string): Promise<Record<string, unknown>> {
     const runner = await this.getById(id);
     const runnerType = this.runnerTypeRegistry.get(runner.type);
-    
+
     if (!runnerType || !runnerType.probeContext) {
       return {};
     }

@@ -133,7 +133,9 @@ function parseStreamEvent(
   }
 
   if (eventType === 'content_block_start') {
-    const contentBlock = event.content_block as Record<string, unknown> | undefined;
+    const contentBlock = event.content_block as
+      | Record<string, unknown>
+      | undefined;
     if (!contentBlock) return [];
 
     if (contentBlock.type === 'tool_use') {
@@ -165,7 +167,9 @@ function parseAssistantSnapshot(
   const message = parsed.message as Record<string, unknown> | undefined;
 
   if (message) {
-    const content = message.content as Array<Record<string, unknown>> | undefined;
+    const content = message.content as
+      | Array<Record<string, unknown>>
+      | undefined;
     if (content && Array.isArray(content)) {
       for (const block of content) {
         if (block.type === 'text' && typeof block.text === 'string') {
@@ -244,9 +248,7 @@ function parseResult(
 
   // Final result
   const resultText =
-    typeof parsed.result === 'string'
-      ? parsed.result
-      : state.assistantBuffer;
+    typeof parsed.result === 'string' ? parsed.result : state.assistantBuffer;
 
   chunks.push({
     kind: 'message_result',

@@ -19,8 +19,6 @@ export class ApiRequestError extends Error {
   }
 }
 
-
-
 export function toApiRequestError(error: unknown) {
   if (error instanceof ApiRequestError) {
     return error;
@@ -52,8 +50,6 @@ export function isNotFoundApiError(error: unknown) {
   return getApiErrorCode(error) === 404;
 }
 
-
-
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api'
 });
@@ -76,4 +72,3 @@ apiClient.interceptors.response.use(
   },
   (error) => Promise.reject(toApiRequestError(error))
 );
-

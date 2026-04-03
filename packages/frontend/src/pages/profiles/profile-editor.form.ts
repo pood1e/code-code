@@ -176,17 +176,17 @@ export function parseOverrideEditorValue(value: string) {
   }
 }
 
-export function filterAvailableResources<T extends { id: string; name: string }>(
-  items: T[],
-  selectedIds: Set<string>,
-  searchValue: string
-) {
+export function filterAvailableResources<
+  T extends { id: string; name: string }
+>(items: T[], selectedIds: Set<string>, searchValue: string) {
   const normalizedSearch = searchValue.trim().toLowerCase();
 
   return items
     .filter((item) => !selectedIds.has(item.id))
     .filter((item) =>
-      normalizedSearch ? item.name.toLowerCase().includes(normalizedSearch) : true
+      normalizedSearch
+        ? item.name.toLowerCase().includes(normalizedSearch)
+        : true
     );
 }
 
@@ -242,10 +242,9 @@ export function toAvailableItems<
   }));
 }
 
-export function removeSelectedItem<T extends { resourceId: string; order: number }>(
-  items: T[],
-  resourceId: string
-) {
+export function removeSelectedItem<
+  T extends { resourceId: string; order: number }
+>(items: T[], resourceId: string) {
   return syncOrders(items.filter((item) => item.resourceId !== resourceId));
 }
 

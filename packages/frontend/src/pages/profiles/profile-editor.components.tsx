@@ -1,9 +1,4 @@
-import {
-  Delete,
-  GripVertical,
-  Plus,
-  Search
-} from 'lucide-react';
+import { Delete, GripVertical, Plus, Search } from 'lucide-react';
 import {
   closestCenter,
   DndContext,
@@ -51,8 +46,14 @@ function SortableSelectedItem<T extends SelectedBaseItem>({
   meta?: string | null;
   children?: ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item.resourceId });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: item.resourceId });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition
@@ -213,7 +214,9 @@ function AvailableResourceList({
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium text-foreground">{item.name}</p>
-                  {item.meta ? <Badge variant="outline">{item.meta}</Badge> : null}
+                  {item.meta ? (
+                    <Badge variant="outline">{item.meta}</Badge>
+                  ) : null}
                 </div>
                 <p className="text-sm leading-6 text-muted-foreground">
                   {item.description ?? '暂无描述'}
@@ -251,7 +254,9 @@ export function ResourceSectionCard<T extends SelectedBaseItem>({
   return (
     <SurfaceCard>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-foreground">{section.title}</h2>
+        <h2 className="text-base font-semibold text-foreground">
+          {section.title}
+        </h2>
         <Badge variant="outline">{section.selectedItems.length}</Badge>
       </div>
       <div className="grid gap-4 xl:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">

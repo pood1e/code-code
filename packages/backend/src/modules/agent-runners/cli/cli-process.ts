@@ -176,6 +176,8 @@ export class CliProcess {
   }
 
   get isRunning(): boolean {
-    return this.process !== null && !this.killed && this.process.exitCode === null;
+    return (
+      this.process !== null && !this.killed && this.process.exitCode === null
+    );
   }
 }
