@@ -1,0 +1,171 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: 09-error-handling.spec.ts >> 页面健壮性 >> 侧边栏折叠/展开不应丢失内容
+- Location: tests/09-error-handling.spec.ts:104:7
+
+# Error details
+
+```
+Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5174/skills
+Call log:
+  - navigating to "http://localhost:5174/skills", waiting until "load"
+
+```
+
+# Test source
+
+```ts
+  5   |  * 错误处理与边界场景
+  6   |  *
+  7   |  * 用户期望：
+  8   |  * - 访问不存在的资源应有合理反馈（404 页面或自动重定向）
+  9   |  * - 表单验证失败应有明确提示
+  10  |  * - 页面不应出现白屏或 React 错误边界
+  11  |  */
+  12  | test.describe('404 与错误处理', () => {
+  13  |   test('访问不存在的 Skill 编辑页应有合理反馈', async ({ page }) => {
+  14  |     await page.goto('/skills/nonexistent-id/edit');
+  15  | 
+  16  |     // 用户不应看到空白页面
+  17  |     const body = await page.textContent('body');
+  18  |     expect(body!.length).toBeGreaterThan(0);
+  19  | 
+  20  |     // 应有某种错误提示或重定向
+  21  |     // 不应出现 React 错误边界的 "Something went wrong" 或 JS 异常
+  22  |   });
+  23  | 
+  24  |   test('访问不存在的 Profile 编辑页应有合理反馈', async ({ page }) => {
+  25  |     await page.goto('/profiles/nonexistent-id/edit');
+  26  | 
+  27  |     const body = await page.textContent('body');
+  28  |     expect(body!.length).toBeGreaterThan(0);
+  29  |   });
+  30  | 
+  31  |   test('访问不存在的 Runner 编辑页应有合理反馈', async ({ page }) => {
+  32  |     await page.goto('/agent-runners/nonexistent-id/edit');
+  33  | 
+  34  |     const body = await page.textContent('body');
+  35  |     expect(body!.length).toBeGreaterThan(0);
+  36  |   });
+  37  | 
+  38  |   test('访问不存在的路由应有合理反馈', async ({ page }) => {
+  39  |     await page.goto('/this-route-does-not-exist');
+  40  | 
+  41  |     // 应有 404 提示或重定向到首页
+  42  |     const body = await page.textContent('body');
+  43  |     expect(body!.length).toBeGreaterThan(0);
+  44  |   });
+  45  | });
+  46  | 
+  47  | test.describe('表单验证反馈', () => {
+  48  |   test.beforeAll(async () => {
+  49  |     await cleanupTestData();
+  50  |   });
+  51  | 
+  52  |   test.afterAll(async () => {
+  53  |     await cleanupTestData();
+  54  |   });
+  55  | 
+  56  |   test('Skill 创建页不填名称直接保存应有错误提示', async ({ page }) => {
+  57  |     await page.goto('/skills/new');
+  58  | 
+  59  |     // 不填任何内容直接保存
+  60  |     await page.getByRole('button', { name: /保存/i }).click();
+  61  | 
+  62  |     // 用户期望：表单应展示验证错误，不能静默失败
+  63  |     // 页面应仍在创建页（未跳转走）
+  64  |     await expect(page).toHaveURL(/\/skills\/new/);
+  65  |   });
+  66  | 
+  67  |   test('Rule 创建页不填名称直接保存应有错误提示', async ({ page }) => {
+  68  |     await page.goto('/rules/new');
+  69  | 
+  70  |     await page.getByRole('button', { name: /保存/i }).click();
+  71  | 
+  72  |     await expect(page).toHaveURL(/\/rules\/new/);
+  73  |   });
+  74  | 
+  75  |   test('Runner 创建页不填名称直接保存应有错误提示', async ({ page }) => {
+  76  |     await page.goto('/agent-runners/new');
+  77  | 
+  78  |     await page.getByRole('button', { name: /保存/i }).click();
+  79  | 
+  80  |     await expect(page).toHaveURL(/\/agent-runners\/new/);
+  81  |   });
+  82  | 
+  83  |   test('Project 创建对话框中 Git URL 格式错误应阻止提交', async ({ page }) => {
+  84  |     await page.goto('/projects');
+  85  |     await page.getByRole('button', { name: /新建 Project/i }).click();
+  86  | 
+  87  |     const dialog = page.getByRole('dialog');
+  88  |     await expect(dialog).toBeVisible();
+  89  | 
+  90  |     await dialog.getByRole('textbox', { name: 'Name' }).fill('Valid Name');
+  91  |     await dialog
+  92  |       .getByRole('textbox', { name: 'Git URL' })
+  93  |       .fill('https://not-ssh-url.com');
+  94  |     await dialog.getByRole('textbox', { name: 'Workspace Path' }).fill('/tmp');
+  95  | 
+  96  |     await dialog.getByRole('button', { name: /创建/i }).click();
+  97  | 
+  98  |     // 对话框应仍然打开（验证失败）
+  99  |     await expect(dialog).toBeVisible();
+  100 |   });
+  101 | });
+  102 | 
+  103 | test.describe('页面健壮性', () => {
+  104 |   test('侧边栏折叠/展开不应丢失内容', async ({ page }) => {
+> 105 |     await page.goto('/skills');
+      |                ^ Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5174/skills
+  106 | 
+  107 |     // 折叠侧栏
+  108 |     const collapseBtn = page.getByRole('button', { name: /收起侧栏/i });
+  109 |     if (await collapseBtn.isVisible()) {
+  110 |       await collapseBtn.click();
+  111 | 
+  112 |       // 主内容区仍应正常展示
+  113 |       const main = page.locator('main');
+  114 |       await expect(main).toBeVisible();
+  115 | 
+  116 |       // 展开侧栏
+  117 |       const expandBtn = page
+  118 |         .getByRole('button', { name: /展开|侧栏/i })
+  119 |         .first();
+  120 |       await expandBtn.click();
+  121 | 
+  122 |       // 导航应恢复
+  123 |       await expect(
+  124 |         page.getByRole('button', { name: 'Projects' })
+  125 |       ).toBeVisible();
+  126 |     }
+  127 |   });
+  128 | 
+  129 |   test('快速连续导航不应导致页面错误', async ({ page }) => {
+  130 |     // 模拟用户快速点击多个导航项
+  131 |     await page.goto('/skills');
+  132 |     await page.goto('/rules');
+  133 |     await page.goto('/mcps');
+  134 |     await page.goto('/profiles');
+  135 |     await page.goto('/agent-runners');
+  136 | 
+  137 |     // 最终页面应正常渲染
+  138 |     await expect(page.getByPlaceholder(/按名称搜索/i)).toBeVisible();
+  139 |   });
+  140 | 
+  141 |   test('刷新页面不应丢失当前路由', async ({ page }) => {
+  142 |     await page.goto('/rules');
+  143 |     await expect(page).toHaveURL(/\/rules/);
+  144 | 
+  145 |     await page.reload();
+  146 |     await expect(page).toHaveURL(/\/rules/);
+  147 |     await expect(page.getByPlaceholder(/按名称搜索/i)).toBeVisible();
+  148 |   });
+  149 | });
+  150 | 
+```

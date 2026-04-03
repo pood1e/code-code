@@ -25,7 +25,7 @@ test.describe('引用冲突保护', () => {
       content: 'content'
     });
     const profile = await apiPost('/profiles', { name: 'Ref Profile' });
-    await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
+    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -163,7 +163,7 @@ test.describe('导出功能', () => {
 
     // 通过 API 直接验证导出端点（E2E 层面确认端点可达）
     const response = await page.request.get(
-      `http://localhost:3000/api/profiles/${profile.id}/export`
+      `http://localhost:3001/api/profiles/${profile.id}/export`
     );
 
     expect(response.status()).toBe(200);
@@ -178,7 +178,7 @@ test.describe('导出功能', () => {
     const profile = await apiPost('/profiles', { name: 'YAML Export Test' });
 
     const response = await page.request.get(
-      `http://localhost:3000/api/profiles/${profile.id}/export?format=yaml`
+      `http://localhost:3001/api/profiles/${profile.id}/export?format=yaml`
     );
 
     expect(response.status()).toBe(200);

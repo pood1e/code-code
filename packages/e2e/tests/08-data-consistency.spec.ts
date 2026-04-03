@@ -40,7 +40,7 @@ test.describe('跨页面数据一致性', () => {
     await expect(page.getByText('Old Name Skill')).toBeVisible();
 
     // 通过 API 修改名称
-    await fetch(`http://localhost:3000/api/skills/${skill.id}`, {
+    await fetch(`http://localhost:3001/api/skills/${skill.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'New Name Skill' })
@@ -60,7 +60,7 @@ test.describe('跨页面数据一致性', () => {
     await page.goto('/skills');
     await expect(page.getByText('Temporary Skill')).toBeVisible();
 
-    await fetch(`http://localhost:3000/api/skills/${skill.id}`, {
+    await fetch(`http://localhost:3001/api/skills/${skill.id}`, {
       method: 'DELETE'
     });
 
@@ -74,7 +74,7 @@ test.describe('跨页面数据一致性', () => {
       content: 'content'
     });
     const profile = await apiPost('/profiles', { name: 'Consistency Check' });
-    await fetch(`http://localhost:3000/api/profiles/${profile.id}`, {
+    await fetch(`http://localhost:3001/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

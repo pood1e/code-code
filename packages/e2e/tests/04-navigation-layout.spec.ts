@@ -93,7 +93,7 @@ test.describe('页面加载', () => {
 test.describe('资源列表页通用行为', () => {
   // 先通过 API 确保有数据
   test.beforeAll(async () => {
-    await fetch('http://localhost:3000/api/skills', {
+    await fetch('http://localhost:3001/api/skills', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

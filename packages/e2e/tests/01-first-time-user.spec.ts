@@ -17,6 +17,8 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
   });
 
   test('打开应用应跳转到 Projects 页面并展示空状态引导', async ({ page }) => {
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
     await page.goto('/');
     await expect(page).toHaveURL(/\/projects/);
 
