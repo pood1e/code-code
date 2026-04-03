@@ -10,3 +10,4 @@ packages/frontend/tsconfig.tsbuildinfo
 
 AGENTS.md
 docs/design/
+docs/test_dir/
