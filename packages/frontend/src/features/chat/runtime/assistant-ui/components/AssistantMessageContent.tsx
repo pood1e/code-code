@@ -1,84 +1,171 @@
-import React from 'react';
-import type { ToolCallMessagePartProps } from '@assistant-ui/react';
-import { ChevronRight, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import React, { Suspense, lazy } from 'react';
+import { Loader2 } from 'lucide-react';
+import type { ToolCallKind } from '@agent-workbench/shared';
+
 import { cn } from '@/lib/utils';
-import { CollapsibleReasoning } from '../../components/CollapsibleReasoning';
-import { MarkdownRenderer } from '../../components/MarkdownRenderer';
-import { stringifyValue } from '../context';
+
+import { InlineCollapsibleBlock } from '../../components/InlineCollapsibleBlock';
+import { buildToolView } from '../tool-view';
+
+const CollapsibleReasoning = lazy(async () => {
+  const module = await import('../../components/CollapsibleReasoning');
+  return { default: module.CollapsibleReasoning };
+});
+const MarkdownRenderer = lazy(async () => {
+  const module = await import('../../components/MarkdownRenderer');
+  return { default: module.MarkdownRenderer };
+});
 
 export function AssistantTextPart({ text }: { text: string }) {
   return (
-    <div className="w-full font-sans text-foreground/90">
-      <MarkdownRenderer content={text} />
+    <div className="max-w-[min(46rem,100%)] font-sans text-foreground/90">
+      <Suspense
+        fallback={<div className="whitespace-pre-wrap break-words">{text}</div>}
+      >
+        <MarkdownRenderer content={text} density="compact" collapsibleBlocks />
+      </Suspense>
     </div>
   );
 }
 
 export function AssistantReasoningPart({ text }: { text: string }) {
-  return <CollapsibleReasoning text={text} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-[min(46rem,100%)] rounded-lg border border-border/40 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+          正在加载推理内容...
+        </div>
+      }
+    >
+      <CollapsibleReasoning text={text} />
+    </Suspense>
+  );
 }
 
 export function AssistantToolPart({
+  toolKind,
   toolName,
   args,
   result,
   isError
-}: ToolCallMessagePartProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
+}: {
+  toolKind: ToolCallKind;
+  toolName: string;
+  args: unknown;
+  result?: unknown;
+  isError?: boolean;
+}) {
+  const toolView = buildToolView(toolKind, toolName, args, result);
+  const ToolIcon = toolView.icon;
 
   return (
-    <div className="mb-2">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          'flex w-fit items-center gap-1.5 rounded-full px-2 py-1 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none',
-          isError ? 'text-destructive/80' : 'text-muted-foreground/60'
-        )}
-      >
-        <ChevronRight
+    <InlineCollapsibleBlock
+      expandedLabel={toolView.label}
+      summary={toolView.summary ?? toolView.label}
+      icon={
+        <ToolIcon
           className={cn(
-            'h-3 w-3 transition-transform duration-200',
-            isOpen && 'rotate-90'
+            'h-3.5 w-3.5 shrink-0',
+            isError ? 'text-destructive/80' : undefined
           )}
         />
-        <span className="text-[11px] font-medium uppercase tracking-wider">
-          Tool • {toolName}
-        </span>
-      </button>
+      }
+      widthClassName="mb-1 inline-block max-w-full align-top"
+      bodyClassName="mb-2 max-w-[min(42rem,100%)] space-y-2"
+      action={
+        isError ? (
+          <span className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
+            失败
+          </span>
+        ) : undefined
+      }
+    >
+      {toolView.details.map((detail) => (
+        <ToolDetailBlock
+          key={`${toolView.label}-${detail.label}`}
+          label={detail.label}
+          value={detail.value}
+        />
+      ))}
+      {toolView.terminalOutput ? (
+        <ToolTerminalOutput value={toolView.terminalOutput} />
+      ) : null}
+      {toolView.rawBlocks.length > 0 ? (
+        <ToolRawBlocks rawBlocks={toolView.rawBlocks} />
+      ) : null}
+    </InlineCollapsibleBlock>
+  );
+}
 
-      <div
+function ToolRawBlocks({
+  rawBlocks
+}: {
+  rawBlocks: { label: string; value: string }[];
+}) {
+  return (
+    <InlineCollapsibleBlock
+      expandedLabel="原始数据"
+      summary="原始数据"
+      icon={<span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />}
+      widthClassName="max-w-full"
+      bodyClassName="ml-0 border-l-0 py-0 pl-0"
+    >
+      <div className="space-y-2">
+        {rawBlocks.map((detail) => (
+          <ToolDetailBlock
+            key={detail.label}
+            label={detail.label}
+            value={detail.value}
+            tone="subtle"
+          />
+        ))}
+      </div>
+    </InlineCollapsibleBlock>
+  );
+}
+
+function ToolDetailBlock({
+  label,
+  value,
+  tone = 'default'
+}: {
+  label: string;
+  value: string;
+  tone?: 'default' | 'subtle';
+}) {
+  return (
+    <div className="max-w-full">
+      <ToolSectionLabel>{label}</ToolSectionLabel>
+      <pre
         className={cn(
-          'grid transition-all duration-300 ease-in-out ml-1',
-          isOpen
-            ? 'grid-rows-[1fr] opacity-100 mt-1'
-            : 'grid-rows-[0fr] opacity-0'
+          'max-w-full overflow-x-auto whitespace-pre-wrap rounded p-2 text-[11px]',
+          tone === 'subtle'
+            ? 'border border-border/40 bg-muted/15 text-foreground/60'
+            : 'bg-muted/30 text-foreground/70'
         )}
       >
-        <div className="overflow-hidden">
-          <div className="border-l-2 border-border/40 pl-3 py-1 mb-2 space-y-2">
-            <div>
-              <p className="mb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
-                Args
-              </p>
-              <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted/30 p-2 text-[11px] text-foreground/70">
-                {stringifyValue(args)}
-              </pre>
-            </div>
-            {result != null ? (
-              <div>
-                <p className="mb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
-                  Result
-                </p>
-                <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted/30 p-2 text-[11px] text-foreground/70">
-                  {stringifyValue(result)}
-                </pre>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
+        {value}
+      </pre>
     </div>
+  );
+}
+
+function ToolTerminalOutput({ value }: { value: string }) {
+  return (
+    <div className="max-w-full">
+      <ToolSectionLabel>输出</ToolSectionLabel>
+      <pre className="max-w-full overflow-x-auto rounded-md border border-border/60 bg-card px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground/80">
+        {value}
+      </pre>
+    </div>
+  );
+}
+
+function ToolSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-0.5 text-[10px] font-medium text-muted-foreground/55">
+      {children}
+    </p>
   );
 }
 
@@ -88,7 +175,7 @@ export function AssistantEmptyPart({ status }: { status: { type: string } }) {
   }
 
   return (
-    <div className="flex items-center text-muted-foreground/50 py-2">
+    <div className="flex items-center py-2 text-muted-foreground/50">
       <Loader2 className="size-4 animate-spin" />
     </div>
   );

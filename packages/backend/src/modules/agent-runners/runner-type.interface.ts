@@ -2,7 +2,8 @@ import type { ZodTypeAny } from 'zod';
 import type {
   RunnerTypeMeta,
   PlatformSessionConfig,
-  RunnerContext
+  RunnerContext,
+  ToolCallKind
 } from '@agent-workbench/shared';
 import type { MaterializerTarget } from './cli/context-materializer';
 
@@ -65,6 +66,7 @@ export type RawOutputChunk =
       messageId: string;
       timestampMs: number;
       data: {
+        toolKind: ToolCallKind;
         toolName: string;
         args?: unknown;
         result?: unknown;
@@ -122,6 +124,9 @@ export interface RunnerType extends RunnerTypeMeta {
     platformSessionConfig: PlatformSessionConfig,
     runnerSessionConfig: unknown
   ): Promise<Record<string, unknown>>;
+  shouldReusePersistedState(
+    runnerState: Record<string, unknown>
+  ): boolean;
   destroySession(session: RunnerSessionRecord): Promise<void>;
   send(session: RunnerSessionRecord, payload: RunnerSendPayload): Promise<void>;
   output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk>;

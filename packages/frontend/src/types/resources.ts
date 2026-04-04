@@ -30,3 +30,11 @@ export const resourceConfigMap: Record<
     emptyState: '还没有任何 Rule，先创建一个新的 Rule。'
   }
 };
+
+export function buildResourceCreatePath(kind: ResourceKind) {
+  return `${resourceConfigMap[kind].path}/new`;
+}
+
+export function buildResourceEditPath(kind: ResourceKind, resourceId: string) {
+  return `${resourceConfigMap[kind].path}/${resourceId}/edit`;
+}

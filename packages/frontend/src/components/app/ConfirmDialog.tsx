@@ -13,6 +13,7 @@ type ConfirmDialogProps = {
   open: boolean;
   title: string;
   description: string;
+  errorMessage?: string | null;
   confirmLabel: string;
   cancelLabel?: string;
   destructive?: boolean;
@@ -25,6 +26,7 @@ export function ConfirmDialog({
   open,
   title,
   description,
+  errorMessage,
   confirmLabel,
   cancelLabel = '取消',
   destructive = false,
@@ -39,6 +41,9 @@ export function ConfirmDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {errorMessage ? (
+          <p className="text-sm text-destructive">{errorMessage}</p>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>
             {cancelLabel}

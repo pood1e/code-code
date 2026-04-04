@@ -54,10 +54,25 @@ test.describe('Profile 编辑器', () => {
     await page.goto(`/profiles/${profileId}/edit`);
 
     // 用户期望：Profile 编辑器中可以看到资源的添加入口
-    // 应有 Skills/MCPs/Rules 分区或标签
-    await expect(page.getByText(/Skills/i).first()).toBeVisible();
-    await expect(page.getByText(/MCPs/i).first()).toBeVisible();
-    await expect(page.getByText(/Rules/i).first()).toBeVisible();
+    // 应有 Skills/MCPs/Rules 分区或标签（限定在 main 内，避免匹配到侧边栏导航按钮）
+    const main = page.locator('main');
+
+    const skillsSection = main.getByText(/^Skills$/i).first();
+    const mcpsSection = main.getByText(/^MCPs$/i).first();
+    const rulesSection = main.getByText(/^Rules$/i).first();
+
+    // 确认在 DOM 中存在
+    await expect(skillsSection).toBeAttached();
+    await expect(mcpsSection).toBeAttached();
+    await expect(rulesSection).toBeAttached();
+
+    // 滚动并确认可见
+    await skillsSection.scrollIntoViewIfNeeded();
+    await expect(skillsSection).toBeVisible();
+    await mcpsSection.scrollIntoViewIfNeeded();
+    await expect(mcpsSection).toBeVisible();
+    await rulesSection.scrollIntoViewIfNeeded();
+    await expect(rulesSection).toBeVisible();
   });
 
   test('通过 API 关联资源后，编辑页应展示资源名称', async ({ page }) => {
@@ -80,15 +95,18 @@ test.describe('Profile 编辑器', () => {
   test('修改 Profile 名称后保存应成功', async ({ page }) => {
     await page.goto(`/profiles/${profileId}/edit`);
 
-    const nameInput = page.getByRole('textbox', { name: /name|名称/i }).first();
-    await nameInput.clear();
-    await nameInput.fill('Renamed Profile');
+    // Use direct ID selector + pressSequentially to reliably update React Hook Form state
+    const nameInput = page.locator('#profile-name');
+    await nameInput.click();
+    await nameInput.selectText();
+    await nameInput.pressSequentially('Renamed Profile');
 
     await page.getByRole('button', { name: /保存/i }).click();
 
-    // 保存成功后回到列表，应看到新名称
-    await page.goto('/profiles');
-    await expect(page.getByText('Renamed Profile')).toBeVisible();
+    // 保存成功后实现会自动导航回 /profiles 列表，等待 URL 变化
+    await page.waitForURL(/\/profiles$/, { timeout: 10_000 });
+    // 等待列表重新加载，显示更新后的名称
+    await expect(page.getByText('Renamed Profile')).toBeVisible({ timeout: 15_000 });
   });
 });
 

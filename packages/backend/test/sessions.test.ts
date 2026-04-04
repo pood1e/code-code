@@ -1,7 +1,14 @@
-import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
+import { Logger } from '@nestjs/common';
+import { describe, it, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import http from 'node:http';
 
-import { setupTestApp, teardownTestApp, resetDatabase, getApp } from './setup';
+import {
+  setupTestApp,
+  teardownTestApp,
+  resetDatabase,
+  getApp,
+  getPrisma
+} from './setup';
 import {
   api,
   expectSuccess,
@@ -12,8 +19,11 @@ import {
   seedRule,
   seedMcp
 } from './helpers';
+import { SessionRuntimeService } from '../src/modules/sessions/session-runtime.service';
 
 describe('Sessions API', () => {
+  let sessionSeedCounter = 0;
+
   beforeAll(async () => {
     await setupTestApp();
   });
@@ -24,13 +34,80 @@ describe('Sessions API', () => {
 
   beforeEach(async () => {
     await resetDatabase();
+    sessionSeedCounter = 0;
   });
 
   // ---- 辅助函数：创建一个可用的 Session ----
 
+  type SessionMessageRecord = {
+    id: string;
+    role: string;
+    status: string;
+    createdAt: string;
+    runtimeConfig?: Record<string, unknown> | null;
+    outputText?: string | null;
+    thinkingText?: string | null;
+    contentParts?: Array<{
+      type: 'text' | 'thinking' | 'tool_call';
+      text?: string;
+      toolName?: string;
+    }>;
+  };
+
+  async function waitForSessionStatus(
+    sessionId: string,
+    targetStatus: string,
+    timeoutMs = 5_000
+  ) {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      const res = await api().get(`/api/sessions/${sessionId}`);
+      const session = expectSuccess<{ status: string }>(res);
+      if (session.status === targetStatus) {
+        return session;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    const res = await api().get(`/api/sessions/${sessionId}`);
+    const session = expectSuccess<{ status: string }>(res);
+    throw new Error(
+      `Session ${sessionId} did not reach status '${targetStatus}', current: ${session.status}`
+    );
+  }
+
+  async function waitForSessionMessages(
+    sessionId: string,
+    expectedCount: number,
+    timeoutMs = 5_000
+  ) {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      const res = await api().get(`/api/sessions/${sessionId}/messages`);
+      const messages = expectSuccess<{ data: SessionMessageRecord[] }>(res);
+      if (messages.data.length >= expectedCount) {
+        return messages.data;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    const res = await api().get(`/api/sessions/${sessionId}/messages`);
+    const messages = expectSuccess<{ data: SessionMessageRecord[] }>(res);
+    throw new Error(
+      `Session ${sessionId} did not reach ${expectedCount} messages, current: ${messages.data.length}`
+    );
+  }
+
   async function createTestSession(options?: { withInitialMessage?: boolean }) {
-    const project = await seedProject();
-    const runner = await seedAgentRunner();
+    sessionSeedCounter += 1;
+    const project = await seedProject({
+      name: `Test Project ${sessionSeedCounter}`
+    });
+    const runner = await seedAgentRunner({
+      name: `Test MockRunner ${sessionSeedCounter}`
+    });
 
     const payload: Record<string, unknown> = {
       scopeId: project.id,
@@ -75,18 +152,53 @@ describe('Sessions API', () => {
 
       expect(session.id).toBeDefined();
 
-      // Wait a bit for the mock runner to process
-      await new Promise((r) => setTimeout(r, 500));
+      await waitForSessionStatus(session.id, 'ready');
+      const messages = await waitForSessionMessages(session.id, 2);
 
-      // Should have messages
-      const msgRes = await api().get(`/api/sessions/${session.id}/messages`);
-      const msgData = expectSuccess<{
-        data: { role: string }[];
-      }>(msgRes);
-
-      expect(msgData.data.length).toBeGreaterThanOrEqual(1);
-      const userMsg = msgData.data.find((m) => m.role === 'user');
+      expect(messages.length).toBeGreaterThanOrEqual(2);
+      const userMsg = messages.find((message) => message.role === 'user');
       expect(userMsg).toBeDefined();
+    });
+
+    it('initialMessage.runtimeConfig 应持久化为 session 默认值和首条 user message 的实际配置', async () => {
+      const project = await seedProject();
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {},
+          initialMessage: {
+            input: { prompt: 'Hello Mock' },
+            runtimeConfig: {
+              approvalMode: 'default',
+              model: 'qwen-max'
+            }
+          }
+        }),
+        201
+      );
+
+      await waitForSessionStatus(session.id, 'ready');
+
+      const detail = expectSuccess<{
+        defaultRuntimeConfig: Record<string, unknown> | null;
+      }>(await api().get(`/api/sessions/${session.id}`));
+      expect(detail.defaultRuntimeConfig).toEqual({
+        approvalMode: 'default',
+        model: 'qwen-max'
+      });
+
+      const messages = await waitForSessionMessages(session.id, 2);
+      const firstUserMessage = messages.find((message) => message.role === 'user');
+      expect(firstUserMessage?.runtimeConfig).toEqual({
+        approvalMode: 'default',
+        model: 'qwen-max'
+      });
     });
 
     it('创建时可包含 Skills/Rules/MCPs', async () => {
@@ -163,17 +275,96 @@ describe('Sessions API', () => {
         .send({ input: { prompt: 'Test message' } });
       expectSuccess(res, 200);
 
-      // Wait for mock runner to process
-      await new Promise((r) => setTimeout(r, 800));
+      await waitForSessionStatus(session.id, 'ready');
+      const messages = await waitForSessionMessages(session.id, 2);
 
-      // Check messages
-      const msgRes = await api().get(`/api/sessions/${session.id}/messages`);
-      const msgData = expectSuccess<{
-        data: { role: string }[];
-      }>(msgRes);
-
-      const userMsgs = msgData.data.filter((m) => m.role === 'user');
+      const userMsgs = messages.filter((message) => message.role === 'user');
       expect(userMsgs.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('发送消息时应持久化实际生效的 runtimeConfig，包括 session 默认值', async () => {
+      const project = await seedProject();
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {},
+          initialMessage: {
+            input: { prompt: '初始化默认 runtime' },
+            runtimeConfig: {
+              model: 'qwen-max'
+            }
+          }
+        }),
+        201
+      );
+
+      await waitForSessionStatus(session.id, 'ready');
+
+      expectSuccess(
+        await api()
+          .post(`/api/sessions/${session.id}/messages`)
+          .send({ input: { prompt: '沿用默认 runtime' } }),
+        200
+      );
+
+      await waitForSessionStatus(session.id, 'ready');
+      const messages = await waitForSessionMessages(session.id, 4);
+      const userMessages = messages.filter((message) => message.role === 'user');
+      const latestUserMessage = userMessages[userMessages.length - 1];
+
+      expect(latestUserMessage?.runtimeConfig).toEqual({
+        model: 'qwen-max'
+      });
+    });
+
+    it('已持久化的 CLI session id 在 runtime 重建后应被复用，不应被新会话覆盖', async () => {
+      const project = await seedProject();
+      const runner = await seedAgentRunner({
+        name: 'Qwen Runner',
+        type: 'qwen-cli',
+        runnerConfig: {}
+      });
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        201
+      );
+
+      await getPrisma().agentSession.update({
+        where: { id: session.id },
+        data: {
+          runnerState: {
+            contextDir: '/tmp/.agent-workbench/test-session',
+            mcpConfigPath: null,
+            cliSessionId: 'qwen-session-123'
+          }
+        }
+      });
+
+      const runtimeService = getApp().get(SessionRuntimeService);
+      await runtimeService.ensureRuntime(session.id);
+
+      const refreshedSession = await getPrisma().agentSession.findUniqueOrThrow({
+        where: { id: session.id },
+        select: { runnerState: true }
+      });
+
+      expect(refreshedSession.runnerState).toMatchObject({
+        cliSessionId: 'qwen-session-123'
+      });
     });
   });
 
@@ -194,11 +385,93 @@ describe('Sessions API', () => {
         withInitialMessage: true
       });
 
-      // Wait for initial message to complete
-      await new Promise((r) => setTimeout(r, 1000));
+      await waitForSessionStatus(session.id, 'ready');
 
       const res = await api().post(`/api/sessions/${session.id}/reload`);
       expectSuccess(res, 200);
+    });
+
+    it('reload 应复用最后一条 user message 已持久化的 runtimeConfig', async () => {
+      const project = await seedProject();
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {},
+          initialMessage: {
+            input: { prompt: '初始化默认 runtime' },
+            runtimeConfig: {
+              model: 'qwen-max'
+            }
+          }
+        }),
+        201
+      );
+
+      await waitForSessionStatus(session.id, 'ready');
+
+      expectSuccess(
+        await api()
+          .post(`/api/sessions/${session.id}/messages`)
+          .send({
+            input: { prompt: '本轮覆写 runtime' },
+            runtimeConfig: {
+              approvalMode: 'auto-edit'
+            }
+          }),
+        200
+      );
+
+      await waitForSessionStatus(session.id, 'ready');
+
+      const beforeReload = expectSuccess<{ data: SessionMessageRecord[] }>(
+        await api().get(`/api/sessions/${session.id}/messages`)
+      ).data;
+      const targetUserMessage = [...beforeReload]
+        .reverse()
+        .find((message) => message.role === 'user');
+
+      expect(targetUserMessage?.runtimeConfig).toEqual({
+        model: 'qwen-max',
+        approvalMode: 'auto-edit'
+      });
+
+      expectSuccess(await api().post(`/api/sessions/${session.id}/reload`), 200);
+      await waitForSessionStatus(session.id, 'ready');
+
+      const afterReload = expectSuccess<{ data: SessionMessageRecord[] }>(
+        await api().get(`/api/sessions/${session.id}/messages`)
+      ).data;
+      const reloadedUserMessage = afterReload.find(
+        (message) => message.id === targetUserMessage?.id
+      );
+
+      expect(reloadedUserMessage?.runtimeConfig).toEqual({
+        model: 'qwen-max',
+        approvalMode: 'auto-edit'
+      });
+    });
+  });
+
+  describe('POST /api/sessions/:id/messages/:messageId/edit - 编辑消息', () => {
+    it('编辑不存在的 messageId 应返回 404', async () => {
+      const { session } = await createTestSession();
+
+      const error = expectError(
+        await api()
+          .post(`/api/sessions/${session.id}/messages/nonexistent-message/edit`)
+          .send({ input: { prompt: 'edited prompt' } }),
+        404
+      );
+
+      expect(error.message).toBe(
+        'Session message not found: nonexistent-message'
+      );
     });
   });
 
@@ -217,6 +490,100 @@ describe('Sessions API', () => {
       expect(Array.isArray(data.data)).toBe(true);
       expect('nextCursor' in data).toBe(true);
     });
+
+    it('应按 cursor 正确翻页，且多页结果无重复无漏项', async () => {
+      const { session } = await createTestSession();
+
+      for (const prompt of ['msg-1', 'msg-2', 'msg-3']) {
+        expectSuccess(
+          await api()
+            .post(`/api/sessions/${session.id}/messages`)
+            .send({ input: { prompt } }),
+          200
+        );
+        await waitForSessionStatus(session.id, 'ready');
+      }
+
+      const firstPage = expectSuccess<{
+        data: SessionMessageRecord[];
+        nextCursor: string | null;
+      }>(
+        await api().get(`/api/sessions/${session.id}/messages?limit=2`)
+      );
+
+      expect(firstPage.data).toHaveLength(2);
+      expect(firstPage.nextCursor).toBeTruthy();
+      expect(firstPage.data[0].createdAt <= firstPage.data[1].createdAt).toBe(
+        true
+      );
+
+      const secondPage = expectSuccess<{
+        data: SessionMessageRecord[];
+        nextCursor: string | null;
+      }>(
+        await api().get(
+          `/api/sessions/${session.id}/messages?limit=2&cursor=${firstPage.nextCursor}`
+        )
+      );
+
+      const allMessageIds = [...firstPage.data, ...secondPage.data].map(
+        (message) => message.id
+      );
+      expect(new Set(allMessageIds).size).toBe(allMessageIds.length);
+
+      const allMessages = expectSuccess<{ data: SessionMessageRecord[] }>(
+        await api().get(`/api/sessions/${session.id}/messages?limit=20`)
+      ).data;
+      expect(allMessageIds.every((id) => allMessages.some((m) => m.id === id))).toBe(
+        true
+      );
+      expect(secondPage.data[0].createdAt <= secondPage.data.at(-1)!.createdAt).toBe(
+        true
+      );
+    });
+
+    it('assistant 消息应按时序落 contentParts，连续 message_delta 合并为单个 text part，并可重进回读', async () => {
+      const { session } = await createTestSession();
+
+      const sendRes = await api()
+        .post(`/api/sessions/${session.id}/messages`)
+        .send({ input: { prompt: '检查 contentParts 时序' } });
+      expectSuccess(sendRes, 200);
+
+      await waitForSessionStatus(session.id, 'ready');
+      const messages = await waitForSessionMessages(session.id, 2);
+      const assistantMessage = messages.find(
+        (message) => message.role === 'assistant'
+      );
+
+      expect(assistantMessage).toBeDefined();
+      expect(assistantMessage?.status).toBe('complete');
+      expect(assistantMessage?.contentParts).toEqual([
+        {
+          type: 'thinking',
+          text: 'Mock runner 正在整理上下文...'
+        },
+        {
+          type: 'text',
+          text: assistantMessage?.outputText
+        }
+      ]);
+      expect(assistantMessage?.contentParts?.[1]?.text).toContain(
+        '收到输入：检查 contentParts 时序'
+      );
+
+      const reloadRes = await api().get(`/api/sessions/${session.id}/messages`);
+      const reloadedMessages = expectSuccess<{
+        data: SessionMessageRecord[];
+      }>(reloadRes).data;
+      const reloadedAssistantMessage = reloadedMessages.find(
+        (message) => message.id === assistantMessage?.id
+      );
+
+      expect(reloadedAssistantMessage?.contentParts).toEqual(
+        assistantMessage?.contentParts
+      );
+    }, 10000);
   });
 
   describe('SSE /api/sessions/:id/events - 事件流', () => {
@@ -224,10 +591,15 @@ describe('Sessions API', () => {
      * Test SSE by making a raw HTTP request and reading the first chunk.
      * supertest cannot handle SSE properly, so we use Node's http module.
      */
-    function connectSSE(
+    function collectSSE(
       path: string,
-      timeout = 3000
-    ): Promise<{ statusCode: number; chunks: string[] }> {
+      timeout = 300
+    ): Promise<{
+      statusCode: number;
+      contentType: string;
+      chunks: string[];
+      events: Array<{ type: string; data: unknown }>;
+    }> {
       return new Promise((resolve) => {
         const server = getApp().getHttpServer();
         const addr = server.address();
@@ -243,23 +615,58 @@ describe('Sessions API', () => {
               chunks.push(chunk);
             });
 
-            // Resolve after timeout with whatever we've collected
             setTimeout(() => {
+              const contentType = String(res.headers['content-type'] ?? '');
+              const payload = chunks.join('');
               res.destroy();
-              resolve({ statusCode: res.statusCode ?? 0, chunks });
+              resolve({
+                statusCode: res.statusCode ?? 0,
+                contentType,
+                chunks,
+                events: contentType.includes('text/event-stream')
+                  ? parseSseEvents(payload)
+                  : []
+              });
             }, timeout);
           }
         );
         req.on('error', () => {
-          resolve({ statusCode: 0, chunks });
+          resolve({ statusCode: 0, contentType: '', chunks, events: [] });
         });
       });
     }
 
-    it('应能建立 SSE 连接并收到 heartbeat', async () => {
+    function parseSseEvents(payload: string) {
+      return payload
+        .split('\n\n')
+        .map((block) => block.trim())
+        .filter(Boolean)
+        .map((block) => {
+          const lines = block.split('\n');
+          const type =
+            lines
+              .find((line) => line.startsWith('event:'))
+              ?.replace(/^event:\s*/, '') ?? 'message';
+          const rawData =
+            lines
+              .find((line) => line.startsWith('data:'))
+              ?.replace(/^data:\s*/, '') ?? 'null';
+
+          return {
+            type,
+            data: JSON.parse(rawData) as unknown
+          };
+        });
+    }
+
+    it('应能回放已持久化事件，并包含 message_result 与 done', async () => {
       const { session } = await createTestSession();
 
-      // Start listening on a random port for the test
+      await api()
+        .post(`/api/sessions/${session.id}/messages`)
+        .send({ input: { prompt: 'SSE replay test' } });
+      await waitForSessionStatus(session.id, 'ready');
+
       const server = getApp().getHttpServer();
       if (!server.listening) {
         await new Promise<void>((resolve) => {
@@ -267,15 +674,85 @@ describe('Sessions API', () => {
         });
       }
 
-      const result = await connectSSE(
-        `/api/sessions/${session.id}/events`,
-        2000
-      );
+      const result = await collectSSE(`/api/sessions/${session.id}/events`);
 
       expect(result.statusCode).toBe(200);
-      // Should have received at least one chunk (heartbeat or data)
-      // The SSE format has "data:" prefix
+      expect(result.events.map((event) => event.type)).toContain(
+        'message_result'
+      );
+      expect(result.events.map((event) => event.type)).toContain('done');
     }, 10000);
+
+    it('回放事件应包含 session_status，且 done 应在最后', async () => {
+      const { session } = await createTestSession();
+
+      expectSuccess(
+        await api()
+          .post(`/api/sessions/${session.id}/messages`)
+          .send({ input: { prompt: 'SSE order test' } }),
+        200
+      );
+      await waitForSessionStatus(session.id, 'ready');
+
+      const result = await collectSSE(`/api/sessions/${session.id}/events`);
+      const eventTypes = result.events.map((event) => event.type);
+
+      expect(eventTypes).toContain('session_status');
+      expect(eventTypes.at(-1)).toBe('done');
+    }, 10000);
+
+    it('afterEventId 应只返回较新的事件，且 replay/live 不应重复', async () => {
+      const { session } = await createTestSession();
+
+      await api()
+        .post(`/api/sessions/${session.id}/messages`)
+        .send({ input: { prompt: 'SSE afterEventId first message' } });
+      await waitForSessionStatus(session.id, 'ready');
+
+      const detailRes = await api().get(`/api/sessions/${session.id}`);
+      const detail = expectSuccess<{ lastEventId: number }>(detailRes);
+
+      const streamPromise = collectSSE(
+        `/api/sessions/${session.id}/events?afterEventId=${detail.lastEventId}`,
+        1_000
+      );
+
+      await api()
+        .post(`/api/sessions/${session.id}/messages`)
+        .send({ input: { prompt: 'SSE afterEventId second message' } });
+      await waitForSessionStatus(session.id, 'ready');
+
+      const result = await streamPromise;
+      const eventIds = result.events
+        .map((event) =>
+          event.data && typeof event.data === 'object' && 'eventId' in event.data
+            ? Number((event.data as { eventId: number }).eventId)
+            : null
+        )
+        .filter((eventId): eventId is number => eventId !== null);
+
+      expect(eventIds.length).toBeGreaterThan(0);
+      expect(eventIds.every((eventId) => eventId > detail.lastEventId)).toBe(
+        true
+      );
+      expect(new Set(eventIds).size).toBe(eventIds.length);
+    }, 10000);
+
+    it('不存在的 Session 事件流应返回 404', async () => {
+      const res = await api()
+        .get('/api/sessions/nonexistent/events')
+        .set('Accept', 'text/event-stream');
+      expectError(res, 404);
+    });
+
+    it('非法 afterEventId 应返回 400', async () => {
+      const { session } = await createTestSession();
+
+      const res = await api().get(
+        `/api/sessions/${session.id}/events?afterEventId=-1`
+      );
+      expectError(res, 400);
+    });
   });
 
   describe('DELETE /api/sessions/:id - 销毁 Session', () => {
@@ -285,12 +762,44 @@ describe('Sessions API', () => {
       const res = await api().delete(`/api/sessions/${session.id}`);
       expectSuccess(res);
 
-      // Wait for disposal
-      await new Promise((r) => setTimeout(r, 200));
-
       const detailRes = await api().get(`/api/sessions/${session.id}`);
-      const detail = expectSuccess<{ status: string }>(detailRes);
-      expect(['disposing', 'disposed']).toContain(detail.status);
+      expectError(detailRes, 404);
+    });
+
+    it('销毁运行中的 Session 后，不应再由后台 output consumer 向已删除会话追加事件', async () => {
+      const errorSpy = vi.spyOn(Logger.prototype, 'error');
+
+      try {
+        const { session } = await createTestSession();
+
+        const sendRes = await api()
+          .post(`/api/sessions/${session.id}/messages`)
+          .send({ input: { prompt: 'Dispose while running' } });
+        expectSuccess(sendRes);
+
+        const disposeRes = await api().delete(`/api/sessions/${session.id}`);
+        expectSuccess(disposeRes);
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const prisma = getPrisma();
+        const [sessionCount, messageCount, eventCount] = await Promise.all([
+          prisma.agentSession.count({ where: { id: session.id } }),
+          prisma.sessionMessage.count({ where: { sessionId: session.id } }),
+          prisma.sessionEvent.count({ where: { sessionId: session.id } })
+        ]);
+
+        expect(sessionCount).toBe(0);
+        expect(messageCount).toBe(0);
+        expect(eventCount).toBe(0);
+        expect(
+          errorSpy.mock.calls.some(([message]) =>
+            String(message).includes('Runner output crashed')
+          )
+        ).toBe(false);
+      } finally {
+        errorSpy.mockRestore();
+      }
     });
   });
 
@@ -309,7 +818,7 @@ describe('Sessions API', () => {
         runnerSessionConfig: {}
       });
 
-      expect([400, 404]).toContain(res.status);
+      expectError(res, 404);
     });
 
     it('runnerId 不存在时应返回错误', async () => {
@@ -324,7 +833,7 @@ describe('Sessions API', () => {
         runnerSessionConfig: {}
       });
 
-      expect([400, 404]).toContain(res.status);
+      expectError(res, 404);
     });
 
     it('缺少必填字段 scopeId 返回 400', async () => {
@@ -343,7 +852,8 @@ describe('Sessions API', () => {
 
   describe('资源不存在', () => {
     it('GET 不存在的 Session 返回 404', async () => {
-      expectError(await api().get('/api/sessions/nonexistent'), 404);
+      const error = expectError(await api().get('/api/sessions/nonexistent'), 404);
+      expect(error.message).toBe('Session not found: nonexistent');
     });
 
     it('发消息到不存在的 Session 返回错误', async () => {
@@ -351,7 +861,7 @@ describe('Sessions API', () => {
         .post('/api/sessions/nonexistent/messages')
         .send({ input: { prompt: 'hello' } });
 
-      expect([400, 404]).toContain(res.status);
+      expectError(res, 404);
     });
   });
 });

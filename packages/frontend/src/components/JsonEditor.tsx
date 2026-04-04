@@ -1,8 +1,10 @@
 import { lazy, Suspense } from 'react';
 
+import { CodePreview } from '@/components/CodePreview';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const JsonEditorImpl = lazy(() => import('./JsonEditorImpl'));
+const JsonCodeEditorImpl = lazy(() => import('./JsonCodeEditorImpl'));
+const MarkdownCodeEditorImpl = lazy(() => import('./MarkdownCodeEditorImpl'));
 
 export type EditorMode = 'json' | 'markdown';
 
@@ -14,6 +16,13 @@ type CodeEditorProps = {
 };
 
 export function CodeEditor(props: CodeEditorProps) {
+  if (props.readOnly) {
+    return <CodePreview value={props.value} mode={props.mode} />;
+  }
+
+  const EditorImpl =
+    props.mode === 'markdown' ? MarkdownCodeEditorImpl : JsonCodeEditorImpl;
+
   return (
     <Suspense
       fallback={
@@ -23,7 +32,7 @@ export function CodeEditor(props: CodeEditorProps) {
         </div>
       }
     >
-      <JsonEditorImpl {...props} />
+      <EditorImpl {...props} />
     </Suspense>
   );
 }

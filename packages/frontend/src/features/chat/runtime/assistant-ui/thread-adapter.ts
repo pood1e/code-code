@@ -105,6 +105,10 @@ export function isSessionRunning(status: SessionStatus) {
   return status === SessionStatusEnum.Running;
 }
 
+export function canSessionReload(status: SessionStatus) {
+  return !isSessionRunning(status) && !isSessionInteractionDisabled(status);
+}
+
 export function isSessionInteractionDisabled(status: SessionStatus) {
   return (
     status === SessionStatusEnum.Creating ||
@@ -112,4 +116,25 @@ export function isSessionInteractionDisabled(status: SessionStatus) {
     status === SessionStatusEnum.Disposed ||
     status === SessionStatusEnum.Error
   );
+}
+
+export function getSessionInteractionDisabledHint(
+  status: SessionStatus,
+  messagesReady: boolean
+) {
+  if (!messagesReady) {
+    return '正在加载历史消息...';
+  }
+
+  switch (status) {
+    case SessionStatusEnum.Creating:
+      return '会话正在创建...';
+    case SessionStatusEnum.Error:
+      return '会话已异常，请新建会话';
+    case SessionStatusEnum.Disposing:
+    case SessionStatusEnum.Disposed:
+      return '会话已不可用';
+    default:
+      return null;
+  }
 }

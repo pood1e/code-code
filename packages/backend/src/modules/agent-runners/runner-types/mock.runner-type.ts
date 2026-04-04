@@ -17,7 +17,7 @@ export const mockRunnerSessionConfigSchema = z.object({});
 export const mockInputSchema = z.object({
   prompt: z.string().min(1)
 });
-export const mockRuntimeConfigSchema = z.object({});
+export const mockRuntimeConfigSchema = z.record(z.string(), z.unknown());
 
 @RunnerTypeProvider()
 export class MockRunnerType implements RunnerType {
@@ -51,6 +51,10 @@ export class MockRunnerType implements RunnerType {
     const handle = new MockRunnerSession();
     mockRunnerSessions.set(handle.id, handle);
     return Promise.resolve({ handleId: handle.id });
+  }
+
+  shouldReusePersistedState() {
+    return false;
   }
 
   destroySession(session: RunnerSessionRecord): Promise<void> {

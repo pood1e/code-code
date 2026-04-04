@@ -22,11 +22,14 @@ export const qwenCliRunnerConfigSchema = z.object({
 export const qwenCliRunnerSessionConfigSchema = z.object({});
 
 export const qwenCliInputSchema = z.object({
-  prompt: z.string().min(1)
+  prompt: z.string().min(1).meta({ label: '提示词' })
 });
 
 export const qwenCliRuntimeConfigSchema = z.object({
-  approvalMode: z.enum(['plan', 'default', 'auto-edit', 'yolo']).default('plan')
+  approvalMode: z
+    .enum(['plan', 'default', 'auto-edit', 'yolo'])
+    .default('default')
+    .meta({ label: '审批模式' })
 });
 
 @RunnerTypeProvider()
@@ -74,8 +77,7 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
 
     // Session continuation
     if (cliState.cliSessionId) {
-      args.push('--session-id', cliState.cliSessionId);
-      args.push('--continue');
+      args.push('--resume', cliState.cliSessionId);
     }
 
     // Prompt (positional for Qwen, since -p is deprecated)

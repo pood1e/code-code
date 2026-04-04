@@ -22,7 +22,6 @@ import {
   projectConfigFormSchema,
   type ProjectConfigFormValues
 } from '@/pages/projects/project-form.utils';
-import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
 import { queryKeys } from '@/query/query-keys';
 import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
@@ -50,8 +49,7 @@ export function ProjectConfigPage() {
     projects,
     isLoading,
     isNotFound,
-    goToProjects,
-    goToProjectTab
+    goToProjects
   } = useProjectPageData();
 
   const form = useForm<ProjectConfigFormValues>({
@@ -142,14 +140,6 @@ export function ProjectConfigPage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <ProjectSectionHeader
-        projects={projects}
-        currentProjectId={id}
-        activeTab="config"
-        onProjectChange={(nextId) => goToProjectTab(nextId, 'config')}
-        onTabChange={(tab) => goToProjectTab(id, tab)}
-      />
-
       <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-5xl space-y-4">
           <EditorToolbar

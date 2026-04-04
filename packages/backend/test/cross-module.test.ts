@@ -115,13 +115,14 @@ describe('跨模块依赖测试', () => {
       const res = await api().delete(`/api/mcps/${mcp.id}`);
       const error = expectError(res, 409);
 
+      expect(error.message).toBe('该资源被以下 Profile 引用，无法删除');
       const data = error.data as { referencedBy: { name: string }[] };
       expect(data.referencedBy).toHaveLength(2);
       const names = data.referencedBy.map((r) => r.name).sort();
       expect(names).toEqual(['Profile A', 'Profile B']);
     });
 
-    it('删除被引用的 Rule 返回 409', async () => {
+    it('删除被引用的 Rule 返回 409 + referencedBy', async () => {
       const rule = await seedRule({ name: 'Referenced Rule' });
       const profile = await seedProfile();
 
@@ -134,7 +135,12 @@ describe('跨模块依赖测试', () => {
           rules: [{ resourceId: rule.id, order: 0 }]
         });
 
-      expectError(await api().delete(`/api/rules/${rule.id}`), 409);
+      const error = expectError(await api().delete(`/api/rules/${rule.id}`), 409);
+
+      expect(error.message).toBe('该资源被以下 Profile 引用，无法删除');
+      expect(error.data).toEqual({
+        referencedBy: [{ id: profile.id, name: profile.name }]
+      });
     });
   });
 
@@ -164,7 +170,7 @@ describe('跨模块依赖测试', () => {
   // ---- Runner 删除约束 ----
 
   describe('Runner 删除约束', () => {
-    it('有 Session 引用时无法删除 Runner', async () => {
+    it('有 Session 引用时删除 Runner 返回 409 + sessionCount', async () => {
       const project = await seedProject();
       const runner = await seedAgentRunner();
 
@@ -178,7 +184,12 @@ describe('跨模块依赖测试', () => {
       });
 
       const deleteRes = await api().delete(`/api/agent-runners/${runner.id}`);
-      expectError(deleteRes, 400);
+      const error = expectError(deleteRes, 409);
+
+      expect(error.message).toBe(
+        'Cannot delete runner: 1 session(s) still reference it'
+      );
+      expect(error.data).toEqual({ sessionCount: 1 });
 
       // Runner should still exist
       expectSuccess(await api().get(`/api/agent-runners/${runner.id}`));

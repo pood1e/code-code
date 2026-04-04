@@ -28,7 +28,7 @@ import {
 } from '@/pages/projects/project-form.utils';
 import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
-import { projectConfig } from '@/types/projects';
+import { buildProjectConfigPath } from '@/types/projects';
 
 function isWorkspacePathError(message: string) {
   return (
@@ -62,6 +62,18 @@ export function ProjectCreateDialog({
     defaultValues: buildProjectFormValues()
   });
 
+  const resetDialogState = () => {
+    setCreateError(null);
+    form.reset(buildProjectFormValues());
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+    if (!nextOpen) {
+      resetDialogState();
+    }
+  };
+
   const createMutation = useMutation({
     mutationFn: createProject,
     onSuccess: async (createdProject) => {
@@ -76,10 +88,8 @@ export function ProjectCreateDialog({
       ]);
 
       setCurrentProject(createdProject.id);
-      setCreateError(null);
-      form.reset(buildProjectFormValues());
-      onOpenChange(false);
-      void navigate(`${projectConfig.path}/${createdProject.id}/config`);
+      handleDialogOpenChange(false);
+      void navigate(buildProjectConfigPath(createdProject.id));
     }
   });
 
@@ -111,16 +121,7 @@ export function ProjectCreateDialog({
   });
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) {
-          setCreateError(null);
-          form.reset(buildProjectFormValues());
-        }
-      }}
-    >
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>新建 Project</DialogTitle>
@@ -148,7 +149,7 @@ export function ProjectCreateDialog({
             htmlFor="project-name"
             error={form.formState.errors.name?.message}
           >
-            <Input id="project-name" {...form.register('name')} />
+            <Input id="project-name" autoFocus {...form.register('name')} />
           </FormField>
 
           <FormField
@@ -188,7 +189,7 @@ export function ProjectCreateDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleDialogOpenChange(false)}
               disabled={createMutation.isPending}
             >
               取消

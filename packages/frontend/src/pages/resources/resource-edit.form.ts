@@ -99,6 +99,29 @@ export function toEnvObject(entries?: EnvEntry[]) {
 
 export type ResourceMutationPayload = ResourcePayloadByKind[ResourceKind];
 
+export function toMarkdownFormValues(
+  values: ResourceFormValues
+): ResourceMarkdownFormValues {
+  return {
+    name: values.name,
+    description: values.description ?? '',
+    contentText: values.contentText ?? ''
+  };
+}
+
+export function toMcpFormValues(
+  values: ResourceFormValues
+): ResourceMcpFormValues {
+  return {
+    name: values.name,
+    description: values.description ?? '',
+    type: 'stdio',
+    command: values.command ?? '',
+    argsText: values.argsText ?? '',
+    envEntries: values.envEntries ?? []
+  };
+}
+
 function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
   if (typeof resource.content === 'string') {
     return {
@@ -121,17 +144,25 @@ function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
 }
 
 function buildMcpPayload(values: ResourceFormValues) {
+  const formParsed = resourceMcpFormSchema.safeParse(values);
+  if (!formParsed.success) {
+    return {
+      data: null,
+      error: formParsed.error.issues[0]?.message ?? 'Invalid MCP content.'
+    };
+  }
+
   const parsed = mcpInputSchema.safeParse({
-    name: values.name,
-    description: normalizeDescription(values.description),
+    name: formParsed.data.name,
+    description: normalizeDescription(formParsed.data.description),
     content: {
       type: 'stdio',
-      command: values.command?.trim() ?? '',
-      args: (values.argsText ?? '')
+      command: formParsed.data.command,
+      args: (formParsed.data.argsText ?? '')
         .split('\n')
         .map((item) => item.trim())
         .filter(Boolean),
-      env: toEnvObject(values.envEntries)
+      env: toEnvObject(formParsed.data.envEntries)
     }
   });
 
@@ -147,10 +178,19 @@ function buildMarkdownPayload(
   kind: Exclude<ResourceKind, 'mcps'>,
   values: ResourceFormValues
 ) {
+  const formParsed = resourceMarkdownFormSchema.safeParse(values);
+  if (!formParsed.success) {
+    return {
+      data: null,
+      error:
+        formParsed.error.issues[0]?.message ?? 'Invalid Markdown content.'
+    };
+  }
+
   const payload = {
-    name: values.name,
-    description: normalizeDescription(values.description),
-    content: values.contentText ?? ''
+    name: formParsed.data.name,
+    description: normalizeDescription(formParsed.data.description),
+    content: formParsed.data.contentText
   };
   const schema = kind === 'skills' ? skillInputSchema : ruleInputSchema;
   const parsed = schema.safeParse(payload);
