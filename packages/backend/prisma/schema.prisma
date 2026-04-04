@@ -208,3 +208,38 @@ model SessionEvent {
   @@index([sessionId])
   @@unique([sessionId, eventId])
 }
+
+model NotificationChannel {
+  id          String   @id @default(cuid())
+  scopeId     String
+  name        String
+  channelType String
+  config      Json
+  filter      Json
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([scopeId, name], name: "uq_channel_scope_name")
+  @@index([scopeId], name: "idx_channel_scope_id")
+}
+
+model NotificationTask {
+  id        String   @id @default(cuid())
+  scopeId   String
+  channelId String
+  eventId   String
+  eventType String
+  payload   Json
+  status    String   @default("pending")
+  lastError String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, channelId], name: "uq_tasks_event_channel")
+  @@index([status, createdAt], name: "idx_tasks_status_created_at")
+  @@index([status, updatedAt], name: "idx_tasks_status_updated_at")
+  @@index([eventId], name: "idx_tasks_event_id")
+  @@index([scopeId], name: "idx_tasks_scope_id")
+  @@index([channelId], name: "idx_tasks_channel_id")
+}
