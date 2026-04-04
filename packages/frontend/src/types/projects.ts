@@ -5,13 +5,22 @@ export const projectConfig = {
   emptyState: '还没有任何 Project，先创建一个新的 Project。'
 } as const;
 
-export type ProjectTabKey = 'dashboard' | 'sessions' | 'config';
+export type ProjectTabKey =
+  | 'dashboard'
+  | 'sessions'
+  | 'channels'
+  | 'send'
+  | 'notifications'
+  | 'config';
 
 export const projectRoutePatterns = {
   list: projectConfig.path,
   dashboard: `${projectConfig.path}/:id/dashboard`,
   sessions: `${projectConfig.path}/:id/sessions`,
   sessionDetail: `${projectConfig.path}/:id/sessions/:sessionId`,
+  channels: `${projectConfig.path}/:id/channels`,
+  send: `${projectConfig.path}/:id/send`,
+  notifications: `${projectConfig.path}/:id/notifications`,
   config: `${projectConfig.path}/:id/config`
 } as const;
 
@@ -23,12 +32,33 @@ export function buildProjectConfigPath(projectId: string) {
   return `${projectConfig.path}/${projectId}/config`;
 }
 
+export function buildProjectChannelsPath(projectId: string) {
+  return `${projectConfig.path}/${projectId}/channels`;
+}
+
+export function buildProjectSendPath(projectId: string) {
+  return `${projectConfig.path}/${projectId}/send`;
+}
+
+export function buildProjectNotificationsPath(projectId: string) {
+  return `${projectConfig.path}/${projectId}/notifications`;
+}
+
 export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
-  return tab === 'dashboard'
-    ? buildProjectDashboardPath(projectId)
-    : tab === 'config'
-      ? buildProjectConfigPath(projectId)
-      : buildProjectSessionsPath(projectId);
+  switch (tab) {
+    case 'dashboard':
+      return buildProjectDashboardPath(projectId);
+    case 'config':
+      return buildProjectConfigPath(projectId);
+    case 'channels':
+      return buildProjectChannelsPath(projectId);
+    case 'send':
+      return buildProjectSendPath(projectId);
+    case 'notifications':
+      return buildProjectNotificationsPath(projectId);
+    default:
+      return buildProjectSessionsPath(projectId);
+  }
 }
 
 export function buildProjectSessionsPath(
