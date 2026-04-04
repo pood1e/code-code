@@ -1,3 +1,4 @@
+import { load } from 'js-yaml';
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 
 import { setupTestApp, teardownTestApp, resetDatabase } from './setup';
@@ -36,6 +37,15 @@ describe('Profiles API', () => {
 
       expect(data.id).toBeDefined();
       expect(data.name).toBe('My Profile');
+    });
+
+    it('空白 description 应归一化为 null', async () => {
+      const res = await api()
+        .post('/api/profiles')
+        .send(createProfilePayload({ description: '   ' }));
+      const data = expectSuccess<{ description: string | null }>(res, 201);
+
+      expect(data.description).toBeNull();
     });
   });
 
@@ -161,6 +171,23 @@ describe('Profiles API', () => {
       expect(mcpItem.resolved.args).toEqual(['-y', '@mcp/overridden']);
       expect(mcpItem.resolved.env).toEqual({ LOG_LEVEL: 'debug' });
     });
+
+    it('保存为空白 description 时应归一化为 null', async () => {
+      const profile = await seedProfile({ description: 'Has description' });
+
+      const res = await api()
+        .put(`/api/profiles/${profile.id}`)
+        .send({
+          name: profile.name,
+          description: '   ',
+          skills: [],
+          mcps: [],
+          rules: []
+        });
+      const data = expectSuccess<{ description: string | null }>(res);
+
+      expect(data.description).toBeNull();
+    });
   });
 
   describe('GET /api/profiles/:id - 获取详情', () => {
@@ -206,6 +233,10 @@ describe('Profiles API', () => {
       expect(data.name).toBe('Render Test');
       expect(data.skills).toEqual([]);
     });
+
+    it('不存在的 Profile render 返回 404', async () => {
+      expectError(await api().get('/api/profiles/nonexistent/render'), 404);
+    });
   });
 
   describe('GET /api/profiles/:id/export - 导出 Profile', () => {
@@ -233,6 +264,77 @@ describe('Profiles API', () => {
       expect(res.headers['content-type']).toContain('application/x-yaml');
       expect(res.headers['content-disposition']).toContain('.yaml');
       expect(res.text).toContain('name: Export YAML');
+    });
+
+    it('复杂 Profile 的 render / JSON export / YAML export 应保持一致', async () => {
+      const profile = await seedProfile({ name: 'Export Consistency' });
+      const skill = await seedSkill({
+        name: 'Skill Export',
+        content: '# Skill Export\n\nDo X.'
+      });
+      const rule = await seedRule({
+        name: 'Rule Export',
+        content: '## Rule Export\n\nAlways do Y.'
+      });
+      const mcp = await seedMcp({
+        name: 'MCP Export',
+        content: {
+          type: 'stdio',
+          command: 'npx',
+          args: ['-y', '@mcp/base'],
+          env: { LOG_LEVEL: 'info', REGION: 'cn' }
+        }
+      });
+
+      expectSuccess(
+        await api()
+          .put(`/api/profiles/${profile.id}`)
+          .send({
+            name: 'Export Consistency',
+            description: 'Profile with full resources',
+            skills: [{ resourceId: skill.id, order: 0 }],
+            mcps: [
+              {
+                resourceId: mcp.id,
+                order: 0,
+                configOverride: {
+                  args: ['-y', '@mcp/override'],
+                  env: { LOG_LEVEL: 'debug', REGION: 'us' }
+                }
+              }
+            ],
+            rules: [{ resourceId: rule.id, order: 0 }]
+          })
+      );
+
+      const rendered = expectSuccess<unknown>(
+        await api().get(`/api/profiles/${profile.id}/render`)
+      );
+      const exportedJson = JSON.parse(
+        (
+          await api().get(`/api/profiles/${profile.id}/export?format=json`)
+        ).text
+      );
+      const exportedYaml = load(
+        (await api().get(`/api/profiles/${profile.id}/export?format=yaml`)).text
+      );
+
+      expect(exportedJson).toEqual(rendered);
+      expect(exportedYaml).toEqual(rendered);
+    });
+
+    it('不存在的 Profile export 返回 404', async () => {
+      expectError(await api().get('/api/profiles/nonexistent/export'), 404);
+    });
+
+    it('非法 export format 返回 400', async () => {
+      const profile = await seedProfile({ name: 'Export Invalid' });
+
+      const res = await api().get(
+        `/api/profiles/${profile.id}/export?format=toml`
+      );
+
+      expectError(res, 400);
     });
   });
 
@@ -324,7 +426,8 @@ describe('Profiles API', () => {
 
   describe('资源不存在', () => {
     it('GET 不存在的 Profile 返回 404', async () => {
-      expectError(await api().get('/api/profiles/nonexistent'), 404);
+      const error = expectError(await api().get('/api/profiles/nonexistent'), 404);
+      expect(error.message).toBe('Profile not found: nonexistent');
     });
 
     it('PUT 不存在的 Profile 返回 404', async () => {

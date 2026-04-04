@@ -16,7 +16,7 @@ export type CreateProjectInput = {
 };
 
 export type UpdateProjectInput = {
-  name: string;
+  name?: string;
   description?: string | null;
-  workspacePath: string;
+  workspacePath?: string;
 };

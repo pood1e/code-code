@@ -1,4 +1,5 @@
 import type { RawOutputChunk } from '../../runner-type.interface';
+import { mapCursorToolKind } from './tool-kind';
 
 /**
  * Parser state maintained across lines for a single Cursor CLI run.
@@ -111,6 +112,41 @@ function parseCursorEvent(
             });
           }
         }
+
+        if (block.type === 'tool_use' || block.type === 'tool_call') {
+          const toolName = (block.tool_name ?? block.name ?? 'unknown') as string;
+          chunks.push({
+            kind: 'tool_use',
+            messageId: state.messageId,
+            timestampMs: now,
+            data: {
+              toolKind: mapCursorToolKind(toolName),
+              toolName,
+              callId:
+                (block.call_id as string | undefined) ??
+                (block.id as string | undefined),
+              args: block.args ?? block.input
+            }
+          });
+        }
+
+        if (block.type === 'tool_result') {
+          const toolName = (block.tool_name ?? block.name ?? 'unknown') as string;
+          chunks.push({
+            kind: 'tool_use',
+            messageId: state.messageId,
+            timestampMs: now,
+            data: {
+              toolKind: mapCursorToolKind(toolName),
+              toolName,
+              callId:
+                (block.call_id as string | undefined) ??
+                (block.tool_use_id as string | undefined),
+              result: block.result ?? block.output ?? block.content,
+              error: block.error ?? undefined
+            }
+          });
+        }
       }
     }
 
@@ -198,12 +234,14 @@ function parseCursorEvent(
     const subtype = parsed.subtype as string | undefined;
 
     if (subtype === 'started' || !subtype) {
+      const toolName = (parsed.tool_name ?? parsed.name ?? 'unknown') as string;
       chunks.push({
         kind: 'tool_use',
         messageId: state.messageId,
         timestampMs: now,
         data: {
-          toolName: (parsed.tool_name ?? parsed.name ?? 'unknown') as string,
+          toolKind: mapCursorToolKind(toolName),
+          toolName,
           callId: parsed.call_id as string | undefined,
           args: parsed.args ?? parsed.input
         }
@@ -214,13 +252,15 @@ function parseCursorEvent(
       // Completed tool call — may embed result
       const result = parsed.result ?? parsed.output;
       const error = parsed.error;
+      const toolName = (parsed.tool_name ?? parsed.name ?? 'unknown') as string;
 
       chunks.push({
         kind: 'tool_use',
         messageId: state.messageId,
         timestampMs: now,
         data: {
-          toolName: (parsed.tool_name ?? parsed.name ?? 'unknown') as string,
+          toolKind: mapCursorToolKind(toolName),
+          toolName,
           callId: parsed.call_id as string | undefined,
           result: result ?? undefined,
           error: error ?? undefined

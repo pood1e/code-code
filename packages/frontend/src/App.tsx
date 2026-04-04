@@ -7,8 +7,19 @@ import { ProfilesPage } from './pages/profiles/ProfilesPage';
 import { ResourceListPage } from './pages/resources/ResourceListPage';
 import { Skeleton } from './components/ui/skeleton';
 import { AppLayout } from './layout/AppLayout';
-import { agentRunnerConfig } from './types/agent-runners';
-import { resourceConfigMap, resourceKinds } from './types/resources';
+import {
+  agentRunnerConfig,
+  buildAgentRunnerCreatePath,
+  buildAgentRunnerEditPath
+} from './types/agent-runners';
+import { profileConfig, buildProfileEditPath } from './types/profiles';
+import { projectRoutePatterns } from './types/projects';
+import {
+  buildResourceCreatePath,
+  buildResourceEditPath,
+  resourceConfigMap,
+  resourceKinds
+} from './types/resources';
 
 const AgentRunnerEditorPage = lazy(() =>
   import('./pages/agent-runners/AgentRunnerEditorPage').then((module) => ({
@@ -41,6 +52,7 @@ const ResourceEditPage = lazy(() =>
   }))
 );
 
+
 function RouteFallback() {
   return (
     <div className="space-y-4">
@@ -71,7 +83,7 @@ export function App() {
           }
         />
         <Route
-          path="/projects/:id/config"
+          path={projectRoutePatterns.config}
           element={
             <LazyRoute>
               <ProjectConfigPage />
@@ -79,7 +91,7 @@ export function App() {
           }
         />
         <Route
-          path="/projects/:id/dashboard"
+          path={projectRoutePatterns.dashboard}
           element={
             <LazyRoute>
               <ProjectDashboardPage />
@@ -87,7 +99,15 @@ export function App() {
           }
         />
         <Route
-          path="/projects/:id/sessions"
+          path={projectRoutePatterns.sessions}
+          element={
+            <LazyRoute>
+              <ProjectSessionsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.sessionDetail}
           element={
             <LazyRoute>
               <ProjectSessionsPage />
@@ -105,7 +125,7 @@ export function App() {
               }
             />
             <Route
-              path={`${resourceConfigMap[kind].path}/new`}
+              path={buildResourceCreatePath(kind)}
               element={
                 <LazyRoute>
                   <ResourceEditPage kind={kind} />
@@ -113,7 +133,7 @@ export function App() {
               }
             />
             <Route
-              path={`${resourceConfigMap[kind].path}/:id/edit`}
+              path={buildResourceEditPath(kind, ':id')}
               element={
                 <LazyRoute>
                   <ResourceEditPage kind={kind} />
@@ -123,7 +143,7 @@ export function App() {
           </Fragment>
         ))}
         <Route
-          path="/profiles"
+          path={profileConfig.path}
           element={
             <LazyRoute>
               <ProfilesPage />
@@ -131,7 +151,7 @@ export function App() {
           }
         />
         <Route
-          path="/profiles/:id/edit"
+          path={buildProfileEditPath(':id')}
           element={
             <LazyRoute>
               <ProfileEditorPage />
@@ -147,7 +167,7 @@ export function App() {
           }
         />
         <Route
-          path={`${agentRunnerConfig.path}/new`}
+          path={buildAgentRunnerCreatePath()}
           element={
             <LazyRoute>
               <AgentRunnerEditorPage />
@@ -155,7 +175,7 @@ export function App() {
           }
         />
         <Route
-          path={`${agentRunnerConfig.path}/:id/edit`}
+          path={buildAgentRunnerEditPath(':id')}
           element={
             <LazyRoute>
               <AgentRunnerEditorPage />

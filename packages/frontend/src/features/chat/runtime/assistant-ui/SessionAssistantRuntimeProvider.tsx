@@ -8,6 +8,7 @@ import type { SessionAssistantMessageRecord } from './thread-adapter';
 
 type SessionAssistantRuntimeProviderProps = PropsWithChildren<{
   messages: SessionAssistantMessageRecord[];
+  messagesReady: boolean;
   status: SessionStatus;
   onNew: (composerText: string, message: AppendMessage) => Promise<void>;
   onCancel?: () => Promise<void>;
@@ -22,6 +23,7 @@ type SessionAssistantRuntimeProviderProps = PropsWithChildren<{
 export function SessionAssistantRuntimeProvider({
   children,
   messages,
+  messagesReady,
   status,
   onNew,
   onCancel,
@@ -30,6 +32,7 @@ export function SessionAssistantRuntimeProvider({
 }: SessionAssistantRuntimeProviderProps) {
   const runtime = useSessionAssistantRuntime({
     messages,
+    messagesReady,
     status,
     onNew,
     onCancel,

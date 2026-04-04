@@ -63,7 +63,6 @@ export type RunnerTypeResponse = RunnerTypeMeta & {
   runnerConfigSchema: SchemaDescriptor;
   runnerSessionConfigSchema: SchemaDescriptor;
   inputSchema: SchemaDescriptor;
-  taskConfigSchema: SchemaDescriptor;
   runtimeConfigSchema: SchemaDescriptor;
 };
 
