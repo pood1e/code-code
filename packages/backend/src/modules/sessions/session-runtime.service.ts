@@ -10,7 +10,9 @@ import {
   type McpConfigOverride,
   type McpStdioContent,
   type OutputChunk,
-  type PlatformSessionConfig
+  type PlatformSessionConfig,
+  type SessionMessagePart,
+  type ToolCallKind
 } from '@agent-workbench/shared';
 import type { Prisma } from '@prisma/client';
 
@@ -46,6 +48,7 @@ export class SessionRuntimeService {
   private readonly outputConsumers = new Map<string, Promise<void>>();
   private readonly thinkingAccumulators = new Map<string, string>();
   private readonly outputAccumulators = new Map<string, string>();
+  private readonly partsAccumulators = new Map<string, SessionMessagePart[]>();
 
   /** In-memory cache for shouldAcceptChunk — avoids per-chunk DB query. */
   private readonly activeSessionState = new Map<
@@ -169,29 +172,28 @@ export class SessionRuntimeService {
   async sendParsedInput(
     sessionId: string,
     parsedInput: Record<string, unknown>,
-    runtimeConfig: Record<string, unknown> = {},
+    runtimeConfigOverride: Record<string, unknown> = {},
     options?: {
       reuseLastUserMessage?: boolean;
       throwOnSyncSendFailure?: boolean;
     }
   ) {
     const runtimeSession = await this.ensureRuntime(sessionId);
-    const rawStatus = (
-      await this.sessionsQueryService.getSessionOrThrow(sessionId)
-    ).status;
-    const previousStatus = castEnum(SessionStatus, rawStatus, 'SessionStatus');
+    const session = await this.sessionsQueryService.getSessionOrThrow(sessionId);
+    const previousStatus = castEnum(
+      SessionStatus,
+      session.status,
+      'SessionStatus'
+    );
 
     const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
-    let parsedRuntimeConfig = runtimeConfig;
-    if (runnerType.runtimeConfigSchema) {
-      const parseResult =
-        runnerType.runtimeConfigSchema.safeParse(runtimeConfig);
-      if (parseResult.success) {
-        parsedRuntimeConfig = parseResult.data as Record<string, unknown>;
-      } else {
-        throw new Error(`Invalid runtime config: ${parseResult.error.message}`);
-      }
-    }
+    const parsedRuntimeConfig = this.parseRuntimeConfigOrThrow(
+      runnerType,
+      this.buildEffectiveRuntimeConfig(
+        session.defaultRuntimeConfig,
+        runtimeConfigOverride
+      )
+    );
 
     const assistantMessageId = await this.prisma.$transaction(async (tx) => {
       if (!options?.reuseLastUserMessage) {
@@ -200,7 +202,10 @@ export class SessionRuntimeService {
             sessionId,
             role: MessageRole.User,
             status: MessageStatus.Sent,
-            inputContent: toInputJson(parsedInput as Prisma.InputJsonValue)
+            inputContent: toInputJson(parsedInput as Prisma.InputJsonValue),
+            runtimeConfig: toInputJson(
+              parsedRuntimeConfig as Prisma.InputJsonValue
+            )
           }
         });
       }
@@ -228,7 +233,7 @@ export class SessionRuntimeService {
       SessionStatus.Running,
       assistantMessageId
     );
-    this.clearThinkingAccumulator(sessionId, assistantMessageId);
+    this.clearMessageTransientState(sessionId, assistantMessageId);
     await this.emitSessionStatus(
       sessionId,
       SessionStatus.Running,
@@ -266,6 +271,8 @@ export class SessionRuntimeService {
       return;
     }
 
+    const outputConsumer = this.outputConsumers.get(sessionId);
+
     try {
       await this.getRunnerTypeOrThrow(runtimeSession.runnerType).destroySession(
         runtimeSession
@@ -273,6 +280,16 @@ export class SessionRuntimeService {
     } catch (error) {
       this.logger.warn(
         `Destroy session runtime failed for ${sessionId}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`
+      );
+    }
+
+    try {
+      await outputConsumer;
+    } catch (error) {
+      this.logger.warn(
+        `Wait for session output consumer failed for ${sessionId}: ${
           error instanceof Error ? error.message : 'unknown error'
         }`
       );
@@ -316,6 +333,9 @@ export class SessionRuntimeService {
           errorPayload: toInputJson(payload),
           outputText: outputText ?? undefined,
           thinkingText,
+          contentParts: toInputJson(
+            this.consumePartsAccumulator(sessionId, messageId) as unknown as Prisma.InputJsonValue
+          ),
           cancelledAt: options?.cancelledAt,
           eventId
         }
@@ -363,6 +383,9 @@ export class SessionRuntimeService {
         errorPayload: toInputJson(payload),
         outputText: outputText ?? undefined,
         thinkingText,
+        contentParts: toInputJson(
+          this.consumePartsAccumulator(sessionId, messageId) as unknown as Prisma.InputJsonValue
+        ),
         eventId
       }
     });
@@ -417,16 +440,29 @@ export class SessionRuntimeService {
   }
 
   clearTransientState(sessionId: string, messageIds?: string[]) {
-    const keys =
-      messageIds?.map((messageId) =>
-        this.getThinkingAccumulatorKey(sessionId, messageId)
-      ) ??
-      Array.from(this.thinkingAccumulators.keys()).filter((key) =>
-        key.startsWith(`${sessionId}:`)
-      );
+    if (messageIds) {
+      for (const messageId of messageIds) {
+        this.clearMessageTransientState(sessionId, messageId);
+      }
+      return;
+    }
 
-    for (const key of keys) {
-      this.thinkingAccumulators.delete(key);
+    for (const key of Array.from(this.thinkingAccumulators.keys())) {
+      if (key.startsWith(`${sessionId}:`)) {
+        this.thinkingAccumulators.delete(key);
+      }
+    }
+
+    for (const key of Array.from(this.outputAccumulators.keys())) {
+      if (key.startsWith(`out:${sessionId}:`)) {
+        this.outputAccumulators.delete(key);
+      }
+    }
+
+    for (const key of Array.from(this.partsAccumulators.keys())) {
+      if (key.startsWith(`parts:${sessionId}:`)) {
+        this.partsAccumulators.delete(key);
+      }
     }
   }
 
@@ -448,22 +484,11 @@ export class SessionRuntimeService {
 
     const runtimeSession = await this.buildRunnerSessionRecord(session);
     const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
-    const runnerState = await runnerType.createSession(
-      session.id,
-      runtimeSession.runnerConfig,
-      runtimeSession.platformSessionConfig,
-      runtimeSession.runnerSessionConfig
+    const runnerState = await this.initializeRunnerState(
+      sessionId,
+      runtimeSession,
+      runnerType
     );
-
-    // For CLI-backed runners, materialize MCP/Rule/Skill into the file system
-    if (runnerType.materializerTarget) {
-      await this.materializeCliContext(
-        runnerType.materializerTarget,
-        sessionId,
-        runtimeSession.platformSessionConfig,
-        runnerState
-      );
-    }
 
     const updatedSession = await this.prisma.agentSession.update({
       where: { id: sessionId },
@@ -482,6 +507,63 @@ export class SessionRuntimeService {
     this.outputConsumers.set(sessionId, outputConsumer);
 
     return updatedRuntimeSession;
+  }
+
+  private buildEffectiveRuntimeConfig(
+    persistedDefaultRuntimeConfig: unknown,
+    runtimeConfigOverride: Record<string, unknown>
+  ) {
+    const defaultRuntimeConfig =
+      persistedDefaultRuntimeConfig &&
+      typeof persistedDefaultRuntimeConfig === 'object'
+        ? asPlainObject(persistedDefaultRuntimeConfig)
+        : {};
+
+    return {
+      ...defaultRuntimeConfig,
+      ...runtimeConfigOverride
+    };
+  }
+
+  private parseRuntimeConfigOrThrow(
+    runnerType: RunnerType,
+    runtimeConfig: Record<string, unknown>
+  ) {
+    const parseResult = runnerType.runtimeConfigSchema.safeParse(runtimeConfig);
+    if (!parseResult.success) {
+      throw new Error(`Invalid runtime config: ${parseResult.error.message}`);
+    }
+
+    return parseResult.data as Record<string, unknown>;
+  }
+
+  private async initializeRunnerState(
+    sessionId: string,
+    runtimeSession: RunnerSessionRecord,
+    runnerType: RunnerType
+  ): Promise<Record<string, unknown>> {
+    const persistedRunnerState = { ...runtimeSession.runnerState };
+    const runnerState = runnerType.shouldReusePersistedState(
+      persistedRunnerState
+    )
+      ? persistedRunnerState
+      : await runnerType.createSession(
+          sessionId,
+          runtimeSession.runnerConfig,
+          runtimeSession.platformSessionConfig,
+          runtimeSession.runnerSessionConfig
+        );
+
+    if (runnerType.materializerTarget) {
+      await this.materializeCliContext(
+        runnerType.materializerTarget,
+        sessionId,
+        runtimeSession.platformSessionConfig,
+        runnerState
+      );
+    }
+
+    return runnerState;
   }
 
   /**
@@ -695,11 +777,16 @@ export class SessionRuntimeService {
 
     switch (chunk.kind) {
       case 'thinking_delta': {
+        const key = this.getThinkingAccumulatorKey(sessionId, chunk.messageId);
+        const actualDelta = chunk.data.deltaText ?? (chunk.data.accumulatedText ? chunk.data.accumulatedText.slice(this.thinkingAccumulators.get(key)?.length || 0) : '');
+
         const nextThinkingText = this.pushThinkingAccumulator(
           sessionId,
           chunk.messageId,
           chunk.data
         );
+        this.appendTextPart(sessionId, chunk.messageId, 'thinking', actualDelta);
+
         const eventId = await this.sessionEventStore.nextEventId(sessionId);
         await this.emitChunk({
           kind: 'thinking_delta',
@@ -717,7 +804,12 @@ export class SessionRuntimeService {
 
       case 'message_delta': {
         const eventId = await this.sessionEventStore.nextEventId(sessionId);
+        
+        const key = this.getOutputAccumulatorKey(sessionId, chunk.messageId);
+        const actualDelta = chunk.data.deltaText ?? (chunk.data.accumulatedText ? chunk.data.accumulatedText.slice(this.outputAccumulators.get(key)?.length || 0) : '');
         this.pushOutputAccumulator(sessionId, chunk.messageId, chunk.data);
+        this.appendTextPart(sessionId, chunk.messageId, 'text', actualDelta);
+        
         await this.emitChunk({
           kind: 'message_delta',
           sessionId,
@@ -738,6 +830,7 @@ export class SessionRuntimeService {
             eventId,
             callId:
               typeof chunk.data.callId === 'string' ? chunk.data.callId : null,
+            toolKind: chunk.data.toolKind,
             toolName: chunk.data.toolName,
             args: toOptionalInputJson(
               chunk.data.args as Prisma.InputJsonValue | undefined
@@ -750,6 +843,18 @@ export class SessionRuntimeService {
             )
           }
         });
+        
+        this.appendToolPart(
+          sessionId,
+          chunk.messageId,
+          typeof chunk.data.callId === 'string' ? chunk.data.callId : String(eventId),
+          chunk.data.toolKind,
+          chunk.data.toolName,
+          chunk.data.args,
+          chunk.data.result,
+          chunk.data.error !== undefined
+        );
+        
         await this.emitChunk({
           kind: 'tool_use',
           sessionId,
@@ -858,6 +963,9 @@ export class SessionRuntimeService {
           status: MessageStatus.Complete,
           outputText: chunk.data.text,
           thinkingText,
+          contentParts: toInputJson(
+            this.consumePartsAccumulator(sessionId, chunk.messageId) as unknown as Prisma.InputJsonValue
+          ),
           eventId
         }
       }),
@@ -965,9 +1073,15 @@ export class SessionRuntimeService {
     return nextValue;
   }
 
-  private clearThinkingAccumulator(sessionId: string, messageId: string) {
+  private clearMessageTransientState(sessionId: string, messageId: string) {
     this.thinkingAccumulators.delete(
       this.getThinkingAccumulatorKey(sessionId, messageId)
+    );
+    this.outputAccumulators.delete(
+      this.getOutputAccumulatorKey(sessionId, messageId)
+    );
+    this.partsAccumulators.delete(
+      this.getPartsAccumulatorKey(sessionId, messageId)
     );
   }
 
@@ -998,6 +1112,91 @@ export class SessionRuntimeService {
     const key = this.getOutputAccumulatorKey(sessionId, messageId);
     const value = this.outputAccumulators.get(key) ?? null;
     this.outputAccumulators.delete(key);
+    return value;
+  }
+
+  private getPartsAccumulatorKey(sessionId: string, messageId: string) {
+    return `parts:${sessionId}:${messageId}`;
+  }
+
+  private appendTextPart(
+    sessionId: string,
+    messageId: string,
+    type: 'text' | 'thinking',
+    deltaText: string
+  ) {
+    if (!deltaText) return;
+    const key = this.getPartsAccumulatorKey(sessionId, messageId);
+    let parts = this.partsAccumulators.get(key);
+    if (!parts) {
+      parts = [];
+      this.partsAccumulators.set(key, parts);
+    }
+    const lastPart = parts.length > 0 ? parts[parts.length - 1] : null;
+    if (lastPart?.type === type) {
+        lastPart.text += deltaText;
+    } else {
+        parts.push({ type, text: deltaText });
+    }
+  }
+
+  private appendToolPart(
+    sessionId: string,
+    messageId: string,
+    toolCallId: string,
+    toolKind: ToolCallKind,
+    toolName: string,
+    args: unknown,
+    result?: unknown,
+    isError?: boolean
+  ) {
+    const key = this.getPartsAccumulatorKey(sessionId, messageId);
+    let parts = this.partsAccumulators.get(key);
+    if (!parts) {
+      parts = [];
+      this.partsAccumulators.set(key, parts);
+    }
+    const existingIndex = parts.findIndex(
+      (part) =>
+        part.type === 'tool_call' &&
+        (part.toolCallId === toolCallId ||
+          (part.toolCallId === toolName &&
+            toolCallId === toolName &&
+            part.result === undefined))
+    );
+
+    if (existingIndex === -1) {
+      parts.push({
+        type: 'tool_call',
+        toolCallId,
+        toolKind,
+        toolName,
+        args,
+        result,
+        isError
+      });
+      return;
+    }
+
+    const existing = parts[existingIndex];
+    if (existing.type !== 'tool_call') {
+      return;
+    }
+
+    parts[existingIndex] = {
+      ...existing,
+      toolKind,
+      toolName,
+      args: args ?? existing.args,
+      result: result ?? existing.result,
+      isError: isError ?? existing.isError
+    };
+  }
+
+  private consumePartsAccumulator(sessionId: string, messageId: string) {
+    const key = this.getPartsAccumulatorKey(sessionId, messageId);
+    const value = this.partsAccumulators.get(key) ?? [];
+    this.partsAccumulators.delete(key);
     return value;
   }
 }

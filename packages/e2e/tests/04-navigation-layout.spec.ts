@@ -3,11 +3,16 @@ import { apiPost } from './helpers';
 
 async function openSidebar(page: Page, isMobile: boolean) {
   if (isMobile) {
-    await page.locator('header button').first().click();
-    // Wait for the drawer dialog to become visible
-    await expect(page.locator('[role="dialog"]')).toBeVisible();
+    await page.getByRole('button', { name: '打开导航菜单' }).click();
+    // The mobile nav is rendered as a Sheet whose root element has role="dialog".
+    // We must NOT use .or(aside).first() here because the desktop <aside> remains
+    // in the DOM (just CSS-hidden), so .first() would pick it over the dialog.
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    return dialog;
   }
-  return page.locator('aside, [role="complementary"]').or(page.locator('[role="dialog"]')).first();
+  // Desktop: the persistent sidebar is an <aside>
+  return page.locator('aside').first();
 }
 
 /**

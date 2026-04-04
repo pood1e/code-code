@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react';
 import type { ResourceByKind } from '@agent-workbench/shared';
 
 import { Button } from '@/components/ui/button';
+import { CompactNativeSelect } from '@/components/ui/native-select';
 
 export function ResourceSelectionSection<
   K extends 'skills' | 'mcps' | 'rules'
@@ -51,8 +52,9 @@ export function ResourceSelectionSection<
       </div>
 
       <div className="flex gap-2">
-        <select
-          className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 min-w-0 flex-1"
+        <CompactNativeSelect
+          aria-label={`选择${label}`}
+          className="min-w-0 w-full flex-1 rounded-xl bg-background"
           value={pendingResourceId}
           onChange={(event) => setPendingResourceId(event.target.value)}
           disabled={availableItems.length === 0}
@@ -67,10 +69,11 @@ export function ResourceSelectionSection<
               {item.name}
             </option>
           ))}
-        </select>
+        </CompactNativeSelect>
         <Button
           type="button"
           variant="outline"
+          aria-label={`添加${label}`}
           onClick={handleAdd}
           disabled={!pendingResourceId}
         >
@@ -105,6 +108,7 @@ export function ResourceSelectionSection<
                   type="button"
                   variant="ghost"
                   size="icon-sm"
+                  aria-label={`移除 ${item.name}`}
                   onClick={() => onToggle(item.id)}
                   className="shrink-0"
                 >

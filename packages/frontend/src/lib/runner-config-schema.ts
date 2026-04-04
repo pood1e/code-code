@@ -20,6 +20,32 @@ export type SupportedRunnerConfigSchema =
       reason: string;
     };
 
+export function shouldRenderEmptyEnumOption(field: RunnerConfigField) {
+  return field.kind === 'enum' && !field.required && field.defaultValue === undefined;
+}
+
+export function getRunnerConfigSelectOptions(
+  field: RunnerConfigField,
+  discoveredOptions?: Array<{ label: string; value: string } | string>
+) {
+  if (Array.isArray(discoveredOptions) && discoveredOptions.length > 0) {
+    return discoveredOptions.map((item) =>
+      typeof item === 'string' ? { label: item, value: item } : item
+    );
+  }
+
+  if (field.kind !== 'enum') {
+    return [];
+  }
+
+  return (
+    field.enumOptions?.map((option) => ({
+      label: option.label,
+      value: String(option.value)
+    })) ?? []
+  );
+}
+
 function buildFieldSchema(field: RunnerConfigField) {
   if (field.kind === 'enum') {
     const values = field.enumOptions?.map((option) => option.value) ?? [];

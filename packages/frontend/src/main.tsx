@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { App } from './App';
 import { GlobalErrorBoundary } from './components/app/GlobalErrorBoundary';
+import { ThemeProvider } from './components/app/ThemeProvider';
 import { Toaster } from './components/ui/sonner';
 import { queryClient } from './query/query-client';
 import './styles.css';
@@ -13,10 +14,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-          <Toaster richColors position="top-right" />
-        </BrowserRouter>
+        <ThemeProvider>
+          <BrowserRouter>
+            <App />
+            <Toaster richColors position="top-right" />
+          </BrowserRouter>
+        </ThemeProvider>
       </QueryClientProvider>
     </GlobalErrorBoundary>
   </React.StrictMode>

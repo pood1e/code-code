@@ -1,47 +1,68 @@
-import { test, expect, type Page } from '@playwright/test';
-
 /**
  * API helper to reset/seed test data via backend REST API.
+ *
+ * 约定：后端统一返回 { message: string; data: T } 结构。
+ * 所有 api* 函数均解包 .data 后返回，类型标注为 ApiRecord（单对象）或 ApiRecord[]（列表）。
  */
-const API_BASE = (process.env.VITE_API_URL || 'http://localhost:3001') + '/api';
+
+/** 后端标准响应中 data 字段的最小类型：带 id 的键值记录 */
+export type ApiRecord = Record<string, unknown> & { id: string };
+
+function resolveApiBase() {
+  if (process.env.VITE_API_BASE_URL) {
+    return process.env.VITE_API_BASE_URL.replace(/\/$/, '');
+  }
+
+  const apiOrigin = process.env.VITE_API_URL || 'http://localhost:3001';
+  return `${apiOrigin.replace(/\/$/, '')}/api`;
+}
+
+const API_BASE = resolveApiBase();
 
 function getApiUrl(path: string) {
   return `${API_BASE}${path}`;
 }
 
-async function apiPost(path: string, body: Record<string, unknown>) {
+/** POST — 解包 data，强制断言为 ApiRecord（单对象） */
+async function apiPost(path: string, body: Record<string, unknown>): Promise<ApiRecord> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error(`API error: ${res.status} ${await res.text()}`);
-  const json = await res.json();
+  const json = (await res.json()) as { data: ApiRecord };
   return json.data;
 }
 
-async function apiPut(path: string, body: Record<string, unknown>) {
+/** PUT — 解包 data，强制断言为 ApiRecord（单对象） */
+async function apiPut(path: string, body: Record<string, unknown>): Promise<ApiRecord> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error(`API error: ${res.status} ${await res.text()}`);
-  const json = await res.json();
+  const json = (await res.json()) as { data: ApiRecord };
   return json.data;
 }
 
-async function apiGet(path: string) {
+/**
+ * GET — 解包 data。
+ * 可能是 ApiRecord（单对象）或 ApiRecord[]（列表），调用方通过 Array.isArray() 区分。
+ */
+async function apiGet(path: string): Promise<ApiRecord | ApiRecord[]> {
   const res = await fetch(`${API_BASE}${path}`);
-  const json = await res.json();
+  if (!res.ok) throw new Error(`API error: ${res.status} ${await res.text()}`);
+  const json = (await res.json()) as { data: ApiRecord | ApiRecord[] };
   return json.data;
 }
 
-async function apiDelete(path: string) {
+/** DELETE — 忽略响应 body（backend 可能返回 data: null） */
+async function apiDelete(path: string): Promise<void> {
   const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE' });
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    console.warn(`[WARN] DELETE ${path} failed with ${res.status}: ${text}`);
+    throw new Error(`API error: ${res.status} ${await res.text()}`);
   }
 }
 
@@ -99,9 +120,9 @@ async function cleanupTestData() {
 /**
  * Seed an Agent Runner with mock type for testing.
  */
-async function seedMockRunner() {
+async function seedMockRunner(name = 'E2E Mock Runner') {
   return apiPost('/agent-runners', {
-    name: 'E2E Mock Runner',
+    name,
     type: 'mock',
     runnerConfig: {}
   });

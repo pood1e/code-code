@@ -66,15 +66,31 @@ export class ProjectsService {
       'Invalid project payload'
     );
 
-    await this.assertWorkspacePath(parsed.workspacePath);
+    if (parsed.workspacePath !== undefined) {
+      await this.assertWorkspacePath(parsed.workspacePath);
+    }
+
+    const updateData: {
+      name?: string;
+      description?: string | null;
+      workspacePath?: string;
+    } = {};
+
+    if (parsed.name !== undefined) {
+      updateData.name = parsed.name;
+    }
+
+    if (parsed.description !== undefined) {
+      updateData.description = parsed.description ?? null;
+    }
+
+    if (parsed.workspacePath !== undefined) {
+      updateData.workspacePath = parsed.workspacePath;
+    }
 
     return this.prisma.project.update({
       where: { id },
-      data: {
-        name: parsed.name,
-        description: parsed.description ?? null,
-        workspacePath: parsed.workspacePath
-      }
+      data: updateData
     });
   }
 

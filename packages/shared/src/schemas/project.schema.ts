@@ -1,12 +1,18 @@
 import { z } from 'zod';
 
 const projectNameSchema = z.string().trim().min(1).max(100);
-const projectDescriptionSchema = z
-  .string()
-  .trim()
-  .max(500)
-  .nullable()
-  .optional();
+const projectDescriptionSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}, z.string().trim().max(500).nullable().optional());
 const workspacePathSchema = z
   .string()
   .trim()
@@ -37,8 +43,18 @@ export const createProjectInputSchema = z.object({
   workspacePath: workspacePathSchema
 });
 
-export const updateProjectInputSchema = z.object({
-  name: projectNameSchema,
-  description: projectDescriptionSchema,
-  workspacePath: workspacePathSchema
-});
+export const updateProjectInputSchema = z
+  .object({
+    name: projectNameSchema.optional(),
+    description: projectDescriptionSchema,
+    workspacePath: workspacePathSchema.optional()
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.description !== undefined ||
+      value.workspacePath !== undefined,
+    {
+      message: 'At least one project field must be provided'
+    }
+  );

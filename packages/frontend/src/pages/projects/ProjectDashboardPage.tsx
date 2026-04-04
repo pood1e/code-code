@@ -4,9 +4,8 @@ import { EmptyState } from '@/components/app/EmptyState';
 import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { Button } from '@/components/ui/button';
-import { ProjectSectionHeader } from '@/pages/projects/ProjectSectionHeader';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
-import { projectConfig } from '@/types/projects';
+import { buildProjectConfigPath } from '@/types/projects';
 
 export function ProjectDashboardPage() {
   const navigate = useNavigate();
@@ -16,8 +15,7 @@ export function ProjectDashboardPage() {
     projects,
     isLoading,
     isNotFound,
-    goToProjects,
-    goToProjectTab
+    goToProjects
   } = useProjectPageData();
 
   if (isLoading) {
@@ -46,25 +44,15 @@ export function ProjectDashboardPage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <ProjectSectionHeader
-        projects={projects}
-        currentProjectId={id}
-        activeTab="dashboard"
-        onProjectChange={(nextId) => goToProjectTab(nextId, 'dashboard')}
-        onTabChange={(tab) => goToProjectTab(id, tab)}
-      />
-
       <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-5xl space-y-4">
           <SurfaceCard className="py-10">
             <EmptyState
-              title="Dashboard 敬请期待"
-              description="第一阶段只实现 Project 配置管理，Dashboard 暂不提供实际内容。"
+              title="概览敬请期待"
+              description="第一阶段先实现 Project 配置和会话管理，概览页暂不提供实际内容。"
               action={
                 <Button
-                  onClick={() =>
-                    void navigate(`${projectConfig.path}/${id}/config`)
-                  }
+                  onClick={() => void navigate(buildProjectConfigPath(id))}
                 >
                   前往配置页
                 </Button>

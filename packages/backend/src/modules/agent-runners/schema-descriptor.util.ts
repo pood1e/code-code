@@ -40,7 +40,9 @@ type FieldMeta = {
   core: z.ZodTypeAny;
   isOptional: boolean;
   defaultValue: unknown;
+  label: string | undefined;
   description: string | undefined;
+  contextKey: string | undefined;
 };
 
 /**
@@ -51,9 +53,32 @@ function unwrapFieldMeta(schema: z.ZodTypeAny): FieldMeta {
   let current = schema;
   let isOptional = false;
   let defaultValue: unknown = undefined;
+  let label: string | undefined;
   let description: string | undefined;
+  let contextKey: string | undefined;
 
   for (let i = 0; i < 10; i++) {
+    const metadata =
+      typeof current.meta === 'function'
+        ? (current.meta() as
+            | {
+                label?: unknown;
+                description?: unknown;
+                contextKey?: unknown;
+              }
+            | undefined)
+        : undefined;
+
+    if (typeof metadata?.label === 'string' && !label) {
+      label = metadata.label;
+    }
+    if (typeof metadata?.description === 'string' && !description) {
+      description = metadata.description;
+    }
+    if (typeof metadata?.contextKey === 'string' && !contextKey) {
+      contextKey = metadata.contextKey;
+    }
+
     // Capture description at any level
     if (current.description && !description) {
       description = current.description;
@@ -84,7 +109,14 @@ function unwrapFieldMeta(schema: z.ZodTypeAny): FieldMeta {
     break;
   }
 
-  return { core: current, isOptional, defaultValue, description };
+  return {
+    core: current,
+    isOptional,
+    defaultValue,
+    label,
+    description,
+    contextKey
+  };
 }
 
 /**
@@ -114,19 +146,21 @@ function zodFieldToDescriptor(
   name: string,
   schema: z.ZodTypeAny
 ): SchemaFieldDescriptor | null {
-  const { core, isOptional, defaultValue, description } =
+  const { core, isOptional, defaultValue, label, description, contextKey } =
     unwrapFieldMeta(schema);
 
-  // Parse context key from description convention "context:<key>"
-  let contextKey: string | undefined;
   let cleanDescription: string | undefined = description;
+  const resolvedContextKey =
+    contextKey ??
+    (description?.startsWith('context:')
+      ? description.slice('context:'.length).trim()
+      : undefined);
   if (description?.startsWith('context:')) {
-    contextKey = description.slice('context:'.length).trim();
     cleanDescription = undefined;
   }
 
   const required = !isOptional;
-  const label = toFieldLabel(name);
+  const resolvedLabel = label ?? toFieldLabel(name);
 
   const coreDef = core._def as unknown as Record<string, unknown>;
   const coreType = (coreDef.typeName as string) ?? (coreDef.type as string);
@@ -137,13 +171,13 @@ function zodFieldToDescriptor(
     const values = Object.values(entries);
     return {
       name,
-      label,
+      label: resolvedLabel,
       description: cleanDescription,
       kind: 'enum',
       required,
       defaultValue: normalizeDefault(defaultValue),
       enumOptions: values.map((v) => ({ label: v, value: v })),
-      contextKey
+      contextKey: resolvedContextKey
     };
   }
 
@@ -152,12 +186,12 @@ function zodFieldToDescriptor(
     const kind: SchemaFieldKind = cleanDescription === 'url' ? 'url' : 'string';
     return {
       name,
-      label,
+      label: resolvedLabel,
       description: cleanDescription,
       kind,
       required,
       defaultValue: normalizeDefault(defaultValue),
-      contextKey
+      contextKey: resolvedContextKey
     };
   }
 
@@ -171,12 +205,12 @@ function zodFieldToDescriptor(
       }) ?? false;
     return {
       name,
-      label,
+      label: resolvedLabel,
       description: cleanDescription,
       kind: hasIntCheck ? 'integer' : 'number',
       required,
       defaultValue: normalizeDefault(defaultValue),
-      contextKey
+      contextKey: resolvedContextKey
     };
   }
 
@@ -184,12 +218,12 @@ function zodFieldToDescriptor(
   if (coreType === 'boolean') {
     return {
       name,
-      label,
+      label: resolvedLabel,
       description: cleanDescription,
       kind: 'boolean',
       required,
       defaultValue: normalizeDefault(defaultValue),
-      contextKey
+      contextKey: resolvedContextKey
     };
   }
 

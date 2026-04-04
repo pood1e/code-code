@@ -50,16 +50,11 @@ test.describe('首次使用旅程 — 新用户从零开始配置', () => {
     // 点击创建
     await dialog.getByRole('button', { name: /创建/i }).click();
 
-    // 创建成功后对话框关闭，项目应重定向到其配置页
+    // 创建成功后对话框关闭，项目应进入默认概览页
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
-    
-    // 应由于自动重定向而跳转到 config 页面
-    await expect(page).toHaveURL(/\/projects\/[^/]+\/config/);
-    
-    // Config页面的Name输入框中应包含"My First Project"
-    await expect(page.getByRole('textbox', { name: 'Name' })).toHaveValue('My First Project', {
-      timeout: 5000
-    });
+
+    await expect(page).toHaveURL(/\/projects\/[^/]+\/dashboard/);
+    await expect(page.getByText('概览敬请期待')).toBeVisible();
   });
 
   test('用户可以创建 Skill 资源', async ({ page }) => {

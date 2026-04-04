@@ -24,14 +24,18 @@ export const cursorCliRunnerConfigSchema = z.object({
 export const cursorCliRunnerSessionConfigSchema = z.object({});
 
 export const cursorCliInputSchema = z.object({
-  prompt: z.string().min(1)
+  prompt: z.string().min(1).meta({ label: '提示词' })
 });
 
 export const cursorCliRuntimeConfigSchema = z.object({
-  model: z.string().optional().describe('context:models'),
-  mode: z.enum(['agent', 'ask', 'plan']).default('agent'),
-  force: z.boolean().default(false),
-  approveMcps: z.boolean().optional()
+  model: z
+    .string()
+    .optional()
+    .describe('context:models')
+    .meta({ label: '模型' }),
+  mode: z.enum(['agent', 'ask', 'plan']).default('agent').meta({ label: '模式' }),
+  force: z.boolean().default(false).meta({ label: '强制执行' }),
+  approveMcps: z.boolean().optional().meta({ label: '自动批准 MCP' })
 });
 
 @RunnerTypeProvider()

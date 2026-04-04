@@ -20,16 +20,19 @@ export const claudeCodeRunnerConfigSchema = z.object({
 });
 
 export const claudeCodeRunnerSessionConfigSchema = z.object({
-  maxTurns: z.number().int().positive().optional()
+  maxTurns: z.number().int().positive().optional().meta({ label: '最大轮数' })
 });
 
 export const claudeCodeInputSchema = z.object({
-  prompt: z.string().min(1)
+  prompt: z.string().min(1).meta({ label: '提示词' })
 });
 
 export const claudeCodeRuntimeConfigSchema = z.object({
-  model: z.string().default('claude-sonnet-4-5'),
-  permissionMode: z.enum(['plan', 'auto', 'bypassPermissions']).default('plan')
+  model: z.string().default('claude-sonnet-4-5').meta({ label: '模型' }),
+  permissionMode: z
+    .enum(['plan', 'auto', 'bypassPermissions'])
+    .default('plan')
+    .meta({ label: '权限模式' })
 });
 
 @RunnerTypeProvider()

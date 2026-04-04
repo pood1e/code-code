@@ -26,7 +26,7 @@ export function createResourceCrudHandlers<TParsed, TRecord>(
     const resource = await config.findById(id);
 
     if (!resource) {
-      throw new NotFoundException(`${config.resourceLabel} not found`);
+      throw new NotFoundException(`${config.resourceLabel} not found: ${id}`);
     }
 
     return resource;

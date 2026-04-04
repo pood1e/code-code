@@ -54,7 +54,7 @@ export class ProfilesService {
     });
 
     if (!profile) {
-      throw new NotFoundException('Profile not found');
+      throw new NotFoundException(`Profile not found: ${id}`);
     }
 
     return {
@@ -196,7 +196,7 @@ export class ProfilesService {
   private async ensureProfile(id: string) {
     const profile = await this.prisma.profile.findUnique({ where: { id } });
     if (!profile) {
-      throw new NotFoundException('Profile not found');
+      throw new NotFoundException(`Profile not found: ${id}`);
     }
     return profile;
   }
