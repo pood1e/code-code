@@ -1,9 +1,9 @@
 import type {
   AgentRunnerSummary,
+  ChatSummary,
   Profile,
   ResourceByKind,
-  RunnerTypeResponse,
-  SessionDetail
+  RunnerTypeResponse
 } from '@agent-workbench/shared';
 
 import { CreateSessionAdvancedSettings } from './CreateSessionAdvancedSettings';
@@ -31,7 +31,7 @@ export function CreateSessionPanel({
   };
   canCancel: boolean;
   onCancel: () => void;
-  onCreated: (session: SessionDetail) => void;
+  onCreated: (chat: ChatSummary) => void;
 }) {
   const {
     form,

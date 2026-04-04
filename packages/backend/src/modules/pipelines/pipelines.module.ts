@@ -17,7 +17,7 @@ import { PipelinesService } from './pipelines.service';
     PipelineQueryService,
     {
       provide: ARTIFACT_STORAGE,
-      useClass: FsArtifactStorage
+      useFactory: () => new FsArtifactStorage()
     }
   ],
   exports: [PipelinesService, PipelineQueryService]

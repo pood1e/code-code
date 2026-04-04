@@ -1,8 +1,14 @@
+import type { SessionStatus } from './session';
+
 export type ChatSummary = {
   id: string;
   scopeId: string;
   sessionId: string;
   title: string | null;
+  runnerId: string;
+  runnerType: string;
+  status: SessionStatus;
+  lastEventId: number;
   createdAt: string;
   updatedAt: string;
 };

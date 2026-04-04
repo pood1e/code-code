@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -183,8 +184,11 @@ export class PipelinesController {
   ) {
     const detail = await this.pipelineQueryService.getById(_pipelineId);
     const artifact = detail.artifacts.find((a) => a.id === artifactId);
+    if (!artifact) {
+      throw new NotFoundException(`Artifact not found: ${artifactId}`);
+    }
     const content = await this.pipelinesService.readArtifactContent(artifactId);
-    const contentType = artifact?.contentType ?? 'application/octet-stream';
+    const contentType = artifact.contentType;
 
     res.setHeader('Content-Type', contentType);
     res.send(content);

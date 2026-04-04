@@ -17,7 +17,6 @@ export class ChatsService {
   ) {}
 
   async create(dto: CreateChatDto) {
-    // Create the underlying AgentSession first
     const session = await this.sessionsCommandService.create({
       scopeId: dto.scopeId,
       runnerId: dto.runnerId,
@@ -28,30 +27,48 @@ export class ChatsService {
       initialMessage: dto.initialMessage
     });
 
-    // Wrap with Chat record in the same transaction context
-    const chat = await this.prisma.chat.create({
-      data: {
-        scopeId: dto.scopeId,
-        sessionId: session.id,
-        title: dto.title ?? null
-      }
-    });
+    try {
+      const chat = await this.prisma.chat.create({
+        data: {
+          scopeId: dto.scopeId,
+          sessionId: session.id,
+          title: dto.title ?? null
+        },
+        include: {
+          session: true
+        }
+      });
 
-    return toChatSummary(chat);
+      return toChatSummary(chat);
+    } catch (error) {
+      await this.cleanupFailedChatCreation(session.id);
+      throw error;
+    }
   }
 
   async list(scopeId?: string) {
     const chats = await this.prisma.chat.findMany({
       where: scopeId ? { scopeId } : {},
-      orderBy: { createdAt: 'desc' }
+      include: {
+        session: true
+      }
     });
 
-    return chats.map(toChatSummary);
+    return chats
+      .slice()
+      .sort(
+        (left, right) =>
+          right.session.updatedAt.getTime() - left.session.updatedAt.getTime()
+      )
+      .map(toChatSummary);
   }
 
   async getById(id: string) {
     const chat = await this.prisma.chat.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        session: true
+      }
     });
 
     if (!chat) {
@@ -75,6 +92,9 @@ export class ChatsService {
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {})
+      },
+      include: {
+        session: true
       }
     });
 
@@ -90,5 +110,16 @@ export class ChatsService {
     // Dispose the underlying session first
     await this.sessionsCommandService.dispose(chat.sessionId);
     // Chat record is cascade-deleted via DB relation (Cascade on session delete)
+  }
+
+  private async cleanupFailedChatCreation(sessionId: string) {
+    try {
+      await this.sessionsCommandService.dispose(sessionId);
+    } catch (cleanupError) {
+      console.error(
+        `[ChatsService] Failed to clean up session after chat creation error: ${sessionId}`,
+        cleanupError
+      );
+    }
   }
 }

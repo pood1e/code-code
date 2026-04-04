@@ -3,12 +3,12 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useForm } from 'react-hook-form';
 import {
+  type ChatSummary,
   SessionStatus,
-  type ProfileDetail,
-  type SessionDetail
+  type ProfileDetail
 } from '@agent-workbench/shared';
 
-import { createSession } from '@/api/sessions';
+import { createChat } from '@/api/chats';
 import {
   parseRunnerConfigSchema,
   type SupportedRunnerConfigSchema
@@ -19,37 +19,22 @@ import type { CreateSessionFormValues } from '@/pages/projects/project-sessions.
 
 import { useCreateSessionMutation } from './use-create-session-mutation';
 
-vi.mock('@/api/sessions', () => ({
-  createSession: vi.fn()
+vi.mock('@/api/chats', () => ({
+  createChat: vi.fn()
 }));
 
-function createSessionDetail(): SessionDetail {
+function createChatSummary(): ChatSummary {
   return {
-    id: 'session-1',
+    id: 'chat-1',
     scopeId: 'project-1',
+    sessionId: 'session-1',
+    title: null,
     runnerId: 'runner-1',
     runnerType: 'mock',
     status: SessionStatus.Ready,
     lastEventId: 0,
     createdAt: '2026-04-03T10:00:00.000Z',
-    updatedAt: '2026-04-03T10:00:00.000Z',
-    platformSessionConfig: {
-      cwd: '/tmp/project-1',
-      skillIds: ['skill-1'],
-      ruleIds: [],
-      mcps: [
-        {
-          resourceId: 'mcp-1',
-          configOverride: {
-            command: 'node'
-          }
-        }
-      ]
-    },
-    runnerSessionConfig: {
-      temperature: 0.2
-    },
-    defaultRuntimeConfig: null
+    updatedAt: '2026-04-03T10:00:00.000Z'
   };
 }
 
@@ -135,7 +120,7 @@ describe('useCreateSessionMutation', () => {
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
 
-    vi.mocked(createSession).mockResolvedValue(createSessionDetail());
+    vi.mocked(createChat).mockResolvedValue(createChatSummary());
 
     const { result } = renderHook(() => {
       const form = useForm<CreateSessionFormValues>({
@@ -192,8 +177,8 @@ describe('useCreateSessionMutation', () => {
 
     await result.current.mutation.mutateAsync(result.current.form.getValues());
 
-    expect(createSession).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(createSession).mock.calls[0]?.[0]).toEqual({
+    expect(createChat).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(createChat).mock.calls[0]?.[0]).toEqual({
       scopeId: 'project-1',
       runnerId: 'runner-1',
       skillIds: ['skill-1'],
@@ -222,16 +207,16 @@ describe('useCreateSessionMutation', () => {
 
     await waitFor(() => {
       expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: queryKeys.sessions.list('project-1')
+        queryKey: queryKeys.chats.list('project-1')
       });
       expect(
-        queryClient.getQueryData(queryKeys.sessions.detail('session-1'))
-      ).toEqual(createSessionDetail());
-      expect(onCreated).toHaveBeenCalledWith(createSessionDetail());
+        queryClient.getQueryData(queryKeys.chats.detail('chat-1'))
+      ).toEqual(createChatSummary());
+      expect(onCreated).toHaveBeenCalledWith(createChatSummary());
     });
   });
 
-  it('Session 配置校验失败时，应写入表单错误并阻止调用 createSession', async () => {
+  it('Session 配置校验失败时，应写入表单错误并阻止调用 createChat', async () => {
     const queryClient = createTestQueryClient();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -274,7 +259,7 @@ describe('useCreateSessionMutation', () => {
     ).rejects.toThrow('Session 配置校验失败');
 
     await waitFor(() => {
-      expect(createSession).not.toHaveBeenCalled();
+      expect(createChat).not.toHaveBeenCalled();
       expect(
         result.current.form.getFieldState('runnerSessionConfig.temperature')
           .error?.message
@@ -317,7 +302,7 @@ describe('useCreateSessionMutation', () => {
     ).rejects.toThrow('首条消息输入校验失败');
 
     await waitFor(() => {
-      expect(createSession).not.toHaveBeenCalled();
+      expect(createChat).not.toHaveBeenCalled();
       expect(result.current.form.getFieldState('initialRawInput').error?.message)
         .toBe('消息输入不是有效的 JSON。');
     });
@@ -368,7 +353,7 @@ describe('useCreateSessionMutation', () => {
     ).rejects.toThrow('首条消息运行时参数校验失败');
 
     await waitFor(() => {
-      expect(createSession).not.toHaveBeenCalled();
+      expect(createChat).not.toHaveBeenCalled();
       expect(
         result.current.form.getFieldState('initialRuntimeConfig.maxTurns').error
           ?.message

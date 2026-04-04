@@ -12,6 +12,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type {
   AgentRunnerDetail,
   AgentRunnerSummary,
+  ChatSummary,
   PagedSessionMessages,
   Project,
   RunnerTypeResponse,
@@ -66,6 +67,21 @@ function createSessionSummary(id: string): SessionSummary {
   return {
     id,
     scopeId: 'project-1',
+    runnerId: 'runner-1',
+    runnerType: 'mock',
+    status: SessionStatus.Ready,
+    lastEventId: 0,
+    createdAt: '2026-04-03T10:00:00.000Z',
+    updatedAt: '2026-04-03T10:00:00.000Z'
+  };
+}
+
+function createChatSummary(id: string, sessionId: string): ChatSummary {
+  return {
+    id,
+    scopeId: 'project-1',
+    sessionId,
+    title: null,
     runnerId: 'runner-1',
     runnerType: 'mock',
     status: SessionStatus.Ready,
@@ -282,13 +298,14 @@ function HookProbe() {
 
   return (
     <div>
+      <p>{state.selectedChatId ?? 'no-chat'}</p>
       <p>{state.selectedSessionId ?? 'no-session'}</p>
       <p>{state.showCreatePanel ? 'create-open' : 'create-closed'}</p>
       <p>{state.detailsPanelOpen ? 'details-open' : 'details-closed'}</p>
       <button type="button" onClick={state.openCreatePanel}>
         打开新建
       </button>
-      <button type="button" onClick={() => state.disposeFromSelector('session-1')}>
+      <button type="button" onClick={() => state.disposeFromSelector('chat-1')}>
         删除当前会话
       </button>
       <button type="button" onClick={state.refreshSession}>
@@ -308,7 +325,7 @@ function renderHookProbe(route: string) {
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route
-            path="/projects/:id/chats/:sessionId?"
+            path="/projects/:id/chats/:chatId?"
             element={<HookProbe />}
           />
         </Routes>
@@ -325,6 +342,7 @@ const sendMutationMock = vi.fn();
 const cancelMutationMock = vi.fn();
 const reloadMutationMock = vi.fn();
 const editMutationMock = vi.fn();
+const renameMutationMock = vi.fn();
 const invalidateSessionThreadStateMock = vi.fn();
 
 function mockProjectPageData() {
@@ -340,22 +358,28 @@ function mockProjectPageData() {
 }
 
 function mockSessionPageQueries({
-  selectedSessionId,
+  selectedChatId,
   createPanelOpen
 }: {
-  selectedSessionId: string | null;
+  selectedChatId: string | null;
   createPanelOpen: boolean;
 }): ReturnType<typeof useSessionPageQueries> {
-  const selectedSession =
-    createPanelOpen || !selectedSessionId
+  const chats = [
+    createChatSummary('chat-1', 'session-1'),
+    createChatSummary('chat-2', 'session-2')
+  ];
+  const selectedChat =
+    createPanelOpen || !selectedChatId
       ? undefined
-      : createSessionDetail(selectedSessionId);
+      : chats.find((chat) => chat.id === selectedChatId);
+  const selectedSession =
+    !selectedChat ? undefined : createSessionDetail(selectedChat.sessionId);
 
   return {
-    sessionsQuery: createQuerySuccessResult([
-      createSessionSummary('session-1'),
-      createSessionSummary('session-2')
-    ]),
+    chatsQuery: createQuerySuccessResult(chats),
+    selectedChatQuery: selectedChat
+      ? createQuerySuccessResult(selectedChat)
+      : createQueryPendingResult(),
     sessionDetailQuery: selectedSession
       ? createQuerySuccessResult(selectedSession)
       : createQueryPendingResult(),
@@ -366,6 +390,7 @@ function mockSessionPageQueries({
     selectedRunnerQuery: selectedSession
       ? createQuerySuccessResult(createRunnerDetail())
       : createQueryPendingResult(),
+    selectedChat,
     selectedSession,
     flatMessages: [],
     runnerTypes: [createRunnerType()],
@@ -390,6 +415,7 @@ function mockSessionPageMutations() {
     reloadMutation: createMutationIdleResult(reloadMutationMock),
     editMutation: createMutationIdleResult(editMutationMock),
     disposeMutation: createMutationIdleResult(disposeMutationMock),
+    renameMutation: createMutationIdleResult(renameMutationMock),
     invalidateSessionThreadState: invalidateSessionThreadStateMock
   });
 }
@@ -402,28 +428,32 @@ describe('useProjectSessionsPageState', () => {
     mockProjectPageData();
     mockSessionPageMutations();
     vi.mocked(useSessionPageQueries).mockImplementation(
-      (_projectId, selectedSessionId, createPanelOpen) =>
+      (_projectId, selectedChatId, createPanelOpen) =>
         mockSessionPageQueries({
-          selectedSessionId,
+          selectedChatId,
           createPanelOpen
         })
     );
-    disposeMutationMock.mockResolvedValue('session-1');
+    disposeMutationMock.mockResolvedValue(
+      createChatSummary('chat-1', 'session-1')
+    );
+    renameMutationMock.mockResolvedValue(createChatSummary('chat-1', 'session-1'));
   });
 
-  it('无效 sessionId 应被纠正到首个有效会话路由', async () => {
-    renderHookProbe('/projects/project-1/chats/session-missing');
+  it('无效 chatId 应被纠正到首个有效会话路由', async () => {
+    renderHookProbe('/projects/project-1/chats/chat-missing');
 
     await waitFor(() => {
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/chats/session-1'
+        '/projects/project-1/chats/chat-1'
       );
+      expect(screen.getByText('chat-1')).toBeInTheDocument();
       expect(screen.getByText('session-1')).toBeInTheDocument();
     });
   });
 
-  it('打开新建会话应回到 sessions 根路由并进入 create panel', async () => {
-    const { user } = renderHookProbe('/projects/project-1/chats/session-1');
+  it('打开新建会话应回到 chats 根路由并进入 create panel', async () => {
+    const { user } = renderHookProbe('/projects/project-1/chats/chat-1');
 
     await user.click(screen.getByRole('button', { name: '打开新建' }));
 
@@ -435,13 +465,41 @@ describe('useProjectSessionsPageState', () => {
     });
   });
 
-  it('删除当前会话后应打开 create panel', async () => {
-    const { user } = renderHookProbe('/projects/project-1/chats/session-1');
+  it('删除当前会话后应跳到下一个有效 chat', async () => {
+    const { user } = renderHookProbe('/projects/project-1/chats/chat-1');
 
     await user.click(screen.getByRole('button', { name: '删除当前会话' }));
 
     await waitFor(() => {
-      expect(disposeMutationMock).toHaveBeenCalledWith('session-1');
+      expect(disposeMutationMock).toHaveBeenCalledWith('chat-1');
+      expect(screen.getByLabelText('current-route')).toHaveTextContent(
+        '/projects/project-1/chats/chat-2'
+      );
+      expect(screen.getByText('create-closed')).toBeInTheDocument();
+    });
+  });
+
+  it('删除最后一个 chat 后应打开 create panel', async () => {
+    vi.mocked(useSessionPageQueries).mockImplementation(
+      (_projectId, selectedChatId, createPanelOpen) => ({
+        ...mockSessionPageQueries({
+          selectedChatId,
+          createPanelOpen
+        }),
+        chatsQuery: createQuerySuccessResult([
+          createChatSummary('chat-1', 'session-1')
+        ]),
+        selectedChatQuery: selectedChatId
+          ? createQuerySuccessResult(createChatSummary('chat-1', 'session-1'))
+          : createQueryPendingResult()
+      })
+    );
+
+    const { user } = renderHookProbe('/projects/project-1/chats/chat-1');
+
+    await user.click(screen.getByRole('button', { name: '删除当前会话' }));
+
+    await waitFor(() => {
       expect(screen.getByText('create-open')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
         '/projects/project-1/chats'
@@ -451,7 +509,7 @@ describe('useProjectSessionsPageState', () => {
 
   it('刷新会话应失效当前会话相关缓存', async () => {
     const { queryClient, user } = renderHookProbe(
-      '/projects/project-1/chats/session-1'
+      '/projects/project-1/chats/chat-1'
     );
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -459,7 +517,10 @@ describe('useProjectSessionsPageState', () => {
 
     await waitFor(() => {
       expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: ['sessions', 'list', 'project-1']
+        queryKey: ['chats', 'list', 'project-1']
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ['chats', 'detail', 'chat-1']
       });
       expect(invalidateSpy).toHaveBeenCalledWith({
         queryKey: ['sessions', 'detail', 'session-1']
