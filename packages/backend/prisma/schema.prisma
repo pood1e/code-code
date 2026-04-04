@@ -62,6 +62,8 @@ model Project {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   sessions      AgentSession[]
+  notificationChannels NotificationChannel[]
+  notificationTasks NotificationTask[]
 }
 
 model AgentRunner {
@@ -207,4 +209,44 @@ model SessionEvent {
 
   @@index([sessionId])
   @@unique([sessionId, eventId])
+}
+
+model NotificationChannel {
+  id           String   @id @default(cuid())
+  scopeId      String
+  name         String
+  capabilityId String
+  config       Json
+  filter       Json
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  project      Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  tasks        NotificationTask[]
+
+  @@unique([scopeId, name], name: "uq_channel_scope_name")
+  @@index([scopeId], name: "idx_channel_scope_id")
+}
+
+model NotificationTask {
+  id         String   @id @default(cuid())
+  scopeId    String
+  channelId  String?
+  channelName String
+  messageId  String
+  messageType String
+  message    Json
+  status     String   @default("pending")
+  lastError  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  project    Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  channel    NotificationChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  @@unique([messageId, channelId], name: "uq_tasks_message_channel")
+  @@index([status, createdAt], name: "idx_tasks_status_created_at")
+  @@index([status, updatedAt], name: "idx_tasks_status_updated_at")
+  @@index([messageId], name: "idx_tasks_message_id")
+  @@index([scopeId], name: "idx_tasks_scope_id")
+  @@index([channelId], name: "idx_tasks_channel_id")
 }
