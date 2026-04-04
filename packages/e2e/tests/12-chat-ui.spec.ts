@@ -470,6 +470,8 @@ test.describe('多 Session 切换', () => {
     await sendBtn.click();
 
     await expect(page.getByText('Something went wrong')).not.toBeVisible();
+    await waitForSessionStatus(session.id, 'ready', 10_000);
+    await scrollMessageLogToBottom(page);
     await expect(
       page.getByText('收到输入：Second turn after history ready')
     ).toBeVisible({ timeout: 10_000 });
@@ -478,7 +480,6 @@ test.describe('多 Session 切换', () => {
       pageErrors.filter((message) => message.includes('tapClientLookup'))
     ).toHaveLength(0);
 
-    await waitForSessionStatus(session.id, 'ready', 10_000);
     await apiDelete(`/sessions/${session.id}`);
   });
 
@@ -520,11 +521,12 @@ test.describe('多 Session 切换', () => {
     await page.getByRole('button', { name: '发送' }).first().click();
 
     await expect(page.getByText('Request failed')).not.toBeVisible();
+    await waitForSessionStatus(session.id, 'ready', 10_000);
+    await scrollMessageLogToBottom(page);
     await expect(
       page.getByText('收到输入：Third turn after re-enter')
     ).toBeVisible({ timeout: 10_000 });
 
-    await waitForSessionStatus(session.id, 'ready', 10_000);
     await apiDelete(`/sessions/${session.id}`);
   });
 });
@@ -557,9 +559,9 @@ test.describe('Session 创建面板', () => {
   test('创建面板应列出可选择的 Runner', async ({ page }) => {
     await page.goto(`/projects/${project.id}/sessions`);
 
-    await expect(page.getByRole('combobox').nth(1)).toHaveValue(
-      String(runner.id)
-    );
+    await expect(
+      page.getByRole('combobox', { name: '选择 AgentRunner' })
+    ).toHaveValue(String(runner.id));
   });
 
   test('在创建面板输入消息并发送，应创建 session 并跳转到 session 页面', async ({
@@ -596,7 +598,7 @@ test.describe('Session 创建面板', () => {
     await expect(
       page.getByRole('button', { name: '新建会话' })
     ).toBeVisible();
-    await expect(page.getByPlaceholder('发一条消息开始新会话')).toBeVisible();
+    await expect(page.getByPlaceholder('输入首条消息...')).toBeVisible();
 
     await page.getByRole('button', { name: '新建会话' }).click();
     await page
@@ -664,7 +666,7 @@ test.describe('Session 销毁交互', () => {
       `/projects/${project.id}/sessions`,
       { timeout: 10_000 }
     );
-    await expect(page.getByPlaceholder('发一条消息开始新会话')).toBeVisible();
+    await expect(page.getByPlaceholder('输入首条消息...')).toBeVisible();
   });
 
   test('从列表删除非当前 session 不应打断当前会话', async ({ page }) => {
@@ -724,7 +726,7 @@ test.describe('Chat 页面错误场景', () => {
     await page.goto(`/projects/${project.id}/sessions/nonexistent-session-id`);
 
     await expect(page).toHaveURL(`/projects/${project.id}/sessions`);
-    await expect(page.getByPlaceholder('发一条消息开始新会话')).toBeVisible();
+    await expect(page.getByPlaceholder('输入首条消息...')).toBeVisible();
     await expect(page.getByText('Something went wrong')).not.toBeVisible();
   });
 

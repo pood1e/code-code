@@ -122,6 +122,31 @@ function createAssistantMessage(
   };
 }
 
+function createUserMessage(
+  overrides: Partial<SessionMessageDetail> = {}
+): SessionMessageDetail {
+  return {
+    id: 'message-user',
+    sessionId: 'session-1',
+    role: MessageRole.User,
+    status: MessageStatus.Complete,
+    inputContent: {
+      prompt: '第一轮问题'
+    },
+    runtimeConfig: null,
+    outputText: null,
+    thinkingText: null,
+    contentParts: [],
+    errorPayload: null,
+    cancelledAt: null,
+    eventId: 4,
+    toolUses: [],
+    metrics: [],
+    createdAt: '2026-04-03T10:00:00.000Z',
+    ...overrides
+  };
+}
+
 function renderEventStreamHook({
   session = createSessionDetail(),
   messages = [createAssistantMessage()],
@@ -526,6 +551,93 @@ describe('useSessionEventStream', () => {
         recoverable: true
       }
     });
+  });
+
+  it('当 SSE 先于消息 refetch 到达且目标 assistant 消息还不在缓存里时，应先补占位消息再合并增量', () => {
+    const source = new FakeSessionEventSource();
+    const queryClient = createTestQueryClient();
+    const userMessage = createUserMessage();
+
+    queryClient.setQueryData(queryKeys.sessions.messages('session-1'), {
+      pages: [
+        {
+          data: [userMessage],
+          nextCursor: null
+        } satisfies PagedSessionMessages
+      ],
+      pageParams: [undefined]
+    });
+
+    sessionsApiMock.createSessionEventSource.mockReturnValue(source);
+    renderEventStreamHook({
+      session: createSessionDetail({ lastEventId: 4 }),
+      messages: [userMessage],
+      messagesReady: true,
+      queryClient
+    });
+
+    act(() => {
+      source.emit('thinking_delta', {
+        kind: 'thinking_delta',
+        sessionId: 'session-1',
+        eventId: 5,
+        timestampMs: 2_000,
+        messageId: 'message-assistant-late',
+        data: {
+          deltaText: '正在处理',
+          accumulatedText: '正在处理'
+        }
+      });
+      source.emit('message_delta', {
+        kind: 'message_delta',
+        sessionId: 'session-1',
+        eventId: 6,
+        timestampMs: 2_001,
+        messageId: 'message-assistant-late',
+        data: {
+          deltaText: '第二轮回复',
+          accumulatedText: '第二轮回复'
+        }
+      });
+      source.emit('message_result', {
+        kind: 'message_result',
+        sessionId: 'session-1',
+        eventId: 7,
+        timestampMs: 2_002,
+        messageId: 'message-assistant-late',
+        data: {
+          text: '第二轮回复',
+          stopReason: 'stop'
+        }
+      });
+    });
+
+    const messagesCache = queryClient.getQueryData<{
+      pages: PagedSessionMessages[];
+    }>(queryKeys.sessions.messages('session-1'));
+
+    expect(messagesCache?.pages[0]?.data).toEqual([
+      userMessage,
+      expect.objectContaining({
+        id: 'message-assistant-late',
+        role: MessageRole.Assistant,
+        status: MessageStatus.Complete,
+        outputText: '第二轮回复',
+        thinkingText: '正在处理',
+        contentParts: [
+          {
+            type: 'thinking',
+            text: '正在处理'
+          },
+          {
+            type: 'text',
+            text: '第二轮回复'
+          }
+        ],
+        eventId: 7,
+        createdAt: new Date(2_000).toISOString()
+      })
+    ]);
   });
 
   it('切换到另一条 session 时，应关闭旧 SSE 并从新 session 的最新 eventId 重新订阅', () => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   cleanupTestData,
   seedProject,
@@ -35,13 +35,17 @@ test.describe('Session 会话生命周期', () => {
   });
 
   test('Project 列表中点击项目应能进入概览页，并可看到会话入口', async ({
-    page
+    page,
+    isMobile
   }) => {
     await page.goto('/projects');
     await page.getByText('Session Test Project').click();
 
     await expect(page).toHaveURL(`/projects/${project.id}/dashboard`);
-    await expect(page.getByText('会话').first()).toBeVisible();
+    const navigation = await openProjectNavigation(page, isMobile);
+    await expect(
+      navigation.getByRole('button', { name: '会话' })
+    ).toBeVisible();
     await expect(page.getByText('概览敬请期待')).toBeVisible();
   });
 
@@ -60,10 +64,10 @@ test.describe('Session 会话生命周期', () => {
   }) => {
     await page.goto(`/projects/${project.id}/sessions`);
 
-    await expect(page.getByRole('combobox').nth(1)).toHaveValue(
-      String(runner.id)
-    );
-    await expect(page.getByPlaceholder('发一条消息开始新会话')).toBeVisible();
+    await expect(
+      page.getByRole('combobox', { name: '选择 AgentRunner' })
+    ).toHaveValue(String(runner.id));
+    await expect(page.getByPlaceholder('输入首条消息...')).toBeVisible();
     await expect(page.getByRole('button', { name: '发送' })).toBeVisible();
   });
 
@@ -144,12 +148,12 @@ test.describe('Project 配置与导航', () => {
   });
 
   test('Project 内应有 概览/会话/配置 入口切换，且 main 区不重复渲染 Project header', async ({
-    page
+    page,
+    isMobile
   }) => {
     await page.goto(`/projects/${project.id}/dashboard`);
 
-    const projectNavigation = page
-      .getByRole('complementary')
+    const projectNavigation = (await openProjectNavigation(page, isMobile))
       .getByRole('button')
       .filter({ hasText: /^(概览|会话|配置)$/ });
     const navigationLabels = await projectNavigation.allTextContents();
@@ -162,3 +166,14 @@ test.describe('Project 配置与导航', () => {
     ).toHaveCount(0);
   });
 });
+
+async function openProjectNavigation(page: Page, isMobile: boolean) {
+  if (!isMobile) {
+    return page.getByRole('complementary');
+  }
+
+  await page.getByRole('button', { name: '打开导航菜单' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  return dialog;
+}

@@ -271,6 +271,8 @@ export class SessionRuntimeService {
       return;
     }
 
+    const outputConsumer = this.outputConsumers.get(sessionId);
+
     try {
       await this.getRunnerTypeOrThrow(runtimeSession.runnerType).destroySession(
         runtimeSession
@@ -278,6 +280,16 @@ export class SessionRuntimeService {
     } catch (error) {
       this.logger.warn(
         `Destroy session runtime failed for ${sessionId}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`
+      );
+    }
+
+    try {
+      await outputConsumer;
+    } catch (error) {
+      this.logger.warn(
+        `Wait for session output consumer failed for ${sessionId}: ${
           error instanceof Error ? error.message : 'unknown error'
         }`
       );

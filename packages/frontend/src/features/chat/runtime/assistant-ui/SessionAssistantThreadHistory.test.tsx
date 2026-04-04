@@ -14,6 +14,7 @@ import type { SessionAssistantMessageRecord } from './thread-adapter';
 
 const virtuosoMock = vi.hoisted(() => ({
   scrollToIndex: vi.fn(),
+  lastFollowOutput: undefined as string | boolean | undefined,
   lastInitialTopMostItemIndex: undefined as number | undefined
 }));
 
@@ -23,6 +24,7 @@ vi.mock('react-virtuoso', async () => {
   const Virtuoso = ReactImpl.forwardRef<
     { scrollToIndex: typeof virtuosoMock.scrollToIndex },
     {
+      followOutput?: string | boolean;
       firstItemIndex: number;
       totalCount: number;
       initialTopMostItemIndex?: number;
@@ -35,6 +37,7 @@ vi.mock('react-virtuoso', async () => {
     }
   >(function VirtuosoMock(
     {
+      followOutput,
       firstItemIndex,
       totalCount,
       initialTopMostItemIndex,
@@ -43,6 +46,7 @@ vi.mock('react-virtuoso', async () => {
     },
     ref
   ) {
+    virtuosoMock.lastFollowOutput = followOutput;
     virtuosoMock.lastInitialTopMostItemIndex = initialTopMostItemIndex;
     ReactImpl.useImperativeHandle(ref, () => ({
       scrollToIndex: virtuosoMock.scrollToIndex
@@ -181,6 +185,7 @@ function renderHistory(props: {
 describe('SessionAssistantThreadHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    virtuosoMock.lastFollowOutput = undefined;
     virtuosoMock.lastInitialTopMostItemIndex = undefined;
     Object.defineProperty(globalThis.navigator, 'clipboard', {
       configurable: true,
@@ -241,6 +246,7 @@ describe('SessionAssistantThreadHistory', () => {
       behavior: 'auto'
     });
     expect(virtuosoMock.lastInitialTopMostItemIndex).toBe(0);
+    expect(virtuosoMock.lastFollowOutput).toBe('auto');
 
     rerender(
       <ThreadConfigContext.Provider value={{ assistantName: 'Mock Agent' }}>

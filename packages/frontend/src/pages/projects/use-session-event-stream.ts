@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import type {
   OutputChunk,
+  PagedSessionMessages,
   SessionDetail,
   SessionMessageDetail,
-  PagedSessionMessages,
   SessionSummary
 } from '@agent-workbench/shared';
-import { SessionStatus as SessionStatusEnum } from '@agent-workbench/shared';
+import {
+  MessageRole as MessageRoleEnum,
+  MessageStatus as MessageStatusEnum,
+  SessionStatus as SessionStatusEnum
+} from '@agent-workbench/shared';
 import type { QueryClient, InfiniteData } from '@tanstack/react-query';
 
 import { createSessionEventSource, parseSessionEvent } from '@/api/sessions';
@@ -66,6 +70,103 @@ function updateSessionCaches(
           : session
       )
   );
+}
+
+function isMessageChunk(
+  chunk: OutputChunk
+): chunk is Extract<
+  OutputChunk,
+  | { kind: 'thinking_delta' }
+  | { kind: 'message_delta' }
+  | { kind: 'message_result' }
+  | { kind: 'error' }
+  | { kind: 'tool_use' }
+> {
+  return (
+    chunk.kind === 'thinking_delta' ||
+    chunk.kind === 'message_delta' ||
+    chunk.kind === 'message_result' ||
+    chunk.kind === 'error' ||
+    chunk.kind === 'tool_use'
+  );
+}
+
+function createStreamingAssistantMessage(
+  sessionId: string,
+  messageId: string,
+  chunk: Extract<
+    OutputChunk,
+    | { kind: 'thinking_delta' }
+    | { kind: 'message_delta' }
+    | { kind: 'message_result' }
+    | { kind: 'error' }
+    | { kind: 'tool_use' }
+  >
+): SessionMessageDetail {
+  return {
+    id: messageId,
+    sessionId,
+    role: MessageRoleEnum.Assistant,
+    status:
+      chunk.kind === 'message_result'
+        ? MessageStatusEnum.Complete
+        : chunk.kind === 'error'
+          ? MessageStatusEnum.Error
+          : MessageStatusEnum.Streaming,
+    inputContent: null,
+    runtimeConfig: null,
+    outputText: null,
+    thinkingText: null,
+    contentParts: [],
+    errorPayload: null,
+    cancelledAt: null,
+    eventId: null,
+    toolUses: [],
+    metrics: [],
+    createdAt: new Date(chunk.timestampMs).toISOString()
+  };
+}
+
+function applyMessageChunkToPagedMessages(
+  current: InfiniteData<PagedSessionMessages> | undefined,
+  sessionId: string,
+  chunk: OutputChunk
+) {
+  if (!current || !current.pages.length || !isMessageChunk(chunk)) {
+    return current;
+  }
+
+  if (!chunk.messageId) {
+    return current;
+  }
+
+  const pageIndex = current.pages.findIndex((page) =>
+    page.data.some((message) => message.id === chunk.messageId)
+  );
+  const targetPageIndex = pageIndex === -1 ? 0 : pageIndex;
+  const targetPage = current.pages[targetPageIndex];
+  const targetPageData =
+    pageIndex === -1
+      ? [
+          ...targetPage.data,
+          createStreamingAssistantMessage(
+            sessionId,
+            chunk.messageId,
+            chunk
+          )
+        ]
+      : targetPage.data;
+
+  const nextPages = [...current.pages];
+  nextPages[targetPageIndex] = {
+    ...targetPage,
+    data: applyOutputChunkToMessages(targetPageData, chunk)
+  };
+
+  return {
+    ...current,
+    pages: nextPages
+  };
 }
 
 export function useSessionEventStream({
@@ -168,29 +269,12 @@ export function useSessionEventStream({
         return;
       }
 
-      if (
-        chunk.kind === 'thinking_delta' ||
-        chunk.kind === 'message_delta' ||
-        chunk.kind === 'message_result' ||
-        chunk.kind === 'error' ||
-        chunk.kind === 'tool_use'
-      ) {
+      if (isMessageChunk(chunk)) {
         queryClient.setQueryData<
           InfiniteData<PagedSessionMessages> | undefined
-        >(queryKeys.sessions.messages(sessionId), (current) => {
-          if (!current || !current.pages.length) return current;
-
-          const firstPage = current.pages[0];
-          const updatedFirstPage = {
-            ...firstPage,
-            data: applyOutputChunkToMessages(firstPage.data, chunk)
-          };
-
-          return {
-            ...current,
-            pages: [updatedFirstPage, ...current.pages.slice(1)]
-          };
-        });
+        >(queryKeys.sessions.messages(sessionId), (current) =>
+          applyMessageChunkToPagedMessages(current, sessionId, chunk)
+        );
 
         if (
           (chunk.kind === 'message_result' || chunk.kind === 'error') &&

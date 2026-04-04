@@ -1,4 +1,5 @@
-import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
+import { Logger } from '@nestjs/common';
+import { describe, it, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import http from 'node:http';
 
 import {
@@ -646,6 +647,42 @@ describe('Sessions API', () => {
 
       const detailRes = await api().get(`/api/sessions/${session.id}`);
       expectError(detailRes, 404);
+    });
+
+    it('销毁运行中的 Session 后，不应再由后台 output consumer 向已删除会话追加事件', async () => {
+      const errorSpy = vi.spyOn(Logger.prototype, 'error');
+
+      try {
+        const { session } = await createTestSession();
+
+        const sendRes = await api()
+          .post(`/api/sessions/${session.id}/messages`)
+          .send({ input: { prompt: 'Dispose while running' } });
+        expectSuccess(sendRes);
+
+        const disposeRes = await api().delete(`/api/sessions/${session.id}`);
+        expectSuccess(disposeRes);
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const prisma = getPrisma();
+        const [sessionCount, messageCount, eventCount] = await Promise.all([
+          prisma.agentSession.count({ where: { id: session.id } }),
+          prisma.sessionMessage.count({ where: { sessionId: session.id } }),
+          prisma.sessionEvent.count({ where: { sessionId: session.id } })
+        ]);
+
+        expect(sessionCount).toBe(0);
+        expect(messageCount).toBe(0);
+        expect(eventCount).toBe(0);
+        expect(
+          errorSpy.mock.calls.some(([message]) =>
+            String(message).includes('Runner output crashed')
+          )
+        ).toBe(false);
+      } finally {
+        errorSpy.mockRestore();
+      }
     });
   });
 
