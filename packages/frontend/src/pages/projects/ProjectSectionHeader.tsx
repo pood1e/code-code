@@ -2,18 +2,17 @@ import type { Project } from '@agent-workbench/shared';
 
 import { CompactNativeSelect } from '@/components/ui/native-select';
 import { cn } from '@/lib/utils';
-
-type ProjectTab = 'config' | 'sessions' | 'dashboard';
+import type { ProjectTabKey } from '@/types/projects';
 
 type ProjectSectionHeaderProps = {
   projects: Project[];
   currentProjectId: string;
-  activeTab: ProjectTab;
+  activeTab: ProjectTabKey;
   onProjectChange: (id: string) => void;
-  onTabChange: (tab: ProjectTab) => void;
+  onTabChange: (tab: ProjectTabKey) => void;
 };
 
-const tabItems: { key: ProjectTab; label: string }[] = [
+const tabItems: { key: ProjectTabKey; label: string }[] = [
   { key: 'dashboard', label: '概览' },
   { key: 'sessions', label: '会话' },
   { key: 'config', label: '配置' }

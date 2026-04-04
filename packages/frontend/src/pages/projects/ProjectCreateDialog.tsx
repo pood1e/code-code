@@ -28,7 +28,7 @@ import {
 } from '@/pages/projects/project-form.utils';
 import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
-import { projectConfig } from '@/types/projects';
+import { buildProjectConfigPath } from '@/types/projects';
 
 function isWorkspacePathError(message: string) {
   return (
@@ -89,7 +89,7 @@ export function ProjectCreateDialog({
 
       setCurrentProject(createdProject.id);
       handleDialogOpenChange(false);
-      void navigate(`${projectConfig.path}/${createdProject.id}/config`);
+      void navigate(buildProjectConfigPath(createdProject.id));
     }
   });
 

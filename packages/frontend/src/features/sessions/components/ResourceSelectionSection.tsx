@@ -53,6 +53,7 @@ export function ResourceSelectionSection<
 
       <div className="flex gap-2">
         <CompactNativeSelect
+          aria-label={`选择${label}`}
           className="min-w-0 w-full flex-1 rounded-xl bg-background"
           value={pendingResourceId}
           onChange={(event) => setPendingResourceId(event.target.value)}
@@ -72,6 +73,7 @@ export function ResourceSelectionSection<
         <Button
           type="button"
           variant="outline"
+          aria-label={`添加${label}`}
           onClick={handleAdd}
           disabled={!pendingResourceId}
         >

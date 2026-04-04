@@ -59,6 +59,15 @@ describe('MCPs API', () => {
         NODE_ENV: 'test'
       });
     });
+
+    it('空白 description 应归一化为 null', async () => {
+      const res = await api()
+        .post('/api/mcps')
+        .send(createMcpPayload({ description: '   ' }));
+      const data = expectSuccess<{ description: string | null }>(res, 201);
+
+      expect(data.description).toBeNull();
+    });
   });
 
   describe('GET /api/mcps - 列表查询', () => {
@@ -71,6 +80,16 @@ describe('MCPs API', () => {
 
       expect(data).toHaveLength(1);
       expect(data[0].name).toBe('Filesystem MCP');
+    });
+
+    it('name 仅为空白时不应误筛选', async () => {
+      await seedMcp({ name: 'Filesystem MCP' });
+      await seedMcp({ name: 'Browser MCP' });
+
+      const res = await api().get('/api/mcps?name=%20%20%20');
+      const data = expectSuccess<{ name: string }[]>(res);
+
+      expect(data).toHaveLength(2);
     });
   });
 
@@ -118,7 +137,7 @@ describe('MCPs API', () => {
       expectError(await api().get(`/api/mcps/${created.id}`), 404);
     });
 
-    it('删除被 Profile 引用的 MCP 应返回 409', async () => {
+    it('删除被 Profile 引用的 MCP 应返回 409 + referencedBy', async () => {
       const mcp = await seedMcp();
       const profile = await seedProfile();
 
@@ -131,7 +150,12 @@ describe('MCPs API', () => {
           rules: []
         });
 
-      expectError(await api().delete(`/api/mcps/${mcp.id}`), 409);
+      const error = expectError(await api().delete(`/api/mcps/${mcp.id}`), 409);
+
+      expect(error.message).toBe('该资源被以下 Profile 引用，无法删除');
+      expect(error.data).toEqual({
+        referencedBy: [{ id: profile.id, name: profile.name }]
+      });
     });
   });
 

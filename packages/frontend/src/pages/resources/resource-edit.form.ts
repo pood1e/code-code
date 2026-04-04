@@ -99,6 +99,29 @@ export function toEnvObject(entries?: EnvEntry[]) {
 
 export type ResourceMutationPayload = ResourcePayloadByKind[ResourceKind];
 
+export function toMarkdownFormValues(
+  values: ResourceFormValues
+): ResourceMarkdownFormValues {
+  return {
+    name: values.name,
+    description: values.description ?? '',
+    contentText: values.contentText ?? ''
+  };
+}
+
+export function toMcpFormValues(
+  values: ResourceFormValues
+): ResourceMcpFormValues {
+  return {
+    name: values.name,
+    description: values.description ?? '',
+    type: 'stdio',
+    command: values.command ?? '',
+    argsText: values.argsText ?? '',
+    envEntries: values.envEntries ?? []
+  };
+}
+
 function toResourceFormValues(resource: ResourceRecord): ResourceFormValues {
   if (typeof resource.content === 'string') {
     return {

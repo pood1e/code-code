@@ -5,7 +5,7 @@ import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { Button } from '@/components/ui/button';
 import { useProjectPageData } from '@/pages/projects/use-project-page-data';
-import { projectConfig } from '@/types/projects';
+import { buildProjectConfigPath } from '@/types/projects';
 
 export function ProjectDashboardPage() {
   const navigate = useNavigate();
@@ -52,9 +52,7 @@ export function ProjectDashboardPage() {
               description="第一阶段先实现 Project 配置和会话管理，概览页暂不提供实际内容。"
               action={
                 <Button
-                  onClick={() =>
-                    void navigate(`${projectConfig.path}/${id}/config`)
-                  }
+                  onClick={() => void navigate(buildProjectConfigPath(id))}
                 >
                   前往配置页
                 </Button>

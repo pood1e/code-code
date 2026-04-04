@@ -46,6 +46,15 @@ describe('Skills API', () => {
 
       expect(data.description).toBeNull();
     });
+
+    it('空白 description 应归一化为 null', async () => {
+      const res = await api()
+        .post('/api/skills')
+        .send(createSkillPayload({ description: '   ' }));
+      const data = expectSuccess(res, 201) as { description: string | null };
+
+      expect(data.description).toBeNull();
+    });
   });
 
   describe('GET /api/skills - 列表查询', () => {
@@ -85,6 +94,16 @@ describe('Skills API', () => {
 
       expect(data).toHaveLength(0);
     });
+
+    it('name 仅为空白时不应误筛选', async () => {
+      await seedSkill({ name: 'Web Search' });
+      await seedSkill({ name: 'Code Review' });
+
+      const res = await api().get('/api/skills?name=%20%20%20');
+      const data = expectSuccess<{ name: string }[]>(res);
+
+      expect(data).toHaveLength(2);
+    });
   });
 
   describe('GET /api/skills/:id - 获取详情', () => {
@@ -122,6 +141,17 @@ describe('Skills API', () => {
 
       expect(data.name).toBe('Updated Skill');
       expect(data.content).toBe('# Updated Content');
+    });
+
+    it('更新为空白 description 时应归一化为 null', async () => {
+      const created = await seedSkill({ description: 'Has description' });
+
+      const res = await api()
+        .put(`/api/skills/${created.id}`)
+        .send(createSkillPayload({ description: '  ' }));
+      const data = expectSuccess<{ description: string | null }>(res);
+
+      expect(data.description).toBeNull();
     });
   });
 
@@ -173,7 +203,8 @@ describe('Skills API', () => {
   describe('资源不存在', () => {
     it('GET 不存在的 ID 返回 404', async () => {
       const res = await api().get('/api/skills/nonexistent-id');
-      expectError(res, 404);
+      const error = expectError(res, 404);
+      expect(error.message).toBe('Skill not found: nonexistent-id');
     });
 
     it('PUT 不存在的 ID 返回 404', async () => {

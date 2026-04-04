@@ -22,6 +22,8 @@ import {
 import { SessionRuntimeService } from '../src/modules/sessions/session-runtime.service';
 
 describe('Sessions API', () => {
+  let sessionSeedCounter = 0;
+
   beforeAll(async () => {
     await setupTestApp();
   });
@@ -32,6 +34,7 @@ describe('Sessions API', () => {
 
   beforeEach(async () => {
     await resetDatabase();
+    sessionSeedCounter = 0;
   });
 
   // ---- 辅助函数：创建一个可用的 Session ----
@@ -40,6 +43,7 @@ describe('Sessions API', () => {
     id: string;
     role: string;
     status: string;
+    createdAt: string;
     runtimeConfig?: Record<string, unknown> | null;
     outputText?: string | null;
     thinkingText?: string | null;
@@ -97,8 +101,13 @@ describe('Sessions API', () => {
   }
 
   async function createTestSession(options?: { withInitialMessage?: boolean }) {
-    const project = await seedProject();
-    const runner = await seedAgentRunner();
+    sessionSeedCounter += 1;
+    const project = await seedProject({
+      name: `Test Project ${sessionSeedCounter}`
+    });
+    const runner = await seedAgentRunner({
+      name: `Test MockRunner ${sessionSeedCounter}`
+    });
 
     const payload: Record<string, unknown> = {
       scopeId: project.id,
@@ -449,6 +458,23 @@ describe('Sessions API', () => {
     });
   });
 
+  describe('POST /api/sessions/:id/messages/:messageId/edit - 编辑消息', () => {
+    it('编辑不存在的 messageId 应返回 404', async () => {
+      const { session } = await createTestSession();
+
+      const error = expectError(
+        await api()
+          .post(`/api/sessions/${session.id}/messages/nonexistent-message/edit`)
+          .send({ input: { prompt: 'edited prompt' } }),
+        404
+      );
+
+      expect(error.message).toBe(
+        'Session message not found: nonexistent-message'
+      );
+    });
+  });
+
   describe('GET /api/sessions/:id/messages - 消息列表', () => {
     it('应返回分页数据结构', async () => {
       const { session } = await createTestSession();
@@ -463,6 +489,57 @@ describe('Sessions API', () => {
 
       expect(Array.isArray(data.data)).toBe(true);
       expect('nextCursor' in data).toBe(true);
+    });
+
+    it('应按 cursor 正确翻页，且多页结果无重复无漏项', async () => {
+      const { session } = await createTestSession();
+
+      for (const prompt of ['msg-1', 'msg-2', 'msg-3']) {
+        expectSuccess(
+          await api()
+            .post(`/api/sessions/${session.id}/messages`)
+            .send({ input: { prompt } }),
+          200
+        );
+        await waitForSessionStatus(session.id, 'ready');
+      }
+
+      const firstPage = expectSuccess<{
+        data: SessionMessageRecord[];
+        nextCursor: string | null;
+      }>(
+        await api().get(`/api/sessions/${session.id}/messages?limit=2`)
+      );
+
+      expect(firstPage.data).toHaveLength(2);
+      expect(firstPage.nextCursor).toBeTruthy();
+      expect(firstPage.data[0].createdAt <= firstPage.data[1].createdAt).toBe(
+        true
+      );
+
+      const secondPage = expectSuccess<{
+        data: SessionMessageRecord[];
+        nextCursor: string | null;
+      }>(
+        await api().get(
+          `/api/sessions/${session.id}/messages?limit=2&cursor=${firstPage.nextCursor}`
+        )
+      );
+
+      const allMessageIds = [...firstPage.data, ...secondPage.data].map(
+        (message) => message.id
+      );
+      expect(new Set(allMessageIds).size).toBe(allMessageIds.length);
+
+      const allMessages = expectSuccess<{ data: SessionMessageRecord[] }>(
+        await api().get(`/api/sessions/${session.id}/messages?limit=20`)
+      ).data;
+      expect(allMessageIds.every((id) => allMessages.some((m) => m.id === id))).toBe(
+        true
+      );
+      expect(secondPage.data[0].createdAt <= secondPage.data.at(-1)!.createdAt).toBe(
+        true
+      );
     });
 
     it('assistant 消息应按时序落 contentParts，连续 message_delta 合并为单个 text part，并可重进回读', async () => {
@@ -519,6 +596,7 @@ describe('Sessions API', () => {
       timeout = 300
     ): Promise<{
       statusCode: number;
+      contentType: string;
       chunks: string[];
       events: Array<{ type: string; data: unknown }>;
     }> {
@@ -538,17 +616,22 @@ describe('Sessions API', () => {
             });
 
             setTimeout(() => {
+              const contentType = String(res.headers['content-type'] ?? '');
+              const payload = chunks.join('');
               res.destroy();
               resolve({
                 statusCode: res.statusCode ?? 0,
+                contentType,
                 chunks,
-                events: parseSseEvents(chunks.join(''))
+                events: contentType.includes('text/event-stream')
+                  ? parseSseEvents(payload)
+                  : []
               });
             }, timeout);
           }
         );
         req.on('error', () => {
-          resolve({ statusCode: 0, chunks, events: [] });
+          resolve({ statusCode: 0, contentType: '', chunks, events: [] });
         });
       });
     }
@@ -600,6 +683,24 @@ describe('Sessions API', () => {
       expect(result.events.map((event) => event.type)).toContain('done');
     }, 10000);
 
+    it('回放事件应包含 session_status，且 done 应在最后', async () => {
+      const { session } = await createTestSession();
+
+      expectSuccess(
+        await api()
+          .post(`/api/sessions/${session.id}/messages`)
+          .send({ input: { prompt: 'SSE order test' } }),
+        200
+      );
+      await waitForSessionStatus(session.id, 'ready');
+
+      const result = await collectSSE(`/api/sessions/${session.id}/events`);
+      const eventTypes = result.events.map((event) => event.type);
+
+      expect(eventTypes).toContain('session_status');
+      expect(eventTypes.at(-1)).toBe('done');
+    }, 10000);
+
     it('afterEventId 应只返回较新的事件，且 replay/live 不应重复', async () => {
       const { session } = await createTestSession();
 
@@ -636,6 +737,22 @@ describe('Sessions API', () => {
       );
       expect(new Set(eventIds).size).toBe(eventIds.length);
     }, 10000);
+
+    it('不存在的 Session 事件流应返回 404', async () => {
+      const res = await api()
+        .get('/api/sessions/nonexistent/events')
+        .set('Accept', 'text/event-stream');
+      expectError(res, 404);
+    });
+
+    it('非法 afterEventId 应返回 400', async () => {
+      const { session } = await createTestSession();
+
+      const res = await api().get(
+        `/api/sessions/${session.id}/events?afterEventId=-1`
+      );
+      expectError(res, 400);
+    });
   });
 
   describe('DELETE /api/sessions/:id - 销毁 Session', () => {
@@ -701,7 +818,7 @@ describe('Sessions API', () => {
         runnerSessionConfig: {}
       });
 
-      expect([400, 404]).toContain(res.status);
+      expectError(res, 404);
     });
 
     it('runnerId 不存在时应返回错误', async () => {
@@ -716,7 +833,7 @@ describe('Sessions API', () => {
         runnerSessionConfig: {}
       });
 
-      expect([400, 404]).toContain(res.status);
+      expectError(res, 404);
     });
 
     it('缺少必填字段 scopeId 返回 400', async () => {
@@ -735,7 +852,8 @@ describe('Sessions API', () => {
 
   describe('资源不存在', () => {
     it('GET 不存在的 Session 返回 404', async () => {
-      expectError(await api().get('/api/sessions/nonexistent'), 404);
+      const error = expectError(await api().get('/api/sessions/nonexistent'), 404);
+      expect(error.message).toBe('Session not found: nonexistent');
     });
 
     it('发消息到不存在的 Session 返回错误', async () => {
@@ -743,7 +861,7 @@ describe('Sessions API', () => {
         .post('/api/sessions/nonexistent/messages')
         .send({ input: { prompt: 'hello' } });
 
-      expect([400, 404]).toContain(res.status);
+      expectError(res, 404);
     });
   });
 });

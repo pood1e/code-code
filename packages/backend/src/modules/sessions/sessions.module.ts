@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AgentRunnersModule } from '../agent-runners/agent-runners.module';
 import { SessionEventStore } from './session-event.store';
+import { SessionEventsGuard } from './session-events.guard';
 import { SessionMapper } from './session-mapper';
 import { SessionRuntimeService } from './session-runtime.service';
 import { SessionsCommandService } from './sessions-command.service';
@@ -18,7 +19,8 @@ import { SessionsService } from './sessions.service';
     SessionsCommandService,
     SessionRuntimeService,
     SessionEventStore,
-    SessionMapper
+    SessionMapper,
+    SessionEventsGuard
   ]
 })
 export class SessionsModule {}

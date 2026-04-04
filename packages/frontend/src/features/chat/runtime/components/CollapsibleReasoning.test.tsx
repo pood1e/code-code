@@ -24,17 +24,13 @@ describe('CollapsibleReasoning', () => {
     render(<CollapsibleReasoning text="详细推理" />);
 
     const toggle = screen.getByRole('button', { name: '思考过程：Thinking' });
-    const container = toggle.parentElement?.parentElement?.querySelector('div.grid');
 
-    expect(screen.getByTestId('reasoning-markdown')).toHaveTextContent('详细推理');
-    expect(container).toHaveClass('grid-rows-[0fr]', 'opacity-0');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('reasoning-markdown')).not.toBeInTheDocument();
 
     await user.click(toggle);
 
-    expect(container).toHaveClass('grid-rows-[1fr]', 'opacity-100', 'mt-1');
-    expect(screen.getByTestId('reasoning-markdown')).toHaveAttribute(
-      'data-class-name',
-      expect.stringContaining('prose-sm')
-    );
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('reasoning-markdown')).toHaveTextContent('详细推理');
   });
 });

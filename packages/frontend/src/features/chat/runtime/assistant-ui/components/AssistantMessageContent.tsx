@@ -90,14 +90,36 @@ export function AssistantToolPart({
       {toolView.terminalOutput ? (
         <ToolTerminalOutput value={toolView.terminalOutput} />
       ) : null}
-      {toolView.rawBlocks.map((detail) => (
-        <ToolDetailBlock
-          key={`${toolView.label}-${detail.label}`}
-          label={detail.label}
-          value={detail.value}
-          tone="subtle"
-        />
-      ))}
+      {toolView.rawBlocks.length > 0 ? (
+        <ToolRawBlocks rawBlocks={toolView.rawBlocks} />
+      ) : null}
+    </InlineCollapsibleBlock>
+  );
+}
+
+function ToolRawBlocks({
+  rawBlocks
+}: {
+  rawBlocks: { label: string; value: string }[];
+}) {
+  return (
+    <InlineCollapsibleBlock
+      expandedLabel="原始数据"
+      summary="原始数据"
+      icon={<span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />}
+      widthClassName="max-w-full"
+      bodyClassName="ml-0 border-l-0 py-0 pl-0"
+    >
+      <div className="space-y-2">
+        {rawBlocks.map((detail) => (
+          <ToolDetailBlock
+            key={detail.label}
+            label={detail.label}
+            value={detail.value}
+            tone="subtle"
+          />
+        ))}
+      </div>
     </InlineCollapsibleBlock>
   );
 }

@@ -1,5 +1,8 @@
 import {
+  BadGatewayException,
   BadRequestException,
+  ConflictException,
+  HttpException,
   Injectable,
   NotFoundException
 } from '@nestjs/common';
@@ -40,7 +43,7 @@ export class AgentRunnersService {
       where: { id }
     });
     if (!runner) {
-      throw new NotFoundException('AgentRunner not found');
+      throw new NotFoundException(`AgentRunner not found: ${id}`);
     }
 
     return runner;
@@ -61,7 +64,7 @@ export class AgentRunnersService {
     return this.prisma.agentRunner.create({
       data: {
         name: dto.name,
-        description: dto.description ?? null,
+        description: dto.description?.trim() ? dto.description.trim() : null,
         type: dto.type,
         runnerConfig: parsed as object
       }
@@ -82,13 +85,15 @@ export class AgentRunnersService {
     }
 
     if (dto.description !== undefined) {
-      updateData.description = dto.description;
+      updateData.description = dto.description?.trim()
+        ? dto.description.trim()
+        : null;
     }
 
     if (dto.runnerConfig !== undefined) {
       const runnerType = this.runnerTypeRegistry.get(existing.type);
       if (!runnerType) {
-        throw new BadRequestException(
+        throw new ConflictException(
           `Runner type '${existing.type}' is no longer registered`
         );
       }
@@ -113,9 +118,10 @@ export class AgentRunnersService {
       where: { runnerId: id }
     });
     if (sessionCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete runner: ${sessionCount} session(s) still reference it`
-      );
+      throw new ConflictException({
+        message: `Cannot delete runner: ${sessionCount} session(s) still reference it`,
+        data: { sessionCount }
+      });
     }
 
     await this.prisma.agentRunner.delete({ where: { id } });
@@ -132,18 +138,36 @@ export class AgentRunnersService {
       return { status: 'unknown' };
     }
 
-    const status = await runnerType.checkHealth(runner.runnerConfig);
-    return { status };
+    try {
+      const status = await runnerType.checkHealth(runner.runnerConfig);
+      return { status };
+    } catch {
+      return { status: 'unknown' };
+    }
   }
 
   async probeRunnerContext(id: string): Promise<Record<string, unknown>> {
     const runner = await this.getById(id);
     const runnerType = this.runnerTypeRegistry.get(runner.type);
 
-    if (!runnerType || !runnerType.probeContext) {
+    if (!runnerType) {
+      throw new ConflictException(
+        `Runner type '${runner.type}' is no longer registered`
+      );
+    }
+
+    if (!runnerType.probeContext) {
       return {};
     }
 
-    return runnerType.probeContext(runner.runnerConfig);
+    try {
+      return await runnerType.probeContext(runner.runnerConfig);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new BadGatewayException('Failed to probe runner context');
+    }
   }
 }

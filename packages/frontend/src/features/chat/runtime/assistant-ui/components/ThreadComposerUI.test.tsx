@@ -65,6 +65,8 @@ function renderComposer(
         initialAdditionalValues={{}}
         runtimeFields={[]}
         initialRuntimeValues={{}}
+        disabledHint={null}
+        recoveryAction={undefined}
         composerError={null}
         onAdditionalValueChange={vi.fn()}
         onRuntimeValueChange={vi.fn()}
@@ -102,22 +104,58 @@ describe('ThreadComposerUI', () => {
     assistantUiMock.state.thread.isDisabled = true;
     assistantUiMock.state.composer.text = 'Hello';
 
-    renderComposer();
+    renderComposer({
+      disabledHint: '会话已异常，请新建会话'
+    });
 
-    expect(screen.getByText('会话暂不可用')).toBeInTheDocument();
+    expect(screen.getByText('会话已异常，请新建会话')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '发送' })).toBeDisabled();
   });
 
-  it('运行中应显示生成态和中止按钮', () => {
+  it('会话异常且提供恢复动作时，应显示新建会话而不是禁用发送', async () => {
+    const user = userEvent.setup();
+    const onRecover = vi.fn();
+    assistantUiMock.state.thread.isDisabled = true;
+    assistantUiMock.state.composer.text = 'Hello';
+
+    renderComposer({
+      disabledHint: '会话已异常，请新建会话',
+      runtimeFields: [
+        {
+          name: 'model',
+          label: '模型',
+          kind: 'string',
+          required: false
+        }
+      ],
+      initialRuntimeValues: {
+        model: 'qwen-max'
+      },
+      recoveryAction: {
+        label: '新建会话',
+        onClick: onRecover
+      }
+    });
+
+    expect(screen.getByText('会话已异常，请新建会话')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '新建会话' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '发送' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '模型' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '新建会话' }));
+    expect(onRecover).toHaveBeenCalledTimes(1);
+  });
+
+  it('运行中应只显示中止按钮，不再重复展示生成徽标', () => {
     assistantUiMock.state.thread.isRunning = true;
     assistantUiMock.state.composer.text = 'still typing';
 
     renderComposer();
 
-    expect(screen.getByText('正在生成...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '中止' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '发送' })).toBeDisabled();
     expect(screen.queryByText('会话暂不可用')).not.toBeInTheDocument();
+    expect(screen.queryByText('正在生成...')).not.toBeInTheDocument();
   });
 
   it('发送失败时应展示错误文案', () => {

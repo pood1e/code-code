@@ -40,6 +40,15 @@ describe('Projects API', () => {
       expect(data.gitUrl).toBe(payload.gitUrl);
       expect(data.workspacePath).toBe('/tmp');
     });
+
+    it('空白 description 应归一化为 null', async () => {
+      const res = await api()
+        .post('/api/projects')
+        .send(createProjectPayload({ description: '   ' }));
+      const data = expectSuccess<{ description: string | null }>(res, 201);
+
+      expect(data.description).toBeNull();
+    });
   });
 
   describe('GET /api/projects - 列表查询', () => {
@@ -62,6 +71,16 @@ describe('Projects API', () => {
 
       expect(data).toHaveLength(1);
       expect(data[0].name).toBe('Alpha');
+    });
+
+    it('name 仅为空白时不应误筛选', async () => {
+      await seedProject({ name: 'Alpha' });
+      await seedProject({ name: 'Beta' });
+
+      const res = await api().get('/api/projects?name=%20%20%20');
+      const data = expectSuccess<{ name: string }[]>(res);
+
+      expect(data).toHaveLength(2);
     });
   });
 
@@ -96,6 +115,60 @@ describe('Projects API', () => {
 
       expect(data.name).toBe('Updated Project');
       expect(data.workspacePath).toBe('/tmp');
+    });
+
+    it('应支持仅更新 name，并保留其他字段', async () => {
+      const created = await seedProject({
+        name: 'Original Project',
+        description: 'Original description',
+        workspacePath: '/tmp'
+      });
+
+      const res = await api().patch(`/api/projects/${created.id}`).send({
+        name: 'Renamed Project'
+      });
+      const data = expectSuccess<{
+        name: string;
+        description: string | null;
+        workspacePath: string;
+      }>(res);
+
+      expect(data.name).toBe('Renamed Project');
+      expect(data.description).toBe('Original description');
+      expect(data.workspacePath).toBe('/tmp');
+    });
+
+    it('应支持仅更新 workspacePath', async () => {
+      const created = await seedProject({
+        name: 'Workspace Project',
+        description: 'Keep description'
+      });
+
+      const res = await api().patch(`/api/projects/${created.id}`).send({
+        workspacePath: '/tmp'
+      });
+      const data = expectSuccess<{
+        name: string;
+        description: string | null;
+        workspacePath: string;
+      }>(res);
+
+      expect(data.name).toBe('Workspace Project');
+      expect(data.description).toBe('Keep description');
+      expect(data.workspacePath).toBe('/tmp');
+    });
+
+    it('description 传 null 时应清空描述', async () => {
+      const created = await seedProject({
+        description: 'Will be cleared'
+      });
+
+      const res = await api().patch(`/api/projects/${created.id}`).send({
+        description: null
+      });
+      const data = expectSuccess<{ description: string | null }>(res);
+
+      expect(data.description).toBeNull();
     });
   });
 
@@ -158,6 +231,17 @@ describe('Projects API', () => {
         .post('/api/projects')
         .send(createProjectPayload({ name: 'X'.repeat(101) }));
       expectError(res, 400);
+    });
+
+    it('PATCH 空 payload 返回 400', async () => {
+      const created = await seedProject();
+
+      const error = expectError(
+        await api().patch(`/api/projects/${created.id}`).send({}),
+        400
+      );
+
+      expect(error.message).toContain('At least one project field must be provided');
     });
   });
 

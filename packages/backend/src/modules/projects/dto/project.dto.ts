@@ -33,11 +33,12 @@ export class CreateProjectDto {
 }
 
 export class UpdateProjectDto {
-  @ApiProperty({ example: 'Agent Workbench' })
+  @ApiPropertyOptional({ example: 'Agent Workbench' })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  name!: string;
+  name?: string;
 
   @ApiPropertyOptional({ example: 'Current monorepo workspace for the tool.' })
   @IsOptional()
@@ -45,8 +46,9 @@ export class UpdateProjectDto {
   @MaxLength(500)
   description?: string | null;
 
-  @ApiProperty({ example: '/Users/pood1e/workspace/code-code' })
+  @ApiPropertyOptional({ example: '/Users/pood1e/workspace/code-code' })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  workspacePath!: string;
+  workspacePath?: string;
 }

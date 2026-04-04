@@ -124,6 +124,9 @@ export interface RunnerType extends RunnerTypeMeta {
     platformSessionConfig: PlatformSessionConfig,
     runnerSessionConfig: unknown
   ): Promise<Record<string, unknown>>;
+  shouldReusePersistedState(
+    runnerState: Record<string, unknown>
+  ): boolean;
   destroySession(session: RunnerSessionRecord): Promise<void>;
   send(session: RunnerSessionRecord, payload: RunnerSendPayload): Promise<void>;
   output(session: RunnerSessionRecord): AsyncIterable<RawOutputChunk>;

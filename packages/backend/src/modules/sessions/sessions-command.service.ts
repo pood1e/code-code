@@ -1,7 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
-  Injectable
+  Injectable,
+  NotFoundException
 } from '@nestjs/common';
 import {
   SessionStatus,
@@ -271,7 +272,7 @@ export class SessionsCommandService {
       });
 
       if (!targetMessage) {
-        throw new BadRequestException(
+        throw new NotFoundException(
           `Session message not found: ${messageId}`
         );
       }
@@ -417,7 +418,7 @@ export class SessionsCommandService {
     );
 
     if (startIndex === -1) {
-      throw new BadRequestException(
+      throw new NotFoundException(
         `Session message not found: ${fromMessageId}`
       );
     }

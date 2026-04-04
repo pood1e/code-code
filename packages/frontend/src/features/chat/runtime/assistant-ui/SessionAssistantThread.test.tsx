@@ -17,6 +17,7 @@ import { probeAgentRunnerContext } from '@/api/agent-runners';
 import { createTestQueryClient } from '@/test/render';
 
 import { SessionAssistantThread } from './SessionAssistantThread';
+import { ThreadConfigContext } from './context';
 import type { SessionMessageRuntimeMap } from './thread-adapter';
 
 const threadRuntimeMock = vi.hoisted(() => ({
@@ -52,9 +53,19 @@ vi.mock('./SessionAssistantRuntimeProvider', () => ({
 
 vi.mock('./components/ThreadComposerUI', () => ({
   ThreadComposerUI: (
-    props: { mode: 'text' | 'raw-json' } & Record<string, unknown>
+    props: {
+      mode: 'text' | 'raw-json';
+      composerError?: string | null;
+      discoveredOptions?: unknown;
+      disabledHint?: string | null;
+      recoveryAction?: {
+        label: string;
+        onClick: () => void;
+      };
+    } & Record<string, unknown>
   ) => {
     threadRuntimeMock.composerProps = props;
+    const recoveryAction = props.recoveryAction;
     return (
       <div>
         <div aria-label="composer-mode">{props.mode}</div>
@@ -62,6 +73,15 @@ vi.mock('./components/ThreadComposerUI', () => ({
         <div aria-label="discovered-options">
           {JSON.stringify(props.discoveredOptions ?? null)}
         </div>
+        <div aria-label="composer-disabled-hint">
+          {String(props.disabledHint ?? '')}
+        </div>
+        {recoveryAction ? (
+          <button type="button" onClick={() => recoveryAction.onClick()}>
+            {String(recoveryAction.label)}
+          </button>
+        ) : null}
+        {!recoveryAction ? <button type="button">发送</button> : null}
       </div>
     );
   }
@@ -69,11 +89,13 @@ vi.mock('./components/ThreadComposerUI', () => ({
 
 vi.mock('./SessionAssistantThreadHistory', () => ({
   SessionAssistantThreadHistory: ({
+    canReload,
     records,
     firstItemIndex,
     onLoadMore,
     onReload
   }: {
+    canReload: boolean;
     records: Array<{
       message: SessionMessageDetail;
       runtime?: {
@@ -84,6 +106,7 @@ vi.mock('./SessionAssistantThreadHistory', () => ({
     onLoadMore?: () => void;
     onReload: () => Promise<void>;
   }) => {
+    const { assistantName } = React.useContext(ThreadConfigContext);
     threadRuntimeMock.historyProps = {
       records,
       firstItemIndex,
@@ -93,6 +116,7 @@ vi.mock('./SessionAssistantThreadHistory', () => ({
 
     return (
       <div>
+        <div>{assistantName ?? 'Assistant'}</div>
         {onLoadMore ? (
           <button type="button" onClick={onLoadMore}>
             加载更早消息
@@ -149,7 +173,7 @@ vi.mock('./SessionAssistantThreadHistory', () => ({
                   </>
                 ) : null}
                 {record.message.cancelledAt ? <div>已中止</div> : null}
-                {index === records.length - 1 ? (
+                {canReload && index === records.length - 1 ? (
                   <button type="button" onClick={() => void onReload()}>
                     重跑
                   </button>
@@ -323,7 +347,9 @@ function renderSessionThread({
   onEdit = vi.fn(),
   onSend = vi.fn(),
   onCancel = vi.fn(),
+  onCreateNewSession,
   runnerType = createRunnerType(),
+  assistantName,
   session = createSession()
 }: {
   messages: SessionMessageDetail[];
@@ -337,7 +363,9 @@ function renderSessionThread({
   ) => Promise<void>;
   onSend?: (payload: SendSessionMessageInput) => Promise<void>;
   onCancel?: () => Promise<void>;
+  onCreateNewSession?: () => void;
   runnerType?: RunnerTypeResponse;
+  assistantName?: string;
   session?: SessionDetail;
 }) {
   const queryClient = createTestQueryClient();
@@ -346,6 +374,8 @@ function renderSessionThread({
   const renderResult = render(
     <QueryClientProvider client={queryClient}>
       <SessionAssistantThread
+        assistantName={assistantName}
+        onCreateNewSession={onCreateNewSession}
         session={session}
         messages={messages}
         messagesReady={messagesReady}
@@ -387,7 +417,12 @@ describe('SessionAssistantThread', () => {
       messagesReady: false
     });
 
-    expect(screen.getByText('正在加载历史消息...')).toBeInTheDocument();
+    expect(
+      screen.getByText('正在加载历史消息...', { selector: 'p' })
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('composer-disabled-hint')).toHaveTextContent(
+      '正在加载历史消息...'
+    );
     expect(screen.queryByText('开始对话')).not.toBeInTheDocument();
   });
 
@@ -855,6 +890,10 @@ describe('SessionAssistantThread', () => {
 
   it('用户取消的 assistant 消息应展示错误卡片和已中止状态，且仅最后一条 assistant 显示重跑', async () => {
     renderSessionThread({
+      session: {
+        ...createSession(),
+        status: SessionStatus.Ready
+      },
       messages: [
         createAssistantMessage(),
         {
@@ -878,6 +917,36 @@ describe('SessionAssistantThread', () => {
     expect(await screen.findByText('用户已取消')).toBeInTheDocument();
     expect(await screen.findByText('已中止')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: '重跑' })).toHaveLength(1);
+  });
+
+  it('error 会话应展示新建会话恢复动作，并隐藏重跑', async () => {
+    const onCreateNewSession = vi.fn();
+    renderSessionThread({
+      onCreateNewSession,
+      session: {
+        ...createSession(),
+        status: SessionStatus.Error
+      },
+      messages: [createAssistantMessage()],
+      messagesReady: true
+    });
+
+    expect(await screen.findByText('会话已异常，请新建会话')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '新建会话' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '发送' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '重跑' })).not.toBeInTheDocument();
+  });
+
+  it('assistant 名称应优先使用 runner 实例名，而不是 runner type 名', async () => {
+    renderSessionThread({
+      messages: [createAssistantMessage()],
+      messagesReady: true,
+      runnerType: createRunnerType(),
+      assistantName: 'Dev Runner'
+    });
+
+    expect(await screen.findByText('Dev Runner')).toBeInTheDocument();
+    expect(screen.queryByText('Mock Runner')).not.toBeInTheDocument();
   });
 
 });

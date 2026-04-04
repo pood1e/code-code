@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ProjectCreateDialog } from '@/pages/projects/ProjectCreateDialog';
 import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
-import { projectConfig } from '@/types/projects';
+import { buildProjectDashboardPath } from '@/types/projects';
 
 export function ProjectListPage() {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export function ProjectListPage() {
   const openProject = useCallback(
     (projectId: string) => {
       setCurrentProject(projectId);
-      void navigate(`${projectConfig.path}/${projectId}/dashboard`);
+      void navigate(buildProjectDashboardPath(projectId));
     },
     [navigate, setCurrentProject]
   );
@@ -51,7 +51,7 @@ export function ProjectListPage() {
     );
 
     if (currentProject) {
-      void navigate(`${projectConfig.path}/${currentProject.id}/dashboard`, {
+      void navigate(buildProjectDashboardPath(currentProject.id), {
         replace: true
       });
     }

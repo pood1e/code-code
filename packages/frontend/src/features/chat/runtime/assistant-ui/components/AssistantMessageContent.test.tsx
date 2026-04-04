@@ -66,6 +66,8 @@ describe('AssistantMessageContent', () => {
       })
     );
 
+    await user.click(screen.getByRole('button', { name: '原始数据：原始数据' }));
+
     expect(screen.getByText('原始参数')).toBeInTheDocument();
     expect(screen.getByText('原始结果')).toBeInTheDocument();
     expect(screen.getByText(/"path": "AGENTS\.md"/)).toBeInTheDocument();
@@ -84,6 +86,8 @@ describe('AssistantMessageContent', () => {
         name: /工具/
       })
     );
+
+    await user.click(screen.getByRole('button', { name: '原始数据：原始数据' }));
 
     expect(screen.getByText('原始参数')).toBeInTheDocument();
     expect(screen.queryByText('原始结果')).not.toBeInTheDocument();

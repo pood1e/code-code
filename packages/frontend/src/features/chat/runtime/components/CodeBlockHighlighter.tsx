@@ -21,35 +21,41 @@ import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown
 import sql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
 
 import { Button } from '@/components/ui/button';
+import { useClipboardCopy } from '@/hooks/use-clipboard-copy';
 import { cn } from '@/lib/utils';
 import { InlineCollapsibleBlock } from './InlineCollapsibleBlock';
 
 let languagesRegistered = false;
+const prismLanguages = [
+  ['typescript', ts],
+  ['ts', ts],
+  ['javascript', js],
+  ['js', js],
+  ['jsx', jsx],
+  ['tsx', tsx],
+  ['bash', bash],
+  ['sh', bash],
+  ['json', json],
+  ['yaml', yaml],
+  ['yml', yaml],
+  ['python', python],
+  ['py', python],
+  ['go', go],
+  ['rust', rust],
+  ['css', css],
+  ['markdown', markdown],
+  ['md', markdown],
+  ['sql', sql]
+] as const;
 
 function registerLanguages() {
   if (languagesRegistered) {
     return;
   }
 
-  SyntaxHighlighter.registerLanguage('typescript', ts);
-  SyntaxHighlighter.registerLanguage('ts', ts);
-  SyntaxHighlighter.registerLanguage('javascript', js);
-  SyntaxHighlighter.registerLanguage('js', js);
-  SyntaxHighlighter.registerLanguage('jsx', jsx);
-  SyntaxHighlighter.registerLanguage('tsx', tsx);
-  SyntaxHighlighter.registerLanguage('bash', bash);
-  SyntaxHighlighter.registerLanguage('sh', bash);
-  SyntaxHighlighter.registerLanguage('json', json);
-  SyntaxHighlighter.registerLanguage('yaml', yaml);
-  SyntaxHighlighter.registerLanguage('yml', yaml);
-  SyntaxHighlighter.registerLanguage('python', python);
-  SyntaxHighlighter.registerLanguage('py', python);
-  SyntaxHighlighter.registerLanguage('go', go);
-  SyntaxHighlighter.registerLanguage('rust', rust);
-  SyntaxHighlighter.registerLanguage('css', css);
-  SyntaxHighlighter.registerLanguage('markdown', markdown);
-  SyntaxHighlighter.registerLanguage('md', markdown);
-  SyntaxHighlighter.registerLanguage('sql', sql);
+  for (const [name, definition] of prismLanguages) {
+    SyntaxHighlighter.registerLanguage(name, definition);
+  }
 
   languagesRegistered = true;
 }
@@ -67,35 +73,19 @@ export const CodeBlockHighlighter = memo(function CodeBlockHighlighter({
   density?: 'default' | 'compact';
   collapsible?: boolean;
 }) {
-  const [isCopied, setIsCopied] = React.useState(false);
-  const resetTimerRef = React.useRef<number | null>(null);
-  const isCompact = density === 'compact';
-
-  registerLanguages();
-
-  React.useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current);
-      }
-    };
-  }, []);
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setIsCopied(true);
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current);
-      }
-      resetTimerRef.current = window.setTimeout(() => {
-        setIsCopied(false);
-        resetTimerRef.current = null;
-      }, 2000);
-    } catch (error) {
+  const { copied, copy } = useClipboardCopy({
+    onError(error) {
       console.error('Failed to copy text: ', error);
     }
-  };
+  });
+  const isCompact = density === 'compact';
+  const copyLabel = copied ? '已复制代码' : '复制代码';
+  const blockWidthClassName = cn(
+    'inline-block max-w-full align-top',
+    isCompact ? 'my-2' : 'my-3'
+  );
+
+  registerLanguages();
 
   return (
     <InlineCollapsibleBlock
@@ -107,8 +97,8 @@ export const CodeBlockHighlighter = memo(function CodeBlockHighlighter({
         />
       }
       initiallyOpen={!collapsible}
-      widthClassName={isCompact ? 'my-2' : 'my-4'}
-      bodyClassName="ml-0 border-l-0 py-0 pl-0"
+      widthClassName={blockWidthClassName}
+      bodyClassName="ml-0 max-w-[min(46rem,100%)] border-l-0 py-0 pl-0"
       action={
         <Button
           variant="ghost"
@@ -117,21 +107,25 @@ export const CodeBlockHighlighter = memo(function CodeBlockHighlighter({
             'text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
             isCompact ? 'h-5 w-5' : 'h-6 w-6'
           )}
-          onClick={() => void copyToClipboard()}
+          aria-label={copyLabel}
+          title={copyLabel}
+          onClick={() => void copy(value)}
         >
-          {isCopied ? (
+          {copied ? (
             <Check className="h-3.5 w-3.5" />
           ) : (
             <Copy className="h-3.5 w-3.5" />
           )}
-          <span className="sr-only">{isCopied ? '已复制代码' : '复制代码'}</span>
+          <span className="sr-only">{copyLabel}</span>
         </Button>
       }
     >
       <div
         className={cn(
-          'overflow-x-auto border border-border bg-card text-foreground/90 [&>pre]:!m-0 [&>pre]:!bg-transparent [&>pre]:!p-0 focus-visible:outline-none',
-          isCompact ? 'rounded-md p-3 text-[13px]' : 'rounded-lg p-4 text-sm'
+          'max-w-[min(46rem,100%)] overflow-x-auto border text-foreground/90 [&>pre]:!m-0 [&>pre]:!bg-transparent [&>pre]:!p-0 focus-visible:outline-none',
+          isCompact
+            ? 'rounded-md border-border/60 bg-card/90 p-3 text-[13px] leading-6'
+            : 'rounded-lg border-border/70 bg-card/95 p-4 text-sm leading-6'
         )}
       >
         <SyntaxHighlighter
