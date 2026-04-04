@@ -308,7 +308,7 @@ function renderHookProbe(route: string) {
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route
-            path="/projects/:id/sessions/:sessionId?"
+            path="/projects/:id/chats/:sessionId?"
             element={<HookProbe />}
           />
         </Routes>
@@ -412,31 +412,31 @@ describe('useProjectSessionsPageState', () => {
   });
 
   it('无效 sessionId 应被纠正到首个有效会话路由', async () => {
-    renderHookProbe('/projects/project-1/sessions/session-missing');
+    renderHookProbe('/projects/project-1/chats/session-missing');
 
     await waitFor(() => {
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions/session-1'
+        '/projects/project-1/chats/session-1'
       );
       expect(screen.getByText('session-1')).toBeInTheDocument();
     });
   });
 
   it('打开新建会话应回到 sessions 根路由并进入 create panel', async () => {
-    const { user } = renderHookProbe('/projects/project-1/sessions/session-1');
+    const { user } = renderHookProbe('/projects/project-1/chats/session-1');
 
     await user.click(screen.getByRole('button', { name: '打开新建' }));
 
     await waitFor(() => {
       expect(screen.getByText('create-open')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions'
+        '/projects/project-1/chats'
       );
     });
   });
 
   it('删除当前会话后应打开 create panel', async () => {
-    const { user } = renderHookProbe('/projects/project-1/sessions/session-1');
+    const { user } = renderHookProbe('/projects/project-1/chats/session-1');
 
     await user.click(screen.getByRole('button', { name: '删除当前会话' }));
 
@@ -444,14 +444,14 @@ describe('useProjectSessionsPageState', () => {
       expect(disposeMutationMock).toHaveBeenCalledWith('session-1');
       expect(screen.getByText('create-open')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions'
+        '/projects/project-1/chats'
       );
     });
   });
 
   it('刷新会话应失效当前会话相关缓存', async () => {
     const { queryClient, user } = renderHookProbe(
-      '/projects/project-1/sessions/session-1'
+      '/projects/project-1/chats/session-1'
     );
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 

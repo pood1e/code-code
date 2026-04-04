@@ -29,7 +29,7 @@ describe('ProjectSectionHeader', () => {
           createProject('project-2', 'Project Two')
         ]}
         currentProjectId="project-1"
-        activeTab="sessions"
+        activeTab="chats"
         onProjectChange={onProjectChange}
         onTabChange={onTabChange}
       />

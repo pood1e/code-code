@@ -79,12 +79,23 @@ describe('App', () => {
     expect(screen.getByText('App Layout')).toBeInTheDocument();
   });
 
-  it('session 深链路由应命中 ProjectSessionsPage', async () => {
-    renderApp('/projects/project-1/sessions/session-1');
+  it('chat 深链路由应命中 ProjectSessionsPage', async () => {
+    renderApp('/projects/project-1/chats/session-1');
 
     expect(
       await screen.findByText(
-        'Project Sessions Page: /projects/project-1/sessions/session-1'
+        'Project Sessions Page: /projects/project-1/chats/session-1'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('旧 sessions 路由应重定向到 chats', async () => {
+    renderApp('/projects/project-1/sessions');
+
+    // 重定向后应展示 chats 路由下的 ProjectSessionsPage
+    expect(
+      await screen.findByText(
+        'Project Sessions Page: /projects/project-1/chats'
       )
     ).toBeInTheDocument();
   });

@@ -56,5 +56,19 @@ export const queryKeys = {
       list: (scopeId?: string, channelId?: string) =>
         ['notifications', 'tasks', 'list', scopeId ?? '', channelId ?? ''] as const
     }
+  },
+  chats: {
+    all: ['chats'] as const,
+    lists: () => ['chats', 'list'] as const,
+    list: (scopeId: string) => ['chats', 'list', scopeId] as const,
+    detail: (id: string) => ['chats', 'detail', id] as const
+  },
+  pipelines: {
+    all: ['pipelines'] as const,
+    lists: () => ['pipelines', 'list'] as const,
+    list: (scopeId: string) => ['pipelines', 'list', scopeId] as const,
+    detail: (id: string) => ['pipelines', 'detail', id] as const,
+    stages: (pipelineId: string) => ['pipelines', 'stages', pipelineId] as const,
+    artifacts: (pipelineId: string) => ['pipelines', 'artifacts', pipelineId] as const
   }
 };

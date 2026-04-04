@@ -7,7 +7,8 @@ export const projectConfig = {
 
 export type ProjectTabKey =
   | 'dashboard'
-  | 'sessions'
+  | 'chats'
+  | 'pipelines'
   | 'channels'
   | 'send'
   | 'notifications'
@@ -16,8 +17,16 @@ export type ProjectTabKey =
 export const projectRoutePatterns = {
   list: projectConfig.path,
   dashboard: `${projectConfig.path}/:id/dashboard`,
+  // Chat routes (primary)
+  chats: `${projectConfig.path}/:id/chats`,
+  chatDetail: `${projectConfig.path}/:id/chats/:sessionId`,
+  // Pipeline routes
+  pipelines: `${projectConfig.path}/:id/pipelines`,
+  pipelineDetail: `${projectConfig.path}/:id/pipelines/:pipelineId`,
+  // Legacy session routes (redirect to chats)
   sessions: `${projectConfig.path}/:id/sessions`,
   sessionDetail: `${projectConfig.path}/:id/sessions/:sessionId`,
+  // Notification routes
   channels: `${projectConfig.path}/:id/channels`,
   send: `${projectConfig.path}/:id/send`,
   notifications: `${projectConfig.path}/:id/notifications`,
@@ -44,6 +53,32 @@ export function buildProjectNotificationsPath(projectId: string) {
   return `${projectConfig.path}/${projectId}/notifications`;
 }
 
+export function buildProjectChatsPath(
+  projectId: string,
+  sessionId?: string | null
+) {
+  return sessionId
+    ? `${projectConfig.path}/${projectId}/chats/${sessionId}`
+    : `${projectConfig.path}/${projectId}/chats`;
+}
+
+export function buildProjectPipelinesPath(
+  projectId: string,
+  pipelineId?: string | null
+) {
+  return pipelineId
+    ? `${projectConfig.path}/${projectId}/pipelines/${pipelineId}`
+    : `${projectConfig.path}/${projectId}/pipelines`;
+}
+
+/** @deprecated Use buildProjectChatsPath instead */
+export function buildProjectSessionsPath(
+  projectId: string,
+  sessionId?: string | null
+) {
+  return buildProjectChatsPath(projectId, sessionId);
+}
+
 export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
   switch (tab) {
     case 'dashboard':
@@ -56,16 +91,9 @@ export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
       return buildProjectSendPath(projectId);
     case 'notifications':
       return buildProjectNotificationsPath(projectId);
+    case 'pipelines':
+      return buildProjectPipelinesPath(projectId);
     default:
-      return buildProjectSessionsPath(projectId);
+      return buildProjectChatsPath(projectId);
   }
-}
-
-export function buildProjectSessionsPath(
-  projectId: string,
-  sessionId?: string | null
-) {
-  return sessionId
-    ? `${projectConfig.path}/${projectId}/sessions/${sessionId}`
-    : `${projectConfig.path}/${projectId}/sessions`;
 }
