@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 import {
+  CreateNotificationMessageInput,
   FieldMatchOperator,
+  NotificationMessageReceipt,
+  NotificationSeverity,
   NotificationTaskStatus,
 } from '../types/notification';
 
@@ -37,7 +40,7 @@ export const fieldMatcherSchema = z
 // ─── ChannelFilter ────────────────────────────────────────────────────────────
 
 export const channelFilterSchema = z.object({
-  eventTypes: z.array(z.string().trim().min(1).max(100)).min(1),
+  messageTypes: z.array(z.string().trim().min(1).max(100)).min(1),
   conditions: z.array(fieldMatcherSchema).optional(),
 });
 
@@ -46,7 +49,7 @@ export const channelFilterSchema = z.object({
 export const createNotificationChannelInputSchema = z.object({
   scopeId: z.string().trim().min(1),
   name: z.string().trim().min(1).max(200),
-  channelType: z.string().trim().min(1).max(50),
+  capabilityId: z.string().trim().min(1).max(50),
   config: z.record(z.string(), z.unknown()).optional().default({}),
   filter: channelFilterSchema,
   enabled: z.boolean().optional().default(true),
@@ -55,7 +58,7 @@ export const createNotificationChannelInputSchema = z.object({
 export const updateNotificationChannelInputSchema = z
   .object({
     name: z.string().trim().min(1).max(200).optional(),
-    channelType: z.string().trim().min(1).max(50).optional(),
+    capabilityId: z.string().trim().min(1).max(50).optional(),
     config: z.record(z.string(), z.unknown()).optional(),
     filter: channelFilterSchema.optional(),
     enabled: z.boolean().optional(),
@@ -63,7 +66,7 @@ export const updateNotificationChannelInputSchema = z
   .refine(
     (v) =>
       v.name !== undefined ||
-      v.channelType !== undefined ||
+      v.capabilityId !== undefined ||
       v.config !== undefined ||
       v.filter !== undefined ||
       v.enabled !== undefined,
@@ -72,11 +75,24 @@ export const updateNotificationChannelInputSchema = z
 
 // ─── Event receive ────────────────────────────────────────────────────────────
 
-export const notificationEventInputSchema = z.object({
+export const notificationSeveritySchema = z.nativeEnum(NotificationSeverity);
+
+export const createNotificationMessageInputSchema: z.ZodType<CreateNotificationMessageInput> =
+  z.object({
   scopeId: z.string().trim().min(1),
-  eventType: z.string().trim().min(1).max(100),
-  payload: z.record(z.string(), z.unknown()),
+  type: z.string().trim().min(1).max(100),
+  title: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(4000),
+  severity: notificationSeveritySchema.optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  createdAt: z.string().datetime().optional()
 });
+
+export const notificationMessageReceiptSchema: z.ZodType<NotificationMessageReceipt> =
+  z.object({
+    messageId: z.string().trim().min(1),
+    createdTaskCount: z.number().int().min(0)
+  });
 
 // ─── Task status ──────────────────────────────────────────────────────────────
 

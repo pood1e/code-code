@@ -8,16 +8,16 @@ import type {
 import {
   createChannel,
   deleteChannel,
-  listChannelTypes,
+  listNotificationCapabilities,
   listChannels,
   updateChannel
 } from '../../../api/notifications';
 import { queryKeys } from '../../../query/query-keys';
 
-export function useChannelTypes() {
+export function useNotificationCapabilities() {
   return useQuery({
-    queryKey: queryKeys.notifications.channelTypes(),
-    queryFn: listChannelTypes,
+    queryKey: queryKeys.notifications.capabilities(),
+    queryFn: listNotificationCapabilities,
     staleTime: 5 * 60 * 1000 // 5 minutes — rarely changes
   });
 }

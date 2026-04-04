@@ -363,7 +363,7 @@ async function main() {
     }
   });
 
-  // 示例渠道：session 事件通知（当 mock channelType 注册后自动生效）
+  // 示例通道：结构化内部通知消息 -> 本地通知能力
   const exampleProjectId = 'project_agent_workbench';
 
   await prisma.notificationChannel.upsert({
@@ -377,9 +377,9 @@ async function main() {
     create: {
       scopeId: exampleProjectId,
       name: '会话完成通知',
-      channelType: 'mock',
+      capabilityId: 'local-notification',
       config: {},
-      filter: { eventTypes: ['session.completed'] },
+      filter: { messageTypes: ['session.completed'] },
       enabled: true
     }
   });
@@ -395,10 +395,10 @@ async function main() {
     create: {
       scopeId: exampleProjectId,
       name: '会话异常告警',
-      channelType: 'mock',
+      capabilityId: 'local-notification',
       config: {},
       filter: {
-        eventTypes: ['session.failed', 'session.*'],
+        messageTypes: ['session.failed', 'session.*'],
         conditions: [{ field: 'severity', operator: 'In', values: ['critical', 'high'] }]
       },
       enabled: true

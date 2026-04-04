@@ -18,141 +18,101 @@ import {
   CreateNotificationChannelDto,
   UpdateNotificationChannelDto
 } from './dto/channel.dto';
-import { ReceiveEventDto } from './dto/receive-event.dto';
-import { NotificationChannelRegistry } from './notification-channel-registry';
-import { NotificationMapper } from './notification-mapper';
+import { ReceiveNotificationMessageDto } from './dto/receive-notification-message.dto';
+import { NotificationCapabilitiesService } from './notification-capabilities.service';
+import { NotificationChannelsService } from './notification-channels.service';
 import { NotificationReceiverService } from './notification-receiver.service';
-import { NotificationRepositoryService } from './notification-repository.service';
+import { NotificationTasksService } from './notification-tasks.service';
 
 @ApiTags('notifications')
 @Controller('notifications')
 export class NotificationsController {
   constructor(
     private readonly receiver: NotificationReceiverService,
-    private readonly repository: NotificationRepositoryService,
-    private readonly channelRegistry: NotificationChannelRegistry
+    private readonly capabilitiesService: NotificationCapabilitiesService,
+    private readonly channelsService: NotificationChannelsService,
+    private readonly tasksService: NotificationTasksService
   ) {}
 
-  // ─── Event Receiving ──────────────────────────────────────────────────────────
-
   @Post('receive')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: '接收通知事件，按渠道过滤器匹配生成任务' })
-  async receive(@Body() dto: ReceiveEventDto) {
-    const eventId = await this.receiver.receive(
-      dto.scopeId,
-      dto.eventType,
-      dto.payload
-    );
-    return { eventId };
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '接收结构化内部通知消息，并为匹配通道生成任务' })
+  receive(@Body() dto: ReceiveNotificationMessageDto) {
+    return this.receiver.receive(dto);
   }
 
-  // ─── Channel Types ────────────────────────────────────────────────────────────
-
-  @Get('channel-types')
-  @ApiOperation({ summary: '列出已注册的渠道类型' })
-  listChannelTypes() {
-    return this.channelRegistry.registeredChannelTypes();
+  @Get('capabilities')
+  @ApiOperation({ summary: '列出已注册的通知能力插件' })
+  listCapabilities() {
+    return this.capabilitiesService.list();
   }
-
-  // ─── Channels ─────────────────────────────────────────────────────────────────
 
   @Get('channels')
-  @ApiOperation({ summary: '查询渠道列表（按 scopeId 过滤）' })
+  @ApiOperation({ summary: '查询通知通道列表（按 scopeId 过滤）' })
   @ApiQuery({ name: 'scopeId', type: String, required: false })
-  async listChannels(@Query('scopeId') scopeId?: string) {
-    const channels = await this.repository.listChannels(scopeId);
-    return channels.map(NotificationMapper.toChannelSummary);
+  listChannels(@Query('scopeId') scopeId?: string) {
+    return this.channelsService.list(scopeId);
   }
 
   @Get('channels/:id')
-  @ApiOperation({ summary: '查询渠道详情' })
-  async getChannel(@Param('id') id: string) {
-    const channel = await this.repository.findChannelById(id);
-    return NotificationMapper.toChannelSummary(channel);
+  @ApiOperation({ summary: '查询通知通道详情' })
+  getChannel(@Param('id') id: string) {
+    return this.channelsService.getById(id);
   }
 
   @Post('channels')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: '创建通知渠道' })
-  async createChannel(@Body() dto: CreateNotificationChannelDto) {
-    const channel = await this.repository.createChannel({
+  @ApiOperation({ summary: '创建通知通道实例' })
+  createChannel(@Body() dto: CreateNotificationChannelDto) {
+    return this.channelsService.create({
       scopeId: dto.scopeId,
       name: dto.name,
-      channelType: dto.channelType,
-      config: dto.config ?? {},
+      capabilityId: dto.capabilityId,
+      config: dto.config,
       filter: dto.filter,
-      enabled: dto.enabled ?? true
+      enabled: dto.enabled
     });
-    return NotificationMapper.toChannelSummary(channel);
   }
 
   @Patch('channels/:id')
-  @ApiOperation({ summary: '更新通知渠道配置' })
-  async updateChannel(
+  @ApiOperation({ summary: '更新通知通道配置' })
+  updateChannel(
     @Param('id') id: string,
     @Body() dto: UpdateNotificationChannelDto
   ) {
-    const channel = await this.repository.updateChannel(id, dto);
-    return NotificationMapper.toChannelSummary(channel);
+    return this.channelsService.update(id, dto);
   }
 
   @Delete('channels/:id')
-  @ApiOperation({ summary: '删除渠道（有活跃任务时拒绝）' })
-  async deleteChannel(@Param('id') id: string) {
-    await this.repository.deleteChannel(id);
-    return { deleted: id };
+  @ApiOperation({ summary: '删除通知通道（有活跃任务时拒绝）' })
+  deleteChannel(@Param('id') id: string) {
+    return this.channelsService.delete(id);
   }
-
-  // ─── Tasks ────────────────────────────────────────────────────────────────────
 
   @Get('tasks')
   @ApiOperation({ summary: '查询通知任务列表' })
   @ApiQuery({ name: 'scopeId', type: String, required: false })
   @ApiQuery({ name: 'channelId', type: String, required: false })
   @ApiQuery({ name: 'status', enum: NotificationTaskStatus, required: false })
-  @ApiQuery({ name: 'eventId', type: String, required: false })
-  async listTasks(
+  @ApiQuery({ name: 'messageId', type: String, required: false })
+  listTasks(
     @Query('scopeId') scopeId?: string,
     @Query('channelId') channelId?: string,
     @Query('status') status?: NotificationTaskStatus,
-    @Query('eventId') eventId?: string
+    @Query('messageId') messageId?: string
   ) {
-    const tasks = await this.repository.listTasks({
+    return this.tasksService.list({
       scopeId,
       channelId,
       status,
-      eventId
+      messageId
     });
-
-    // 批量查 channels，避免 N+1
-    const channelIds = [...new Set(tasks.map((t) => t.channelId))];
-    const channelNameMap = new Map<string, string>();
-
-    if (channelIds.length > 0) {
-      const channels = await Promise.all(
-        channelIds.map((cid) =>
-          this.repository
-            .findChannelById(cid)
-            .then((ch) => ({ id: ch.id, name: ch.name }))
-            .catch(() => ({ id: cid, name: cid }))
-        )
-      );
-      for (const { id, name } of channels) {
-        channelNameMap.set(id, name);
-      }
-    }
-
-    return tasks.map((task) =>
-      NotificationMapper.toTaskSummary(task, channelNameMap.get(task.channelId))
-    );
   }
 
   @Post('tasks/:id/retry')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '手动重试失败任务（仅 failed → pending）' })
-  async retryTask(@Param('id') id: string) {
-    const task = await this.repository.resetFailedTask(id);
-    return NotificationMapper.toTaskSummary(task);
+  @ApiOperation({ summary: '手动重试失败任务（仅 failed -> pending）' })
+  retryTask(@Param('id') id: string) {
+    return this.tasksService.retry(id);
   }
 }

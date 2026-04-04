@@ -6,6 +6,9 @@ import { Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class NotificationConfig {
+  /** 是否在模块启动时自动启动轮询与维护任务 */
+  readonly autoStart: boolean;
+
   /** Dispatcher 无任务时的轮询等待间隔（毫秒） */
   readonly pollIntervalMs: number;
 
@@ -22,6 +25,7 @@ export class NotificationConfig {
   readonly retentionDays: number;
 
   constructor() {
+    this.autoStart = this.readBoolean('NOTIFICATION_AUTO_START', true);
     this.pollIntervalMs = this.readPositiveInt(
       'NOTIFICATION_POLL_INTERVAL_MS',
       5_000
@@ -46,5 +50,21 @@ export class NotificationConfig {
     if (raw === undefined) return fallback;
     const parsed = Number(raw);
     return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+  }
+
+  private readBoolean(key: string, fallback: boolean): boolean {
+    const raw = process.env[key];
+    if (raw === undefined) {
+      return fallback;
+    }
+
+    if (raw === 'true') {
+      return true;
+    }
+    if (raw === 'false') {
+      return false;
+    }
+
+    return fallback;
   }
 }

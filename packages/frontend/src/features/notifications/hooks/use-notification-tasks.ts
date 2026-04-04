@@ -21,7 +21,9 @@ export function useRetryTask(scopeId?: string) {
     mutationFn: (taskId: string) => retryNotificationTask(taskId),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.tasks.list(scopeId)
+        queryKey: scopeId
+          ? ['notifications', 'tasks', 'list', scopeId]
+          : queryKeys.notifications.tasks.all
       });
     }
   });

@@ -51,6 +51,11 @@ const ProjectChannelsPage = lazy(() =>
     default: module.ProjectChannelsPage
   }))
 );
+const ProjectNotificationSendPage = lazy(() =>
+  import('./pages/projects/ProjectNotificationSendPage').then((module) => ({
+    default: module.ProjectNotificationSendPage
+  }))
+);
 const ProjectNotificationsPage = lazy(() =>
   import('./pages/projects/ProjectNotificationsPage').then((module) => ({
     default: module.ProjectNotificationsPage
@@ -129,6 +134,14 @@ export function App() {
           element={
             <LazyRoute>
               <ProjectChannelsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.send}
+          element={
+            <LazyRoute>
+              <ProjectNotificationSendPage />
             </LazyRoute>
           }
         />

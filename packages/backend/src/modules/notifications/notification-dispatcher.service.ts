@@ -12,21 +12,19 @@ import {
   timer
 } from 'rxjs';
 
-import { ChannelFilter, NotificationTaskStatus } from '@agent-workbench/shared';
+import {
+  type InternalNotificationMessage,
+  NotificationTaskStatus
+} from '@agent-workbench/shared';
 
-import { NotificationChannelRegistry } from './notification-channel-registry';
+import { NotificationCapabilityRegistry } from './notification-capability.registry';
 import { NotificationConfig } from './notification-config';
 import { NotificationRepositoryService } from './notification-repository.service';
 
-/**
- * 事件分发服务。
- * - 递归 setTimeout 驱动轮询：天然防重叠、异常安全、易于停止
- * - RxJS Subject + mergeMap 并发处理各任务，互不阻塞
- * - Channel 级别 maxRetries + 指数退避重试
- * - Dispatcher 实时读取 Channel 记录获取最新 config
- */
 @Injectable()
-export class NotificationDispatcherService implements OnModuleInit, OnModuleDestroy {
+export class NotificationDispatcherService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly taskSubject$ = new Subject<NotificationTask>();
   private pipelineSubscription: Subscription | null = null;
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -34,33 +32,34 @@ export class NotificationDispatcherService implements OnModuleInit, OnModuleDest
 
   constructor(
     private readonly repository: NotificationRepositoryService,
-    private readonly channelRegistry: NotificationChannelRegistry,
+    private readonly capabilityRegistry: NotificationCapabilityRegistry,
     private readonly config: NotificationConfig
   ) {}
 
   onModuleInit() {
     this.setupPipeline();
-    this.scheduleNextPoll(0);
+    if (this.config.autoStart) {
+      this.scheduleNextPoll(0);
+    }
   }
 
   onModuleDestroy() {
     this.stopped = true;
-    if (this.pollTimer !== null) clearTimeout(this.pollTimer);
+    if (this.pollTimer !== null) {
+      clearTimeout(this.pollTimer);
+    }
     this.pipelineSubscription?.unsubscribe();
     this.taskSubject$.complete();
   }
 
-  /**
-   * 单次轮询，供测试直接调用——不依赖真实定时器。
-   * 推入 Subject 后立即返回，不等待发送完成。
-   */
   async pollOnce(): Promise<boolean> {
     const task = await this.repository.claimPendingTask();
-    if (task) {
-      this.taskSubject$.next(task);
-      return true;
+    if (!task) {
+      return false;
     }
-    return false;
+
+    this.taskSubject$.next(task);
+    return true;
   }
 
   private setupPipeline() {
@@ -68,10 +67,10 @@ export class NotificationDispatcherService implements OnModuleInit, OnModuleDest
       .pipe(
         mergeMap((task) =>
           this.processTask(task).pipe(
-            catchError((err: unknown) => {
+            catchError((error: unknown) => {
               console.error(
                 `[Dispatcher] Unexpected error in pipeline for task ${task.id}:`,
-                err
+                error
               );
               return EMPTY;
             })
@@ -83,16 +82,21 @@ export class NotificationDispatcherService implements OnModuleInit, OnModuleDest
 
   private processTask(task: NotificationTask): Observable<void> {
     return defer(async () => {
-      // 实时读取 Channel 记录获取最新 config（Channel 可能在入队后被修改）
-      let channel: Awaited<ReturnType<typeof this.repository.findChannelById>>;
-      try {
-        channel = await this.repository.findChannelById(task.channelId);
-      } catch {
-        // Channel 已被删除
+      if (!task.channelId) {
         await this.repository.updateTaskStatus(
           task.id,
           NotificationTaskStatus.Failed,
-          'Channel deleted'
+          '通道已被删除'
+        );
+        return null;
+      }
+
+      const channel = await this.repository.findChannelById(task.channelId);
+      if (!channel) {
+        await this.repository.updateTaskStatus(
+          task.id,
+          NotificationTaskStatus.Failed,
+          '通道已被删除'
         );
         return null;
       }
@@ -101,38 +105,57 @@ export class NotificationDispatcherService implements OnModuleInit, OnModuleDest
         await this.repository.updateTaskStatus(
           task.id,
           NotificationTaskStatus.Failed,
-          'Channel disabled'
+          '通道已被禁用'
         );
         return null;
       }
 
-      const implementation = this.channelRegistry.resolve(channel.channelType);
-      if (!implementation) {
-        console.warn(
-          `[Dispatcher] Unknown channelType "${channel.channelType}" for task ${task.id}. ` +
-            'Keeping status as processing; timeout detector will reset it.'
+      const capability = this.capabilityRegistry.get(channel.capabilityId);
+      if (!capability) {
+        await this.repository.updateTaskStatus(
+          task.id,
+          NotificationTaskStatus.Failed,
+          `通知能力「${channel.capabilityId}」未注册`
         );
         return null;
       }
 
-      return { channel, implementation };
+      let mappedMessage;
+      try {
+        const message = task.message as unknown as InternalNotificationMessage;
+        mappedMessage = await capability.mapMessage(
+          message,
+          channel.config as Record<string, unknown>
+        );
+      } catch (error) {
+        await this.repository.updateTaskStatus(
+          task.id,
+          NotificationTaskStatus.Failed,
+          `消息映射失败：${this.extractErrorMessage(error)}`
+        );
+        return null;
+      }
+
+      return {
+        capability,
+        channelConfig: channel.config as Record<string, unknown>,
+        mappedMessage
+      };
     }).pipe(
-      mergeMap((ctx) => {
-        if (!ctx) return EMPTY;
-        const { channel, implementation } = ctx;
-        const maxRetries = this.channelRegistry.getMaxRetries(channel.channelType);
+      mergeMap((context) => {
+        if (!context) {
+          return EMPTY;
+        }
+
+        const { capability, channelConfig, mappedMessage } = context;
+        const maxRetries = this.capabilityRegistry.getMaxRetries(capability.id);
         let lastErrorMessage = '';
 
-        return defer(() =>
-          implementation.send(
-            channel.config as Record<string, unknown>,
-            task.payload as Record<string, unknown>
-          )
-        ).pipe(
+        return defer(() => capability.send(channelConfig, mappedMessage)).pipe(
           retry({
             count: maxRetries - 1,
-            delay: (_err, retryCount) => {
-              lastErrorMessage = this.extractErrorMessage(_err);
+            delay: (error, retryCount) => {
+              lastErrorMessage = this.extractErrorMessage(error);
               return timer(Math.pow(2, retryCount - 1) * 1000);
             },
             resetOnSuccess: false
@@ -143,8 +166,9 @@ export class NotificationDispatcherService implements OnModuleInit, OnModuleDest
               NotificationTaskStatus.Success
             );
           }),
-          catchError((err: unknown) => {
-            const errorMessage = this.extractErrorMessage(err) || lastErrorMessage;
+          catchError((error: unknown) => {
+            const errorMessage =
+              this.extractErrorMessage(error) || lastErrorMessage;
             return defer(async () => {
               await this.repository.updateTaskStatus(
                 task.id,
@@ -154,29 +178,42 @@ export class NotificationDispatcherService implements OnModuleInit, OnModuleDest
             });
           })
         );
-      })
+      }),
+      catchError((error: unknown) =>
+        defer(async () => {
+          await this.repository.updateTaskStatus(
+            task.id,
+            NotificationTaskStatus.Failed,
+            this.extractErrorMessage(error)
+          );
+        })
+      )
     );
   }
 
-  private extractErrorMessage(err: unknown): string {
-    if (err instanceof Error) return err.message;
-    if (typeof err === 'string') return err;
-    return String(err);
+  private extractErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    return String(error);
   }
 
   private scheduleNextPoll(delayMs: number) {
-    if (this.stopped) return;
+    if (this.stopped) {
+      return;
+    }
+
     this.pollTimer = setTimeout(async () => {
       try {
         const claimed = await this.pollOnce();
         this.scheduleNextPoll(claimed ? 0 : this.config.pollIntervalMs);
-      } catch (err) {
-        console.error('[Dispatcher] Poll error:', err);
+      } catch (error) {
+        console.error('[Dispatcher] Poll error:', error);
         this.scheduleNextPoll(this.config.pollIntervalMs);
       }
     }, delayMs);
   }
 }
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _ensureChannelFilterImportNotStripped(_f: ChannelFilter) {}

@@ -45,7 +45,7 @@ export const queryKeys = {
     detail: (id: string) => ['profiles', 'detail', id] as const
   },
   notifications: {
-    channelTypes: () => ['notifications', 'channel-types'] as const,
+    capabilities: () => ['notifications', 'capabilities'] as const,
     channels: {
       all: ['notifications', 'channels'] as const,
       list: (scopeId?: string) => ['notifications', 'channels', 'list', scopeId ?? ''] as const,
