@@ -90,7 +90,9 @@ export async function resetDatabase(): Promise<void> {
     db.mCP.deleteMany(),
     db.rule.deleteMany(),
     db.agentRunner.deleteMany(),
-    db.project.deleteMany()
+    db.project.deleteMany(),
+    db.notificationTask.deleteMany(),
+    db.notificationChannel.deleteMany()
   ]);
 }
 

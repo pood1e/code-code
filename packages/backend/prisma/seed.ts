@@ -363,6 +363,48 @@ async function main() {
     }
   });
 
+  // 示例渠道：session 事件通知（当 mock channelType 注册后自动生效）
+  const exampleProjectId = 'project_agent_workbench';
+
+  await prisma.notificationChannel.upsert({
+    where: {
+      uq_channel_scope_name: {
+        scopeId: exampleProjectId,
+        name: '会话完成通知'
+      }
+    },
+    update: {},
+    create: {
+      scopeId: exampleProjectId,
+      name: '会话完成通知',
+      channelType: 'mock',
+      config: {},
+      filter: { eventTypes: ['session.completed'] },
+      enabled: true
+    }
+  });
+
+  await prisma.notificationChannel.upsert({
+    where: {
+      uq_channel_scope_name: {
+        scopeId: exampleProjectId,
+        name: '会话异常告警'
+      }
+    },
+    update: {},
+    create: {
+      scopeId: exampleProjectId,
+      name: '会话异常告警',
+      channelType: 'mock',
+      config: {},
+      filter: {
+        eventTypes: ['session.failed', 'session.*'],
+        conditions: [{ field: 'severity', operator: 'In', values: ['critical', 'high'] }]
+      },
+      enabled: true
+    }
+  });
+
   console.log('Seed completed');
 }
 
