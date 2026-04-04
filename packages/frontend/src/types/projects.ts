@@ -17,16 +17,10 @@ export type ProjectTabKey =
 export const projectRoutePatterns = {
   list: projectConfig.path,
   dashboard: `${projectConfig.path}/:id/dashboard`,
-  // Chat routes (primary)
   chats: `${projectConfig.path}/:id/chats`,
-  chatDetail: `${projectConfig.path}/:id/chats/:sessionId`,
-  // Pipeline routes
+  chatDetail: `${projectConfig.path}/:id/chats/:chatId`,
   pipelines: `${projectConfig.path}/:id/pipelines`,
   pipelineDetail: `${projectConfig.path}/:id/pipelines/:pipelineId`,
-  // Legacy session routes (redirect to chats)
-  sessions: `${projectConfig.path}/:id/sessions`,
-  sessionDetail: `${projectConfig.path}/:id/sessions/:sessionId`,
-  // Notification routes
   channels: `${projectConfig.path}/:id/channels`,
   send: `${projectConfig.path}/:id/send`,
   notifications: `${projectConfig.path}/:id/notifications`,
@@ -55,10 +49,10 @@ export function buildProjectNotificationsPath(projectId: string) {
 
 export function buildProjectChatsPath(
   projectId: string,
-  sessionId?: string | null
+  chatId?: string | null
 ) {
-  return sessionId
-    ? `${projectConfig.path}/${projectId}/chats/${sessionId}`
+  return chatId
+    ? `${projectConfig.path}/${projectId}/chats/${chatId}`
     : `${projectConfig.path}/${projectId}/chats`;
 }
 
@@ -69,14 +63,6 @@ export function buildProjectPipelinesPath(
   return pipelineId
     ? `${projectConfig.path}/${projectId}/pipelines/${pipelineId}`
     : `${projectConfig.path}/${projectId}/pipelines`;
-}
-
-/** @deprecated Use buildProjectChatsPath instead */
-export function buildProjectSessionsPath(
-  projectId: string,
-  sessionId?: string | null
-) {
-  return buildProjectChatsPath(projectId, sessionId);
 }
 
 export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {

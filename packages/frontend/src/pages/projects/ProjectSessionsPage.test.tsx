@@ -13,6 +13,7 @@ import {
   SessionStatus,
   type AgentRunnerDetail,
   type AgentRunnerSummary,
+  type ChatSummary,
   type PagedSessionMessages,
   type Project,
   type RunnerTypeResponse,
@@ -53,28 +54,28 @@ vi.mock('@/features/sessions/hooks/use-session-page-mutations', () => ({
 
 vi.mock('@/features/sessions/components/SessionSelector', () => ({
   SessionSelector: ({
-    selectedSessionId,
+    selectedChatId,
     placeholder,
     onSelect,
     onDispose
   }: {
-    selectedSessionId: string | null;
+    selectedChatId: string | null;
     placeholder?: string;
-    onSelect: (sessionId: string) => void;
-    onDispose: (sessionId: string) => void;
+    onSelect: (chatId: string) => void;
+    onDispose: (chatId: string) => void;
   }) => (
     <div>
-      <p>{placeholder ?? selectedSessionId ?? '未选择会话'}</p>
-      <button type="button" onClick={() => onSelect('session-2')}>
+      <p>{placeholder ?? selectedChatId ?? '未选择会话'}</p>
+      <button type="button" onClick={() => onSelect('chat-2')}>
         切换备用会话
       </button>
       <button
         type="button"
-        onClick={() => onDispose(selectedSessionId ?? 'session-1')}
+        onClick={() => onDispose(selectedChatId ?? 'chat-1')}
       >
         删除当前会话
       </button>
-      <button type="button" onClick={() => onDispose('session-2')}>
+      <button type="button" onClick={() => onDispose('chat-2')}>
         删除备用会话
       </button>
     </div>
@@ -86,12 +87,15 @@ vi.mock('@/features/sessions/panels/CreateSessionPanel', () => ({
     onCreated,
     onCancel
   }: {
-    onCreated: (session: SessionDetail) => void;
+    onCreated: (chat: ChatSummary) => void;
     onCancel: () => void;
   }) => (
     <div>
       <p>创建会话面板</p>
-      <button type="button" onClick={() => onCreated(createSessionDetail('session-new'))}>
+      <button
+        type="button"
+        onClick={() => onCreated(createChatSummary('chat-new', 'session-new'))}
+      >
         创建成功
       </button>
       <button type="button" onClick={onCancel}>
@@ -168,6 +172,21 @@ function createSessionSummary(id: string): SessionSummary {
   return {
     id,
     scopeId: 'project-1',
+    runnerId: 'runner-1',
+    runnerType: 'mock',
+    status: SessionStatus.Ready,
+    lastEventId: 0,
+    createdAt: '2026-04-03T10:00:00.000Z',
+    updatedAt: '2026-04-03T10:00:00.000Z'
+  };
+}
+
+function createChatSummary(id: string, sessionId: string): ChatSummary {
+  return {
+    id,
+    scopeId: 'project-1',
+    sessionId,
+    title: null,
     runnerId: 'runner-1',
     runnerType: 'mock',
     status: SessionStatus.Ready,
@@ -391,7 +410,7 @@ function renderProjectSessionsPage(route: string) {
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route
-            path="/projects/:id/chats/:sessionId?"
+            path="/projects/:id/chats/:chatId?"
             element={
               <>
                 <ProjectSessionsPage />
@@ -415,6 +434,7 @@ const cancelMutationMock = vi.fn();
 const reloadMutationMock = vi.fn();
 const editMutationMock = vi.fn();
 const disposeMutationMock = vi.fn();
+const renameMutationMock = vi.fn();
 const invalidateSessionThreadStateMock = vi.fn();
 const fetchNextPageMock = vi.fn();
 const handleErrorMock = vi.fn();
@@ -432,22 +452,28 @@ function mockProjectPageData() {
 }
 
 function mockSessionPageQueries({
-  selectedSessionId,
+  selectedChatId,
   createPanelOpen
 }: {
-  selectedSessionId: string | null;
+  selectedChatId: string | null;
   createPanelOpen: boolean;
 }): ReturnType<typeof useSessionPageQueries> {
-  const selectedSession =
-    createPanelOpen || !selectedSessionId
+  const chats = [
+    createChatSummary('chat-1', 'session-1'),
+    createChatSummary('chat-2', 'session-2')
+  ];
+  const selectedChat =
+    createPanelOpen || !selectedChatId
       ? undefined
-      : createSessionDetail(selectedSessionId);
+      : chats.find((chat) => chat.id === selectedChatId);
+  const selectedSession =
+    !selectedChat ? undefined : createSessionDetail(selectedChat.sessionId);
 
   return {
-    sessionsQuery: createQuerySuccessResult([
-      createSessionSummary('session-1'),
-      createSessionSummary('session-2')
-    ]),
+    chatsQuery: createQuerySuccessResult(chats),
+    selectedChatQuery: selectedChat
+      ? createQuerySuccessResult(selectedChat)
+      : createQueryPendingResult(),
     sessionDetailQuery: selectedSession
       ? createQuerySuccessResult(selectedSession)
       : createQueryPendingResult(),
@@ -463,6 +489,7 @@ function mockSessionPageQueries({
     selectedRunnerQuery: selectedSession
       ? createQuerySuccessResult(createRunnerDetail())
       : createQueryPendingResult(),
+    selectedChat,
     selectedSession,
     flatMessages: [],
     runnerTypes: [createRunnerType()],
@@ -501,9 +528,13 @@ function mockSessionPageMutations() {
         payload: SendSessionMessageInput;
       }
     >(editMutationMock),
-    disposeMutation: createMutationIdleResult<string, string>(
+    disposeMutation: createMutationIdleResult<ChatSummary, string>(
       disposeMutationMock
     ),
+    renameMutation: createMutationIdleResult<
+      ChatSummary,
+      { chatId: string; title: string | null }
+    >(renameMutationMock),
     invalidateSessionThreadState: invalidateSessionThreadStateMock
   });
 }
@@ -516,9 +547,9 @@ describe('ProjectSessionsPage', () => {
     mockSessionPageMutations();
     vi.mocked(useSessionEventStream).mockReturnValue(undefined);
     vi.mocked(useSessionPageQueries).mockImplementation(
-      (_projectId, selectedSessionId, createPanelOpen) => {
+      (_projectId, selectedChatId, createPanelOpen) => {
         return mockSessionPageQueries({
-          selectedSessionId,
+          selectedChatId,
           createPanelOpen
         });
       }
@@ -530,39 +561,42 @@ describe('ProjectSessionsPage', () => {
     cancelMutationMock.mockResolvedValue(createSessionDetail('session-1'));
     reloadMutationMock.mockResolvedValue(createSessionDetail('session-1'));
     editMutationMock.mockResolvedValue(createSessionDetail('session-1'));
-    disposeMutationMock.mockResolvedValue('session-1');
+    disposeMutationMock.mockResolvedValue(
+      createChatSummary('chat-1', 'session-1')
+    );
+    renameMutationMock.mockResolvedValue(createChatSummary('chat-1', 'session-1'));
     invalidateSessionThreadStateMock.mockResolvedValue(undefined);
     fetchNextPageMock.mockResolvedValue(undefined);
     useSessionRuntimeStore.setState({ stateBySessionId: {} });
   });
 
-  it('无显式 sessionId 但已有会话时，应自动选中第一条会话', async () => {
+  it('无显式 chatId 但已有会话时，应自动选中第一条会话', async () => {
     renderProjectSessionsPage('/projects/project-1/chats');
 
     await waitFor(() => {
       expect(screen.getByText('消息已就绪')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/chats/session-1'
+        '/projects/project-1/chats/chat-1'
       );
     });
   });
 
-  it('URL 指向无效 sessionId 时，应纠正到第一条有效会话', async () => {
-    renderProjectSessionsPage('/projects/project-1/chats/session-missing');
+  it('URL 指向无效 chatId 时，应纠正到第一条有效会话', async () => {
+    renderProjectSessionsPage('/projects/project-1/chats/chat-missing');
 
     await waitFor(() => {
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/chats/session-1'
+        '/projects/project-1/chats/chat-1'
       );
     });
   });
 
   it('选中会话时应展示会话线程；点击新建会话应回到新建面板；点击加载更多/重跑/编辑应调用对应 mutation', async () => {
     const { user } = renderProjectSessionsPage(
-      '/projects/project-1/chats/session-1'
+      '/projects/project-1/chats/chat-1'
     );
 
-    expect(screen.getByText('session-1')).toBeInTheDocument();
+    expect(screen.getByText('chat-1')).toBeInTheDocument();
     expect(screen.getByText('消息已就绪')).toBeInTheDocument();
 
     await user.click(
@@ -615,9 +649,9 @@ describe('ProjectSessionsPage', () => {
     });
   });
 
-  it('从列表删除当前会话后，应调用 dispose 并回到新建会话面板', async () => {
+  it('从列表删除当前会话后，应跳到下一个有效 chat', async () => {
     const { user } = renderProjectSessionsPage(
-      '/projects/project-1/chats/session-1'
+      '/projects/project-1/chats/chat-1'
     );
 
     await user.click(
@@ -627,35 +661,35 @@ describe('ProjectSessionsPage', () => {
     );
 
     await waitFor(() => {
-      expect(disposeMutationMock).toHaveBeenCalledWith('session-1');
-      expect(screen.getByText('创建会话面板')).toBeInTheDocument();
+      expect(disposeMutationMock).toHaveBeenCalledWith('chat-1');
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/chats'
+        '/projects/project-1/chats/chat-2'
       );
+      expect(screen.getByText('消息已就绪')).toBeInTheDocument();
     });
   });
 
   it('创建首个会话成功后，应进入新建会话的线程页', async () => {
     vi.mocked(useSessionPageQueries).mockImplementation(
-      (_projectId, selectedSessionId, createPanelOpen) => {
-        if (selectedSessionId === 'session-new') {
+      (_projectId, selectedChatId, createPanelOpen) => {
+        if (selectedChatId === 'chat-new') {
           return {
             ...mockSessionPageQueries({
-              selectedSessionId,
+              selectedChatId,
               createPanelOpen
             }),
-            sessionsQuery: createQuerySuccessResult([
-              createSessionSummary('session-new')
+            chatsQuery: createQuerySuccessResult([
+              createChatSummary('chat-new', 'session-new')
             ])
           };
         }
 
         return {
           ...mockSessionPageQueries({
-            selectedSessionId,
+            selectedChatId,
             createPanelOpen
           }),
-          sessionsQuery: createQuerySuccessResult([])
+          chatsQuery: createQuerySuccessResult([])
         };
       }
     );
@@ -668,14 +702,14 @@ describe('ProjectSessionsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/chats/session-new'
+        '/projects/project-1/chats/chat-new'
       );
     });
   });
 
   it('删除非当前会话时，不应离开当前会话线程', async () => {
     const { user } = renderProjectSessionsPage(
-      '/projects/project-1/chats/session-1'
+      '/projects/project-1/chats/chat-1'
     );
 
     await user.click(
@@ -685,17 +719,17 @@ describe('ProjectSessionsPage', () => {
     );
 
     await waitFor(() => {
-      expect(disposeMutationMock).toHaveBeenCalledWith('session-2');
+      expect(disposeMutationMock).toHaveBeenCalledWith('chat-2');
       expect(screen.getByText('消息已就绪')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/chats/session-1'
+        '/projects/project-1/chats/chat-1'
       );
     });
   });
 
   it('点击查看配置应展开，面板关闭后应收起；点击刷新会话应失效当前会话相关缓存', async () => {
     const { queryClient, user } = renderProjectSessionsPage(
-      '/projects/project-1/chats/session-1'
+      '/projects/project-1/chats/chat-1'
     );
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -745,7 +779,10 @@ describe('ProjectSessionsPage', () => {
 
     await waitFor(() => {
       expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: ['sessions', 'list', 'project-1']
+        queryKey: ['chats', 'list', 'project-1']
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ['chats', 'detail', 'chat-1']
       });
       expect(invalidateSpy).toHaveBeenCalledWith({
         queryKey: ['sessions', 'detail', 'session-1']
@@ -756,18 +793,53 @@ describe('ProjectSessionsPage', () => {
     });
   });
 
-  it('无会话但 URL 带 sessionId 时，应回退到新建会话页', async () => {
+  it('无会话但 URL 带 chatId 时，应回退到新建会话页', async () => {
     vi.mocked(useSessionPageQueries).mockImplementation(
-      (_projectId, selectedSessionId, createPanelOpen) => ({
+      (_projectId, selectedChatId, createPanelOpen) => ({
         ...mockSessionPageQueries({
-          selectedSessionId,
+          selectedChatId,
           createPanelOpen
         }),
-        sessionsQuery: createQuerySuccessResult([])
+        chatsQuery: createQuerySuccessResult([])
       })
     );
 
-    renderProjectSessionsPage('/projects/project-1/chats/session-stale');
+    renderProjectSessionsPage('/projects/project-1/chats/chat-stale');
+
+    await waitFor(() => {
+      expect(screen.getByText('创建会话面板')).toBeInTheDocument();
+      expect(screen.getByLabelText('current-route')).toHaveTextContent(
+        '/projects/project-1/chats'
+      );
+    });
+  });
+
+  it('删除最后一个 chat 后，应回到新建会话面板', async () => {
+    vi.mocked(useSessionPageQueries).mockImplementation(
+      (_projectId, selectedChatId, createPanelOpen) => ({
+        ...mockSessionPageQueries({
+          selectedChatId,
+          createPanelOpen
+        }),
+        chatsQuery: createQuerySuccessResult([
+          createChatSummary('chat-1', 'session-1')
+        ]),
+        selectedChatQuery: selectedChatId
+          ? createQuerySuccessResult(createChatSummary('chat-1', 'session-1'))
+          : createQueryPendingResult()
+      })
+    );
+    disposeMutationMock.mockResolvedValue(createChatSummary('chat-1', 'session-1'));
+
+    const { user } = renderProjectSessionsPage(
+      '/projects/project-1/chats/chat-1'
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: '删除当前会话'
+      })
+    );
 
     await waitFor(() => {
       expect(screen.getByText('创建会话面板')).toBeInTheDocument();
@@ -780,16 +852,16 @@ describe('ProjectSessionsPage', () => {
   it('查询错误时，应通过 useErrorMessage 统一上报', async () => {
     const queryError = new Error('query failed');
     vi.mocked(useSessionPageQueries).mockImplementation(
-      (_projectId, selectedSessionId, createPanelOpen) => ({
+      (_projectId, selectedChatId, createPanelOpen) => ({
         ...mockSessionPageQueries({
-          selectedSessionId,
+          selectedChatId,
           createPanelOpen
         }),
         queryError
       })
     );
 
-    renderProjectSessionsPage('/projects/project-1/chats/session-1');
+    renderProjectSessionsPage('/projects/project-1/chats/chat-1');
 
     await waitFor(() => {
       expect(handleErrorMock).toHaveBeenCalledWith(queryError);

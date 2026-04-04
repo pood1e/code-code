@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CreateSessionFormValues } from '@/pages/projects/project-sessions.form';
 import type { UseFormReturn } from 'react-hook-form';
-import type { ProfileDetail, SessionDetail } from '@agent-workbench/shared';
-import { createSession } from '@/api/sessions';
+import type { ChatSummary, ProfileDetail } from '@agent-workbench/shared';
+import { createChat } from '@/api/chats';
 import { buildCreateSessionPayload } from '@/pages/projects/project-sessions.form';
 import {
   normalizeRunnerConfigValues,
@@ -24,7 +24,7 @@ type UseCreateSessionMutationArgs = {
   primaryInputField: RunnerConfigField | undefined;
   supportsStructuredInitialInput: boolean;
   profileDetail: ProfileDetail | undefined;
-  onCreated: (session: SessionDetail) => void;
+  onCreated: (chat: ChatSummary) => void;
 };
 
 export function useCreateSessionMutation({
@@ -127,7 +127,7 @@ export function useCreateSessionMutation({
             })()
           : undefined;
 
-      return createSession(
+      return createChat(
         buildCreateSessionPayload(
           projectId,
           {
@@ -139,12 +139,12 @@ export function useCreateSessionMutation({
         )
       );
     },
-    onSuccess: async (session) => {
+    onSuccess: async (chat) => {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.sessions.list(projectId)
+        queryKey: queryKeys.chats.list(projectId)
       });
-      queryClient.setQueryData(queryKeys.sessions.detail(session.id), session);
-      onCreated(session);
+      queryClient.setQueryData(queryKeys.chats.detail(chat.id), chat);
+      onCreated(chat);
     }
   });
 }

@@ -7,7 +7,7 @@ import { useProjectSessionsPageState } from './use-project-sessions-page-state';
 export function ProjectSessionsPage() {
   const pageState = useProjectSessionsPageState();
 
-  if (pageState.isLoading || pageState.sessionsQuery.isPending) {
+  if (pageState.isLoading || pageState.chatsQuery.isPending) {
     return <PageLoadingSkeleton variant="fullscreen" />;
   }
 

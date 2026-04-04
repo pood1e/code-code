@@ -1,5 +1,5 @@
 import { Fragment, Suspense, lazy } from 'react';
-import { Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AgentRunnerListPage } from './pages/agent-runners/AgentRunnerListPage';
 import { ProjectListPage } from './pages/projects/ProjectListPage';
@@ -13,7 +13,7 @@ import {
   buildAgentRunnerEditPath
 } from './types/agent-runners';
 import { profileConfig, buildProfileEditPath } from './types/profiles';
-import { buildProjectChatsPath, projectRoutePatterns } from './types/projects';
+import { projectRoutePatterns } from './types/projects';
 import {
   buildResourceCreatePath,
   buildResourceEditPath,
@@ -90,13 +90,6 @@ function LazyRoute({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
 }
 
-/** Redirects legacy /sessions routes to the new /chats equivalent */
-function SessionsRedirect() {
-  const { id } = useParams<{ id: string }>();
-  return <Navigate to={buildProjectChatsPath(id ?? '')} replace />;
-}
-
-
 export function App() {
   return (
     <Routes>
@@ -141,15 +134,6 @@ export function App() {
               <ProjectSessionsPage />
             </LazyRoute>
           }
-        />
-        {/* Legacy sessions routes redirect to chats */}
-        <Route
-          path={projectRoutePatterns.sessions}
-          element={<SessionsRedirect />}
-        />
-        <Route
-          path={projectRoutePatterns.sessionDetail}
-          element={<SessionsRedirect />}
         />
         <Route
           path={projectRoutePatterns.pipelines}
