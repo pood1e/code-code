@@ -391,7 +391,7 @@ function renderProjectSessionsPage(route: string) {
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route
-            path="/projects/:id/sessions/:sessionId?"
+            path="/projects/:id/chats/:sessionId?"
             element={
               <>
                 <ProjectSessionsPage />
@@ -537,29 +537,29 @@ describe('ProjectSessionsPage', () => {
   });
 
   it('无显式 sessionId 但已有会话时，应自动选中第一条会话', async () => {
-    renderProjectSessionsPage('/projects/project-1/sessions');
+    renderProjectSessionsPage('/projects/project-1/chats');
 
     await waitFor(() => {
       expect(screen.getByText('消息已就绪')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions/session-1'
+        '/projects/project-1/chats/session-1'
       );
     });
   });
 
   it('URL 指向无效 sessionId 时，应纠正到第一条有效会话', async () => {
-    renderProjectSessionsPage('/projects/project-1/sessions/session-missing');
+    renderProjectSessionsPage('/projects/project-1/chats/session-missing');
 
     await waitFor(() => {
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions/session-1'
+        '/projects/project-1/chats/session-1'
       );
     });
   });
 
   it('选中会话时应展示会话线程；点击新建会话应回到新建面板；点击加载更多/重跑/编辑应调用对应 mutation', async () => {
     const { user } = renderProjectSessionsPage(
-      '/projects/project-1/sessions/session-1'
+      '/projects/project-1/chats/session-1'
     );
 
     expect(screen.getByText('session-1')).toBeInTheDocument();
@@ -610,14 +610,14 @@ describe('ProjectSessionsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('创建会话面板')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions'
+        '/projects/project-1/chats'
       );
     });
   });
 
   it('从列表删除当前会话后，应调用 dispose 并回到新建会话面板', async () => {
     const { user } = renderProjectSessionsPage(
-      '/projects/project-1/sessions/session-1'
+      '/projects/project-1/chats/session-1'
     );
 
     await user.click(
@@ -630,7 +630,7 @@ describe('ProjectSessionsPage', () => {
       expect(disposeMutationMock).toHaveBeenCalledWith('session-1');
       expect(screen.getByText('创建会话面板')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions'
+        '/projects/project-1/chats'
       );
     });
   });
@@ -660,7 +660,7 @@ describe('ProjectSessionsPage', () => {
       }
     );
 
-    const { user } = renderProjectSessionsPage('/projects/project-1/sessions');
+    const { user } = renderProjectSessionsPage('/projects/project-1/chats');
 
     expect(screen.getByText('创建会话面板')).toBeInTheDocument();
 
@@ -668,14 +668,14 @@ describe('ProjectSessionsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions/session-new'
+        '/projects/project-1/chats/session-new'
       );
     });
   });
 
   it('删除非当前会话时，不应离开当前会话线程', async () => {
     const { user } = renderProjectSessionsPage(
-      '/projects/project-1/sessions/session-1'
+      '/projects/project-1/chats/session-1'
     );
 
     await user.click(
@@ -688,14 +688,14 @@ describe('ProjectSessionsPage', () => {
       expect(disposeMutationMock).toHaveBeenCalledWith('session-2');
       expect(screen.getByText('消息已就绪')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions/session-1'
+        '/projects/project-1/chats/session-1'
       );
     });
   });
 
   it('点击查看配置应展开，面板关闭后应收起；点击刷新会话应失效当前会话相关缓存', async () => {
     const { queryClient, user } = renderProjectSessionsPage(
-      '/projects/project-1/sessions/session-1'
+      '/projects/project-1/chats/session-1'
     );
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -767,12 +767,12 @@ describe('ProjectSessionsPage', () => {
       })
     );
 
-    renderProjectSessionsPage('/projects/project-1/sessions/session-stale');
+    renderProjectSessionsPage('/projects/project-1/chats/session-stale');
 
     await waitFor(() => {
       expect(screen.getByText('创建会话面板')).toBeInTheDocument();
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/sessions'
+        '/projects/project-1/chats'
       );
     });
   });
@@ -789,7 +789,7 @@ describe('ProjectSessionsPage', () => {
       })
     );
 
-    renderProjectSessionsPage('/projects/project-1/sessions/session-1');
+    renderProjectSessionsPage('/projects/project-1/chats/session-1');
 
     await waitFor(() => {
       expect(handleErrorMock).toHaveBeenCalledWith(queryError);

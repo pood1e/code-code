@@ -62,6 +62,8 @@ model Project {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   sessions      AgentSession[]
+  chats         Chat[]
+  pipelines     Pipeline[]
   notificationChannels NotificationChannel[]
   notificationTasks NotificationTask[]
 }
@@ -134,6 +136,8 @@ model AgentSession {
   toolUses               MessageToolUse[]
   metrics                SessionMetric[]
   events                 SessionEvent[]
+  chat                   Chat?
+  pipelineStage          PipelineStage?
 
   @@index([scopeId])
 }
@@ -250,3 +254,71 @@ model NotificationTask {
   @@index([scopeId], name: "idx_tasks_scope_id")
   @@index([channelId], name: "idx_tasks_channel_id")
 }
+
+model Chat {
+  id        String       @id @default(cuid())
+  scopeId   String
+  sessionId String       @unique
+  title     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  project   Project      @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  session   AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([scopeId], name: "idx_chat_scope_id")
+}
+
+model Pipeline {
+  id             String             @id @default(cuid())
+  scopeId        String
+  name           String
+  description    String?
+  featureRequest String?
+  status         String             @default("draft")
+  currentStageId String?
+  state          Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  project        Project            @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  stages         PipelineStage[]
+  artifacts      PipelineArtifact[]
+
+  @@index([scopeId], name: "idx_pipeline_scope_id")
+}
+
+model PipelineStage {
+  id         String             @id @default(cuid())
+  pipelineId String
+  name       String
+  stageType  String
+  order      Int
+  status     String             @default("pending")
+  retryCount Int                @default(0)
+  state      Json?
+  sessionId  String?            @unique
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  pipeline   Pipeline           @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  session    AgentSession?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  artifacts  PipelineArtifact[]
+
+  @@index([pipelineId], name: "idx_pipeline_stage_pipeline_id")
+  @@unique([pipelineId, order], name: "uq_pipeline_stage_order")
+}
+
+model PipelineArtifact {
+  id          String         @id @default(cuid())
+  pipelineId  String
+  stageId     String?
+  name        String
+  contentType String
+  storageRef  String
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  pipeline    Pipeline       @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stage       PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+
+  @@index([pipelineId], name: "idx_pipeline_artifact_pipeline_id")
+  @@index([stageId], name: "idx_pipeline_artifact_stage_id")
+}
+
