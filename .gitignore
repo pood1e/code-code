@@ -19,3 +19,7 @@ blob-report/
 playwright/.cache/
 e2e.db
 e2e.db-journal
+packages/e2e/test-results/
+packages/e2e/playwright-report/
+packages/backend/prisma/e2e.db
+packages/backend/prisma/e2e.db-journal
