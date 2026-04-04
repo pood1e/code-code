@@ -1,11 +1,18 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { NotificationChannel, NotificationTask } from '@prisma/client';
+import {
+  Injectable,
+  NotFoundException
+} from '@nestjs/common';
+import type {
+  NotificationChannel,
+  NotificationTask
+} from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 import {
-  ChannelFilter,
+  type ChannelFilter,
+  type InternalNotificationMessage,
   NotificationTaskStatus,
-  UpdateNotificationChannelInput
+  type UpdateNotificationChannelInput
 } from '@agent-workbench/shared';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -13,7 +20,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export type CreateChannelInput = {
   scopeId: string;
   name: string;
-  channelType: string;
+  capabilityId: string;
   config: Record<string, unknown>;
   filter: ChannelFilter;
   enabled: boolean;
@@ -22,31 +29,40 @@ export type CreateChannelInput = {
 export type CreateTaskInput = {
   scopeId: string;
   channelId: string;
-  eventId: string;
-  eventType: string;
-  payload: Record<string, unknown>;
+  channelName: string;
+  messageId: string;
+  messageType: string;
+  message: InternalNotificationMessage;
 };
 
 export type TaskFilter = {
   scopeId?: string;
   channelId?: string;
   status?: NotificationTaskStatus;
-  eventId?: string;
+  messageId?: string;
 };
 
-/**
- * 通知系统数据库读写封装。
- * 完全通过 Prisma Client 操作，不暴露具体数据库实现细节。
- */
+export type NotificationTaskWithChannel = NotificationTask & {
+  channel: NotificationChannel | null;
+};
+
 @Injectable()
 export class NotificationRepositoryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ─── NotificationChannel ────────────────────────────────────────────────────
+  async projectExists(scopeId: string): Promise<boolean> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: scopeId },
+      select: { id: true }
+    });
+
+    return project !== null;
+  }
 
   findEnabledChannels(scopeId: string): Promise<NotificationChannel[]> {
     return this.prisma.notificationChannel.findMany({
-      where: { scopeId, enabled: true }
+      where: { scopeId, enabled: true },
+      orderBy: { createdAt: 'desc' }
     });
   }
 
@@ -57,35 +73,32 @@ export class NotificationRepositoryService {
     });
   }
 
-  async findChannelById(id: string): Promise<NotificationChannel> {
-    const channel = await this.prisma.notificationChannel.findUnique({
+  findChannelById(id: string): Promise<NotificationChannel | null> {
+    return this.prisma.notificationChannel.findUnique({
       where: { id }
     });
-    if (!channel) {
-      throw new NotFoundException(`NotificationChannel ${id} not found`);
-    }
-    return channel;
   }
 
-  async createChannel(input: CreateChannelInput): Promise<NotificationChannel> {
-    const existing = await this.prisma.notificationChannel.findUnique({
+  findChannelByScopeAndName(
+    scopeId: string,
+    name: string
+  ): Promise<NotificationChannel | null> {
+    return this.prisma.notificationChannel.findUnique({
       where: {
         uq_channel_scope_name: {
-          scopeId: input.scopeId,
-          name: input.name
+          scopeId,
+          name
         }
       }
     });
-    if (existing) {
-      throw new ConflictException(
-        `Notification channel "${input.name}" already exists in scope "${input.scopeId}"`
-      );
-    }
+  }
+
+  createChannel(input: CreateChannelInput): Promise<NotificationChannel> {
     return this.prisma.notificationChannel.create({
       data: {
         scopeId: input.scopeId,
         name: input.name,
-        channelType: input.channelType,
+        capabilityId: input.capabilityId,
         config: input.config as Prisma.InputJsonValue,
         filter: input.filter as Prisma.InputJsonValue,
         enabled: input.enabled
@@ -93,16 +106,17 @@ export class NotificationRepositoryService {
     });
   }
 
-  async updateChannel(
+  updateChannel(
     id: string,
     input: UpdateNotificationChannelInput
   ): Promise<NotificationChannel> {
-    await this.findChannelById(id);
     return this.prisma.notificationChannel.update({
       where: { id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
-        ...(input.channelType !== undefined && { channelType: input.channelType }),
+        ...(input.capabilityId !== undefined && {
+          capabilityId: input.capabilityId
+        }),
         ...(input.config !== undefined && {
           config: input.config as Prisma.InputJsonValue
         }),
@@ -114,27 +128,24 @@ export class NotificationRepositoryService {
     });
   }
 
-  async deleteChannel(id: string): Promise<void> {
-    await this.findChannelById(id);
-    const activeTaskCount = await this.prisma.notificationTask.count({
-      where: {
-        channelId: id,
-        status: { in: [NotificationTaskStatus.Pending, NotificationTaskStatus.Processing] }
-      }
-    });
-    if (activeTaskCount > 0) {
-      throw new ConflictException(
-        `Cannot delete channel ${id}: it has ${activeTaskCount} active task(s). Wait for them to complete or fail first.`
-      );
-    }
-    await this.prisma.notificationChannel.delete({ where: { id } });
+  deleteChannel(id: string): Promise<NotificationChannel> {
+    return this.prisma.notificationChannel.delete({ where: { id } });
   }
 
-  // ─── NotificationTask ────────────────────────────────────────────────────────
+  countActiveTasksForChannel(id: string): Promise<number> {
+    return this.prisma.notificationTask.count({
+      where: {
+        channelId: id,
+        status: {
+          in: [
+            NotificationTaskStatus.Pending,
+            NotificationTaskStatus.Processing
+          ]
+        }
+      }
+    });
+  }
 
-  /**
-   * 事务内批量创建任务。任意一条失败则全部回滚。
-   */
   async createTasksBatch(inputs: CreateTaskInput[]): Promise<void> {
     await this.prisma.$transaction(
       inputs.map((input) =>
@@ -142,9 +153,10 @@ export class NotificationRepositoryService {
           data: {
             scopeId: input.scopeId,
             channelId: input.channelId,
-            eventId: input.eventId,
-            eventType: input.eventType,
-            payload: input.payload as Prisma.InputJsonValue,
+            channelName: input.channelName,
+            messageId: input.messageId,
+            messageType: input.messageType,
+            message: input.message as unknown as Prisma.InputJsonValue,
             status: NotificationTaskStatus.Pending
           }
         })
@@ -152,50 +164,53 @@ export class NotificationRepositoryService {
     );
   }
 
-  /**
-   * 乐观并发拉取 1 条 pending 任务并原子更新为 processing。
-   * - findFirst 取候选
-   * - updateMany(where: { id, status: 'pending' }) 原子更新
-   * - count === 0 表示已被其他实例抢走，返回 null
-   */
   async claimPendingTask(): Promise<NotificationTask | null> {
     const candidate = await this.prisma.notificationTask.findFirst({
       where: { status: NotificationTaskStatus.Pending },
       orderBy: { createdAt: 'asc' }
     });
-    if (!candidate) return null;
+    if (!candidate) {
+      return null;
+    }
 
     const result = await this.prisma.notificationTask.updateMany({
       where: { id: candidate.id, status: NotificationTaskStatus.Pending },
       data: { status: NotificationTaskStatus.Processing }
     });
 
-    if (result.count === 0) return null;
+    if (result.count === 0) {
+      return null;
+    }
 
     return { ...candidate, status: NotificationTaskStatus.Processing };
   }
 
-  updateTaskStatus(
+  async updateTaskStatus(
     id: string,
     status: NotificationTaskStatus,
     lastError?: string
-  ): Promise<NotificationTask> {
-    return this.prisma.notificationTask.update({
+  ): Promise<boolean> {
+    const result = await this.prisma.notificationTask.updateMany({
       where: { id },
       data: {
         status,
         lastError: lastError ?? null
       }
     });
+
+    return result.count > 0;
   }
 
-  listTasks(filter?: TaskFilter): Promise<NotificationTask[]> {
+  listTasks(filter?: TaskFilter): Promise<NotificationTaskWithChannel[]> {
     return this.prisma.notificationTask.findMany({
       where: {
         ...(filter?.scopeId !== undefined && { scopeId: filter.scopeId }),
         ...(filter?.channelId !== undefined && { channelId: filter.channelId }),
         ...(filter?.status !== undefined && { status: filter.status }),
-        ...(filter?.eventId !== undefined && { eventId: filter.eventId })
+        ...(filter?.messageId !== undefined && { messageId: filter.messageId })
+      },
+      include: {
+        channel: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -209,17 +224,11 @@ export class NotificationRepositoryService {
     return task;
   }
 
-  /**
-   * 手动重置失败任务为 pending，用于运维重试。
-   * 仅允许 failed 状态的任务重置。
-   */
-  async resetFailedTask(id: string): Promise<NotificationTask> {
-    const task = await this.findTaskById(id);
-    if (task.status !== NotificationTaskStatus.Failed) {
-      throw new ConflictException(
-        `Task ${id} is in "${task.status}" status, only "failed" tasks can be retried`
-      );
-    }
+  findTaskByIdOrNull(id: string): Promise<NotificationTask | null> {
+    return this.prisma.notificationTask.findUnique({ where: { id } });
+  }
+
+  resetTaskToPending(id: string): Promise<NotificationTask> {
     return this.prisma.notificationTask.update({
       where: { id },
       data: {
@@ -229,12 +238,6 @@ export class NotificationRepositoryService {
     });
   }
 
-  // ─── Maintenance ──────────────────────────────────────────────────────────────
-
-  /**
-   * 重置超时的 processing 任务为 pending。
-   * @returns 重置的任务数量
-   */
   async resetTimedOutTasks(thresholdMinutes: number): Promise<number> {
     const cutoff = new Date(Date.now() - thresholdMinutes * 60 * 1000);
     const result = await this.prisma.notificationTask.updateMany({
@@ -247,10 +250,6 @@ export class NotificationRepositoryService {
     return result.count;
   }
 
-  /**
-   * 清理保留期外的 success/failed 任务。
-   * @returns 删除的任务数量
-   */
   async cleanupOldTasks(retentionDays: number): Promise<number> {
     const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
     const result = await this.prisma.notificationTask.deleteMany({

@@ -1,5 +1,8 @@
 import type {
+  CreateNotificationMessageInput,
   CreateNotificationChannelInput,
+  NotificationMessageReceipt,
+  NotificationCapabilitySummary,
   NotificationChannelSummary,
   NotificationTaskSummary,
   NotificationTaskStatus,
@@ -10,8 +13,12 @@ import { apiClient } from './client';
 
 // ─── Channel Types ────────────────────────────────────────────────────────────
 
-export async function listChannelTypes(): Promise<string[]> {
-  const response = await apiClient.get<string[]>('/notifications/channel-types');
+export async function listNotificationCapabilities(): Promise<
+  NotificationCapabilitySummary[]
+> {
+  const response = await apiClient.get<NotificationCapabilitySummary[]>(
+    '/notifications/capabilities'
+  );
   return response.data;
 }
 
@@ -65,7 +72,7 @@ export type ListTasksParams = {
   scopeId?: string;
   channelId?: string;
   status?: NotificationTaskStatus;
-  eventId?: string;
+  messageId?: string;
 };
 
 export async function listNotificationTasks(
@@ -83,6 +90,18 @@ export async function retryNotificationTask(
 ): Promise<NotificationTaskSummary> {
   const response = await apiClient.post<NotificationTaskSummary>(
     `/notifications/tasks/${id}/retry`
+  );
+  return response.data;
+}
+
+// ─── Message receive ─────────────────────────────────────────────────────────
+
+export async function sendNotificationMessage(
+  payload: CreateNotificationMessageInput
+): Promise<NotificationMessageReceipt> {
+  const response = await apiClient.post<NotificationMessageReceipt>(
+    '/notifications/receive',
+    payload
   );
   return response.data;
 }

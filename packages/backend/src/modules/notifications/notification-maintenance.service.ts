@@ -27,6 +27,10 @@ export class NotificationMaintenanceService
   ) {}
 
   onModuleInit() {
+    if (!this.config.autoStart) {
+      return;
+    }
+
     this.scheduleTimeoutCheck(this.config.timeoutCheckIntervalMs);
     this.scheduleCleanup(this.config.cleanupIntervalMs);
   }
