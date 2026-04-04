@@ -15,7 +15,8 @@ import type { SessionAssistantMessageRecord } from './thread-adapter';
 const virtuosoMock = vi.hoisted(() => ({
   scrollToIndex: vi.fn(),
   lastFollowOutput: undefined as string | boolean | undefined,
-  lastInitialTopMostItemIndex: undefined as number | undefined
+  lastInitialTopMostItemIndex: undefined as number | undefined,
+  lastAlignToBottom: undefined as boolean | undefined
 }));
 
 vi.mock('react-virtuoso', async () => {
@@ -24,6 +25,7 @@ vi.mock('react-virtuoso', async () => {
   const Virtuoso = ReactImpl.forwardRef<
     { scrollToIndex: typeof virtuosoMock.scrollToIndex },
     {
+      alignToBottom?: boolean;
       followOutput?: string | boolean;
       firstItemIndex: number;
       totalCount: number;
@@ -37,6 +39,7 @@ vi.mock('react-virtuoso', async () => {
     }
   >(function VirtuosoMock(
     {
+      alignToBottom,
       followOutput,
       firstItemIndex,
       totalCount,
@@ -46,6 +49,7 @@ vi.mock('react-virtuoso', async () => {
     },
     ref
   ) {
+    virtuosoMock.lastAlignToBottom = alignToBottom;
     virtuosoMock.lastFollowOutput = followOutput;
     virtuosoMock.lastInitialTopMostItemIndex = initialTopMostItemIndex;
     ReactImpl.useImperativeHandle(ref, () => ({
@@ -165,6 +169,7 @@ function createAssistantRecord(
 }
 
 function renderHistory(props: {
+  canReload?: boolean;
   records: SessionAssistantMessageRecord[];
   firstItemIndex?: number;
   onLoadMore?: () => void;
@@ -173,6 +178,7 @@ function renderHistory(props: {
   return render(
     <ThreadConfigContext.Provider value={{ assistantName: 'Mock Agent' }}>
       <SessionAssistantThreadHistory
+        canReload={props.canReload ?? true}
         records={props.records}
         firstItemIndex={props.firstItemIndex ?? 100_000}
         onLoadMore={props.onLoadMore}
@@ -187,6 +193,7 @@ describe('SessionAssistantThreadHistory', () => {
     vi.clearAllMocks();
     virtuosoMock.lastFollowOutput = undefined;
     virtuosoMock.lastInitialTopMostItemIndex = undefined;
+    virtuosoMock.lastAlignToBottom = undefined;
     Object.defineProperty(globalThis.navigator, 'clipboard', {
       configurable: true,
       value: {
@@ -228,10 +235,11 @@ describe('SessionAssistantThreadHistory', () => {
     ).toBeInTheDocument();
   });
 
-  it('首屏应锚到第一条消息，只有最后一条消息 id 变化后才滚到底', async () => {
+  it('短历史首屏不强制贴底，只有最后一条消息 id 变化后才滚到底', async () => {
     const { rerender } = render(
       <ThreadConfigContext.Provider value={{ assistantName: 'Mock Agent' }}>
         <SessionAssistantThreadHistory
+          canReload
           records={[createUserRecord(), createAssistantRecord()]}
           firstItemIndex={100_000}
           onReload={vi.fn().mockResolvedValue(undefined)}
@@ -239,18 +247,15 @@ describe('SessionAssistantThreadHistory', () => {
       </ThreadConfigContext.Provider>
     );
 
-    expect(virtuosoMock.scrollToIndex).toHaveBeenCalledTimes(1);
-    expect(virtuosoMock.scrollToIndex).toHaveBeenCalledWith({
-      index: 0,
-      align: 'start',
-      behavior: 'auto'
-    });
-    expect(virtuosoMock.lastInitialTopMostItemIndex).toBe(0);
+    expect(virtuosoMock.scrollToIndex).not.toHaveBeenCalled();
+    expect(virtuosoMock.lastInitialTopMostItemIndex).toBe(100_000);
+    expect(virtuosoMock.lastAlignToBottom).toBe(true);
     expect(virtuosoMock.lastFollowOutput).toBe('auto');
 
     rerender(
       <ThreadConfigContext.Provider value={{ assistantName: 'Mock Agent' }}>
         <SessionAssistantThreadHistory
+          canReload
           records={[
             createUserRecord(),
             createAssistantRecord(),
@@ -270,10 +275,65 @@ describe('SessionAssistantThreadHistory', () => {
     );
 
     await waitFor(() => {
-      expect(virtuosoMock.scrollToIndex).toHaveBeenCalledTimes(2);
+      expect(virtuosoMock.scrollToIndex).toHaveBeenCalledTimes(1);
     });
     expect(virtuosoMock.scrollToIndex).toHaveBeenLastCalledWith({
-      index: 2,
+      index: 100_002,
+      align: 'end',
+      behavior: 'auto'
+    });
+  });
+
+  it('长历史首屏应直接落到最新消息', () => {
+    renderHistory({
+      records: [
+        {
+          ...createAssistantRecord(),
+          message: {
+            ...createAssistantRecord().message,
+            id: 'message-1',
+            createdAt: '2026-04-03T10:00:00.000Z'
+          }
+        },
+        {
+          ...createAssistantRecord(),
+          message: {
+            ...createAssistantRecord().message,
+            id: 'message-2',
+            createdAt: '2026-04-03T10:00:01.000Z'
+          }
+        },
+        {
+          ...createAssistantRecord(),
+          message: {
+            ...createAssistantRecord().message,
+            id: 'message-3',
+            createdAt: '2026-04-03T10:00:02.000Z'
+          }
+        },
+        {
+          ...createAssistantRecord(),
+          message: {
+            ...createAssistantRecord().message,
+            id: 'message-4',
+            createdAt: '2026-04-03T10:00:03.000Z'
+          }
+        },
+        {
+          ...createAssistantRecord(),
+          message: {
+            ...createAssistantRecord().message,
+            id: 'message-5',
+            createdAt: '2026-04-03T10:00:04.000Z'
+          }
+        }
+      ]
+    });
+
+    expect(virtuosoMock.lastInitialTopMostItemIndex).toBe(100_004);
+    expect(virtuosoMock.lastAlignToBottom).toBe(false);
+    expect(virtuosoMock.scrollToIndex).toHaveBeenCalledWith({
+      index: 100_004,
       align: 'end',
       behavior: 'auto'
     });
@@ -338,6 +398,7 @@ describe('SessionAssistantThreadHistory', () => {
 
   it('assistant 错误与中止状态应对用户可见', () => {
     renderHistory({
+      canReload: false,
       records: [
         createAssistantRecord({
           message: {
@@ -358,5 +419,34 @@ describe('SessionAssistantThreadHistory', () => {
     expect(screen.getByText('USER_CANCELLED')).toBeInTheDocument();
     expect(screen.getByText('用户已取消')).toBeInTheDocument();
     expect(screen.getByText('已中止')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '重跑' })).not.toBeInTheDocument();
+  });
+
+  it('assistant 错误文案与文本内容重复时，应优先显示错误卡片而不重复铺一行文本', () => {
+    renderHistory({
+      records: [
+        createAssistantRecord({
+          message: {
+            ...createAssistantRecord().message,
+            id: 'message-assistant-duplicate-error',
+            contentParts: [{ type: 'text', text: 'Not logged in · Please run /login' }],
+            errorPayload: {
+              code: 'CLI_RESULT_ERROR',
+              message: 'Not logged in · Please run /login',
+              recoverable: false
+            }
+          }
+        })
+      ]
+    });
+
+    expect(screen.getByText('CLI_RESULT_ERROR')).toBeInTheDocument();
+    expect(screen.getByText('Not logged in · Please run /login')).toBeInTheDocument();
+    expect(
+      screen.queryByText((_content, element) =>
+        element?.tagName.toLowerCase() === 'div' &&
+        element.textContent === 'Not logged in · Please run /login'
+      )
+    ).not.toBeInTheDocument();
   });
 });

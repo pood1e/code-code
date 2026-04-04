@@ -9,6 +9,8 @@ import {
 
 import {
   buildSessionAssistantMessageRecords,
+  canSessionReload,
+  getSessionInteractionDisabledHint,
   getSessionLastEventId,
   isSessionInteractionDisabled,
   isSessionRunning
@@ -107,7 +109,24 @@ describe('thread-adapter', () => {
 
   it('应正确判断 session 是否运行中与是否禁用交互', () => {
     expect(isSessionRunning(SessionStatus.Running)).toBe(true);
+    expect(canSessionReload(SessionStatus.Ready)).toBe(true);
+    expect(canSessionReload(SessionStatus.Error)).toBe(false);
     expect(isSessionInteractionDisabled(SessionStatus.Creating)).toBe(true);
     expect(isSessionInteractionDisabled(SessionStatus.Ready)).toBe(false);
+  });
+
+  it('应根据会话状态返回面向用户的禁用提示', () => {
+    expect(
+      getSessionInteractionDisabledHint(SessionStatus.Error, true)
+    ).toBe('会话已异常，请新建会话');
+    expect(
+      getSessionInteractionDisabledHint(SessionStatus.Creating, true)
+    ).toBe('会话正在创建...');
+    expect(
+      getSessionInteractionDisabledHint(SessionStatus.Ready, false)
+    ).toBe('正在加载历史消息...');
+    expect(
+      getSessionInteractionDisabledHint(SessionStatus.Ready, true)
+    ).toBeNull();
   });
 });

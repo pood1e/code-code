@@ -543,11 +543,9 @@ export class SessionRuntimeService {
     runnerType: RunnerType
   ): Promise<Record<string, unknown>> {
     const persistedRunnerState = { ...runtimeSession.runnerState };
-    const shouldReusePersistedCliState =
-      runnerType.materializerTarget !== undefined &&
-      Object.keys(persistedRunnerState).length > 0;
-
-    const runnerState = shouldReusePersistedCliState
+    const runnerState = runnerType.shouldReusePersistedState(
+      persistedRunnerState
+    )
       ? persistedRunnerState
       : await runnerType.createSession(
           sessionId,

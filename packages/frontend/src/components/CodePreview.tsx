@@ -1,7 +1,7 @@
 import { Check, Copy } from 'lucide-react';
-import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useClipboardCopy } from '@/hooks/use-clipboard-copy';
 
 export function CodePreview({
   value,
@@ -10,17 +10,12 @@ export function CodePreview({
   value: string;
   mode?: 'json' | 'markdown';
 }) {
-  const [isCopied, setIsCopied] = useState(false);
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (error) {
+  const { copied, copy } = useClipboardCopy({
+    onError(error) {
       console.error('Failed to copy preview text: ', error);
     }
-  };
+  });
+  const copyLabel = copied ? '已复制内容' : '复制内容';
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/40 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
@@ -32,14 +27,16 @@ export function CodePreview({
           type="button"
           variant="ghost"
           size="icon-sm"
-          onClick={() => void copyToClipboard()}
+          aria-label={copyLabel}
+          title={copyLabel}
+          onClick={() => void copy(value)}
         >
-          {isCopied ? (
+          {copied ? (
             <Check className="size-3.5" />
           ) : (
             <Copy className="size-3.5" />
           )}
-          <span className="sr-only">复制内容</span>
+          <span className="sr-only">{copyLabel}</span>
         </Button>
       </div>
       <pre className="overflow-x-auto p-4 text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground">

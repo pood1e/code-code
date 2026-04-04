@@ -10,13 +10,36 @@ import type { ToolCallKind } from '@agent-workbench/shared';
 
 import { stringifyValue } from './context';
 
+type ToolDetail = { label: string; value: string };
+
 export type ToolView = {
   icon: LucideIcon;
   label: string;
   summary: string | null;
-  details: { label: string; value: string }[];
+  details: ToolDetail[];
   terminalOutput: string | null;
-  rawBlocks: { label: string; value: string }[];
+  rawBlocks: ToolDetail[];
+};
+
+type ToolViewBuilder = (
+  toolName: string,
+  args: unknown,
+  result: unknown
+) => ToolView;
+
+type BuiltInToolViewKind =
+  | 'shell'
+  | 'file_grep'
+  | 'web_search'
+  | 'file_diff'
+  | 'fallback';
+
+const toolViewBuilders: Record<BuiltInToolViewKind, ToolViewBuilder> = {
+  shell: buildShellToolView,
+  file_grep: buildFileGrepToolView,
+  web_search: buildWebSearchToolView,
+  file_diff: buildFileDiffToolView,
+  fallback: buildFallbackToolView
 };
 
 export function buildToolView(
@@ -25,20 +48,10 @@ export function buildToolView(
   args: unknown,
   result: unknown
 ): ToolView {
-  switch (toolKind) {
-    case 'shell':
-      return buildShellToolView(toolName, args, result);
-    case 'file_grep':
-      return buildFileGrepToolView(toolName, args, result);
-    case 'web_search':
-      return buildWebSearchToolView(toolName, args, result);
-    case 'file_diff':
-      return buildFileDiffToolView(toolName, args, result);
-    case 'fallback':
-      return buildFallbackToolView(toolName, args, result);
-    default:
-      return buildFallbackToolView(toolName, args, result);
-  }
+  const builder = isBuiltInToolViewKind(toolKind)
+    ? toolViewBuilders[toolKind]
+    : undefined;
+  return (builder ?? buildFallbackToolView)(toolName, args, result);
 }
 
 function buildShellToolView(
@@ -179,9 +192,7 @@ function buildFallbackToolView(
   };
 }
 
-function compactToolDetails(
-  details: Array<{ label: string; value: string } | null>
-) {
+function compactToolDetails(details: Array<ToolDetail | null>) {
   return details.filter((detail) => detail !== null);
 }
 
@@ -324,4 +335,8 @@ function summarizePath(path: string) {
   }
 
   return segments.slice(-2).join('/');
+}
+
+function isBuiltInToolViewKind(toolKind: ToolCallKind): toolKind is BuiltInToolViewKind {
+  return Object.prototype.hasOwnProperty.call(toolViewBuilders, toolKind);
 }

@@ -204,6 +204,10 @@ export abstract class CliRunnerTypeBase implements RunnerType {
     return Promise.resolve(state as unknown as Record<string, unknown>);
   }
 
+  shouldReusePersistedState(runnerState: Record<string, unknown>) {
+    return Object.keys(runnerState).length > 0;
+  }
+
   async destroySession(session: RunnerSessionRecord): Promise<void> {
     const handle = this.cliSessionRegistry.get(session.id);
     if (handle) {

@@ -161,6 +161,19 @@ describe('AppLayout', () => {
     });
   });
 
+  it('在 Project 列表页切换当前 Project 时，默认应进入目标 Project 概览页', async () => {
+    const { user } = renderAppLayout('/projects');
+
+    const projectSelect = await screen.findByLabelText('选择当前 Project');
+    await user.selectOptions(projectSelect, 'project-2');
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('current-route')).toHaveTextContent(
+        '/projects/project-2/dashboard'
+      );
+    });
+  });
+
   it('切换当前 Project 选择器时，应保留当前 tab 语义并导航到目标 Project', async () => {
     const { user } = renderAppLayout('/projects/project-1/config');
 

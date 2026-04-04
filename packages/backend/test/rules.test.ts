@@ -34,6 +34,15 @@ describe('Rules API', () => {
       expect(data.id).toBeDefined();
       expect(data.name).toBe('Cite Sources');
     });
+
+    it('空白 description 应归一化为 null', async () => {
+      const res = await api()
+        .post('/api/rules')
+        .send(createRulePayload({ description: '   ' }));
+      const data = expectSuccess<{ description: string | null }>(res, 201);
+
+      expect(data.description).toBeNull();
+    });
   });
 
   describe('GET /api/rules - 列表查询', () => {
@@ -46,6 +55,16 @@ describe('Rules API', () => {
 
       expect(data).toHaveLength(1);
       expect(data[0].name).toBe('Always Cite');
+    });
+
+    it('name 仅为空白时不应误筛选', async () => {
+      await seedRule({ name: 'Always Cite' });
+      await seedRule({ name: 'No Guessing' });
+
+      const res = await api().get('/api/rules?name=%20%20%20');
+      const data = expectSuccess<{ name: string }[]>(res);
+
+      expect(data).toHaveLength(2);
     });
   });
 
@@ -81,7 +100,7 @@ describe('Rules API', () => {
       expectError(await api().get(`/api/rules/${created.id}`), 404);
     });
 
-    it('删除被 Profile 引用的 Rule 应返回 409', async () => {
+    it('删除被 Profile 引用的 Rule 应返回 409 + referencedBy', async () => {
       const rule = await seedRule();
       const profile = await seedProfile();
 
@@ -95,7 +114,12 @@ describe('Rules API', () => {
         });
 
       const deleteRes = await api().delete(`/api/rules/${rule.id}`);
-      expectError(deleteRes, 409);
+      const error = expectError(deleteRes, 409);
+
+      expect(error.message).toBe('该资源被以下 Profile 引用，无法删除');
+      expect(error.data).toEqual({
+        referencedBy: [{ id: profile.id, name: profile.name }]
+      });
     });
   });
 

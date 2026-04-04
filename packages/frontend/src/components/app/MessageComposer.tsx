@@ -23,10 +23,10 @@ export function MessageComposerShell({
         className
       )}
     >
-      {header ? <div className="px-4 pb-2 pt-4 sm:px-5">{header}</div> : null}
+      {header ? <div className="px-4 pb-1.5 pt-3.5 sm:px-5">{header}</div> : null}
       {children}
       {footer ? (
-        <div className="flex items-center justify-between gap-3 px-3 py-2">
+        <div className="flex items-center justify-between gap-2 px-2.5 py-1">
           {footer}
         </div>
       ) : null}
@@ -44,7 +44,7 @@ export function MessageComposerInputArea({
   className?: string;
 }) {
   return (
-    <div className={cn('relative px-4 pb-1 sm:px-5', className)}>
+    <div className={cn('relative px-4 pb-0.5 sm:px-5', className)}>
       {children}
       <InputHint>{hint}</InputHint>
     </div>
@@ -59,7 +59,7 @@ export function MessageComposerFooterMeta({
   className?: string;
 }) {
   return (
-    <div className={cn('flex min-w-0 flex-1 flex-col gap-2', className)}>
+    <div className={cn('flex min-w-0 flex-1 flex-col gap-1.5', className)}>
       {children}
     </div>
   );
@@ -75,7 +75,7 @@ export function MessageComposerFooterActions({
   return (
     <div
       className={cn(
-        'ml-auto flex shrink-0 items-center justify-end gap-2 pl-2',
+        'ml-auto flex shrink-0 items-center justify-end gap-1.5 pl-1',
         className
       )}
     >

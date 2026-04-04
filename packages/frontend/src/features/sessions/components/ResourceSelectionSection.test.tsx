@@ -42,8 +42,11 @@ describe('ResourceSelectionSection', () => {
     expect(screen.getByText('Skill One')).toBeInTheDocument();
     expect(screen.getByText('Hint: Skill One')).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByRole('combobox'), 'skill-2');
-    await user.click(screen.getByRole('button', { name: '添加' }));
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: '选择Skills' }),
+      'skill-2'
+    );
+    await user.click(screen.getByRole('button', { name: '添加Skills' }));
     expect(onToggle).toHaveBeenCalledWith('skill-2');
 
     await user.click(screen.getByRole('button', { name: '移除 Skill One' }));

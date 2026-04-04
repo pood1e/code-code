@@ -169,3 +169,7 @@ export function parseRawRunnerConfigText(value: string) {
     };
   }
 }
+
+export type ParsedRunnerConfigSchema = ReturnType<
+  typeof parseRunnerConfigSchema
+>;

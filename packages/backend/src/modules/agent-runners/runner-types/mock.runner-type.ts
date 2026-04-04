@@ -53,6 +53,10 @@ export class MockRunnerType implements RunnerType {
     return Promise.resolve({ handleId: handle.id });
   }
 
+  shouldReusePersistedState() {
+    return false;
+  }
+
   destroySession(session: RunnerSessionRecord): Promise<void> {
     getMockRunnerSession(session)?.destroy();
     removeMockRunnerSession(session);
