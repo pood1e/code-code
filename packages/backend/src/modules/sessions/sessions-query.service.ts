@@ -84,6 +84,7 @@ export class SessionsQueryService {
             id: tu.id,
             eventId: tu.eventId,
             callId: tu.callId,
+            toolKind: tu.toolKind,
             toolName: tu.toolName,
             args: sanitizeJson(tu.args),
             result: sanitizeJson(tu.result),

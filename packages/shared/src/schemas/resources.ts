@@ -1,8 +1,21 @@
 import { z } from 'zod';
 
+const nullableDescriptionSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}, z.string().trim().max(500).nullable().optional());
+
 const resourceMetaSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  description: z.string().trim().max(500).nullable().optional()
+  description: nullableDescriptionSchema
 });
 
 export const stringMapSchema = z.record(z.string(), z.string());
@@ -40,7 +53,7 @@ export const mcpInputSchema = resourceMetaSchema.extend({
 
 export const profileInputSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  description: z.string().trim().max(500).nullable().optional()
+  description: nullableDescriptionSchema
 });
 
 export const profileItemInputSchema = z.object({

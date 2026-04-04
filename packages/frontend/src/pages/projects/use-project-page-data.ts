@@ -6,9 +6,11 @@ import { useErrorMessage } from '@/hooks/use-error-message';
 import { listProjects } from '@/api/projects';
 import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
-import { projectConfig } from '@/types/projects';
-
-type ProjectTab = 'config' | 'sessions' | 'dashboard';
+import {
+  buildProjectTabPath,
+  projectConfig
+} from '@/types/projects';
+import type { ProjectTabKey } from '@/types/projects';
 
 export function useProjectPageData() {
   const { id } = useParams<{ id: string }>();
@@ -49,9 +51,9 @@ export function useProjectPageData() {
   }, [navigate]);
 
   const goToProjectTab = useCallback(
-    (projectId: string, tab: ProjectTab) => {
+    (projectId: string, tab: ProjectTabKey) => {
       setCurrentProject(projectId);
-      void navigate(`${projectConfig.path}/${projectId}/${tab}`);
+      void navigate(buildProjectTabPath(projectId, tab));
     },
     [navigate, setCurrentProject]
   );

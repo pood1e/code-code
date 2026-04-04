@@ -13,6 +13,7 @@ type SessionRuntimeState = {
   ) => void;
 
   clearSessionState: (sessionId: string) => void;
+  clearSessionThinkingState: (sessionId: string) => void;
 };
 
 export const useSessionRuntimeStore = create<SessionRuntimeState>((set) => ({
@@ -35,5 +36,24 @@ export const useSessionRuntimeStore = create<SessionRuntimeState>((set) => ({
         ...state.stateBySessionId,
         [sessionId]: {}
       }
-    }))
+    })),
+
+  clearSessionThinkingState: (sessionId) =>
+    set((state) => {
+      const sessionState = state.stateBySessionId[sessionId] ?? {};
+      const nextSessionState: SessionMessageRuntimeMap = {};
+
+      for (const [messageId, messageState] of Object.entries(sessionState)) {
+        nextSessionState[messageId] = messageState
+          ? { ...messageState, thinkingText: undefined }
+          : messageState;
+      }
+
+      return {
+        stateBySessionId: {
+          ...state.stateBySessionId,
+          [sessionId]: nextSessionState
+        }
+      };
+    })
 }));

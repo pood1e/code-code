@@ -15,6 +15,7 @@ import {
 
 type UseSessionAssistantRuntimeOptions = {
   messages: SessionAssistantMessageRecord[];
+  messagesReady: boolean;
   status: SessionStatus;
   onNew: (composerText: string, message: AppendMessage) => Promise<void>;
   onCancel?: () => Promise<void>;
@@ -28,6 +29,7 @@ type UseSessionAssistantRuntimeOptions = {
 
 export function useSessionAssistantRuntime({
   messages,
+  messagesReady,
   status,
   onNew,
   onCancel,
@@ -59,9 +61,9 @@ export function useSessionAssistantRuntime({
   const store = useMemo<ExternalStoreAdapter<SessionAssistantMessageRecord>>(
     () => ({
       messages,
-      isLoading: false,
+      isLoading: !messagesReady,
       isRunning: isSessionRunning(status),
-      isDisabled: isSessionInteractionDisabled(status),
+      isDisabled: !messagesReady || isSessionInteractionDisabled(status),
       onNew: handleNew,
       onCancel,
       onReload: onReload ? async () => onReload() : undefined,
@@ -71,7 +73,16 @@ export function useSessionAssistantRuntime({
         copy: true
       }
     }),
-    [handleEdit, handleNew, messages, onCancel, onEdit, onReload, status]
+    [
+      handleEdit,
+      handleNew,
+      messages,
+      messagesReady,
+      onCancel,
+      onEdit,
+      onReload,
+      status
+    ]
   );
 
   return useExternalStoreRuntime(store);

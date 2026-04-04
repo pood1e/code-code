@@ -4,3 +4,11 @@ export const agentRunnerConfig = {
   pluralLabel: 'AgentRunners',
   emptyState: '还没有任何 AgentRunner，先创建一个新的 AgentRunner。'
 } as const;
+
+export function buildAgentRunnerCreatePath() {
+  return `${agentRunnerConfig.path}/new`;
+}
+
+export function buildAgentRunnerEditPath(agentRunnerId: string) {
+  return `${agentRunnerConfig.path}/${agentRunnerId}/edit`;
+}

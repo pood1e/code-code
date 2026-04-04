@@ -56,15 +56,29 @@ export function useSessionPageMutations({
   });
 
   const disposeMutation = useMutation({
-    mutationFn: () => disposeSession(selectedSessionId!),
-    onSuccess: (session) => {
-      queryClient.setQueryData(sessionQueryKeys.detail(session.id), session);
+    mutationFn: async (sessionId: string) => {
+      await disposeSession(sessionId);
+      return sessionId;
+    },
+    onSuccess: async (sessionId) => {
+      clearSessionRuntimeState(sessionId);
+      queryClient.removeQueries({
+        queryKey: sessionQueryKeys.detail(sessionId)
+      });
+      queryClient.removeQueries({
+        queryKey: sessionQueryKeys.messages(sessionId)
+      });
+
       if (projectId) {
-        queryClient
-          .invalidateQueries({
-            queryKey: sessionQueryKeys.list(projectId)
-          })
-          .catch(() => undefined);
+        queryClient.setQueryData(
+          sessionQueryKeys.list(projectId),
+          (current: Array<{ id: string }> | undefined) =>
+            current?.filter((session) => session.id !== sessionId)
+        );
+
+        await queryClient.invalidateQueries({
+          queryKey: sessionQueryKeys.list(projectId)
+        });
       }
     }
   });

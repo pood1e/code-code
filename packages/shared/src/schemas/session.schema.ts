@@ -15,6 +15,10 @@ export const sessionStatusSchema = z.nativeEnum(SessionStatus);
 export const messageStatusSchema = z.nativeEnum(MessageStatus);
 export const messageRoleSchema = z.nativeEnum(MessageRole);
 export const metricKindSchema = z.nativeEnum(MetricKind);
+export const toolCallKindSchema = z
+  .string()
+  .trim()
+  .min(1);
 
 export const platformSessionMcpSchema = z.object({
   resourceId: idSchema,
@@ -82,7 +86,38 @@ export const sessionMessageMetricSchema = z.object({
   createdAt: z.string().datetime()
 });
 
+export const textMessagePartSchema = z.object({
+  type: z.literal('text'),
+  text: z.string()
+});
+
+export const thinkingMessagePartSchema = z.object({
+  type: z.literal('thinking'),
+  text: z.string()
+});
+
+export const toolCallMessagePartSchema = z.object({
+  type: z.literal('tool_call'),
+  toolCallId: z.string().trim().min(1),
+  toolKind: toolCallKindSchema.optional(),
+  toolName: z.string().trim().min(1),
+  args: z.unknown(),
+  result: z.unknown().optional(),
+  isError: z.boolean().optional()
+});
+
+export const sessionMessagePartSchema = z.discriminatedUnion('type', [
+  textMessagePartSchema,
+  thinkingMessagePartSchema,
+  toolCallMessagePartSchema
+]);
+
+export const sessionMessageContentPartsSchema = z.array(
+  sessionMessagePartSchema
+);
+
 export const toolUseDataSchema = z.object({
+  toolKind: toolCallKindSchema,
   toolName: z.string().trim().min(1),
   args: z.unknown().optional(),
   result: z.unknown().optional(),
@@ -111,6 +146,7 @@ export const outputChunkSchema = z.object({
 });
 
 export const sessionMessageInputContentSchema = jsonObjectSchema;
+export const sessionMessageRuntimeConfigSchema = jsonObjectSchema;
 
 export type PlatformSessionConfigInput = z.infer<
   typeof platformSessionConfigSchema

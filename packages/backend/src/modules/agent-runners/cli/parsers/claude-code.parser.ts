@@ -1,4 +1,5 @@
 import type { RawOutputChunk } from '../../runner-type.interface';
+import { mapClaudeToolKind } from './tool-kind';
 
 /**
  * Parser state maintained across lines for a single Claude Code run.
@@ -160,12 +161,14 @@ function parseStreamEvent(
     const blockType = contentBlock.type as string | undefined;
 
     if (blockType === 'tool_use') {
+      const toolName = (contentBlock.name ?? 'unknown') as string;
       chunks.push({
         kind: 'tool_use',
         messageId: state.messageId,
         timestampMs: now,
         data: {
-          toolName: (contentBlock.name ?? 'unknown') as string,
+          toolKind: mapClaudeToolKind(toolName),
+          toolName,
           callId: contentBlock.id as string | undefined,
           args: contentBlock.input
         }
@@ -218,13 +221,30 @@ function parseAssistantMessage(
         }
       }
 
-      if (block.type === 'tool_result') {
+      if (block.type === 'tool_use') {
+        const toolName = (block.name ?? 'unknown') as string;
         chunks.push({
           kind: 'tool_use',
           messageId: state.messageId,
           timestampMs: now,
           data: {
-            toolName: (block.tool_name ?? 'unknown') as string,
+            toolKind: mapClaudeToolKind(toolName),
+            toolName,
+            callId: block.id as string | undefined,
+            args: block.input
+          }
+        });
+      }
+
+      if (block.type === 'tool_result') {
+        const toolName = (block.tool_name ?? 'unknown') as string;
+        chunks.push({
+          kind: 'tool_use',
+          messageId: state.messageId,
+          timestampMs: now,
+          data: {
+            toolKind: mapClaudeToolKind(toolName),
+            toolName,
             callId: block.tool_use_id as string | undefined,
             result: block.content
           }

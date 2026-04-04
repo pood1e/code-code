@@ -7,7 +7,9 @@
     "build": "tsc -b && vite build",
     "dev": "node ./scripts/dev.mjs",
     "lint": "eslint src --ext .ts,.tsx",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@agent-workbench/shared": "workspace:*",
@@ -46,12 +48,18 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.13",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^5.1.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "jsdom": "^29.0.1",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.3",
-    "vite": "^7.1.10"
+    "vite": "^7.1.10",
+    "vitest": "^4.1.2"
   }
 }
