@@ -91,6 +91,7 @@ export function SessionAssistantThreadHistory({
     <Virtuoso
       ref={virtuosoRef}
       className="min-h-0 flex-1"
+      followOutput="auto"
       firstItemIndex={firstItemIndex}
       totalCount={records.length}
       initialTopMostItemIndex={0}
