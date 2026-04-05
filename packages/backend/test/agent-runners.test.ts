@@ -84,6 +84,9 @@ describe('AgentRunners API', () => {
         Array<{
           id: string;
           inputSchema: { fields: Array<{ name: string; label: string }> };
+          runnerConfigSchema: {
+            fields: Array<{ name: string; label: string }>;
+          };
           runtimeConfigSchema: {
             fields: Array<{
               name: string;
