@@ -4,6 +4,7 @@ import {
   OnApplicationBootstrap,
   OnApplicationShutdown
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 
 import {
   PipelineArtifactKey,
@@ -11,6 +12,8 @@ import {
   PipelineStatus
 } from '@agent-workbench/shared';
 
+import { PIPELINE_ARTIFACT_STATUS } from './pipeline-artifact.constants';
+import { PipelineArtifactRepository } from './pipeline-artifact.repository';
 import { PipelineRepository } from './pipeline.repository';
 import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
 import { getStageTypeForStep } from './pipeline-stage.constants';
@@ -27,17 +30,21 @@ import { evaluationNode } from './plan-graph/nodes/evaluation.node';
 export class PipelineWorkerService
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
+  private static readonly LEASE_MS = 30_000;
+  private static readonly ARTIFACT_READY_TIMEOUT_MS = 5_000;
+
   private readonly logger = new Logger(PipelineWorkerService.name);
+  private readonly ownerId = `pipeline-worker:${randomUUID()}`;
   private isRunning = false;
 
   constructor(
     private readonly pipelineRepository: PipelineRepository,
+    private readonly pipelineArtifactRepository: PipelineArtifactRepository,
     private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService
   ) {}
 
   onApplicationBootstrap(): void {
     this.isRunning = true;
-    void this.recoverInterruptedPipelinesOnBoot();
     void this.pollLoop();
   }
 
@@ -47,8 +54,12 @@ export class PipelineWorkerService
 
   private async pollLoop(): Promise<void> {
     while (this.isRunning) {
-      const pipeline =
-        await this.pipelineRuntimeCommandService.claimNextPendingPipeline();
+      const pipeline = await this.pipelineRuntimeCommandService.claimNextPendingPipeline(
+        {
+          ownerId: this.ownerId,
+          ...this.createLeaseWindow()
+        }
+      );
       if (pipeline) {
         await this.processClaimedPipeline(pipeline).catch((error) => {
           this.logger.error(
@@ -83,15 +94,23 @@ export class PipelineWorkerService
         return;
       }
 
+      if (!(await this.renewExecutionLease(pipeline.id))) {
+        return;
+      }
+
       const runtimeState = parsePipelineRuntimeState(pipeline.state);
       if (runtimeState.currentStep === 'complete') {
-        await this.pipelineRuntimeCommandService.completeExecution(pipeline.id);
+        await this.pipelineRuntimeCommandService.completeExecution(
+          pipeline.id,
+          this.ownerId
+        );
         return;
       }
 
       if (runtimeState.currentStep === 'human_review') {
         await this.pipelineRuntimeCommandService.pauseForHumanReview(
           pipeline.id,
+          this.ownerId,
           runtimeState
         );
         return;
@@ -112,6 +131,7 @@ export class PipelineWorkerService
 
       const stage = await this.pipelineRuntimeCommandService.startStage(
         pipeline.id,
+        this.ownerId,
         stageType
       );
       if (!stage) {
@@ -151,6 +171,7 @@ export class PipelineWorkerService
 
         await this.pipelineRuntimeCommandService.failStage({
           pipelineId: pipeline.id,
+          ownerId: this.ownerId,
           stageId: stage.id,
           stageType: stage.stageType,
           reason: error instanceof Error ? error.message : String(error)
@@ -190,6 +211,7 @@ export class PipelineWorkerService
 
     await this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
+      ownerId: this.ownerId,
       stageId: stage.id,
       stageType: stage.stageType,
       nextState,
@@ -207,6 +229,12 @@ export class PipelineWorkerService
           ]
         : []
     });
+
+    await this.waitForManagedArtifactsReady(
+      pipelineId,
+      nextState.attempt,
+      [PipelineArtifactKey.Prd]
+    );
   }
 
   private async runEvaluationStep(
@@ -235,6 +263,7 @@ export class PipelineWorkerService
 
       const failed = await this.pipelineRuntimeCommandService.failStage({
         pipelineId,
+        ownerId: this.ownerId,
         stageId: stage.id,
         stageType: stage.stageType,
         reason: update.breakdownFeedback.reason,
@@ -271,6 +300,7 @@ export class PipelineWorkerService
 
     return this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
+      ownerId: this.ownerId,
       stageId: stage.id,
       stageType: stage.stageType,
       nextState,
@@ -300,6 +330,7 @@ export class PipelineWorkerService
 
     await this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
+      ownerId: this.ownerId,
       stageId: stage.id,
       stageType: stage.stageType,
       nextState,
@@ -317,6 +348,12 @@ export class PipelineWorkerService
             ]
           : []
     });
+
+    await this.waitForManagedArtifactsReady(
+      pipelineId,
+      nextState.attempt,
+      [PipelineArtifactKey.AcSpec]
+    );
   }
 
   private async runEstimateStep(
@@ -341,6 +378,7 @@ export class PipelineWorkerService
 
     const completed = await this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
+      ownerId: this.ownerId,
       stageId: stage.id,
       stageType: stage.stageType,
       nextState,
@@ -361,34 +399,96 @@ export class PipelineWorkerService
       return;
     }
 
+    await this.waitForManagedArtifactsReady(
+      pipelineId,
+      nextState.attempt,
+      [PipelineArtifactKey.PlanReport]
+    );
+
     if (await this.isPipelineCancelled(pipelineId)) {
       return;
     }
 
     await this.pipelineRuntimeCommandService.pauseForHumanReview(
       pipelineId,
+      this.ownerId,
       nextState
     );
   }
 
   private async failPipeline(pipelineId: string, reason: string) {
     this.logger.warn(`Pipeline ${pipelineId} failed: ${reason}`);
-    await this.pipelineRuntimeCommandService.failExecution(pipelineId, reason);
-  }
-
-  private async recoverInterruptedPipelinesOnBoot(): Promise<void> {
-    const recovered =
-      await this.pipelineRuntimeCommandService.recoverInterruptedPipelinesOnBoot();
-    if (recovered > 0) {
-      this.logger.warn(
-        `Recovered ${recovered} interrupted pipeline(s) from 'running' -> 'pending'`
-      );
-    }
+    await this.pipelineRuntimeCommandService.failExecution(
+      pipelineId,
+      this.ownerId,
+      reason
+    );
   }
 
   private async isPipelineCancelled(pipelineId: string): Promise<boolean> {
     const pipeline = await this.pipelineRepository.findPipelineById(pipelineId);
     return pipeline?.status === PipelineStatus.Cancelled;
+  }
+
+  private async renewExecutionLease(pipelineId: string): Promise<boolean> {
+    return this.pipelineRuntimeCommandService.renewPipelineExecutionLease({
+      pipelineId,
+      ownerId: this.ownerId,
+      ...this.createLeaseWindow()
+    });
+  }
+
+  private createLeaseWindow() {
+    const now = new Date();
+    return {
+      now,
+      leaseExpiresAt: new Date(now.getTime() + PipelineWorkerService.LEASE_MS)
+    };
+  }
+
+  private async waitForManagedArtifactsReady(
+    pipelineId: string,
+    attempt: number,
+    artifactKeys: readonly PipelineArtifactKey[]
+  ): Promise<void> {
+    const deadline =
+      Date.now() + PipelineWorkerService.ARTIFACT_READY_TIMEOUT_MS;
+
+    while (Date.now() < deadline) {
+      if (!(await this.renewExecutionLease(pipelineId))) {
+        throw new Error(`Pipeline lease lost while waiting for artifacts: ${pipelineId}`);
+      }
+
+      const artifacts =
+        await this.pipelineArtifactRepository.listManagedArtifactsForAttempt({
+          pipelineId,
+          attempt,
+          artifactKeys
+        });
+
+      if (
+        artifacts.length === artifactKeys.length &&
+        artifacts.every((artifact) => artifact.status === PIPELINE_ARTIFACT_STATUS.Ready)
+      ) {
+        return;
+      }
+
+      const failedArtifact = artifacts.find(
+        (artifact) => artifact.status === PIPELINE_ARTIFACT_STATUS.Failed
+      );
+      if (failedArtifact) {
+        throw new Error(
+          failedArtifact.lastError ??
+            `Artifact materialization failed: ${failedArtifact.id}`
+        );
+      }
+
+      await sleep(200);
+    }
+
+    throw new Error(
+      `Timed out waiting for artifact materialization: ${pipelineId}/${attempt}`
+    );
   }
 }
 

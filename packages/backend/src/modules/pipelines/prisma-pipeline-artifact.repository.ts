@@ -107,65 +107,55 @@ export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository
       .filter((value): value is string => Boolean(value));
   }
 
-  async claimNextArtifactToMaterialize(
-    retryBefore: Date
-  ): Promise<PipelineArtifactRecord | null> {
-    const candidate = await this.prisma.pipelineArtifact.findFirst({
+  async listManagedArtifactsForAttempt(input: {
+    pipelineId: string;
+    attempt: number;
+    artifactKeys: readonly string[];
+  }): Promise<PipelineArtifactRecord[]> {
+    const artifacts = await this.prisma.pipelineArtifact.findMany({
       where: {
-        content: { not: null },
-        OR: [
-          { status: PIPELINE_ARTIFACT_STATUS.Pending },
-          {
-            status: PIPELINE_ARTIFACT_STATUS.Failed,
-            updatedAt: { lt: retryBefore }
-          }
-        ]
-      },
-      orderBy: [{ updatedAt: 'asc' }, { createdAt: 'asc' }]
-    });
-
-    if (!candidate) {
-      return null;
-    }
-
-    const claimed = await this.prisma.pipelineArtifact.updateMany({
-      where: {
-        id: candidate.id,
-        status: {
-          in: [
-            PIPELINE_ARTIFACT_STATUS.Pending,
-            PIPELINE_ARTIFACT_STATUS.Failed
-          ]
+        pipelineId: input.pipelineId,
+        attempt: input.attempt,
+        artifactKey: {
+          in: [...input.artifactKeys]
         }
       },
-      data: {
-        status: PIPELINE_ARTIFACT_STATUS.Processing
-      }
+      orderBy: [
+        { artifactKey: 'asc' },
+        { version: 'desc' },
+        { createdAt: 'desc' }
+      ]
     });
 
-    if (claimed.count !== 1) {
-      return null;
+    const latestByArtifactKey = new Map<string, PipelineArtifactRecord>();
+    for (const artifact of artifacts) {
+      if (!artifact.artifactKey || latestByArtifactKey.has(artifact.artifactKey)) {
+        continue;
+      }
+
+      latestByArtifactKey.set(artifact.artifactKey, toPipelineArtifactRecord(artifact));
     }
 
-    return toPipelineArtifactRecord({
-      ...candidate,
-      status: PIPELINE_ARTIFACT_STATUS.Processing
-    });
+    return [...latestByArtifactKey.values()];
   }
 
   async markArtifactReady(
     artifactId: string,
+    ownerId: string,
     storageRef: string
   ): Promise<boolean> {
     const result = await this.prisma.pipelineArtifact.updateMany({
       where: {
         id: artifactId,
-        status: PIPELINE_ARTIFACT_STATUS.Processing
+        status: PIPELINE_ARTIFACT_STATUS.Processing,
+        materializerOwnerId: ownerId
       },
       data: {
         status: PIPELINE_ARTIFACT_STATUS.Ready,
         storageRef,
-        lastError: null
+        lastError: null,
+        materializerOwnerId: null,
+        materializerLeaseExpiresAt: null
       }
     });
 
@@ -174,38 +164,28 @@ export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository
 
   async markArtifactFailed(
     artifactId: string,
+    ownerId: string,
     reason: string
   ): Promise<boolean> {
     const result = await this.prisma.pipelineArtifact.updateMany({
       where: {
         id: artifactId,
-        status: PIPELINE_ARTIFACT_STATUS.Processing
+        status: PIPELINE_ARTIFACT_STATUS.Processing,
+        materializerOwnerId: ownerId
       },
       data: {
         status: PIPELINE_ARTIFACT_STATUS.Failed,
         lastError: reason,
         materializeAttempts: {
           increment: 1
-        }
+        },
+        materializerOwnerId: null,
+        materializerLeaseExpiresAt: null
       }
     });
 
     return result.count === 1;
   }
-
-  async recoverProcessingArtifacts(): Promise<number> {
-    const result = await this.prisma.pipelineArtifact.updateMany({
-      where: {
-        status: PIPELINE_ARTIFACT_STATUS.Processing
-      },
-      data: {
-        status: PIPELINE_ARTIFACT_STATUS.Pending
-      }
-    });
-
-    return result.count;
-  }
-
   private async reserveManagedArtifactVersion(
     tx: Prisma.TransactionClient,
     pipelineId: string,

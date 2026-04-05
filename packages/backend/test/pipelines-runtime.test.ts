@@ -245,6 +245,7 @@ describe('Pipelines Runtime API', () => {
       expect(new Set(replayIds).size).toBe(replayIds.length);
 
       const fullReplay = await collectSse(`/api/pipelines/${pipeline.id}/events`);
+      expect(fullReplay.events.map((event) => event.type)).toContain('pipeline_started');
       const stageEvents = fullReplay.events.filter((event) =>
         event.type.startsWith('stage_')
       );
@@ -480,9 +481,9 @@ describe('Pipelines Runtime API', () => {
       const gate = createGate();
       const completeSpy = vi
         .spyOn(runtimeCommandService, 'completeExecution')
-        .mockImplementation(async (pipelineId: string) => {
+        .mockImplementation(async (pipelineId: string, ownerId: string) => {
           await gate.wait();
-          return originalCompleteExecution(pipelineId);
+          return originalCompleteExecution(pipelineId, ownerId);
         });
 
       try {
@@ -529,10 +530,12 @@ describe('Pipelines Runtime API', () => {
       const gate = createGate();
       const failSpy = vi
         .spyOn(runtimeCommandService, 'failExecution')
-        .mockImplementation(async (pipelineId: string, reason: string) => {
+        .mockImplementation(
+          async (pipelineId: string, ownerId: string, reason: string) => {
           await gate.wait();
-          return originalFailExecution(pipelineId, reason);
-        });
+            return originalFailExecution(pipelineId, ownerId, reason);
+          }
+        );
 
       try {
         await startPipeline(pipeline.id, { maxRetry: 1 });

@@ -16,6 +16,8 @@ export type PipelineRecord = {
   featureRequest: string | null;
   status: PipelineStatus;
   currentStageId: string | null;
+  executionOwnerId: string | null;
+  executionLeaseExpiresAt: Date | null;
   state: unknown;
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +44,8 @@ export type PipelineArtifactRecord = {
   attempt: number | null;
   version: number | null;
   status: PipelineArtifactStatus;
+  materializerOwnerId: string | null;
+  materializerLeaseExpiresAt: Date | null;
   name: string;
   contentType: ArtifactContentType;
   storageRef: string | null;

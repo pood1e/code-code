@@ -131,19 +131,68 @@ describe('Pipelines API', () => {
       6
     );
   });
+
+  it('同名多版本 artifact 下载内容应保持各自历史版本，不得被后续版本覆盖', async () => {
+    const project = await seedProject();
+    const pipeline = await createPipeline(project.id, '多版本内容流水线');
+    const pipelinesService = getApp().get(PipelinesService);
+
+    await pipelinesService.createManagedArtifact(pipeline.id, {
+      artifactKey: PipelineArtifactKey.Prd,
+      attempt: 1,
+      name: 'prd.json',
+      contentType: 'application/json',
+      content: JSON.stringify({ version: 1, body: 'first' })
+    });
+    await pipelinesService.createManagedArtifact(pipeline.id, {
+      artifactKey: PipelineArtifactKey.Prd,
+      attempt: 2,
+      name: 'prd.json',
+      contentType: 'application/json',
+      content: JSON.stringify({ version: 2, body: 'second' })
+    });
+
+    const artifacts = await waitForArtifactCount(pipeline.id, PipelineArtifactKey.Prd, 2);
+    const [latestArtifact, previousArtifact] = artifacts;
+
+    const latestResponse = await api()
+      .get(`/api/pipelines/${pipeline.id}/artifacts/${latestArtifact.id}/content`)
+      .expect(200);
+    const previousResponse = await api()
+      .get(`/api/pipelines/${pipeline.id}/artifacts/${previousArtifact.id}/content`)
+      .expect(200);
+
+    expect(JSON.parse(latestResponse.text)).toEqual({
+      version: 2,
+      body: 'second'
+    });
+    expect(JSON.parse(previousResponse.text)).toEqual({
+      version: 1,
+      body: 'first'
+    });
+  });
 });
 
 async function waitForPrdArtifacts(pipelineId: string, timeoutMs = 5_000) {
+  return waitForArtifactCount(pipelineId, PipelineArtifactKey.Prd, 6, timeoutMs);
+}
+
+async function waitForArtifactCount(
+  pipelineId: string,
+  artifactKey: PipelineArtifactKey,
+  expectedCount: number,
+  timeoutMs = 5_000
+) {
   const pipelinesService = getApp().get(PipelinesService);
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
     const detail = await pipelinesService.getDetail(pipelineId);
     const artifacts = detail.artifacts.filter(
-      (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
+      (artifact) => artifact.metadata?.artifactKey === artifactKey
     );
 
-    if (artifacts.length === 6) {
+    if (artifacts.length === expectedCount) {
       return artifacts;
     }
 
@@ -152,7 +201,7 @@ async function waitForPrdArtifacts(pipelineId: string, timeoutMs = 5_000) {
 
   const detail = await pipelinesService.getDetail(pipelineId);
   return detail.artifacts.filter(
-    (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
+    (artifact) => artifact.metadata?.artifactKey === artifactKey
   );
 }
 

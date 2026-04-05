@@ -180,6 +180,8 @@ export function toPipelineRecord(pipeline: PipelineRow): PipelineRecord {
     featureRequest: pipeline.featureRequest,
     status: pipeline.status as PipelineStatus,
     currentStageId: pipeline.currentStageId,
+    executionOwnerId: pipeline.executionOwnerId,
+    executionLeaseExpiresAt: pipeline.executionLeaseExpiresAt,
     state: pipeline.state,
     createdAt: pipeline.createdAt,
     updatedAt: pipeline.updatedAt
@@ -212,6 +214,8 @@ export function toPipelineArtifactRecord(
     attempt: artifact.attempt,
     version: artifact.version,
     status: artifact.status as PipelineArtifactRecord['status'],
+    materializerOwnerId: artifact.materializerOwnerId,
+    materializerLeaseExpiresAt: artifact.materializerLeaseExpiresAt,
     name: artifact.name,
     contentType: artifact.contentType as PipelineArtifactRecord['contentType'],
     storageRef: artifact.storageRef,

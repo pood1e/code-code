@@ -95,6 +95,38 @@ describe('usePipelineEventStream', () => {
     expect(source.isClosed()).toBe(true);
   });
 
+  it('收到 pipeline_started 时也应失效 detail/list 查询', () => {
+    const source = new FakePipelineEventSource();
+    const queryClient = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    pipelinesApiMock.createPipelineEventSource.mockReturnValue(source);
+
+    renderHook(
+      () => usePipelineEventStream('pipeline-1', 'project-1'),
+      {
+        wrapper: ({ children }) => (
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        )
+      }
+    );
+
+    act(() => {
+      source.emit('pipeline_started', {
+        pipelineId: 'pipeline-1',
+        eventId: 4
+      });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.pipelines.detail('pipeline-1')
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.pipelines.list('project-1')
+    });
+    expect(source.isClosed()).toBe(false);
+  });
+
   it('收到 pipeline_resumed 时也应失效 detail/list 查询', () => {
     const source = new FakePipelineEventSource();
     const queryClient = createTestQueryClient();

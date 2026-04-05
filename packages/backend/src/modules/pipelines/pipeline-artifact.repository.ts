@@ -33,16 +33,19 @@ export abstract class PipelineArtifactRepository {
   abstract listArtifactStorageRefsByPipelineId(
     pipelineId: string
   ): Promise<string[]>;
-  abstract claimNextArtifactToMaterialize(
-    retryBefore: Date
-  ): Promise<PipelineArtifactRecord | null>;
+  abstract listManagedArtifactsForAttempt(input: {
+    pipelineId: string;
+    attempt: number;
+    artifactKeys: readonly PipelineArtifactKey[];
+  }): Promise<PipelineArtifactRecord[]>;
   abstract markArtifactReady(
     artifactId: string,
+    ownerId: string,
     storageRef: string
   ): Promise<boolean>;
   abstract markArtifactFailed(
     artifactId: string,
+    ownerId: string,
     reason: string
   ): Promise<boolean>;
-  abstract recoverProcessingArtifacts(): Promise<number>;
 }

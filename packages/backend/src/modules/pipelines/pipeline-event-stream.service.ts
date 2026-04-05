@@ -3,13 +3,13 @@ import { Observable } from 'rxjs';
 
 import type { PipelineEvent } from '@agent-workbench/shared';
 
-import { PipelineRuntimeRepository } from './pipeline-runtime.repository';
 import { PipelineEventBroker } from './pipeline-event-broker.service';
+import { PipelineEventRepository } from './pipeline-event.repository';
 
 @Injectable()
 export class PipelineEventStreamService {
   constructor(
-    private readonly pipelineRuntimeRepository: PipelineRuntimeRepository,
+    private readonly pipelineEventRepository: PipelineEventRepository,
     private readonly pipelineEventBroker: PipelineEventBroker
   ) {}
 
@@ -20,6 +20,7 @@ export class PipelineEventStreamService {
     return new Observable<MessageEvent>((subscriber) => {
       let lastDeliveredEventId = afterEventId;
       let replayCompleted = false;
+      let liveCompleted = false;
       const bufferedLiveEvents: PipelineEvent[] = [];
 
       const flushLiveEvent = (event: PipelineEvent) => {
@@ -44,12 +45,17 @@ export class PipelineEventStreamService {
           flushLiveEvent(event);
         },
         error: (error) => subscriber.error(error),
-        complete: () => subscriber.complete()
+        complete: () => {
+          liveCompleted = true;
+          if (replayCompleted) {
+            subscriber.complete();
+          }
+        }
       });
 
       void (async () => {
         try {
-          const replayEvents = await this.pipelineRuntimeRepository.listEventsAfterEventId(
+          const replayEvents = await this.pipelineEventRepository.listEventsAfterEventId(
             pipelineId,
             afterEventId
           );
@@ -62,6 +68,10 @@ export class PipelineEventStreamService {
 
           for (const event of bufferedLiveEvents) {
             flushLiveEvent(event);
+          }
+
+          if (liveCompleted) {
+            subscriber.complete();
           }
         } catch (error) {
           subscriber.error(error);

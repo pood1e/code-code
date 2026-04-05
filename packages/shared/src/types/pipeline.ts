@@ -205,6 +205,7 @@ export type StartPipelineInput = {
 // ─── Pipeline SSE Events ──────────────────────────────────────────────────────
 
 export const PIPELINE_EVENT_KINDS = [
+  'pipeline_started',
   'stage_started',
   'stage_completed',
   'stage_failed',
