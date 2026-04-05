@@ -275,7 +275,10 @@ async function main() {
       description: 'Claude Code runner for development tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-sonnet-4-5'
+        defaultRuntimeModel: 'sonnet',
+        allowRuntimeModelOverride: true,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: true
       }
     },
     create: {
@@ -284,7 +287,10 @@ async function main() {
       description: 'Claude Code runner for development tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-sonnet-4-5'
+        defaultRuntimeModel: 'sonnet',
+        allowRuntimeModelOverride: true,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: true
       }
     }
   });
@@ -296,8 +302,10 @@ async function main() {
       description: 'Claude Code runner for production tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-opus-4-5',
-        baseUrl: 'https://api.anthropic.com'
+        defaultRuntimeModel: 'opus',
+        allowRuntimeModelOverride: false,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: false
       }
     },
     create: {
@@ -306,8 +314,10 @@ async function main() {
       description: 'Claude Code runner for production tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-opus-4-5',
-        baseUrl: 'https://api.anthropic.com'
+        defaultRuntimeModel: 'opus',
+        allowRuntimeModelOverride: false,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: false
       }
     }
   });

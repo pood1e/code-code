@@ -186,6 +186,7 @@ export class SessionRuntimeService {
     const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
     const parsedRuntimeConfig = this.parseRuntimeConfigOrThrow(
       runnerType,
+      runtimeSession.runnerConfig,
       this.buildEffectiveRuntimeConfig(
         session.defaultRuntimeConfig,
         runtimeConfigOverride
@@ -524,11 +525,18 @@ export class SessionRuntimeService {
 
   private parseRuntimeConfigOrThrow(
     runnerType: RunnerType,
+    runnerConfig: Record<string, unknown>,
     runtimeConfig: Record<string, unknown>
   ) {
-    const parseResult = runnerType.runtimeConfigSchema.safeParse(runtimeConfig);
+    const resolvedRuntimeConfig = runnerType.resolveRuntimeConfig
+      ? runnerType.resolveRuntimeConfig(runnerConfig, runtimeConfig)
+      : runtimeConfig;
+    const parseResult =
+      runnerType.runtimeConfigSchema.safeParse(resolvedRuntimeConfig);
     if (!parseResult.success) {
-      throw new Error(`Invalid runtime config: ${parseResult.error.message}`);
+      throw new BadRequestException(
+        parseResult.error.issues[0]?.message ?? 'Invalid runtime config'
+      );
     }
 
     return parseResult.data as Record<string, unknown>;

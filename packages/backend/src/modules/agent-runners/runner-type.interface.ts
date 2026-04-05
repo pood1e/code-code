@@ -128,6 +128,10 @@ export interface RunnerType extends RunnerTypeMeta {
 
   checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
   probeContext?(runnerConfig: unknown): Promise<RunnerContext>;
+  resolveRuntimeConfig?(
+    runnerConfig: Record<string, unknown>,
+    runtimeConfig: Record<string, unknown>
+  ): Record<string, unknown>;
   installProfile(input: RunnerProfileInstallInput): Promise<void>;
   createSession(
     sessionId: string,
