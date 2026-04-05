@@ -30,6 +30,15 @@ export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   workspacePath!: string;
+
+  @ApiPropertyOptional({
+    example: 'git@github.com:pood1e/code-code-docs.git',
+    description: '可选，支持 SSH Git 地址或本地绝对路径'
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  docSource?: string | null;
 }
 
 export class UpdateProjectDto {
@@ -51,4 +60,13 @@ export class UpdateProjectDto {
   @IsString()
   @IsNotEmpty()
   workspacePath?: string;
+
+  @ApiPropertyOptional({
+    example: '/Users/pood1e/workspace/code-code-docs',
+    description: '可选，支持 SSH Git 地址或本地绝对路径'
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  docSource?: string | null;
 }

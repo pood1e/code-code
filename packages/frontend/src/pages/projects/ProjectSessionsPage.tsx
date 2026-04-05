@@ -13,7 +13,7 @@ export function ProjectSessionsPage() {
 
   if (pageState.isNotFound) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center px-4 py-10">
         <EmptyState
           title="Project 不存在"
           description="当前 Project 不存在或已被删除。"
@@ -29,7 +29,7 @@ export function ProjectSessionsPage() {
     pageState.projects.length === 0
   ) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center px-4 py-10">
         <EmptyState
           title="暂无可用 Project"
           description="请先回到 Project 列表创建或选择一个 Project。"
@@ -40,7 +40,7 @@ export function ProjectSessionsPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex min-h-full flex-col">
       <div className="flex min-h-0 flex-1 flex-col">
         <ProjectSessionsPageContent {...pageState} />
       </div>

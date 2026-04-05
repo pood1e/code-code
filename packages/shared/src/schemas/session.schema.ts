@@ -6,6 +6,7 @@ import {
   MessageStatus,
   MetricKind,
   SessionStatus,
+  SessionWorkspaceResourceConfig,
   SessionWorkspaceMode,
   SessionWorkspaceResourceKind
 } from '../types/session';
@@ -27,6 +28,34 @@ export const platformSessionMcpSchema = z.object({
   configOverride: mcpConfigOverrideSchema.optional()
 });
 
+const workspaceBranchSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}, z.string().trim().min(1).max(255).optional());
+
+export const sessionWorkspaceResourceConfigSchema = z
+  .object({
+    code: z
+      .object({
+        branch: workspaceBranchSchema
+      })
+      .optional(),
+    doc: z
+      .object({
+        branch: workspaceBranchSchema
+      })
+      .optional()
+  })
+  .default({} satisfies SessionWorkspaceResourceConfig);
+
 export const platformSessionConfigSchema = z.object({
   workspaceMode: z
     .nativeEnum(SessionWorkspaceMode)
@@ -36,6 +65,7 @@ export const platformSessionConfigSchema = z.object({
   workspaceResources: z
     .array(z.nativeEnum(SessionWorkspaceResourceKind))
     .default([]),
+  workspaceResourceConfig: sessionWorkspaceResourceConfigSchema,
   skillIds: z.array(idSchema),
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema)
@@ -55,6 +85,7 @@ export const createSessionInputSchema = z.object({
   workspaceResources: z
     .array(z.nativeEnum(SessionWorkspaceResourceKind))
     .default([]),
+  workspaceResourceConfig: sessionWorkspaceResourceConfigSchema,
   skillIds: z.array(idSchema),
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema),

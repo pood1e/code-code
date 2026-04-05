@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SessionWorkspaceResourceKind } from '@agent-workbench/shared';
+import {
+  SessionWorkspaceResourceConfig,
+  SessionWorkspaceResourceKind
+} from '@agent-workbench/shared';
 import {
   IsArray,
   IsEnum,
@@ -61,6 +64,30 @@ export class SendSessionMessageDto {
 
 export class EditSessionMessageDto extends SendSessionMessageDto {}
 
+export class SessionWorkspaceResourceBranchDto {
+  @ApiPropertyOptional({ example: 'main' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  branch?: string;
+}
+
+export class SessionWorkspaceResourceConfigDto
+  implements SessionWorkspaceResourceConfig
+{
+  @ApiPropertyOptional({ type: SessionWorkspaceResourceBranchDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceBranchDto)
+  code?: SessionWorkspaceResourceBranchDto;
+
+  @ApiPropertyOptional({ type: SessionWorkspaceResourceBranchDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceBranchDto)
+  doc?: SessionWorkspaceResourceBranchDto;
+}
+
 export class CreateSessionDto {
   @ApiProperty({ example: 'project_agent_workbench' })
   @IsString()
@@ -81,6 +108,14 @@ export class CreateSessionDto {
   @IsEnum(SessionWorkspaceResourceKind, { each: true })
   @IsOptional()
   workspaceResources?: SessionWorkspaceResourceKind[];
+
+  @ApiPropertyOptional({
+    type: SessionWorkspaceResourceConfigDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceConfigDto)
+  workspaceResourceConfig?: SessionWorkspaceResourceConfigDto;
 
   @ApiProperty({ type: [String], example: ['skill_web_search'] })
   @IsArray()

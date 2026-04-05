@@ -39,7 +39,15 @@ function isWorkspacePathError(message: string) {
 }
 
 function isGitUrlError(message: string) {
-  return message.includes('Git') || message.includes('git@');
+  return message.includes('gitUrl') || message.includes('如 git@github.com');
+}
+
+function isDocSourceError(message: string) {
+  return (
+    message.includes('docSource') ||
+    message.includes('文档') ||
+    message.includes('SSH Git 地址或本地绝对路径')
+  );
 }
 
 type ProjectCreateDialogProps = {
@@ -109,6 +117,10 @@ export function ProjectCreateDialog({
 
         if (isGitUrlError(apiError.message)) {
           form.setError('gitUrl', { message: apiError.message });
+        }
+
+        if (isDocSourceError(apiError.message)) {
+          form.setError('docSource', { message: apiError.message });
         }
 
         setCreateError(apiError.message);
@@ -183,6 +195,15 @@ export function ProjectCreateDialog({
               id="project-workspace-path"
               {...form.register('workspacePath')}
             />
+          </FormField>
+
+          <FormField
+            label="文档地址"
+            htmlFor="project-doc-source"
+            description="可选。支持 SSH Git 地址或本地绝对路径目录。"
+            error={form.formState.errors.docSource?.message}
+          >
+            <Input id="project-doc-source" {...form.register('docSource')} />
           </FormField>
 
           <DialogFooter>

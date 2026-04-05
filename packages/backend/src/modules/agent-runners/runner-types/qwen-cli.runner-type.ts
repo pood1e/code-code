@@ -11,6 +11,7 @@ import {
 } from '../cli/parsers/qwen-cli.parser';
 import type {
   RawOutputChunk,
+  RunnerProfileInstallInput,
   RunnerSendPayload
 } from '../runner-type.interface';
 import { RunnerTypeProvider } from '../runner-type.decorator';
@@ -43,7 +44,6 @@ export const qwenCliRuntimeConfigSchema = z.object({
 export class QwenCliRunnerType extends CliRunnerTypeBase {
   readonly id = 'qwen-cli';
   readonly name = 'Qwen CLI';
-  readonly materializerTarget = 'qwen' as const;
   readonly capabilities = { skill: true, rule: true, mcp: true };
   readonly runnerConfigSchema = qwenCliRunnerConfigSchema;
   readonly runnerSessionConfigSchema = qwenCliRunnerSessionConfigSchema;
@@ -59,6 +59,17 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = qwenCliRunnerConfigSchema.parse(runnerConfig);
     return probeQwenCliHealth(config.executorUser, config.env);
+  }
+
+  protected buildProfileInstallLayout(
+    input: RunnerProfileInstallInput
+  ) {
+    return {
+      profileRootDir: input.platformConfig.cwd,
+      skillDir: '.qwen/skills',
+      contextFileName: 'QWEN.md',
+      mcpConfigPath: `${input.platformConfig.cwd}/.qwen/settings.json`
+    };
   }
 
   buildCommand(

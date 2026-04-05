@@ -226,4 +226,18 @@ describe('AppLayout', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
+
+  it('壳层应固定侧栏，并把滚动约束在主内容区域', async () => {
+    const { container } = renderAppLayout('/skills');
+
+    await screen.findByRole('button', { name: '资源库' });
+
+    const main = screen.getByRole('main');
+    const shell = main.parentElement?.parentElement;
+    const sidebar = container.querySelector('aside');
+
+    expect(shell).toHaveClass('h-screen', 'overflow-hidden');
+    expect(sidebar).toHaveClass('h-screen');
+    expect(main).toHaveClass('overflow-y-auto');
+  });
 });

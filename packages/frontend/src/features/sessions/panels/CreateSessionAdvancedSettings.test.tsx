@@ -41,12 +41,14 @@ function createMcp(id: string, name: string): ResourceByKind['mcps'] {
 }
 
 function renderAdvancedSettings({
-  onToggleSelection = vi.fn()
+  onToggleSelection = vi.fn(),
+  selectedWorkspaceResources = []
 }: {
   onToggleSelection?: (
     fieldName: 'workspaceResources' | 'skillIds' | 'ruleIds' | 'mcpIds',
     resourceId: string
   ) => void;
+  selectedWorkspaceResources?: SessionWorkspaceResourceKind[];
 } = {}) {
   function Harness() {
     const form = useForm<CreateSessionFormValues>({
@@ -55,42 +57,13 @@ function renderAdvancedSettings({
 
     return (
       <CreateSessionAdvancedSettings
-        open
         control={form.control}
-        additionalInputFields={[
-          {
-            name: 'tone',
-            label: '语气',
-            kind: 'string',
-            required: false
-          }
-        ]}
-        sessionConfigFields={[
-          {
-            name: 'sandbox',
-            label: '沙箱',
-            kind: 'boolean',
-            required: false
-          }
-        ]}
-        runtimeFields={[
-          {
-            name: 'approvalMode',
-            label: '审批模式',
-            kind: 'enum',
-            required: false,
-            enumOptions: [{ label: 'default', value: 'default' }]
-          }
-        ]}
-        runnerContext={{
-          tone: ['formal', 'casual']
-        }}
         resources={{
           skills: [createSkill('skill-1', 'Skill One')],
           rules: [],
           mcps: [createMcp('mcp-1', 'Filesystem MCP')]
         }}
-        selectedWorkspaceResources={[]}
+        selectedWorkspaceResources={selectedWorkspaceResources}
         selectedSkillIds={[]}
         selectedRuleIds={[]}
         selectedMcpIds={[]}
@@ -106,25 +79,19 @@ function renderAdvancedSettings({
 }
 
 describe('CreateSessionAdvancedSettings', () => {
-  it('应展示输入、会话、运行参数区块和资源区块', () => {
+  it('应展示工作目录和资源区块', () => {
     renderAdvancedSettings();
 
-    expect(screen.getByText('输入参数')).toBeInTheDocument();
-    expect(screen.getByText('会话参数 (Session Config)')).toBeInTheDocument();
-    expect(screen.getByText('运行参数 (Runtime Config)')).toBeInTheDocument();
-    expect(screen.getByLabelText('语气')).toBeInTheDocument();
-    expect(screen.getByLabelText('审批模式')).toBeInTheDocument();
+    expect(screen.getByText('工作区与资源')).toBeInTheDocument();
+    expect(screen.getByText('工作目录')).toBeInTheDocument();
     expect(screen.getByText('资源')).toBeInTheDocument();
   });
 
   it('添加资源时应调用对应的 toggle selection', async () => {
     const { user, onToggleSelection } = renderAdvancedSettings();
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: '选择技能' }),
-      'skill-1'
-    );
-    await user.click(screen.getByRole('button', { name: '添加技能' }));
+    await user.click(screen.getByRole('button', { name: '添加资源' }));
+    await user.click(screen.getByRole('button', { name: /Skill One/i }));
 
     expect(onToggleSelection).toHaveBeenCalledWith('skillIds', 'skill-1');
   });
@@ -137,12 +104,7 @@ describe('CreateSessionAdvancedSettings', () => {
 
       return (
         <CreateSessionAdvancedSettings
-          open
           control={form.control}
-          additionalInputFields={[]}
-          sessionConfigFields={[]}
-          runtimeFields={[]}
-          runnerContext={undefined}
           resources={{
             skills: [],
             rules: [],
@@ -159,7 +121,9 @@ describe('CreateSessionAdvancedSettings', () => {
 
     render(<Harness />);
 
-    expect(screen.getByText('node')).toBeInTheDocument();
+    expect(
+      screen.getByText('Filesystem MCP').closest('[title]')
+    ).toHaveAttribute('title', 'node');
   });
 
   it('勾选工作目录初始化项时应触发 workspaceResources 切换', async () => {
@@ -176,5 +140,17 @@ describe('CreateSessionAdvancedSettings', () => {
       'workspaceResources',
       SessionWorkspaceResourceKind.Doc
     );
+  });
+
+  it('选中后应展示 code 和 doc 的 branch 输入框', () => {
+    renderAdvancedSettings({
+      selectedWorkspaceResources: [
+        SessionWorkspaceResourceKind.Code,
+        SessionWorkspaceResourceKind.Doc
+      ]
+    });
+
+    expect(screen.getByLabelText('Code Branch')).toBeInTheDocument();
+    expect(screen.getByLabelText('Doc Branch')).toBeInTheDocument();
   });
 });

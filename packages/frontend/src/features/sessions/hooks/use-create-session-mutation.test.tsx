@@ -183,6 +183,7 @@ describe('useCreateSessionMutation', () => {
       scopeId: 'project-1',
       runnerId: 'runner-1',
       workspaceResources: [],
+      workspaceResourceConfig: {},
       skillIds: ['skill-1'],
       ruleIds: [],
       mcps: [

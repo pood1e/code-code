@@ -21,6 +21,7 @@ export class ChatsService {
       scopeId: dto.scopeId,
       runnerId: dto.runnerId,
       workspaceResources: dto.workspaceResources ?? [],
+      workspaceResourceConfig: dto.workspaceResourceConfig ?? {},
       skillIds: dto.skillIds ?? [],
       ruleIds: dto.ruleIds ?? [],
       mcps: dto.mcps ?? [],

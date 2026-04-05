@@ -411,6 +411,7 @@ describe('project-sessions.form', () => {
       runnerId: '',
       profileId: '',
       workspaceResources: [],
+      workspaceResourceConfig: {},
       skillIds: [],
       ruleIds: [],
       mcpIds: [],
@@ -484,6 +485,11 @@ describe('project-sessions.form', () => {
           ...buildCreateSessionFormValues(),
           runnerId: 'runner-1',
           workspaceResources: [SessionWorkspaceResourceKind.Code],
+          workspaceResourceConfig: {
+            code: {
+              branch: 'feature/test'
+            }
+          },
           skillIds: ['skill-1'],
           ruleIds: ['rule-1'],
           mcpIds: ['mcp-1', 'mcp-2'],
@@ -505,6 +511,11 @@ describe('project-sessions.form', () => {
       scopeId: 'project-1',
       runnerId: 'runner-1',
       workspaceResources: [SessionWorkspaceResourceKind.Code],
+      workspaceResourceConfig: {
+        code: {
+          branch: 'feature/test'
+        }
+      },
       skillIds: ['skill-1'],
       ruleIds: ['rule-1'],
       mcps: [

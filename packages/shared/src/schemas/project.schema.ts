@@ -17,6 +17,10 @@ const workspacePathSchema = z
   .string()
   .trim()
   .min(1, 'workspacePath is required');
+const localAbsolutePathSchema = z
+  .string()
+  .trim()
+  .regex(/^\//, '请输入合法的 SSH Git 地址或本地绝对路径');
 
 export const sshGitUrlSchema = z
   .string()
@@ -25,6 +29,18 @@ export const sshGitUrlSchema = z
     /^git@[\w.-]+:[\w./-]+\.git$/,
     '请输入合法的 SSH Git 地址，如 git@github.com:user/repo.git'
   );
+export const projectDocSourceSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}, z.union([sshGitUrlSchema, localAbsolutePathSchema]).nullable().optional());
 
 export const projectSchema = z.object({
   id: z.string(),
@@ -32,6 +48,7 @@ export const projectSchema = z.object({
   description: z.string().nullable(),
   gitUrl: sshGitUrlSchema,
   workspacePath: workspacePathSchema,
+  docSource: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string()
 });
@@ -40,20 +57,23 @@ export const createProjectInputSchema = z.object({
   name: projectNameSchema,
   description: projectDescriptionSchema,
   gitUrl: sshGitUrlSchema,
-  workspacePath: workspacePathSchema
+  workspacePath: workspacePathSchema,
+  docSource: projectDocSourceSchema
 });
 
 export const updateProjectInputSchema = z
   .object({
     name: projectNameSchema.optional(),
     description: projectDescriptionSchema,
-    workspacePath: workspacePathSchema.optional()
+    workspacePath: workspacePathSchema.optional(),
+    docSource: projectDocSourceSchema
   })
   .refine(
     (value) =>
       value.name !== undefined ||
       value.description !== undefined ||
-      value.workspacePath !== undefined,
+      value.workspacePath !== undefined ||
+      value.docSource !== undefined,
     {
       message: 'At least one project field must be provided'
     }

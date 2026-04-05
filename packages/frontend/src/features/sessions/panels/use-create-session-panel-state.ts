@@ -53,7 +53,6 @@ export function useCreateSessionPanelState({
   onCreated: (chat: ChatSummary) => void;
 }) {
   const handleError = useErrorMessage();
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<CreateSessionFormValues>({
     resolver: zodResolver(createSessionFormSchema),
@@ -159,7 +158,6 @@ export function useCreateSessionPanelState({
 
   return {
     form,
-    advancedOpen,
     submitError,
     selectedRunnerId: fieldValues.selectedRunnerId,
     selectedProfileId: fieldValues.selectedProfileId,
@@ -174,7 +172,6 @@ export function useCreateSessionPanelState({
     hasInitialMessageDraft,
     runnerContext,
     isCreating: createMutation.isPending,
-    setAdvancedOpen,
     toggleSelection,
     submit,
     handlePromptKeyDown

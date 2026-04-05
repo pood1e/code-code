@@ -6,6 +6,7 @@ import type {
 import type { ZodTypeAny } from 'zod';
 import type {
   RawOutputChunk,
+  RunnerProfileInstallInput,
   RunnerSendPayload,
   RunnerSessionRecord,
   RunnerType
@@ -36,6 +37,11 @@ export class MockRunnerType implements RunnerType {
 
   checkHealth() {
     return Promise.resolve<'online'>('online');
+  }
+
+  installProfile(_input: RunnerProfileInstallInput): Promise<void> {
+    void _input;
+    return Promise.resolve();
   }
 
   createSession(

@@ -10,6 +10,15 @@ export enum SessionWorkspaceResourceKind {
   Doc = 'doc'
 }
 
+export type SessionWorkspaceResourceBranchConfig = {
+  branch?: string;
+};
+
+export type SessionWorkspaceResourceConfig = {
+  code?: SessionWorkspaceResourceBranchConfig;
+  doc?: SessionWorkspaceResourceBranchConfig;
+};
+
 export enum SessionStatus {
   Creating = 'creating',
   Ready = 'ready',
@@ -59,6 +68,7 @@ export type PlatformSessionConfig = {
   workspaceRoot: string;
   cwd: string;
   workspaceResources: SessionWorkspaceResourceKind[];
+  workspaceResourceConfig?: SessionWorkspaceResourceConfig;
   skillIds: string[];
   ruleIds: string[];
   mcps: PlatformSessionMcp[];
@@ -263,6 +273,7 @@ export type CreateSessionInput = {
   scopeId: string;
   runnerId: string;
   workspaceResources: SessionWorkspaceResourceKind[];
+  workspaceResourceConfig?: SessionWorkspaceResourceConfig;
   skillIds: string[];
   ruleIds: string[];
   mcps: PlatformSessionMcp[];

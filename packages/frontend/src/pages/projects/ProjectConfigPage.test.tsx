@@ -32,6 +32,7 @@ function createProject(): Project {
     description: '旧描述',
     gitUrl: 'git@github.com:example/workbench.git',
     workspacePath: '/tmp/workbench',
+    docSource: '/tmp/docs',
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z'
   };
@@ -112,7 +113,8 @@ describe('ProjectConfigPage', () => {
       expect(vi.mocked(updateProject).mock.calls[0]?.[1]).toEqual({
         name: 'New Name',
         description: '旧描述',
-        workspacePath: '/tmp/new-workbench'
+        workspacePath: '/tmp/new-workbench',
+        docSource: '/tmp/docs'
       });
       expect(useProjectStore.getState().currentProjectId).toBe('project-1');
     });
@@ -143,6 +145,29 @@ describe('ProjectConfigPage', () => {
 
     expect(errorMessages).toHaveLength(2);
     expect(screen.getByRole('alert')).toHaveTextContent('保存失败');
+  });
+
+  it('保存遇到 docSource 400 错误时，应就地展示字段错误', async () => {
+    vi.mocked(updateProject).mockRejectedValue(
+      new ApiRequestError({
+        code: 400,
+        message: 'docSource does not exist or is not a directory',
+        data: null
+      })
+    );
+
+    const { user } = renderProjectConfigPage();
+
+    await screen.findByDisplayValue('Old Name');
+    await user.clear(screen.getByLabelText('文档地址'));
+    await user.type(screen.getByLabelText('文档地址'), '/bad/docs');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(
+      await screen.findAllByText(
+        'docSource does not exist or is not a directory'
+      )
+    ).toHaveLength(2);
   });
 
   it('删除当前 Project 后，应回到 Projects 列表并清空当前 Project 状态', async () => {

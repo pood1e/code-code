@@ -362,7 +362,7 @@ describe('CreateSessionPanel', () => {
     expect(rawInput).toHaveValue('x\n');
   });
 
-  it('展开高级设置后，应支持选择 Profile 并展示资源预填结果与运行参数', async () => {
+  it('应支持选择 Profile，并在工作区与资源区展示资源预填结果', async () => {
     vi.mocked(getProfile).mockResolvedValue({
       id: 'profile-1',
       name: 'Default',
@@ -420,8 +420,6 @@ describe('CreateSessionPanel', () => {
       }
     });
 
-    await user.click(screen.getByRole('button', { name: '高级设置' }));
-    expect(screen.getByText('运行参数 (Runtime Config)')).toBeInTheDocument();
     expect(screen.getByLabelText('模型')).toBeInTheDocument();
 
     await user.selectOptions(
@@ -430,10 +428,9 @@ describe('CreateSessionPanel', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getAllByText('已选 1')).toHaveLength(3);
-      expect(screen.getByText('Skill One')).toBeInTheDocument();
-      expect(screen.getByText('Rule One')).toBeInTheDocument();
-      expect(screen.getByText('Filesystem MCP')).toBeInTheDocument();
+      expect(screen.getAllByText('Skill One').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Rule One').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Filesystem MCP').length).toBeGreaterThan(0);
     });
   });
 
@@ -442,8 +439,6 @@ describe('CreateSessionPanel', () => {
       runnerTypes: [createQwenRunnerType()],
       runners: [createRunnerWithType('runner-qwen', 'Qwen Runner', 'qwen-cli')]
     });
-
-    await user.click(screen.getByRole('button', { name: '高级设置' }));
 
     const approvalModeField = screen.getByRole('combobox', {
       name: '审批模式'
@@ -478,9 +473,9 @@ describe('CreateSessionPanel', () => {
       screen.getByPlaceholderText('输入首条消息...'),
       '要被重置的草稿'
     );
-    await user.click(screen.getByRole('button', { name: '高级设置' }));
-    expect(screen.getByLabelText('语气')).toBeInTheDocument();
     expect(screen.getByLabelText('沙箱')).toBeInTheDocument();
+    await user.click(screen.getByText('高级输入'));
+    expect(screen.getByLabelText('语气')).toBeInTheDocument();
 
     await user.selectOptions(
       screen.getByRole('combobox', { name: '选择 AgentRunner' }),
@@ -508,7 +503,6 @@ describe('CreateSessionPanel', () => {
 
     await user.click(screen.getByPlaceholderText(/"prompt"/));
     await user.paste('{"prompt":"hi"}');
-    await user.click(screen.getByRole('button', { name: '高级设置' }));
     await user.type(screen.getByLabelText('模型'), 'bad-runtime');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
