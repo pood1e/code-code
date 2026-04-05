@@ -40,7 +40,8 @@ export async function setupTestApp(): Promise<INestApplication> {
   });
 
   app = await NestFactory.create(AppModule, {
-    logger: false // Suppress logs during tests
+    logger: false,
+    abortOnError: false
   });
 
   const reflector = app.get(Reflector);
@@ -82,6 +83,10 @@ export async function resetDatabase(): Promise<void> {
     db.sessionMetric.deleteMany(),
     db.messageToolUse.deleteMany(),
     db.sessionMessage.deleteMany(),
+    db.pipelineArtifact.deleteMany(),
+    db.pipelineStage.deleteMany(),
+    db.pipeline.deleteMany(),
+    db.chat.deleteMany(),
     db.agentSession.deleteMany(),
     db.notificationTask.deleteMany(),
     db.notificationChannel.deleteMany(),

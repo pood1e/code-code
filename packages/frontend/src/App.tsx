@@ -46,6 +46,12 @@ const ProjectSessionsPage = lazy(() =>
     default: module.ProjectSessionsPage
   }))
 );
+const ProjectPipelinesPage = lazy(() =>
+  import('./pages/projects/ProjectPipelinesPage').then((module) => ({
+    default: module.ProjectPipelinesPage
+  }))
+);
+
 const ProjectChannelsPage = lazy(() =>
   import('./pages/projects/ProjectChannelsPage').then((module) => ({
     default: module.ProjectChannelsPage
@@ -114,7 +120,7 @@ export function App() {
           }
         />
         <Route
-          path={projectRoutePatterns.sessions}
+          path={projectRoutePatterns.chats}
           element={
             <LazyRoute>
               <ProjectSessionsPage />
@@ -122,10 +128,26 @@ export function App() {
           }
         />
         <Route
-          path={projectRoutePatterns.sessionDetail}
+          path={projectRoutePatterns.chatDetail}
           element={
             <LazyRoute>
               <ProjectSessionsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.pipelines}
+          element={
+            <LazyRoute>
+              <ProjectPipelinesPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.pipelineDetail}
+          element={
+            <LazyRoute>
+              <ProjectPipelinesPage />
             </LazyRoute>
           }
         />

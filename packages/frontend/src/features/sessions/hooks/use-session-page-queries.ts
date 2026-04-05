@@ -7,16 +7,18 @@ import {
   listAgentRunners,
   listAgentRunnerTypes
 } from '@/api/agent-runners';
+import { getChat, listChats } from '@/api/chats';
 import { listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
-import { getSession, listSessionMessages, listSessions } from '@/api/sessions';
+import { getSession, listSessionMessages } from '@/api/sessions';
 import { NOOP_QUERY_KEY, queryKeys } from '@/query/query-keys';
 
+const chatQueryKeys = queryKeys.chats;
 const sessionQueryKeys = queryKeys.sessions;
 
 export function useSessionPageQueries(
   projectId: string | undefined,
-  selectedSessionId: string | null,
+  selectedChatId: string | null,
   createPanelOpen: boolean
 ) {
   const [
@@ -59,13 +61,23 @@ export function useSessionPageQueries(
     ]
   });
 
-  const sessionsQuery = useQuery({
+  const chatsQuery = useQuery({
     queryKey: projectId
-      ? sessionQueryKeys.list(projectId)
-      : sessionQueryKeys.lists(),
-    queryFn: () => listSessions(projectId!),
+      ? chatQueryKeys.list(projectId)
+      : chatQueryKeys.lists(),
+    queryFn: () => listChats(projectId!),
     enabled: Boolean(projectId)
   });
+
+  const selectedChatQuery = useQuery({
+    queryKey: selectedChatId
+      ? chatQueryKeys.detail(selectedChatId)
+      : NOOP_QUERY_KEY,
+    queryFn: () => getChat(selectedChatId!),
+    enabled: Boolean(selectedChatId)
+  });
+
+  const selectedSessionId = selectedChatQuery.data?.sessionId ?? null;
 
   const sessionDetailQuery = useQuery({
     queryKey: selectedSessionId
@@ -102,6 +114,7 @@ export function useSessionPageQueries(
       .flatMap((page) => page.data);
   }, [sessionMessagesQuery.data]);
 
+  const selectedChat = selectedChatQuery.data;
   const selectedSession = sessionDetailQuery.data;
   const runnerTypes = useMemo(
     () => runnerTypesQuery.data ?? [],
@@ -143,7 +156,8 @@ export function useSessionPageQueries(
 
   // Aggregate all query errors for centralized handling
   const queryError =
-    sessionsQuery.error ??
+    chatsQuery.error ??
+    selectedChatQuery.error ??
     sessionDetailQuery.error ??
     sessionMessagesQuery.error ??
     selectedRunnerQuery.error ??
@@ -155,7 +169,9 @@ export function useSessionPageQueries(
     rulesQuery.error;
 
   return {
-    sessionsQuery,
+    chatsQuery,
+    selectedChatQuery,
+    selectedChat,
     sessionDetailQuery,
     sessionMessagesQuery,
     selectedRunnerQuery,

@@ -5,6 +5,8 @@ dist
 coverage
 packages/backend/prisma/dev.db
 packages/backend/prisma/dev.db-journal
+packages/backend/prisma/test.db
+packages/backend/prisma/test.db-journal
 packages/backend/.env
 packages/frontend/tsconfig.tsbuildinfo
 

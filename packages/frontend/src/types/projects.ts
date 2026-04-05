@@ -7,7 +7,8 @@ export const projectConfig = {
 
 export type ProjectTabKey =
   | 'dashboard'
-  | 'sessions'
+  | 'chats'
+  | 'pipelines'
   | 'channels'
   | 'send'
   | 'notifications'
@@ -16,8 +17,10 @@ export type ProjectTabKey =
 export const projectRoutePatterns = {
   list: projectConfig.path,
   dashboard: `${projectConfig.path}/:id/dashboard`,
-  sessions: `${projectConfig.path}/:id/sessions`,
-  sessionDetail: `${projectConfig.path}/:id/sessions/:sessionId`,
+  chats: `${projectConfig.path}/:id/chats`,
+  chatDetail: `${projectConfig.path}/:id/chats/:chatId`,
+  pipelines: `${projectConfig.path}/:id/pipelines`,
+  pipelineDetail: `${projectConfig.path}/:id/pipelines/:pipelineId`,
   channels: `${projectConfig.path}/:id/channels`,
   send: `${projectConfig.path}/:id/send`,
   notifications: `${projectConfig.path}/:id/notifications`,
@@ -44,6 +47,24 @@ export function buildProjectNotificationsPath(projectId: string) {
   return `${projectConfig.path}/${projectId}/notifications`;
 }
 
+export function buildProjectChatsPath(
+  projectId: string,
+  chatId?: string | null
+) {
+  return chatId
+    ? `${projectConfig.path}/${projectId}/chats/${chatId}`
+    : `${projectConfig.path}/${projectId}/chats`;
+}
+
+export function buildProjectPipelinesPath(
+  projectId: string,
+  pipelineId?: string | null
+) {
+  return pipelineId
+    ? `${projectConfig.path}/${projectId}/pipelines/${pipelineId}`
+    : `${projectConfig.path}/${projectId}/pipelines`;
+}
+
 export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
   switch (tab) {
     case 'dashboard':
@@ -56,16 +77,9 @@ export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
       return buildProjectSendPath(projectId);
     case 'notifications':
       return buildProjectNotificationsPath(projectId);
+    case 'pipelines':
+      return buildProjectPipelinesPath(projectId);
     default:
-      return buildProjectSessionsPath(projectId);
+      return buildProjectChatsPath(projectId);
   }
-}
-
-export function buildProjectSessionsPath(
-  projectId: string,
-  sessionId?: string | null
-) {
-  return sessionId
-    ? `${projectConfig.path}/${projectId}/sessions/${sessionId}`
-    : `${projectConfig.path}/${projectId}/sessions`;
 }

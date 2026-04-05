@@ -21,6 +21,8 @@ import { SessionsService } from './sessions.service';
     SessionEventStore,
     SessionMapper,
     SessionEventsGuard
-  ]
+  ],
+  exports: [SessionsCommandService]
 })
 export class SessionsModule {}
+

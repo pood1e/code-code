@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   AgentRunnerSummary,
+  ChatSummary,
   Profile,
   ResourceByKind,
-  RunnerTypeResponse,
-  SessionDetail
+  RunnerTypeResponse
 } from '@agent-workbench/shared';
 
 import { probeAgentRunnerContext } from '@/api/agent-runners';
@@ -49,7 +49,7 @@ export function useCreateSessionPanelState({
   projectId: string;
   runnerTypes: RunnerTypeResponse[];
   runners: AgentRunnerSummary[];
-  onCreated: (session: SessionDetail) => void;
+  onCreated: (chat: ChatSummary) => void;
 }) {
   const handleError = useErrorMessage();
   const [advancedOpen, setAdvancedOpen] = useState(false);

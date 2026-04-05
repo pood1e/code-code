@@ -2,10 +2,10 @@ import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   AgentRunnerSummary,
+  ChatSummary,
   Profile,
   ResourceByKind,
-  RunnerTypeResponse,
-  SessionDetail
+  RunnerTypeResponse
 } from '@agent-workbench/shared';
 import { SessionStatus } from '@agent-workbench/shared';
 
@@ -212,24 +212,18 @@ function createMcp(id: string, name: string): ResourceByKind['mcps'] {
   };
 }
 
-function createSessionDetail(): SessionDetail {
+function createChatSummary(): ChatSummary {
   return {
-    id: 'session-1',
+    id: 'chat-1',
     scopeId: 'project-1',
+    sessionId: 'session-1',
+    title: null,
     runnerId: 'runner-1',
     runnerType: 'mock',
     status: SessionStatus.Ready,
     lastEventId: 0,
     createdAt: '2026-04-03T10:00:00.000Z',
-    updatedAt: '2026-04-03T10:00:00.000Z',
-    platformSessionConfig: {
-      cwd: '/tmp',
-      skillIds: [],
-      ruleIds: [],
-      mcps: []
-    },
-    runnerSessionConfig: {},
-    defaultRuntimeConfig: null
+    updatedAt: '2026-04-03T10:00:00.000Z'
   };
 }
 
@@ -248,7 +242,7 @@ function renderPanel({
 }: {
   canCancel?: boolean;
   onCancel?: () => void;
-  onCreated?: (session: SessionDetail) => void;
+  onCreated?: (chat: ChatSummary) => void;
   runnerTypes?: RunnerTypeResponse[];
   runners?: AgentRunnerSummary[];
   profiles?: Profile[];
@@ -278,7 +272,7 @@ describe('CreateSessionPanel', () => {
     handleErrorMock.mockReset();
     createSessionMutationMock.isPending = false;
     createSessionMutationMock.mutateAsync.mockResolvedValue(
-      createSessionDetail()
+      createChatSummary()
     );
     vi.mocked(probeAgentRunnerContext).mockResolvedValue({});
     vi.mocked(getProfile).mockResolvedValue({
