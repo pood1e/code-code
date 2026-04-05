@@ -4,7 +4,6 @@ import {
   OnApplicationBootstrap,
   OnApplicationShutdown
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 
 import {
   PipelineArtifactKey,
@@ -12,26 +11,17 @@ import {
   PipelineStatus
 } from '@agent-workbench/shared';
 
-import { PrismaService } from '../../prisma/prisma.service';
+import { PipelineRepository } from './pipeline.repository';
 import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
 import { getStageTypeForStep } from './pipeline-stage.constants';
 import {
   parsePipelineRuntimeState,
   type PipelineRuntimeState
 } from './pipeline-runtime-state';
-import { PipelinesService } from './pipelines.service';
 import { estimateAgent } from './plan-graph/agents/estimate.agent';
 import { breakdownAgent } from './plan-graph/agents/breakdown.agent';
 import { specAgent } from './plan-graph/agents/spec.agent';
 import { evaluationNode } from './plan-graph/nodes/evaluation.node';
-
-type ClaimedPipelineRow = {
-  id: string;
-  featureRequest: string | null;
-  state: unknown;
-};
-
-type PipelineStageRow = Prisma.PipelineStageGetPayload<object>;
 
 @Injectable()
 export class PipelineWorkerService
@@ -41,9 +31,8 @@ export class PipelineWorkerService
   private isRunning = false;
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService,
-    private readonly pipelinesService: PipelinesService
+    private readonly pipelineRepository: PipelineRepository,
+    private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService
   ) {}
 
   onApplicationBootstrap(): void {
@@ -58,7 +47,8 @@ export class PipelineWorkerService
 
   private async pollLoop(): Promise<void> {
     while (this.isRunning) {
-      const pipeline = await this.pipelineRuntimeCommandService.claimNextPendingPipeline();
+      const pipeline =
+        await this.pipelineRuntimeCommandService.claimNextPendingPipeline();
       if (pipeline) {
         await this.processClaimedPipeline(pipeline).catch((error) => {
           this.logger.error(
@@ -74,29 +64,21 @@ export class PipelineWorkerService
   }
 
   private async processClaimedPipeline(
-    claimedPipeline: ClaimedPipelineRow
+    claimedPipeline: { id: string }
   ): Promise<void> {
     while (this.isRunning) {
-      const pipeline = await this.prisma.pipeline.findUnique({
-        where: { id: claimedPipeline.id },
-        select: {
-          id: true,
-          featureRequest: true,
-          state: true,
-          status: true
-        }
-      });
-
+      const pipeline = await this.pipelineRepository.findPipelineById(
+        claimedPipeline.id
+      );
       if (!pipeline) {
         return;
       }
 
-      const pipelineStatus = pipeline.status as PipelineStatus;
       if (
-        pipelineStatus === PipelineStatus.Cancelled ||
-        pipelineStatus === PipelineStatus.Completed ||
-        pipelineStatus === PipelineStatus.Failed ||
-        pipelineStatus === PipelineStatus.Paused
+        pipeline.status === PipelineStatus.Cancelled ||
+        pipeline.status === PipelineStatus.Completed ||
+        pipeline.status === PipelineStatus.Failed ||
+        pipeline.status === PipelineStatus.Paused
       ) {
         return;
       }
@@ -141,15 +123,16 @@ export class PipelineWorkerService
 
         switch (runtimeState.currentStep) {
           case 'breakdown':
-            await this.runBreakdownStep(pipeline.id, pipeline.featureRequest, runtimeState, stage);
+            await this.runBreakdownStep(
+              pipeline.id,
+              pipeline.featureRequest,
+              runtimeState,
+              stage
+            );
             break;
           case 'evaluation':
             if (
-              await this.runEvaluationStep(
-                pipeline.id,
-                runtimeState,
-                stage
-              )
+              await this.runEvaluationStep(pipeline.id, runtimeState, stage)
             ) {
               continue;
             }
@@ -166,11 +149,12 @@ export class PipelineWorkerService
           return;
         }
 
-        await this.pipelineRuntimeCommandService.failStage(
-          pipeline.id,
-          stage,
-          error instanceof Error ? error.message : String(error)
-        );
+        await this.pipelineRuntimeCommandService.failStage({
+          pipelineId: pipeline.id,
+          stageId: stage.id,
+          stageType: stage.stageType,
+          reason: error instanceof Error ? error.message : String(error)
+        });
         await this.failPipeline(
           pipeline.id,
           error instanceof Error ? error.message : String(error)
@@ -184,7 +168,7 @@ export class PipelineWorkerService
     pipelineId: string,
     featureRequest: string | null,
     runtimeState: PipelineRuntimeState,
-    stage: PipelineStageRow
+    stage: { id: string; stageType: PipelineStageType }
   ) {
     const update = breakdownAgent({
       featureRequest: featureRequest ?? '',
@@ -204,32 +188,31 @@ export class PipelineWorkerService
       currentStep: 'evaluation'
     };
 
-    const completed = await this.pipelineRuntimeCommandService.completeStage(
+    await this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
-      stage,
+      stageId: stage.id,
+      stageType: stage.stageType,
       nextState,
-      {
-        retryCount: nextState.retryCount
-      }
-    );
-    if (!completed) {
-      return;
-    }
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return;
-    }
-    await this.writeArtifacts(
-      pipelineId,
-      stage.id,
-      stage.stageType as PipelineStageType,
-      nextState
-    );
+      retryCount: nextState.retryCount,
+      artifactIntents: nextState.prd
+        ? [
+            {
+              stageId: stage.id,
+              artifactKey: PipelineArtifactKey.Prd,
+              attempt: nextState.attempt,
+              name: 'prd.json',
+              contentType: 'application/json',
+              content: JSON.stringify(nextState.prd, null, 2)
+            }
+          ]
+        : []
+    });
   }
 
   private async runEvaluationStep(
     pipelineId: string,
     runtimeState: PipelineRuntimeState,
-    stage: PipelineStageRow
+    stage: { id: string; stageType: PipelineStageType }
   ): Promise<boolean> {
     const update = evaluationNode({
       prd: runtimeState.prd,
@@ -250,22 +233,21 @@ export class PipelineWorkerService
       const nextRetryCount = runtimeState.retryCount + 1;
       const exceeded = nextRetryCount > runtimeState.config.maxRetry;
 
-      const failed = await this.pipelineRuntimeCommandService.failStage(
+      const failed = await this.pipelineRuntimeCommandService.failStage({
         pipelineId,
-        stage,
-        update.breakdownFeedback.reason,
-        {
-          retryCount: nextRetryCount,
-          nextState: exceeded
-            ? undefined
-            : {
-                ...runtimeState,
-                breakdownFeedback: update.breakdownFeedback,
-                retryCount: nextRetryCount,
-                currentStep: 'breakdown'
-              }
-        }
-      );
+        stageId: stage.id,
+        stageType: stage.stageType,
+        reason: update.breakdownFeedback.reason,
+        retryCount: nextRetryCount,
+        nextState: exceeded
+          ? undefined
+          : {
+              ...runtimeState,
+              breakdownFeedback: update.breakdownFeedback,
+              retryCount: nextRetryCount,
+              currentStep: 'breakdown'
+            }
+      });
       if (!failed) {
         return false;
       }
@@ -287,24 +269,19 @@ export class PipelineWorkerService
       currentStep: 'spec'
     };
 
-    const completed = await this.pipelineRuntimeCommandService.completeStage(
+    return this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
-      stage,
+      stageId: stage.id,
+      stageType: stage.stageType,
       nextState,
-      {
-        retryCount: nextState.retryCount
-      }
-    );
-    if (!completed) {
-      return false;
-    }
-    return true;
+      retryCount: nextState.retryCount
+    });
   }
 
   private async runSpecStep(
     pipelineId: string,
     runtimeState: PipelineRuntimeState,
-    stage: PipelineStageRow
+    stage: { id: string; stageType: PipelineStageType }
   ) {
     const update = specAgent({
       prd: runtimeState.prd,
@@ -321,29 +298,31 @@ export class PipelineWorkerService
       currentStep: 'estimate'
     };
 
-    const completed = await this.pipelineRuntimeCommandService.completeStage(
+    await this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
-      stage,
-      nextState
-    );
-    if (!completed) {
-      return;
-    }
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return;
-    }
-    await this.writeArtifacts(
-      pipelineId,
-      stage.id,
-      stage.stageType as PipelineStageType,
-      nextState
-    );
+      stageId: stage.id,
+      stageType: stage.stageType,
+      nextState,
+      artifactIntents:
+        nextState.acSpec.length > 0
+          ? [
+              {
+                stageId: stage.id,
+                artifactKey: PipelineArtifactKey.AcSpec,
+                attempt: nextState.attempt,
+                name: 'ac-spec.json',
+                contentType: 'application/json',
+                content: JSON.stringify(nextState.acSpec, null, 2)
+              }
+            ]
+          : []
+    });
   }
 
   private async runEstimateStep(
     pipelineId: string,
     runtimeState: PipelineRuntimeState,
-    stage: PipelineStageRow
+    stage: { id: string; stageType: PipelineStageType }
   ) {
     const update = estimateAgent({
       prd: runtimeState.prd,
@@ -360,23 +339,27 @@ export class PipelineWorkerService
       currentStep: 'human_review'
     };
 
-    const completed = await this.pipelineRuntimeCommandService.completeStage(
+    const completed = await this.pipelineRuntimeCommandService.completeStage({
       pipelineId,
-      stage,
-      nextState
-    );
+      stageId: stage.id,
+      stageType: stage.stageType,
+      nextState,
+      artifactIntents: nextState.planReport
+        ? [
+            {
+              stageId: stage.id,
+              artifactKey: PipelineArtifactKey.PlanReport,
+              attempt: nextState.attempt,
+              name: 'plan-report.md',
+              contentType: 'text/markdown',
+              content: nextState.planReport
+            }
+          ]
+        : []
+    });
     if (!completed) {
       return;
     }
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return;
-    }
-    await this.writeArtifacts(
-      pipelineId,
-      stage.id,
-      stage.stageType as PipelineStageType,
-      nextState
-    );
 
     if (await this.isPipelineCancelled(pipelineId)) {
       return;
@@ -393,69 +376,19 @@ export class PipelineWorkerService
     await this.pipelineRuntimeCommandService.failExecution(pipelineId, reason);
   }
 
-  private async writeArtifacts(
-    pipelineId: string,
-    stageId: string,
-    stageType: PipelineStageType,
-    runtimeState: PipelineRuntimeState
-  ) {
-    if (stageType === PipelineStageType.Breakdown && runtimeState.prd) {
-      await this.pipelinesService.createManagedArtifact(pipelineId, {
-        stageId,
-        artifactKey: PipelineArtifactKey.Prd,
-        attempt: runtimeState.attempt,
-        name: 'prd.json',
-        contentType: 'application/json',
-        content: JSON.stringify(runtimeState.prd, null, 2)
-      });
-    }
-
-    if (stageType === PipelineStageType.Spec && runtimeState.acSpec.length > 0) {
-      await this.pipelinesService.createManagedArtifact(pipelineId, {
-        stageId,
-        artifactKey: PipelineArtifactKey.AcSpec,
-        attempt: runtimeState.attempt,
-        name: 'ac-spec.json',
-        contentType: 'application/json',
-        content: JSON.stringify(runtimeState.acSpec, null, 2)
-      });
-    }
-
-    if (stageType === PipelineStageType.Estimate && runtimeState.planReport) {
-      await this.pipelinesService.createManagedArtifact(pipelineId, {
-        stageId,
-        artifactKey: PipelineArtifactKey.PlanReport,
-        attempt: runtimeState.attempt,
-        name: 'plan-report.md',
-        contentType: 'text/markdown',
-        content: runtimeState.planReport
-      });
-    }
-  }
-
   private async recoverInterruptedPipelinesOnBoot(): Promise<void> {
-    const count = await this.prisma.pipeline.updateMany({
-      where: { status: PipelineStatus.Running },
-      data: { status: PipelineStatus.Pending }
-    });
-
-    if (count.count > 0) {
+    const recovered =
+      await this.pipelineRuntimeCommandService.recoverInterruptedPipelinesOnBoot();
+    if (recovered > 0) {
       this.logger.warn(
-        `Recovered ${count.count} interrupted pipeline(s) from 'running' -> 'pending'`
+        `Recovered ${recovered} interrupted pipeline(s) from 'running' -> 'pending'`
       );
     }
   }
 
   private async isPipelineCancelled(pipelineId: string): Promise<boolean> {
-    const pipeline = await this.prisma.pipeline.findUnique({
-      where: { id: pipelineId },
-      select: { status: true }
-    });
-
-    return (
-      (pipeline?.status as PipelineStatus | undefined) ===
-      PipelineStatus.Cancelled
-    );
+    const pipeline = await this.pipelineRepository.findPipelineById(pipelineId);
+    return pipeline?.status === PipelineStatus.Cancelled;
   }
 }
 

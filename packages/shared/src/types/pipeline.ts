@@ -115,7 +115,7 @@ export type PipelineArtifactSummary = {
   stageId: string | null;
   name: string;
   contentType: ArtifactContentType;
-  storageRef: string;
+  storageRef: string | null;
   metadata: PipelineArtifactMetadata | null;
   createdAt: string;
 };
@@ -209,6 +209,7 @@ export const PIPELINE_EVENT_KINDS = [
   'stage_completed',
   'stage_failed',
   'pipeline_paused',
+  'pipeline_resumed',
   'pipeline_completed',
   'pipeline_failed',
   'pipeline_cancelled'

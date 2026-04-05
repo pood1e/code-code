@@ -189,6 +189,24 @@ describe('Pipelines Runtime API', () => {
       expect(detail.runnerId).toBe(runnerId);
       expect(detail.stages).toHaveLength(5);
     });
+
+    it('并发 start 同一个 draft pipeline 时应返回一个 200 和一个 409', async () => {
+      const pipeline = await createDraftPipeline();
+
+      const [first, second] = await Promise.all([
+        api().post(`/api/pipelines/${pipeline.id}/start`).send({ runnerId }),
+        api().post(`/api/pipelines/${pipeline.id}/start`).send({ runnerId })
+      ]);
+
+      expect([first.status, second.status].sort((left, right) => left - right)).toEqual([
+        200,
+        409
+      ]);
+
+      await waitForPipelineStatus(pipeline.id, 'paused');
+      const detail = await getPipelineDetail(pipeline.id);
+      expect(detail.stages).toHaveLength(5);
+    });
   });
 
   describe('human review resume and replay', () => {
@@ -241,6 +259,29 @@ describe('Pipelines Runtime API', () => {
       expect(eventIds).toEqual([...new Set(eventIds)].sort((left, right) => left - right));
       expect(eventIds.at(-1)).toBe(afterRestart.lastEventId);
     });
+
+    it('submitDecision 恢复后应写出 pipeline_resumed 事件', async () => {
+      const pipeline = await createDraftPipeline();
+      await startPipeline(pipeline.id);
+      await waitForPipelineStatus(pipeline.id, 'paused');
+
+      const beforeDecision = await getPrisma().pipeline.findUniqueOrThrow({
+        where: { id: pipeline.id },
+        select: { lastEventId: true }
+      });
+
+      await submitDecision(
+        pipeline.id,
+        HumanDecisionAction.Modify,
+        '补充边界条件'
+      );
+      await waitForPipelineStatus(pipeline.id, 'paused');
+
+      const replay = await collectSse(
+        `/api/pipelines/${pipeline.id}/events?lastEventId=${beforeDecision.lastEventId}`
+      );
+      expect(replay.events.map((event) => event.type)).toContain('pipeline_resumed');
+    });
   });
 
   describe('POST /pipelines/:id/decision', () => {
@@ -279,26 +320,29 @@ describe('Pipelines Runtime API', () => {
       const modifiedSpec = modifiedDetail.stages.find(
         (stage) => stage.stageType === 'spec'
       );
-      const specArtifacts = modifiedDetail.artifacts.filter(
+      expect(modifiedBreakdown?.updatedAt).toBe(initialBreakdownUpdatedAt);
+      expect(modifiedSpec?.updatedAt).not.toBe(initialSpecUpdatedAt);
+      await waitForArtifactVersions(pipeline.id, PipelineArtifactKey.AcSpec, [2, 1]);
+      await waitForArtifactVersions(
+        pipeline.id,
+        PipelineArtifactKey.PlanReport,
+        [2, 1]
+      );
+
+      const readyModifiedDetail = await getPipelineDetail(pipeline.id);
+      const readySpecArtifacts = readyModifiedDetail.artifacts.filter(
         (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.AcSpec
       );
-      const estimateArtifacts = modifiedDetail.artifacts.filter(
+      const readyEstimateArtifacts = readyModifiedDetail.artifacts.filter(
         (artifact) =>
           artifact.metadata?.artifactKey === PipelineArtifactKey.PlanReport
       );
 
-      expect(modifiedBreakdown?.updatedAt).toBe(initialBreakdownUpdatedAt);
-      expect(modifiedSpec?.updatedAt).not.toBe(initialSpecUpdatedAt);
-      expect(specArtifacts.map((artifact) => artifact.metadata?.version)).toEqual([
-        2,
-        1
-      ]);
-      expect(specArtifacts.map((artifact) => artifact.metadata?.attempt)).toEqual([
-        2,
-        1
-      ]);
       expect(
-        estimateArtifacts.map((artifact) => artifact.metadata?.version)
+        readySpecArtifacts.map((artifact) => artifact.metadata?.attempt)
+      ).toEqual([2, 1]);
+      expect(
+        readyEstimateArtifacts.map((artifact) => artifact.metadata?.version)
       ).toEqual([2, 1]);
     });
 
@@ -324,16 +368,15 @@ describe('Pipelines Runtime API', () => {
       const rejectedBreakdown = rejectedDetail.stages.find(
         (stage) => stage.stageType === 'breakdown'
       );
-      const prdArtifacts = rejectedDetail.artifacts.filter(
+      expect(rejectedBreakdown?.updatedAt).not.toBe(initialBreakdownUpdatedAt);
+      await waitForArtifactVersions(pipeline.id, PipelineArtifactKey.Prd, [2, 1]);
+
+      const readyRejectedDetail = await getPipelineDetail(pipeline.id);
+      const readyPrdArtifacts = readyRejectedDetail.artifacts.filter(
         (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
       );
 
-      expect(rejectedBreakdown?.updatedAt).not.toBe(initialBreakdownUpdatedAt);
-      expect(prdArtifacts.map((artifact) => artifact.metadata?.version)).toEqual([
-        2,
-        1
-      ]);
-      expect(prdArtifacts.map((artifact) => artifact.metadata?.attempt)).toEqual([
+      expect(readyPrdArtifacts.map((artifact) => artifact.metadata?.attempt)).toEqual([
         2,
         1
       ]);
@@ -624,4 +667,40 @@ async function waitForCondition(
   }
 
   throw new Error('Condition was not met before timeout');
+}
+
+async function waitForArtifactVersions(
+  pipelineId: string,
+  artifactKey: PipelineArtifactKey,
+  expectedVersions: number[],
+  timeoutMs = 5_000
+) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const detail = await fetchPipelineDetail(pipelineId);
+    const versions = detail.artifacts
+      .filter((artifact) => artifact.metadata?.artifactKey === artifactKey)
+      .map((artifact) => artifact.metadata?.version);
+
+    if (JSON.stringify(versions) === JSON.stringify(expectedVersions)) {
+      return;
+    }
+
+    await sleep(50);
+  }
+
+  const detail = await fetchPipelineDetail(pipelineId);
+  const versions = detail.artifacts
+    .filter((artifact) => artifact.metadata?.artifactKey === artifactKey)
+    .map((artifact) => artifact.metadata?.version);
+  throw new Error(
+    `Artifact versions for ${artifactKey} did not match ${expectedVersions.join(
+      ','
+    )}, current: ${versions.join(',')}`
+  );
+}
+
+async function fetchPipelineDetail(pipelineId: string) {
+  const response = await api().get(`/api/pipelines/${pipelineId}`);
+  return expectSuccess<PipelineDetail>(response, 200);
 }

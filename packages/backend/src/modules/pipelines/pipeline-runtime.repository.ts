@@ -1,0 +1,102 @@
+import type {
+  PipelineArtifactKey,
+  PipelineConfig,
+  PipelineEvent,
+  PipelineStageStatus,
+  PipelineStageType,
+  PipelineStatus
+} from '@agent-workbench/shared';
+
+import type {
+  PipelineRecord,
+  PipelineStageRecord
+} from './pipeline.repository';
+import type { PipelineRuntimeState } from './pipeline-runtime-state';
+
+export type ClaimedPipelineRecord = {
+  id: string;
+  featureRequest: string | null;
+  state: unknown;
+};
+
+export type PipelineDecisionContext = {
+  pipeline: PipelineRecord;
+  stages: PipelineStageRecord[];
+};
+
+export type PipelineRuntimeMutationResult<T> = {
+  value: T;
+  events: PipelineEvent[];
+  shouldCloseStream?: boolean;
+};
+
+export type ManagedArtifactIntent = {
+  stageId?: string | null;
+  artifactKey: PipelineArtifactKey;
+  attempt: number;
+  name: string;
+  contentType: string;
+  content: string;
+};
+
+export abstract class PipelineRuntimeRepository {
+  abstract claimNextPendingPipeline(): Promise<ClaimedPipelineRecord | null>;
+  abstract recoverInterruptedPipelines(): Promise<number>;
+  abstract startDraftPipeline(input: {
+    pipelineId: string;
+    runnerId: string;
+    config: PipelineConfig;
+    runtimeState: PipelineRuntimeState;
+    stageDefinitions: Array<{
+      stageType: PipelineStageType;
+      name: string;
+      order: number;
+      status: PipelineStageStatus;
+    }>;
+  }): Promise<PipelineRecord | null>;
+  abstract getDecisionContext(id: string): Promise<PipelineDecisionContext | null>;
+  abstract startStage(
+    pipelineId: string,
+    stageType: PipelineStageType
+  ): Promise<PipelineRuntimeMutationResult<PipelineStageRecord> | null>;
+  abstract completeStage(input: {
+    pipelineId: string;
+    stageId: string;
+    stageType: PipelineStageType;
+    nextState: PipelineRuntimeState;
+    retryCount?: number;
+    artifactIntents?: ManagedArtifactIntent[];
+  }): Promise<PipelineRuntimeMutationResult<boolean> | null>;
+  abstract failStage(input: {
+    pipelineId: string;
+    stageId: string;
+    stageType: PipelineStageType;
+    reason: string;
+    retryCount?: number;
+    nextState?: PipelineRuntimeState;
+  }): Promise<PipelineRuntimeMutationResult<boolean> | null>;
+  abstract pauseForHumanReview(
+    pipelineId: string,
+    runtimeState: PipelineRuntimeState
+  ): Promise<PipelineRuntimeMutationResult<boolean> | null>;
+  abstract completeExecution(
+    pipelineId: string
+  ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
+  abstract failExecution(
+    pipelineId: string,
+    reason: string
+  ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
+  abstract cancelPipeline(
+    pipelineId: string
+  ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
+  abstract resumeFromHumanReview(input: {
+    pipelineId: string;
+    nextState: PipelineRuntimeState;
+    humanReviewStageId: string | null;
+    resetStageTypes: readonly PipelineStageType[];
+  }): Promise<PipelineRuntimeMutationResult<boolean> | null>;
+  abstract listEventsAfterEventId(
+    pipelineId: string,
+    afterEventId: number
+  ): Promise<PipelineEvent[]>;
+}

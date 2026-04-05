@@ -162,4 +162,107 @@ describe('Pipeline artifact migration', () => {
       db.close();
     }
   });
+
+  it('materialization 迁移后旧 artifact 应初始化为 ready 且保留 storageRef', () => {
+    const dbPath = path.join(
+      os.tmpdir(),
+      `pipeline-artifact-materialize-${Date.now()}-${Math.random()}.sqlite`
+    );
+    cleanupPaths.add(dbPath);
+
+    const db = new DatabaseSync(dbPath);
+
+    try {
+      db.exec(`
+        PRAGMA foreign_keys=ON;
+
+        CREATE TABLE "Pipeline" (
+          "id" TEXT NOT NULL PRIMARY KEY
+        );
+
+        CREATE TABLE "PipelineStage" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "pipelineId" TEXT NOT NULL,
+          CONSTRAINT "PipelineStage_pipelineId_fkey"
+            FOREIGN KEY ("pipelineId") REFERENCES "Pipeline" ("id")
+            ON DELETE CASCADE ON UPDATE CASCADE
+        );
+
+        CREATE TABLE "PipelineArtifact" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "pipelineId" TEXT NOT NULL,
+          "stageId" TEXT,
+          "artifactKey" TEXT,
+          "attempt" INTEGER,
+          "version" INTEGER,
+          "name" TEXT NOT NULL,
+          "contentType" TEXT NOT NULL,
+          "storageRef" TEXT NOT NULL,
+          "metadata" JSON,
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "PipelineArtifact_pipelineId_fkey"
+            FOREIGN KEY ("pipelineId") REFERENCES "Pipeline" ("id")
+            ON DELETE CASCADE ON UPDATE CASCADE,
+          CONSTRAINT "PipelineArtifact_stageId_fkey"
+            FOREIGN KEY ("stageId") REFERENCES "PipelineStage" ("id")
+            ON DELETE SET NULL ON UPDATE CASCADE
+        );
+
+        CREATE INDEX "idx_pipeline_artifact_pipeline_id"
+        ON "PipelineArtifact"("pipelineId");
+
+        CREATE INDEX "idx_pipeline_artifact_stage_id"
+        ON "PipelineArtifact"("stageId");
+
+        CREATE UNIQUE INDEX "uq_pipeline_artifact_version"
+        ON "PipelineArtifact"("pipelineId", "artifactKey", "version");
+
+        INSERT INTO "Pipeline" ("id") VALUES ('pipeline-1');
+        INSERT INTO "PipelineStage" ("id", "pipelineId") VALUES ('stage-1', 'pipeline-1');
+        INSERT INTO "PipelineArtifact" (
+          "id", "pipelineId", "stageId", "artifactKey", "attempt", "version",
+          "name", "contentType", "storageRef", "metadata", "createdAt"
+        ) VALUES (
+          'artifact-1', 'pipeline-1', 'stage-1', 'prd', 1, 1,
+          'prd.json', 'application/json', 'fs:///tmp/prd.json', NULL, '2026-04-05T00:00:00.000Z'
+        );
+      `);
+
+      db.exec(
+        fs.readFileSync(
+          path.join(
+            __dirname,
+            '..',
+            'prisma',
+            'migrations',
+            '20260405170000_add_pipeline_artifact_materialization',
+            'migration.sql'
+          ),
+          'utf8'
+        )
+      );
+
+      const artifact = db
+        .prepare(`
+          SELECT "status", "storageRef", "content", "materializeAttempts"
+          FROM "PipelineArtifact"
+          WHERE "id" = 'artifact-1'
+        `)
+        .get() as {
+        status: string;
+        storageRef: string | null;
+        content: string | null;
+        materializeAttempts: number;
+      };
+
+      expect(artifact).toEqual({
+        status: 'ready',
+        storageRef: 'fs:///tmp/prd.json',
+        content: null,
+        materializeAttempts: 0
+      });
+    } finally {
+      db.close();
+    }
+  });
 });
