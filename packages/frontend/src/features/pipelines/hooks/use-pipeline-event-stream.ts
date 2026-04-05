@@ -22,6 +22,7 @@ const INVALIDATING_PIPELINE_EVENT_KINDS = new Set<PipelineEventKind>([
   'stage_completed',
   'stage_failed',
   'pipeline_paused',
+  'pipeline_resumed',
   'pipeline_completed',
   'pipeline_failed',
   'pipeline_cancelled'

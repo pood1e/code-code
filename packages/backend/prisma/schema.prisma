@@ -334,16 +334,22 @@ model PipelineArtifact {
   artifactKey String?
   attempt     Int?
   version     Int?
+  status      String         @default("pending")
   name        String
   contentType String
-  storageRef  String
+  storageRef  String?
+  content     String?
+  lastError   String?
+  materializeAttempts Int    @default(0)
   metadata    Json?
   createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   pipeline    Pipeline       @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   stage       PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
 
   @@index([pipelineId], name: "idx_pipeline_artifact_pipeline_id")
   @@index([stageId], name: "idx_pipeline_artifact_stage_id")
+  @@index([status, updatedAt], name: "idx_pipeline_artifact_status_updated_at")
   @@unique([pipelineId, artifactKey, version], name: "uq_pipeline_artifact_version")
 }
 

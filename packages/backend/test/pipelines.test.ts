@@ -116,10 +116,7 @@ describe('Pipelines API', () => {
       )
     );
 
-    const detail = await pipelinesService.getDetail(pipeline.id);
-    const prdArtifacts = detail.artifacts.filter(
-      (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
-    );
+    const prdArtifacts = await waitForPrdArtifacts(pipeline.id);
 
     expect(prdArtifacts).toHaveLength(6);
     expect(prdArtifacts.map((artifact) => artifact.metadata?.version)).toEqual([
@@ -135,3 +132,30 @@ describe('Pipelines API', () => {
     );
   });
 });
+
+async function waitForPrdArtifacts(pipelineId: string, timeoutMs = 5_000) {
+  const pipelinesService = getApp().get(PipelinesService);
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const detail = await pipelinesService.getDetail(pipelineId);
+    const artifacts = detail.artifacts.filter(
+      (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
+    );
+
+    if (artifacts.length === 6) {
+      return artifacts;
+    }
+
+    await sleep(50);
+  }
+
+  const detail = await pipelinesService.getDetail(pipelineId);
+  return detail.artifacts.filter(
+    (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
