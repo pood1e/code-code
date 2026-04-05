@@ -7,18 +7,19 @@ import { useSessionPageQueries } from '@/features/sessions/hooks/use-session-pag
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { queryKeys } from '@/query/query-keys';
 import { useSessionRuntimeStore } from '@/store/session-runtime-store';
-import { buildProjectSessionsPath } from '@/types/projects';
+import { buildProjectChatsPath } from '@/types/projects';
 
 import { useProjectPageData } from './use-project-page-data';
 import { useSessionEventStream } from './use-session-event-stream';
 
+const chatQueryKeys = queryKeys.chats;
 const sessionQueryKeys = queryKeys.sessions;
 
 export function useProjectSessionsPageState() {
   const handleError = useErrorMessage();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { sessionId: selectedSessionId } = useParams<{ sessionId?: string }>();
+  const { chatId: selectedChatId } = useParams<{ chatId?: string }>();
   const [createPanelOpen, setCreatePanelOpen] = useState(false);
   const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
   const { id, project, projects, isLoading, isNotFound, goToProjects } =
@@ -26,22 +27,24 @@ export function useProjectSessionsPageState() {
 
   const queries = useSessionPageQueries(
     id,
-    selectedSessionId ?? null,
+    selectedChatId ?? null,
     createPanelOpen
   );
   const clearSessionState = useSessionRuntimeStore((s) => s.clearSessionState);
   const mutations = useSessionPageMutations({
-    selectedSessionId: selectedSessionId ?? null,
+    selectedChatId: selectedChatId ?? null,
+    selectedSessionId: queries.selectedChat?.sessionId ?? null,
     projectId: id,
     clearSessionRuntimeState: clearSessionState
   });
+  const selectedSessionId = queries.selectedChat?.sessionId ?? null;
   const selectedRuntimeState =
     useSessionRuntimeStore((s) =>
       selectedSessionId ? s.stateBySessionId[selectedSessionId] : undefined
     ) ?? {};
 
-  const sessions = queries.sessionsQuery.data ?? [];
-  const showCreatePanel = createPanelOpen || sessions.length === 0;
+  const chats = queries.chatsQuery.data ?? [];
+  const showCreatePanel = createPanelOpen || chats.length === 0;
 
   useEffect(() => {
     if (queries.queryError) {
@@ -50,21 +53,21 @@ export function useProjectSessionsPageState() {
   }, [handleError, queries.queryError]);
 
   useEffect(() => {
-    syncSessionRoute({
+    syncChatRoute({
       createPanelOpen,
       navigate,
       projectId: id,
-      selectedSessionId: selectedSessionId ?? null,
-      sessions,
-      sessionsPending: queries.sessionsQuery.isPending
+      selectedChatId: selectedChatId ?? null,
+      chats,
+      chatsPending: queries.chatsQuery.isPending
     });
   }, [
     createPanelOpen,
     id,
     navigate,
-    queries.sessionsQuery.isPending,
-    selectedSessionId,
-    sessions
+    queries.chatsQuery.isPending,
+    selectedChatId,
+    chats
   ]);
 
   useSessionEventStream({
@@ -83,12 +86,14 @@ export function useProjectSessionsPageState() {
         navigate,
         projectId: id,
         queryClient,
-        selectedSessionId: selectedSessionId ?? null,
-        selectedSessionPersistedId: queries.selectedSession?.id,
-        sessionMessagesQuery: queries.sessionMessagesQuery,
-        setCreatePanelOpen,
-        setDetailsPanelOpen,
-        showCreatePanel,
+        selectedChatId: selectedChatId ?? null,
+      selectedChatPersistedId: queries.selectedChat?.id,
+      selectedSessionPersistedId: queries.selectedChat?.sessionId,
+      sessionMessagesQuery: queries.sessionMessagesQuery,
+      chats,
+      setCreatePanelOpen,
+      setDetailsPanelOpen,
+      showCreatePanel,
         mutations
       }),
     [
@@ -97,9 +102,11 @@ export function useProjectSessionsPageState() {
       mutations,
       navigate,
       queryClient,
-      queries.selectedSession?.id,
+      queries.selectedChat?.id,
+      queries.selectedChat?.sessionId,
       queries.sessionMessagesQuery,
-      selectedSessionId,
+      selectedChatId,
+      chats,
       showCreatePanel
     ]
   );
@@ -109,7 +116,7 @@ export function useProjectSessionsPageState() {
     ...actions,
     createPanelOpen,
     detailsPanelOpen,
-    disposingSessionId: mutations.disposeMutation.isPending
+    disposingChatId: mutations.disposeMutation.isPending
       ? (mutations.disposeMutation.variables ?? null)
       : null,
     goToProjects,
@@ -118,47 +125,51 @@ export function useProjectSessionsPageState() {
     project,
     projects,
     projectId: id,
+    renamingChatId: mutations.renameMutation.isPending
+      ? (mutations.renameMutation.variables?.chatId ?? null)
+      : null,
     selectedRuntimeState,
-    selectedSessionId: selectedSessionId ?? null,
-    sessions,
+    selectedChatId: selectedChatId ?? null,
+    selectedSessionId,
+    chats,
     showCreatePanel
   };
 }
 
-function syncSessionRoute({
+function syncChatRoute({
   createPanelOpen,
   navigate,
   projectId,
-  selectedSessionId,
-  sessions,
-  sessionsPending
+  selectedChatId,
+  chats,
+  chatsPending
 }: {
   createPanelOpen: boolean;
   navigate: ReturnType<typeof useNavigate>;
   projectId: string | undefined;
-  selectedSessionId: string | null;
-  sessions: Array<{ id: string }>;
-  sessionsPending: boolean;
+  selectedChatId: string | null;
+  chats: Array<{ id: string }>;
+  chatsPending: boolean;
 }) {
-  if (!projectId || sessionsPending || createPanelOpen) {
+  if (!projectId || chatsPending || createPanelOpen) {
     return;
   }
 
-  if (sessions.length === 0) {
-    if (selectedSessionId) {
+  if (chats.length === 0) {
+    if (selectedChatId) {
       startTransition(() => {
-        void navigate(buildProjectSessionsPath(projectId), { replace: true });
+        void navigate(buildProjectChatsPath(projectId), { replace: true });
       });
     }
     return;
   }
 
-  if (selectedSessionId && sessions.some((session) => session.id === selectedSessionId)) {
+  if (selectedChatId && chats.some((chat) => chat.id === selectedChatId)) {
     return;
   }
 
   startTransition(() => {
-    void navigate(buildProjectSessionsPath(projectId, sessions[0].id), {
+    void navigate(buildProjectChatsPath(projectId, chats[0].id), {
       replace: true
     });
   });
@@ -170,9 +181,11 @@ function createProjectSessionsActions({
   navigate,
   projectId,
   queryClient,
-  selectedSessionId,
+  selectedChatId,
+  selectedChatPersistedId,
   selectedSessionPersistedId,
   sessionMessagesQuery,
+  chats,
   setCreatePanelOpen,
   setDetailsPanelOpen,
   showCreatePanel,
@@ -186,15 +199,17 @@ function createProjectSessionsActions({
   navigate: ReturnType<typeof useNavigate>;
   projectId: string | undefined;
   queryClient: ReturnType<typeof useQueryClient>;
-  selectedSessionId: string | null;
+  selectedChatId: string | null;
+  selectedChatPersistedId?: string;
   selectedSessionPersistedId?: string;
   sessionMessagesQuery: ReturnType<typeof useSessionPageQueries>['sessionMessagesQuery'];
+  chats: Array<{ id: string }>;
   setCreatePanelOpen: (value: boolean) => void;
   setDetailsPanelOpen: (value: boolean) => void;
   showCreatePanel: boolean;
   mutations: ReturnType<typeof useSessionPageMutations>;
 }) {
-  const selectSession = (nextSessionId: string) => {
+  const selectChat = (nextChatId: string) => {
     if (!projectId) {
       return;
     }
@@ -202,7 +217,7 @@ function createProjectSessionsActions({
     setDetailsPanelOpen(false);
     setCreatePanelOpen(false);
     startTransition(() => {
-      void navigate(buildProjectSessionsPath(projectId, nextSessionId));
+      void navigate(buildProjectChatsPath(projectId, nextChatId));
     });
   };
 
@@ -211,7 +226,7 @@ function createProjectSessionsActions({
     setCreatePanelOpen(true);
     if (projectId) {
       startTransition(() => {
-        void navigate(buildProjectSessionsPath(projectId));
+        void navigate(buildProjectChatsPath(projectId));
       });
     }
   };
@@ -221,23 +236,37 @@ function createProjectSessionsActions({
     setCreatePanelOpen(false);
   };
 
-  const disposeFromSelector = (sessionId: string) => {
+  const disposeFromSelector = (chatId: string) => {
     void (async () => {
-      await mutations.disposeMutation.mutateAsync(sessionId);
-      if (sessionId === selectedSessionId || showCreatePanel) {
+      await mutations.disposeMutation.mutateAsync(chatId);
+      const remainingChats = chats.filter((chat) => chat.id !== chatId);
+
+      if (showCreatePanel || remainingChats.length === 0) {
         openCreatePanel();
+        return;
+      }
+
+      if (chatId === selectedChatId) {
+        selectChat(remainingChats[0].id);
       }
     })().catch(handleError);
   };
 
+  const renameFromSelector = (chatId: string, title: string | null) => {
+    return mutations.renameMutation.mutateAsync({ chatId, title });
+  };
+
   const refreshSession = () => {
-    if (!projectId || !selectedSessionPersistedId) {
+    if (!projectId || !selectedSessionPersistedId || !selectedChatPersistedId) {
       return;
     }
 
     void Promise.all([
       queryClient.invalidateQueries({
-        queryKey: sessionQueryKeys.list(projectId)
+        queryKey: chatQueryKeys.list(projectId)
+      }),
+      queryClient.invalidateQueries({
+        queryKey: chatQueryKeys.detail(selectedChatPersistedId)
       }),
       queryClient.invalidateQueries({
         queryKey: sessionQueryKeys.detail(selectedSessionPersistedId)
@@ -297,7 +326,8 @@ function createProjectSessionsActions({
     openCreatePanel,
     refreshSession,
     reloadSession,
-    selectSession,
+    renameFromSelector,
+    selectChat,
     sendMessage,
     setDetailsPanelOpen
   };

@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  type ChatSummary,
   MessageRole,
   MessageStatus,
   SessionStatus,
@@ -18,9 +19,10 @@ import {
   listAgentRunners,
   listAgentRunnerTypes
 } from '@/api/agent-runners';
+import { getChat, listChats } from '@/api/chats';
 import { listProfiles } from '@/api/profiles';
 import { listResources } from '@/api/resources';
-import { getSession, listSessionMessages, listSessions } from '@/api/sessions';
+import { getSession, listSessionMessages } from '@/api/sessions';
 import { createTestQueryClient } from '@/test/render';
 
 import { useSessionPageQueries } from './use-session-page-queries';
@@ -39,16 +41,35 @@ vi.mock('@/api/resources', () => ({
   listResources: vi.fn()
 }));
 
+vi.mock('@/api/chats', () => ({
+  getChat: vi.fn(),
+  listChats: vi.fn()
+}));
+
 vi.mock('@/api/sessions', () => ({
   getSession: vi.fn(),
-  listSessionMessages: vi.fn(),
-  listSessions: vi.fn()
+  listSessionMessages: vi.fn()
 }));
 
 function createSessionSummary(id: string): SessionSummary {
   return {
     id,
     scopeId: 'project-1',
+    runnerId: 'runner-1',
+    runnerType: 'mock',
+    status: SessionStatus.Ready,
+    lastEventId: 0,
+    createdAt: '2026-04-03T10:00:00.000Z',
+    updatedAt: '2026-04-03T10:00:00.000Z'
+  };
+}
+
+function createChatSummary(id: string, sessionId: string): ChatSummary {
+  return {
+    id,
+    scopeId: 'project-1',
+    sessionId,
+    title: null,
     runnerId: 'runner-1',
     runnerType: 'mock',
     status: SessionStatus.Ready,
@@ -130,7 +151,10 @@ describe('useSessionPageQueries', () => {
       ...createRunner(),
       runnerConfig: {}
     });
-    vi.mocked(listSessions).mockResolvedValue([createSessionSummary('session-1')]);
+    vi.mocked(listChats).mockResolvedValue([
+      createChatSummary('chat-1', 'session-1')
+    ]);
+    vi.mocked(getChat).mockResolvedValue(createChatSummary('chat-1', 'session-1'));
     vi.mocked(getSession).mockResolvedValue(createSessionDetail('session-1'));
   });
 
@@ -149,9 +173,10 @@ describe('useSessionPageQueries', () => {
     );
 
     await waitFor(() => {
-      expect(result.current.sessionsQuery.data).toHaveLength(1);
+      expect(result.current.chatsQuery.data).toHaveLength(1);
     });
 
+    expect(getChat).not.toHaveBeenCalled();
     expect(getSession).not.toHaveBeenCalled();
     expect(listSessionMessages).not.toHaveBeenCalled();
     expect(result.current.selectedSessionMessagesReady).toBe(false);
@@ -172,7 +197,7 @@ describe('useSessionPageQueries', () => {
     const queryClient = createTestQueryClient();
 
     const { result } = renderHook(
-      () => useSessionPageQueries('project-1', 'session-1', false),
+      () => useSessionPageQueries('project-1', 'chat-1', false),
       {
         wrapper: ({ children }: { children: ReactNode }) => (
           <QueryClientProvider client={queryClient}>
@@ -186,6 +211,7 @@ describe('useSessionPageQueries', () => {
       expect(result.current.selectedSessionMessagesReady).toBe(true);
     });
 
+    expect(getChat).toHaveBeenCalledWith('chat-1');
     await result.current.sessionMessagesQuery.fetchNextPage();
 
     await waitFor(() => {

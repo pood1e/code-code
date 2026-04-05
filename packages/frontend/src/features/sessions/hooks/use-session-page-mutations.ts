@@ -1,24 +1,27 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SendSessionMessageInput } from '@agent-workbench/shared';
 
+import { deleteChat, getChat, updateChat } from '@/api/chats';
 import {
   cancelSession,
-  disposeSession,
   editSessionMessage,
   reloadSession,
   sendSessionMessage
 } from '@/api/sessions';
 import { queryKeys } from '@/query/query-keys';
 
+const chatQueryKeys = queryKeys.chats;
 const sessionQueryKeys = queryKeys.sessions;
 
 type UseSessionPageMutationsOptions = {
+  selectedChatId: string | null;
   selectedSessionId: string | null;
   projectId: string | undefined;
   clearSessionRuntimeState: (sessionId: string) => void;
 };
 
 export function useSessionPageMutations({
+  selectedChatId,
   selectedSessionId,
   projectId,
   clearSessionRuntimeState
@@ -56,28 +59,51 @@ export function useSessionPageMutations({
   });
 
   const disposeMutation = useMutation({
-    mutationFn: async (sessionId: string) => {
-      await disposeSession(sessionId);
-      return sessionId;
+    mutationFn: async (chatId: string) => {
+      const chat = await getChat(chatId);
+      await deleteChat(chatId);
+      return chat;
     },
-    onSuccess: async (sessionId) => {
-      clearSessionRuntimeState(sessionId);
+    onSuccess: async (chat) => {
+      clearSessionRuntimeState(chat.sessionId);
       queryClient.removeQueries({
-        queryKey: sessionQueryKeys.detail(sessionId)
+        queryKey: chatQueryKeys.detail(chat.id)
       });
       queryClient.removeQueries({
-        queryKey: sessionQueryKeys.messages(sessionId)
+        queryKey: sessionQueryKeys.detail(chat.sessionId)
+      });
+      queryClient.removeQueries({
+        queryKey: sessionQueryKeys.messages(chat.sessionId)
       });
 
       if (projectId) {
         queryClient.setQueryData(
-          sessionQueryKeys.list(projectId),
+          chatQueryKeys.list(projectId),
           (current: Array<{ id: string }> | undefined) =>
-            current?.filter((session) => session.id !== sessionId)
+            current?.filter((currentChat) => currentChat.id !== chat.id)
         );
 
         await queryClient.invalidateQueries({
-          queryKey: sessionQueryKeys.list(projectId)
+          queryKey: chatQueryKeys.list(projectId)
+        });
+      }
+    }
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: ({
+      chatId,
+      title
+    }: {
+      chatId: string;
+      title: string | null;
+    }) => updateChat(chatId, { title }),
+    onSuccess: async (chat) => {
+      queryClient.setQueryData(chatQueryKeys.detail(chat.id), chat);
+
+      if (projectId) {
+        await queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.list(projectId)
         });
       }
     }
@@ -97,8 +123,15 @@ export function useSessionPageMutations({
         queryKey: sessionQueryKeys.detail(sessionId)
       }),
       queryClient.invalidateQueries({
-        queryKey: sessionQueryKeys.list(scopeId)
-      })
+        queryKey: chatQueryKeys.list(scopeId)
+      }),
+      ...(selectedChatId
+        ? [
+            queryClient.invalidateQueries({
+              queryKey: chatQueryKeys.detail(selectedChatId)
+            })
+          ]
+        : [])
     ]);
   };
 
@@ -108,6 +141,7 @@ export function useSessionPageMutations({
     reloadMutation,
     editMutation,
     disposeMutation,
+    renameMutation,
     invalidateSessionThreadState
   };
 }

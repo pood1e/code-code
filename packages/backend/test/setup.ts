@@ -30,6 +30,7 @@ export async function setupTestApp(): Promise<INestApplication> {
 
   // Set DATABASE_URL before anything touches Prisma
   process.env.DATABASE_URL = TEST_DB_URL;
+  process.env.NOTIFICATION_AUTO_START = 'false';
 
   // Push schema to test DB (no migration history, fastest for tests)
   execSync('npx prisma db push --skip-generate --accept-data-loss', {
@@ -39,7 +40,8 @@ export async function setupTestApp(): Promise<INestApplication> {
   });
 
   app = await NestFactory.create(AppModule, {
-    logger: false // Suppress logs during tests
+    logger: false,
+    abortOnError: false
   });
 
   const reflector = app.get(Reflector);
@@ -81,7 +83,13 @@ export async function resetDatabase(): Promise<void> {
     db.sessionMetric.deleteMany(),
     db.messageToolUse.deleteMany(),
     db.sessionMessage.deleteMany(),
+    db.pipelineArtifact.deleteMany(),
+    db.pipelineStage.deleteMany(),
+    db.pipeline.deleteMany(),
+    db.chat.deleteMany(),
     db.agentSession.deleteMany(),
+    db.notificationTask.deleteMany(),
+    db.notificationChannel.deleteMany(),
     db.profileSkill.deleteMany(),
     db.profileMCP.deleteMany(),
     db.profileRule.deleteMany(),
