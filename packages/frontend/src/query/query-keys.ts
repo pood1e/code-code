@@ -43,5 +43,32 @@ export const queryKeys = {
     all: ['profiles'] as const,
     list: () => ['profiles', 'list'] as const,
     detail: (id: string) => ['profiles', 'detail', id] as const
+  },
+  notifications: {
+    capabilities: () => ['notifications', 'capabilities'] as const,
+    channels: {
+      all: ['notifications', 'channels'] as const,
+      list: (scopeId?: string) => ['notifications', 'channels', 'list', scopeId ?? ''] as const,
+      detail: (id: string) => ['notifications', 'channels', 'detail', id] as const
+    },
+    tasks: {
+      all: ['notifications', 'tasks'] as const,
+      list: (scopeId?: string, channelId?: string) =>
+        ['notifications', 'tasks', 'list', scopeId ?? '', channelId ?? ''] as const
+    }
+  },
+  chats: {
+    all: ['chats'] as const,
+    lists: () => ['chats', 'list'] as const,
+    list: (scopeId: string) => ['chats', 'list', scopeId] as const,
+    detail: (id: string) => ['chats', 'detail', id] as const
+  },
+  pipelines: {
+    all: ['pipelines'] as const,
+    lists: () => ['pipelines', 'list'] as const,
+    list: (scopeId: string) => ['pipelines', 'list', scopeId] as const,
+    detail: (id: string) => ['pipelines', 'detail', id] as const,
+    stages: (pipelineId: string) => ['pipelines', 'stages', pipelineId] as const,
+    artifacts: (pipelineId: string) => ['pipelines', 'artifacts', pipelineId] as const
   }
 };

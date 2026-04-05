@@ -101,7 +101,7 @@ describe('useProjectPageData', () => {
       createProject('project-2', 'Beta')
     ]);
 
-    renderHookProbe('/projects/project-1/sessions');
+    renderHookProbe('/projects/project-1/chats');
 
     expect(await screen.findByText('Alpha')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
@@ -128,7 +128,7 @@ describe('useProjectPageData', () => {
       createProject('project-2', 'Beta')
     ]);
 
-    const { user } = renderHookProbe('/projects/project-1/sessions');
+    const { user } = renderHookProbe('/projects/project-1/chats');
 
     await screen.findByText('Alpha');
 

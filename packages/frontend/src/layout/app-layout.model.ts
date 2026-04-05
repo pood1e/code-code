@@ -1,12 +1,16 @@
 import {
+  Bell,
+  BellRing,
   Blocks,
   Bot,
   CircuitBoard,
   FolderKanban,
   LayoutDashboard,
   MessageSquareText,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
+  Workflow,
   type LucideIcon
 } from 'lucide-react';
 
@@ -66,7 +70,11 @@ export const primaryNavItems: PrimaryNavItem[] = [
 
 export const projectTabItems: ProjectTabItem[] = [
   { key: 'dashboard', label: '概览', icon: LayoutDashboard },
-  { key: 'sessions', label: '会话', icon: MessageSquareText },
+  { key: 'chats', label: '会话', icon: MessageSquareText },
+  { key: 'pipelines', label: '流水线', icon: Workflow },
+  { key: 'channels', label: '通知渠道', icon: Bell },
+  { key: 'send', label: '手工发送', icon: Send },
+  { key: 'notifications', label: '通知记录', icon: BellRing },
   { key: 'config', label: '配置', icon: SlidersHorizontal }
 ];
 
@@ -81,7 +89,7 @@ export type AppLayoutRouteState = {
 export function deriveAppLayoutRouteState(pathname: string): AppLayoutRouteState {
   const selectedProjectTab =
     (pathname.match(
-      /^\/projects\/[^/]+\/(dashboard|sessions|config)/
+      /^\/projects\/[^/]+\/(dashboard|chats|pipelines|channels|send|notifications|config)/
     )?.[1] as ProjectTabKey | undefined) ?? 'dashboard';
 
   return {

@@ -14,7 +14,7 @@ type ProjectSectionHeaderProps = {
 
 const tabItems: { key: ProjectTabKey; label: string }[] = [
   { key: 'dashboard', label: '概览' },
-  { key: 'sessions', label: '会话' },
+  { key: 'chats', label: '会话' },
   { key: 'config', label: '配置' }
 ];
 

@@ -41,16 +41,18 @@ export function ProjectSessionsPageContent(
 
 function CreateSessionView({
   closePanel,
-  disposingSessionId,
+  chats,
+  disposingChatId,
   disposeFromSelector,
+  renamingChatId,
+  renameFromSelector,
   profiles,
   projectId,
   resources,
   runnerNameById,
   runners,
   runnerTypes,
-  selectSession,
-  sessions
+  selectChat
 }: ReturnType<typeof useProjectSessionsPageState>) {
   if (!projectId) {
     return null;
@@ -58,16 +60,18 @@ function CreateSessionView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {sessions.length > 0 ? (
+      {chats.length > 0 ? (
         <div className="flex items-center justify-between gap-3 border-b border-border/40 px-4 py-2 sm:px-5">
           <SessionSelector
-            sessions={sessions}
-            selectedSessionId={null}
+            sessions={chats}
+            selectedChatId={null}
             placeholder="新建会话"
             runnerNameById={runnerNameById}
-            onSelect={selectSession}
+            onSelect={selectChat}
             onDispose={disposeFromSelector}
-            disposingSessionId={disposingSessionId}
+            onRename={renameFromSelector}
+            disposingChatId={disposingChatId}
+            renamingChatId={renamingChatId}
           />
         </div>
       ) : null}
@@ -81,11 +85,11 @@ function CreateSessionView({
           runners={runners}
           profiles={profiles}
           resources={resources}
-          canCancel={sessions.length > 0}
+          canCancel={chats.length > 0}
           onCancel={closePanel}
-          onCreated={(session) => {
+          onCreated={(chat) => {
             closePanel();
-            selectSession(session.id);
+            selectChat(chat.id);
           }}
         />
       </Suspense>
@@ -96,7 +100,8 @@ function CreateSessionView({
 function SelectedSessionView({
   detailsPanelOpen,
   cancelSession,
-  disposingSessionId,
+  chats,
+  disposingChatId,
   disposeFromSelector,
   editMessage,
   flatMessages,
@@ -104,19 +109,20 @@ function SelectedSessionView({
   openCreatePanel,
   refreshSession,
   reloadSession,
+  renamingChatId,
+  renameFromSelector,
   resources,
   runnerNameById,
   runners,
+  selectedChatId,
   selectedRunnerQuery,
   selectedRunnerType,
   selectedRuntimeState,
-  selectedSessionId,
   selectedSessionMessagesReady,
-  selectSession,
+  selectChat,
   sendMessage,
   session,
   sessionMessagesQuery,
-  sessions,
   setDetailsPanelOpen
 }: ReturnType<typeof useProjectSessionsPageState> & {
   session: SessionDetail;
@@ -127,12 +133,14 @@ function SelectedSessionView({
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <SessionSelector
-              sessions={sessions}
-              selectedSessionId={selectedSessionId}
+              sessions={chats}
+              selectedChatId={selectedChatId}
               runnerNameById={runnerNameById}
-              onSelect={selectSession}
+              onSelect={selectChat}
               onDispose={disposeFromSelector}
-              disposingSessionId={disposingSessionId}
+              onRename={renameFromSelector}
+              disposingChatId={disposingChatId}
+              renamingChatId={renamingChatId}
             />
             <SessionStatusBadge status={session.status} />
             <span className="hidden text-xs text-muted-foreground sm:inline">

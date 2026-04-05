@@ -57,7 +57,7 @@ function renderAppLayout(route: string) {
         <Route path="/projects" element={<RouteEcho />} />
         <Route path="/skills" element={<RouteEcho />} />
         <Route path="/projects/:id/dashboard" element={<RouteEcho />} />
-        <Route path="/projects/:id/sessions" element={<RouteEcho />} />
+        <Route path="/projects/:id/chats" element={<RouteEcho />} />
         <Route path="/projects/:id/config" element={<RouteEcho />} />
       </Route>
     </Routes>,
@@ -85,7 +85,7 @@ describe('AppLayout', () => {
   });
 
   it('Project 页面应展示二级导航，且顺序为概览→会话→配置', async () => {
-    const { user } = renderAppLayout('/projects/project-1/sessions');
+    const { user } = renderAppLayout('/projects/project-1/chats');
 
     expect(await screen.findByLabelText('选择当前 Project')).toHaveValue(
       'project-1'

@@ -8,6 +8,9 @@ export default defineConfig({
     globals: true,
     testTimeout: 30_000,
     hookTimeout: 30_000,
+    pool: 'forks',
+    maxWorkers: 1,
+    minWorkers: 1,
     // Run each test file serially since they share the same NestJS app instance
     fileParallelism: false,
     sequence: {

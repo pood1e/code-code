@@ -4,6 +4,8 @@ export enum SessionStatus {
   Creating = 'creating',
   Ready = 'ready',
   Running = 'running',
+  Paused = 'paused',
+  AwaitingReview = 'awaiting_review',
   Disposing = 'disposing',
   Disposed = 'disposed',
   Error = 'error'

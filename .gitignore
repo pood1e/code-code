@@ -5,6 +5,8 @@ dist
 coverage
 packages/backend/prisma/dev.db
 packages/backend/prisma/dev.db-journal
+packages/backend/prisma/test.db
+packages/backend/prisma/test.db-journal
 packages/backend/.env
 packages/frontend/tsconfig.tsbuildinfo
 
@@ -19,3 +21,7 @@ blob-report/
 playwright/.cache/
 e2e.db
 e2e.db-journal
+packages/e2e/test-results/
+packages/e2e/playwright-report/
+packages/backend/prisma/e2e.db
+packages/backend/prisma/e2e.db-journal

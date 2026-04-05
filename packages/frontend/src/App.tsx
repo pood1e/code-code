@@ -46,6 +46,27 @@ const ProjectSessionsPage = lazy(() =>
     default: module.ProjectSessionsPage
   }))
 );
+const ProjectPipelinesPage = lazy(() =>
+  import('./pages/projects/ProjectPipelinesPage').then((module) => ({
+    default: module.ProjectPipelinesPage
+  }))
+);
+
+const ProjectChannelsPage = lazy(() =>
+  import('./pages/projects/ProjectChannelsPage').then((module) => ({
+    default: module.ProjectChannelsPage
+  }))
+);
+const ProjectNotificationSendPage = lazy(() =>
+  import('./pages/projects/ProjectNotificationSendPage').then((module) => ({
+    default: module.ProjectNotificationSendPage
+  }))
+);
+const ProjectNotificationsPage = lazy(() =>
+  import('./pages/projects/ProjectNotificationsPage').then((module) => ({
+    default: module.ProjectNotificationsPage
+  }))
+);
 const ResourceEditPage = lazy(() =>
   import('./pages/resources/ResourceEditPage').then((module) => ({
     default: module.ResourceEditPage
@@ -99,7 +120,7 @@ export function App() {
           }
         />
         <Route
-          path={projectRoutePatterns.sessions}
+          path={projectRoutePatterns.chats}
           element={
             <LazyRoute>
               <ProjectSessionsPage />
@@ -107,10 +128,50 @@ export function App() {
           }
         />
         <Route
-          path={projectRoutePatterns.sessionDetail}
+          path={projectRoutePatterns.chatDetail}
           element={
             <LazyRoute>
               <ProjectSessionsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.pipelines}
+          element={
+            <LazyRoute>
+              <ProjectPipelinesPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.pipelineDetail}
+          element={
+            <LazyRoute>
+              <ProjectPipelinesPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.channels}
+          element={
+            <LazyRoute>
+              <ProjectChannelsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.send}
+          element={
+            <LazyRoute>
+              <ProjectNotificationSendPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.notifications}
+          element={
+            <LazyRoute>
+              <ProjectNotificationsPage />
             </LazyRoute>
           }
         />

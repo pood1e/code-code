@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from './prisma/prisma.module';
+import { ChatsModule } from './modules/chats/chats.module';
 import { McpsModule } from './modules/mcps/mcps.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PipelinesModule } from './modules/pipelines/pipelines.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { RulesModule } from './modules/rules/rules.module';
@@ -18,7 +21,10 @@ import { SessionsModule } from './modules/sessions/sessions.module';
     RulesModule,
     ProfilesModule,
     AgentRunnersModule,
-    SessionsModule
+    SessionsModule,
+    ChatsModule,
+    PipelinesModule,
+    NotificationsModule
   ]
 })
 export class AppModule {}

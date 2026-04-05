@@ -5,8 +5,14 @@ export const apiRouteConfig = {
   agentRunnerTypes: {
     path: 'agent-runner-types'
   },
+  chats: {
+    path: 'chats'
+  },
   mcps: {
     path: 'mcps'
+  },
+  pipelines: {
+    path: 'pipelines'
   },
   profiles: {
     path: 'profiles'

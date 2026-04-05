@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   AgentRunnerDetail,
   AgentRunnerSummary,
+  ChatSummary,
   Profile,
   RunnerTypeResponse,
-  SessionDetail,
-  SessionSummary
+  SessionDetail
 } from '@agent-workbench/shared';
+import type { SessionSummary } from '@agent-workbench/shared';
 import { SessionStatus } from '@agent-workbench/shared';
 import type {
   InfiniteData,
@@ -22,11 +23,11 @@ import type { useProjectSessionsPageState } from './use-project-sessions-page-st
 vi.mock('@/features/sessions/components/SessionSelector', () => ({
   SessionSelector: ({
     placeholder,
-    selectedSessionId
+    selectedChatId
   }: {
     placeholder?: string;
-    selectedSessionId: string | null;
-  }) => <div>{placeholder ?? selectedSessionId ?? '未选择会话'}</div>
+    selectedChatId: string | null;
+  }) => <div>{placeholder ?? selectedChatId ?? '未选择会话'}</div>
 }));
 
 vi.mock('@/features/sessions/components/SessionStatusBadge', () => ({
@@ -37,11 +38,14 @@ vi.mock('@/features/sessions/panels/CreateSessionPanel', () => ({
   CreateSessionPanel: ({
     onCreated
   }: {
-    onCreated: (session: SessionDetail) => void;
+    onCreated: (chat: ChatSummary) => void;
   }) => (
     <div>
       <p>创建会话面板</p>
-      <button type="button" onClick={() => onCreated(createSessionDetail('session-new'))}>
+      <button
+        type="button"
+        onClick={() => onCreated(createChatSummary('chat-new', 'session-new'))}
+      >
         创建成功
       </button>
     </div>
@@ -64,6 +68,21 @@ function createSessionSummary(id: string): SessionSummary {
   return {
     id,
     scopeId: 'project-1',
+    runnerId: 'runner-1',
+    runnerType: 'mock',
+    status: SessionStatus.Ready,
+    lastEventId: 0,
+    createdAt: '2026-04-03T10:00:00.000Z',
+    updatedAt: '2026-04-03T10:00:00.000Z'
+  };
+}
+
+function createChatSummary(id: string, sessionId: string): ChatSummary {
+  return {
+    id,
+    scopeId: 'project-1',
+    sessionId,
+    title: null,
     runnerId: 'runner-1',
     runnerType: 'mock',
     status: SessionStatus.Ready,
@@ -209,11 +228,13 @@ function createInfiniteQuerySuccessResult(
 function createPageState(
   overrides: Partial<ReturnType<typeof useProjectSessionsPageState>> = {}
 ): ReturnType<typeof useProjectSessionsPageState> {
-  const sessions = [createSessionSummary('session-1')];
+  const chats = [createChatSummary('chat-1', 'session-1')];
   const selectedSession = createSessionDetail('session-1');
 
   return {
-    sessionsQuery: createQuerySuccessResult(sessions),
+    chatsQuery: createQuerySuccessResult(chats),
+    selectedChatQuery: createQuerySuccessResult(chats[0]),
+    selectedChat: chats[0],
     sessionDetailQuery: createQuerySuccessResult(selectedSession),
     sessionMessagesQuery: createInfiniteQuerySuccessResult(),
     selectedRunnerQuery: createQuerySuccessResult(createRunnerDetail()),
@@ -239,12 +260,13 @@ function createPageState(
     openCreatePanel: vi.fn(),
     refreshSession: vi.fn(),
     reloadSession: vi.fn(),
-    selectSession: vi.fn(),
+    renameFromSelector: vi.fn(),
+    selectChat: vi.fn(),
     sendMessage: vi.fn(),
     setDetailsPanelOpen: vi.fn(),
     createPanelOpen: false,
     detailsPanelOpen: false,
-    disposingSessionId: null,
+    disposingChatId: null,
     goToProjects: vi.fn(),
     isLoading: false,
     isNotFound: false,
@@ -269,9 +291,11 @@ function createPageState(
       }
     ],
     projectId: 'project-1',
+    renamingChatId: null,
     selectedRuntimeState: {},
+    selectedChatId: 'chat-1',
     selectedSessionId: 'session-1',
-    sessions,
+    chats,
     showCreatePanel: false,
     ...overrides
   };
@@ -285,16 +309,18 @@ describe('ProjectSessionsPageContent', () => {
   it('showCreatePanel 时应渲染创建面板，并在创建成功后关闭并切到新会话', async () => {
     const user = userEvent.setup();
     const closePanel = vi.fn();
-    const selectSession = vi.fn();
+    const selectChat = vi.fn();
 
     render(
       <ProjectSessionsPageContent
         {...createPageState({
           showCreatePanel: true,
           selectedSession: undefined,
+          selectedChat: undefined,
           selectedSessionId: null,
+          selectedChatId: null,
           closePanel,
-          selectSession
+          selectChat
         })}
       />
     );
@@ -305,7 +331,7 @@ describe('ProjectSessionsPageContent', () => {
     await user.click(screen.getByRole('button', { name: '创建成功' }));
 
     expect(closePanel).toHaveBeenCalledTimes(1);
-    expect(selectSession).toHaveBeenCalledWith('session-new');
+    expect(selectChat).toHaveBeenCalledWith('chat-new');
   });
 
   it('选中会话时应渲染状态和线程视图', async () => {
@@ -321,6 +347,7 @@ describe('ProjectSessionsPageContent', () => {
         {...createPageState({
           showCreatePanel: false,
           selectedSession: undefined,
+          selectedChat: undefined,
           selectedSessionId: null
         })}
       />
