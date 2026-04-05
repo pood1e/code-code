@@ -19,11 +19,7 @@ import type {
 } from './pipeline-runtime.repository';
 import { PipelineRuntimeRepository } from './pipeline-runtime.repository';
 import type { PipelineRuntimeState } from './pipeline-runtime-state';
-import {
-  toPipelineArtifactRecord,
-  toPipelineRecord,
-  toPipelineStageRecord
-} from './prisma-pipeline.repository';
+import { toPipelineRecord, toPipelineStageRecord } from './prisma-pipeline.repository';
 
 type PipelineRow = Prisma.PipelineGetPayload<object>;
 type PipelineStageRow = Prisma.PipelineStageGetPayload<object>;
@@ -80,7 +76,7 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         }))
       });
 
-      await this.appendEvent(tx, {
+      const event = await this.appendEvent(tx, {
         kind: 'pipeline_started',
         pipelineId: input.pipelineId,
         timestamp: new Date().toISOString()
@@ -90,7 +86,10 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         where: { id: input.pipelineId }
       });
 
-      return toPipelineRecord(pipeline);
+      return {
+        value: toPipelineRecord(pipeline),
+        events: [event]
+      };
     });
   }
 
@@ -200,20 +199,14 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
 
       if (input.artifactIntents) {
         for (const artifactIntent of input.artifactIntents) {
-          const version = await this.reserveManagedArtifactVersion(
-            tx,
-            input.pipelineId,
-            artifactIntent.artifactKey
-          );
-
           await tx.pipelineArtifact.create({
             data: {
               pipelineId: input.pipelineId,
               ...(artifactIntent.stageId ? { stageId: artifactIntent.stageId } : {}),
               artifactKey: artifactIntent.artifactKey,
               attempt: artifactIntent.attempt,
-              version,
-              status: PIPELINE_ARTIFACT_STATUS.Pending,
+              version: artifactIntent.version,
+              status: PIPELINE_ARTIFACT_STATUS.Ready,
               name: artifactIntent.name,
               contentType: artifactIntent.contentType,
               content: artifactIntent.content
@@ -547,45 +540,6 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
       executionOwnerId: ownerId,
       executionLeaseExpiresAt: { gte: now }
     } satisfies Prisma.PipelineWhereInput;
-  }
-
-  private async reserveManagedArtifactVersion(
-    tx: Prisma.TransactionClient,
-    pipelineId: string,
-    artifactKey: string
-  ): Promise<number> {
-    const rows = await tx.$queryRaw<Array<{ version: number | bigint }>>`
-      INSERT INTO "PipelineArtifactSeries" (
-        "pipelineId",
-        "artifactKey",
-        "nextVersion",
-        "createdAt",
-        "updatedAt"
-      )
-      VALUES (
-        ${pipelineId},
-        ${artifactKey},
-        2,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-      )
-      ON CONFLICT ("pipelineId", "artifactKey")
-      DO UPDATE SET
-        "nextVersion" = "PipelineArtifactSeries"."nextVersion" + 1,
-        "updatedAt" = CURRENT_TIMESTAMP
-      RETURNING "nextVersion" - 1 AS "version"
-    `;
-
-    const rawVersion = rows.at(0)?.version;
-    const version =
-      typeof rawVersion === 'bigint' ? Number(rawVersion) : rawVersion;
-    if (!version || !Number.isSafeInteger(version) || version < 1) {
-      throw new Error(
-        `Failed to allocate artifact version for ${pipelineId}/${artifactKey}`
-      );
-    }
-
-    return version;
   }
 
   private async findStage(

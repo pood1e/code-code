@@ -9,6 +9,10 @@ import {
 } from '@agent-workbench/shared';
 
 import {
+  ARTIFACT_STORAGE,
+  type ArtifactStorage
+} from '../src/modules/pipelines/artifact-storage/artifact-storage.interface';
+import {
   getApp,
   getPrisma,
   resetDatabase,
@@ -206,6 +210,60 @@ describe('Pipelines Runtime API', () => {
       await waitForPipelineStatus(pipeline.id, 'paused');
       const detail = await getPipelineDetail(pipeline.id);
       expect(detail.stages).toHaveLength(5);
+    });
+
+    it('start 成功后 live SSE 应收到 pipeline_started', async () => {
+      const pipeline = await createDraftPipeline();
+      const streamPromise = collectSse(
+        `/api/pipelines/${pipeline.id}/events`,
+        800
+      );
+
+      await sleep(50);
+      await startPipeline(pipeline.id);
+
+      const stream = await streamPromise;
+      expect(stream.events.map((event) => event.type)).toContain(
+        'pipeline_started'
+      );
+    });
+
+    it('storage materialization 失败时仍应进入 paused，且 artifact 内容可直接读取', async () => {
+      const artifactStorage = getApp().get<ArtifactStorage>(ARTIFACT_STORAGE);
+      const writeSpy = vi
+        .spyOn(artifactStorage, 'write')
+        .mockRejectedValue(new Error('storage unavailable'));
+
+      try {
+        const pipeline = await createDraftPipeline();
+        await startPipeline(pipeline.id);
+        await waitForPipelineStatus(pipeline.id, 'paused');
+
+        const detail = await getPipelineDetail(pipeline.id);
+        const planReportArtifact = detail.artifacts.find(
+          (artifact) =>
+            artifact.metadata?.artifactKey === PipelineArtifactKey.PlanReport
+        );
+
+        expect(planReportArtifact).toBeDefined();
+
+        const contentResponse = await api()
+          .get(
+            `/api/pipelines/${pipeline.id}/artifacts/${planReportArtifact?.id}/content`
+          )
+          .expect(200);
+
+        expect(contentResponse.headers['content-type']).toContain('text/markdown');
+        expect(contentResponse.text.length).toBeGreaterThan(0);
+
+        const failedMaterialization = await waitForArtifactMaterializationFailure(
+          planReportArtifact!.id
+        );
+        expect(failedMaterialization.storageRef).toBeNull();
+        expect(failedMaterialization.lastError).toContain('storage unavailable');
+      } finally {
+        writeSpy.mockRestore();
+      }
     });
   });
 
@@ -706,4 +764,41 @@ async function waitForArtifactVersions(
 async function fetchPipelineDetail(pipelineId: string) {
   const response = await api().get(`/api/pipelines/${pipelineId}`);
   return expectSuccess<PipelineDetail>(response, 200);
+}
+
+async function waitForArtifactMaterializationFailure(
+  artifactId: string,
+  timeoutMs = 5_000
+) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const artifact = await getPrisma().pipelineArtifact.findUnique({
+      where: { id: artifactId },
+      select: {
+        id: true,
+        storageRef: true,
+        lastError: true
+      }
+    });
+
+    if (artifact?.lastError) {
+      return artifact;
+    }
+
+    await sleep(50);
+  }
+
+  const artifact = await getPrisma().pipelineArtifact.findUniqueOrThrow({
+    where: { id: artifactId },
+    select: {
+      id: true,
+      storageRef: true,
+      lastError: true
+    }
+  });
+  throw new Error(
+    `Artifact ${artifactId} did not record materialization failure, current error: ${
+      artifact.lastError ?? 'null'
+    }`
+  );
 }

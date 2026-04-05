@@ -55,7 +55,14 @@ export class PipelineRuntimeCommandService {
       status: import('@agent-workbench/shared').PipelineStageStatus;
     }>;
   }) {
-    return this.pipelineRuntimeRepository.startDraftPipeline(input);
+    return this.pipelineRuntimeRepository.startDraftPipeline(input).then((result) => {
+      if (!result) {
+        return null;
+      }
+
+      this.pipelineEventBroker.publishAll(result.events);
+      return result.value;
+    });
   }
 
   getDecisionContext(pipelineId: string) {

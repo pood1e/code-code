@@ -2,8 +2,10 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ArtifactContentRepository } from './artifact-content.repository';
+import { LeaseHeartbeatRunner } from './lease-heartbeat-runner.service';
 import { PipelineArtifactMaterializerService } from './pipeline-artifact-materializer.service';
 import { PipelineArtifactRepository } from './pipeline-artifact.repository';
+import { PipelineArtifactVersionRepository } from './pipeline-artifact-version.repository';
 import {
   ARTIFACT_STORAGE
 } from './artifact-storage/artifact-storage.interface';
@@ -21,6 +23,7 @@ import { PipelineWorkerService } from './pipeline-worker.service';
 import { PipelinesController } from './pipelines.controller';
 import { PipelinesService } from './pipelines.service';
 import { PrismaPipelineArtifactRepository } from './prisma-pipeline-artifact.repository';
+import { PrismaPipelineArtifactVersionRepository } from './prisma-pipeline-artifact-version.repository';
 import { PrismaPipelineEventRepository } from './prisma-pipeline-event.repository';
 import { PrismaPipelineExecutionLeaseRepository } from './prisma-pipeline-execution-lease.repository';
 import { PrismaPipelineRepository } from './prisma-pipeline.repository';
@@ -32,6 +35,7 @@ import { PrismaPipelineRuntimeRepository } from './prisma-pipeline-runtime.repos
   providers: [
     PipelineEventBroker,
     PipelineEventStreamService,
+    LeaseHeartbeatRunner,
     PipelineQueryService,
     PipelineRuntimeCommandService,
     PipelineArtifactMaterializerService,
@@ -58,6 +62,10 @@ import { PrismaPipelineRuntimeRepository } from './prisma-pipeline-runtime.repos
       useClass: PrismaPipelineArtifactRepository
     },
     {
+      provide: PipelineArtifactVersionRepository,
+      useClass: PrismaPipelineArtifactVersionRepository
+    },
+    {
       provide: ArtifactContentRepository,
       useClass: DefaultArtifactContentRepository
     },
@@ -75,6 +83,7 @@ import { PrismaPipelineRuntimeRepository } from './prisma-pipeline-runtime.repos
     PipelineExecutionLeaseRepository,
     PipelineEventRepository,
     PipelineArtifactRepository,
+    PipelineArtifactVersionRepository,
     ArtifactContentRepository
   ]
 })

@@ -12,9 +12,10 @@ import {
   PipelineStatus
 } from '@agent-workbench/shared';
 
-import { PIPELINE_ARTIFACT_STATUS } from './pipeline-artifact.constants';
-import { PipelineArtifactRepository } from './pipeline-artifact.repository';
+import { LeaseHeartbeatRunner } from './lease-heartbeat-runner.service';
+import { PipelineArtifactVersionRepository } from './pipeline-artifact-version.repository';
 import { PipelineRepository } from './pipeline.repository';
+import type { ManagedArtifactIntent } from './pipeline-runtime.repository';
 import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
 import { getStageTypeForStep } from './pipeline-stage.constants';
 import {
@@ -31,7 +32,7 @@ export class PipelineWorkerService
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private static readonly LEASE_MS = 30_000;
-  private static readonly ARTIFACT_READY_TIMEOUT_MS = 5_000;
+  private static readonly LEASE_RENEW_INTERVAL_MS = 10_000;
 
   private readonly logger = new Logger(PipelineWorkerService.name);
   private readonly ownerId = `pipeline-worker:${randomUUID()}`;
@@ -39,8 +40,9 @@ export class PipelineWorkerService
 
   constructor(
     private readonly pipelineRepository: PipelineRepository,
-    private readonly pipelineArtifactRepository: PipelineArtifactRepository,
-    private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService
+    private readonly pipelineArtifactVersionRepository: PipelineArtifactVersionRepository,
+    private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService,
+    private readonly leaseHeartbeatRunner: LeaseHeartbeatRunner
   ) {}
 
   onApplicationBootstrap(): void {
@@ -77,111 +79,128 @@ export class PipelineWorkerService
   private async processClaimedPipeline(
     claimedPipeline: { id: string }
   ): Promise<void> {
-    while (this.isRunning) {
-      const pipeline = await this.pipelineRepository.findPipelineById(
-        claimedPipeline.id
-      );
-      if (!pipeline) {
-        return;
-      }
+    const heartbeat = this.leaseHeartbeatRunner.start({
+      intervalMs: PipelineWorkerService.LEASE_RENEW_INTERVAL_MS,
+      renew: () =>
+        this.pipelineRuntimeCommandService.renewPipelineExecutionLease({
+          pipelineId: claimedPipeline.id,
+          ownerId: this.ownerId,
+          ...this.createLeaseWindow()
+        })
+    });
 
-      if (
-        pipeline.status === PipelineStatus.Cancelled ||
-        pipeline.status === PipelineStatus.Completed ||
-        pipeline.status === PipelineStatus.Failed ||
-        pipeline.status === PipelineStatus.Paused
-      ) {
-        return;
-      }
-
-      if (!(await this.renewExecutionLease(pipeline.id))) {
-        return;
-      }
-
-      const runtimeState = parsePipelineRuntimeState(pipeline.state);
-      if (runtimeState.currentStep === 'complete') {
-        await this.pipelineRuntimeCommandService.completeExecution(
-          pipeline.id,
-          this.ownerId
+    try {
+      while (this.isRunning && heartbeat.hasLease()) {
+        const pipeline = await this.pipelineRepository.findPipelineById(
+          claimedPipeline.id
         );
-        return;
-      }
-
-      if (runtimeState.currentStep === 'human_review') {
-        await this.pipelineRuntimeCommandService.pauseForHumanReview(
-          pipeline.id,
-          this.ownerId,
-          runtimeState
-        );
-        return;
-      }
-
-      const stageType = getStageTypeForStep(runtimeState.currentStep);
-      if (!stageType) {
-        await this.failPipeline(
-          pipeline.id,
-          `Unsupported pipeline step: ${runtimeState.currentStep}`
-        );
-        return;
-      }
-
-      if (await this.isPipelineCancelled(pipeline.id)) {
-        return;
-      }
-
-      const stage = await this.pipelineRuntimeCommandService.startStage(
-        pipeline.id,
-        this.ownerId,
-        stageType
-      );
-      if (!stage) {
-        return;
-      }
-
-      try {
-        await waitForConfiguredTestDelay();
-
-        switch (runtimeState.currentStep) {
-          case 'breakdown':
-            await this.runBreakdownStep(
-              pipeline.id,
-              pipeline.featureRequest,
-              runtimeState,
-              stage
-            );
-            break;
-          case 'evaluation':
-            if (
-              await this.runEvaluationStep(pipeline.id, runtimeState, stage)
-            ) {
-              continue;
-            }
-            return;
-          case 'spec':
-            await this.runSpecStep(pipeline.id, runtimeState, stage);
-            break;
-          case 'estimate':
-            await this.runEstimateStep(pipeline.id, runtimeState, stage);
-            return;
+        if (!pipeline) {
+          return;
         }
-      } catch (error) {
+
+        if (
+          pipeline.status === PipelineStatus.Cancelled ||
+          pipeline.status === PipelineStatus.Completed ||
+          pipeline.status === PipelineStatus.Failed ||
+          pipeline.status === PipelineStatus.Paused
+        ) {
+          return;
+        }
+
+        if (!heartbeat.hasLease()) {
+          return;
+        }
+
+        const runtimeState = parsePipelineRuntimeState(pipeline.state);
+        if (runtimeState.currentStep === 'complete') {
+          await this.pipelineRuntimeCommandService.completeExecution(
+            pipeline.id,
+            this.ownerId
+          );
+          return;
+        }
+
+        if (runtimeState.currentStep === 'human_review') {
+          await this.pipelineRuntimeCommandService.pauseForHumanReview(
+            pipeline.id,
+            this.ownerId,
+            runtimeState
+          );
+          return;
+        }
+
+        const stageType = getStageTypeForStep(runtimeState.currentStep);
+        if (!stageType) {
+          await this.failPipeline(
+            pipeline.id,
+            `Unsupported pipeline step: ${runtimeState.currentStep}`
+          );
+          return;
+        }
+
         if (await this.isPipelineCancelled(pipeline.id)) {
           return;
         }
 
-        await this.pipelineRuntimeCommandService.failStage({
-          pipelineId: pipeline.id,
-          ownerId: this.ownerId,
-          stageId: stage.id,
-          stageType: stage.stageType,
-          reason: error instanceof Error ? error.message : String(error)
-        });
-        await this.failPipeline(
+        const stage = await this.pipelineRuntimeCommandService.startStage(
           pipeline.id,
-          error instanceof Error ? error.message : String(error)
+          this.ownerId,
+          stageType
         );
-        return;
+        if (!stage) {
+          return;
+        }
+
+        try {
+          await waitForConfiguredTestDelay();
+          if (!heartbeat.hasLease()) {
+            return;
+          }
+
+          switch (runtimeState.currentStep) {
+            case 'breakdown':
+              await this.runBreakdownStep(
+                pipeline.id,
+                pipeline.featureRequest,
+                runtimeState,
+                stage
+              );
+              break;
+            case 'evaluation':
+              if (
+                await this.runEvaluationStep(pipeline.id, runtimeState, stage)
+              ) {
+                continue;
+              }
+              return;
+            case 'spec':
+              await this.runSpecStep(pipeline.id, runtimeState, stage);
+              break;
+            case 'estimate':
+              await this.runEstimateStep(pipeline.id, runtimeState, stage);
+              return;
+          }
+        } catch (error) {
+          if (!heartbeat.hasLease() || (await this.isPipelineCancelled(pipeline.id))) {
+            return;
+          }
+
+          await this.pipelineRuntimeCommandService.failStage({
+            pipelineId: pipeline.id,
+            ownerId: this.ownerId,
+            stageId: stage.id,
+            stageType: stage.stageType,
+            reason: error instanceof Error ? error.message : String(error)
+          });
+          await this.failPipeline(
+            pipeline.id,
+            error instanceof Error ? error.message : String(error)
+          );
+          return;
+        }
       }
+    } finally {
+      await heartbeat.stop();
     }
   }
 
@@ -218,23 +237,18 @@ export class PipelineWorkerService
       retryCount: nextState.retryCount,
       artifactIntents: nextState.prd
         ? [
-            {
+            await this.createManagedArtifactIntent({
+              pipelineId,
               stageId: stage.id,
               artifactKey: PipelineArtifactKey.Prd,
               attempt: nextState.attempt,
               name: 'prd.json',
               contentType: 'application/json',
               content: JSON.stringify(nextState.prd, null, 2)
-            }
+            })
           ]
         : []
     });
-
-    await this.waitForManagedArtifactsReady(
-      pipelineId,
-      nextState.attempt,
-      [PipelineArtifactKey.Prd]
-    );
   }
 
   private async runEvaluationStep(
@@ -337,23 +351,18 @@ export class PipelineWorkerService
       artifactIntents:
         nextState.acSpec.length > 0
           ? [
-              {
+              await this.createManagedArtifactIntent({
+                pipelineId,
                 stageId: stage.id,
                 artifactKey: PipelineArtifactKey.AcSpec,
                 attempt: nextState.attempt,
                 name: 'ac-spec.json',
                 contentType: 'application/json',
                 content: JSON.stringify(nextState.acSpec, null, 2)
-              }
+              })
             ]
           : []
     });
-
-    await this.waitForManagedArtifactsReady(
-      pipelineId,
-      nextState.attempt,
-      [PipelineArtifactKey.AcSpec]
-    );
   }
 
   private async runEstimateStep(
@@ -384,26 +393,21 @@ export class PipelineWorkerService
       nextState,
       artifactIntents: nextState.planReport
         ? [
-            {
+            await this.createManagedArtifactIntent({
+              pipelineId,
               stageId: stage.id,
               artifactKey: PipelineArtifactKey.PlanReport,
               attempt: nextState.attempt,
               name: 'plan-report.md',
               contentType: 'text/markdown',
               content: nextState.planReport
-            }
+            })
           ]
         : []
     });
     if (!completed) {
       return;
     }
-
-    await this.waitForManagedArtifactsReady(
-      pipelineId,
-      nextState.attempt,
-      [PipelineArtifactKey.PlanReport]
-    );
 
     if (await this.isPipelineCancelled(pipelineId)) {
       return;
@@ -430,14 +434,6 @@ export class PipelineWorkerService
     return pipeline?.status === PipelineStatus.Cancelled;
   }
 
-  private async renewExecutionLease(pipelineId: string): Promise<boolean> {
-    return this.pipelineRuntimeCommandService.renewPipelineExecutionLease({
-      pipelineId,
-      ownerId: this.ownerId,
-      ...this.createLeaseWindow()
-    });
-  }
-
   private createLeaseWindow() {
     const now = new Date();
     return {
@@ -446,49 +442,30 @@ export class PipelineWorkerService
     };
   }
 
-  private async waitForManagedArtifactsReady(
-    pipelineId: string,
-    attempt: number,
-    artifactKeys: readonly PipelineArtifactKey[]
-  ): Promise<void> {
-    const deadline =
-      Date.now() + PipelineWorkerService.ARTIFACT_READY_TIMEOUT_MS;
-
-    while (Date.now() < deadline) {
-      if (!(await this.renewExecutionLease(pipelineId))) {
-        throw new Error(`Pipeline lease lost while waiting for artifacts: ${pipelineId}`);
-      }
-
-      const artifacts =
-        await this.pipelineArtifactRepository.listManagedArtifactsForAttempt({
-          pipelineId,
-          attempt,
-          artifactKeys
-        });
-
-      if (
-        artifacts.length === artifactKeys.length &&
-        artifacts.every((artifact) => artifact.status === PIPELINE_ARTIFACT_STATUS.Ready)
-      ) {
-        return;
-      }
-
-      const failedArtifact = artifacts.find(
-        (artifact) => artifact.status === PIPELINE_ARTIFACT_STATUS.Failed
+  private async createManagedArtifactIntent(input: {
+    pipelineId: string;
+    stageId: string;
+    artifactKey: PipelineArtifactKey;
+    attempt: number;
+    name: string;
+    contentType: string;
+    content: string;
+  }): Promise<ManagedArtifactIntent> {
+    const version =
+      await this.pipelineArtifactVersionRepository.reserveNextVersion(
+        input.pipelineId,
+        input.artifactKey
       );
-      if (failedArtifact) {
-        throw new Error(
-          failedArtifact.lastError ??
-            `Artifact materialization failed: ${failedArtifact.id}`
-        );
-      }
 
-      await sleep(200);
-    }
-
-    throw new Error(
-      `Timed out waiting for artifact materialization: ${pipelineId}/${attempt}`
-    );
+    return {
+      stageId: input.stageId,
+      artifactKey: input.artifactKey,
+      attempt: input.attempt,
+      name: input.name,
+      contentType: input.contentType,
+      content: input.content,
+      version
+    };
   }
 }
 

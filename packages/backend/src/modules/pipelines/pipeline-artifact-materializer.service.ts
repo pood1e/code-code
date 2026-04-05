@@ -11,11 +11,13 @@ import {
   ARTIFACT_STORAGE,
   type ArtifactStorage
 } from './artifact-storage/artifact-storage.interface';
+import { LeaseHeartbeatRunner } from './lease-heartbeat-runner.service';
 import { PipelineArtifactRepository } from './pipeline-artifact.repository';
 import { PipelineExecutionLeaseRepository } from './pipeline-execution-lease.repository';
 
 const RETRY_BACKOFF_MS = 5_000;
 const MATERIALIZER_LEASE_MS = 30_000;
+const MATERIALIZER_LEASE_RENEW_INTERVAL_MS = 10_000;
 
 @Injectable()
 export class PipelineArtifactMaterializerService
@@ -28,6 +30,7 @@ export class PipelineArtifactMaterializerService
   constructor(
     private readonly pipelineExecutionLeaseRepository: PipelineExecutionLeaseRepository,
     private readonly pipelineArtifactRepository: PipelineArtifactRepository,
+    private readonly leaseHeartbeatRunner: LeaseHeartbeatRunner,
     @Inject(ARTIFACT_STORAGE)
     private readonly artifactStorage: ArtifactStorage
   ) {}
@@ -55,24 +58,31 @@ export class PipelineArtifactMaterializerService
         continue;
       }
 
+      const heartbeat = this.leaseHeartbeatRunner.start({
+        intervalMs: MATERIALIZER_LEASE_RENEW_INTERVAL_MS,
+        renew: () =>
+          this.pipelineExecutionLeaseRepository.renewArtifactMaterializationLease({
+            artifactId: artifact.id,
+            ownerId: this.ownerId,
+            ...this.createLeaseWindow()
+          })
+      });
+
       if (!artifact.content) {
-        await this.pipelineArtifactRepository.markArtifactFailed(
-          artifact.id,
-          this.ownerId,
-          'Artifact content is missing'
-        );
+        try {
+          await this.pipelineArtifactRepository.markArtifactFailed(
+            artifact.id,
+            this.ownerId,
+            'Artifact content is missing'
+          );
+        } finally {
+          await heartbeat.stop();
+        }
         continue;
       }
 
       try {
-        const renewed = await this.pipelineExecutionLeaseRepository.renewArtifactMaterializationLease(
-          {
-            artifactId: artifact.id,
-            ownerId: this.ownerId,
-            ...this.createLeaseWindow()
-          }
-        );
-        if (!renewed) {
+        if (!heartbeat.hasLease()) {
           continue;
         }
 
@@ -82,6 +92,9 @@ export class PipelineArtifactMaterializerService
           artifact.content,
           artifact.contentType
         );
+        if (!heartbeat.hasLease()) {
+          continue;
+        }
         await this.pipelineArtifactRepository.markArtifactReady(
           artifact.id,
           this.ownerId,
@@ -98,6 +111,8 @@ export class PipelineArtifactMaterializerService
           this.ownerId,
           reason
         );
+      } finally {
+        await heartbeat.stop();
       }
     }
   }
