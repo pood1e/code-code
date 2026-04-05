@@ -2,7 +2,11 @@ import http from 'node:http';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { HumanDecisionAction } from '@agent-workbench/shared';
+import {
+  HumanDecisionAction,
+  PipelineArtifactKey,
+  PipelineStageStatus
+} from '@agent-workbench/shared';
 
 import {
   getApp,
@@ -33,7 +37,7 @@ type PipelineDetail = PipelineSummary & {
     id: string;
     stageType: string;
     name: string;
-    status: string;
+    status: PipelineStageStatus;
     order: number;
     retryCount: number;
     updatedAt: string;
@@ -42,6 +46,11 @@ type PipelineDetail = PipelineSummary & {
     id: string;
     name: string;
     contentType: string;
+    metadata: {
+      artifactKey: PipelineArtifactKey;
+      attempt: number;
+      version: number;
+    } | null;
   }>;
 };
 
@@ -49,6 +58,7 @@ type SseEvent = {
   type: string;
   data: {
     eventId?: number;
+    stageType?: string;
   };
 };
 
@@ -215,6 +225,13 @@ describe('Pipelines Runtime API', () => {
       );
       expect(new Set(replayIds).size).toBe(replayIds.length);
 
+      const fullReplay = await collectSse(`/api/pipelines/${pipeline.id}/events`);
+      const stageEvents = fullReplay.events.filter((event) =>
+        event.type.startsWith('stage_')
+      );
+      expect(stageEvents.length).toBeGreaterThan(0);
+      expect(stageEvents.every((event) => Boolean(event.data.stageType))).toBe(true);
+
       const events = await getPrisma().pipelineEvent.findMany({
         where: { pipelineId: pipeline.id },
         orderBy: [{ eventId: 'asc' }, { id: 'asc' }]
@@ -261,9 +278,27 @@ describe('Pipelines Runtime API', () => {
       const modifiedSpec = modifiedDetail.stages.find(
         (stage) => stage.stageType === 'spec'
       );
+      const specArtifacts = modifiedDetail.artifacts.filter(
+        (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.AcSpec
+      );
+      const estimateArtifacts = modifiedDetail.artifacts.filter(
+        (artifact) =>
+          artifact.metadata?.artifactKey === PipelineArtifactKey.PlanReport
+      );
 
       expect(modifiedBreakdown?.updatedAt).toBe(initialBreakdownUpdatedAt);
       expect(modifiedSpec?.updatedAt).not.toBe(initialSpecUpdatedAt);
+      expect(specArtifacts.map((artifact) => artifact.metadata?.version)).toEqual([
+        2,
+        1
+      ]);
+      expect(specArtifacts.map((artifact) => artifact.metadata?.attempt)).toEqual([
+        2,
+        1
+      ]);
+      expect(
+        estimateArtifacts.map((artifact) => artifact.metadata?.version)
+      ).toEqual([2, 1]);
     });
 
     it('reject 会从 breakdown 重新执行', async () => {
@@ -288,8 +323,19 @@ describe('Pipelines Runtime API', () => {
       const rejectedBreakdown = rejectedDetail.stages.find(
         (stage) => stage.stageType === 'breakdown'
       );
+      const prdArtifacts = rejectedDetail.artifacts.filter(
+        (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
+      );
 
       expect(rejectedBreakdown?.updatedAt).not.toBe(initialBreakdownUpdatedAt);
+      expect(prdArtifacts.map((artifact) => artifact.metadata?.version)).toEqual([
+        2,
+        1
+      ]);
+      expect(prdArtifacts.map((artifact) => artifact.metadata?.attempt)).toEqual([
+        2,
+        1
+      ]);
     });
   });
 
@@ -333,7 +379,21 @@ describe('Pipelines Runtime API', () => {
 
       await sleep(700);
       const finalPipeline = await getPipelineSummary(pipeline.id);
+      const finalDetail = await getPipelineDetail(pipeline.id);
       expect(finalPipeline.status).toBe('cancelled');
+      expect(finalDetail.currentStageId).toBeNull();
+      expect(
+        finalDetail.stages.some(
+          (stage) => stage.status === PipelineStageStatus.Cancelled
+        )
+      ).toBe(true);
+      expect(
+        finalDetail.stages.some(
+          (stage) =>
+            stage.status === PipelineStageStatus.Running ||
+            stage.status === PipelineStageStatus.AwaitingReview
+        )
+      ).toBe(false);
 
       const eventKinds = (
         await getPrisma().pipelineEvent.findMany({
@@ -353,6 +413,13 @@ describe('Pipelines Runtime API', () => {
       const response = await api().post(`/api/pipelines/${pipeline.id}/cancel`);
       const cancelled = expectSuccess<PipelineSummary>(response, 200);
       expect(cancelled.status).toBe('cancelled');
+
+      const detail = await getPipelineDetail(pipeline.id);
+      const humanReviewStage = detail.stages.find(
+        (stage) => stage.stageType === 'human_review'
+      );
+      expect(detail.currentStageId).toBeNull();
+      expect(humanReviewStage?.status).toBe(PipelineStageStatus.Cancelled);
 
       const replay = await collectSse(`/api/pipelines/${pipeline.id}/events`);
       expect(replay.events.map((event) => event.type)).toContain('pipeline_cancelled');

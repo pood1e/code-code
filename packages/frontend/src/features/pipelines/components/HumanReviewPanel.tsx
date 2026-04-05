@@ -35,8 +35,11 @@ export function HumanReviewPanel({ pipelineId, scopeId }: Props) {
     submitDecision({
       action: HumanDecisionAction.Modify,
       feedback: feedbackValue
+    }, {
+      onSuccess: () => {
+        setFeedback('');
+      }
     });
-    setFeedback('');
   }
 
   function handleReject() {
@@ -47,8 +50,11 @@ export function HumanReviewPanel({ pipelineId, scopeId }: Props) {
     submitDecision({
       action: HumanDecisionAction.Reject,
       feedback: feedbackValue
+    }, {
+      onSuccess: () => {
+        setFeedback('');
+      }
     });
-    setFeedback('');
   }
 
   return (

@@ -39,7 +39,8 @@ export class PipelineEventStore {
         eventId: event.eventId,
         kind: event.kind,
         stageId: event.stageId ?? null,
-        timestampMs: BigInt(Date.now()),
+        stageType: event.stageType ?? null,
+        timestampMs: BigInt(new Date(event.timestamp).getTime()),
         data: toOptionalInputJson(
           event.data as Prisma.InputJsonValue | undefined
         )
@@ -147,6 +148,9 @@ export class PipelineEventStore {
       pipelineId: row.pipelineId,
       eventId: row.eventId,
       stageId: row.stageId ?? undefined,
+      stageType: row.stageType
+        ? (row.stageType as PipelineEvent['stageType'])
+        : undefined,
       timestamp: new Date(Number(row.timestampMs)).toISOString(),
       data: row.data
         ? (sanitizeJson(row.data) as Record<string, unknown>)

@@ -20,6 +20,7 @@ export type PipelineRuntimeStep = (typeof PIPELINE_RUNTIME_STEPS)[number];
 export type PipelineRuntimeState = {
   currentStep: PipelineRuntimeStep;
   config: PipelineConfig;
+  attempt: number;
   prd: PRD | null;
   breakdownFeedback: BreakdownFeedback | null;
   acSpec: TaskACSpec[];
@@ -34,6 +35,7 @@ export function createInitialPipelineRuntimeState(
   return {
     currentStep: 'breakdown',
     config,
+    attempt: 1,
     prd: null,
     breakdownFeedback: null,
     acSpec: [],
@@ -62,6 +64,12 @@ export function parsePipelineRuntimeState(
           ? configRecord.maxRetry
           : DEFAULT_PIPELINE_CONFIG.maxRetry
     },
+    attempt:
+      typeof raw.attempt === 'number' &&
+      Number.isInteger(raw.attempt) &&
+      raw.attempt >= 1
+        ? raw.attempt
+        : 1,
     prd: raw.prd && typeof raw.prd === 'object' ? (raw.prd as PRD) : null,
     breakdownFeedback:
       raw.breakdownFeedback && typeof raw.breakdownFeedback === 'object'

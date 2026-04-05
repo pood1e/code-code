@@ -14,7 +14,8 @@ export enum PipelineStageStatus {
   AwaitingReview = 'awaiting_review',
   Completed = 'completed',
   Failed = 'failed',
-  Skipped = 'skipped'
+  Skipped = 'skipped',
+  Cancelled = 'cancelled'
 }
 
 export enum PipelineStageType {
@@ -65,6 +66,18 @@ export type ArtifactContentType =
   | 'text/typescript'
   | 'text/plain';
 
+export enum PipelineArtifactKey {
+  Prd = 'prd',
+  AcSpec = 'ac_spec',
+  PlanReport = 'plan_report'
+}
+
+export type PipelineArtifactMetadata = {
+  artifactKey: PipelineArtifactKey;
+  attempt: number;
+  version: number;
+};
+
 export type PipelineSummary = {
   id: string;
   scopeId: string;
@@ -103,7 +116,7 @@ export type PipelineArtifactSummary = {
   name: string;
   contentType: ArtifactContentType;
   storageRef: string;
-  metadata: Record<string, unknown> | null;
+  metadata: PipelineArtifactMetadata | null;
   createdAt: string;
 };
 

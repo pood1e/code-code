@@ -2,6 +2,8 @@ import type { Prisma } from '@prisma/client';
 
 import type {
   ArtifactContentType,
+  PipelineArtifactKey,
+  PipelineArtifactMetadata,
   PipelineArtifactSummary,
   PipelineDetail,
   PipelineStageStatus,
@@ -47,7 +49,10 @@ export function toPipelineDetail(
         (a: PipelineStageRow, b: PipelineStageRow) => a.order - b.order
       )
       .map(toPipelineStageSummary),
-    artifacts: pipeline.artifacts.map(toPipelineArtifactSummary)
+    artifacts: pipeline.artifacts
+      .slice()
+      .sort(compareArtifacts)
+      .map(toPipelineArtifactSummary)
   };
 }
 
@@ -71,6 +76,8 @@ export function toPipelineStageSummary(
 export function toPipelineArtifactSummary(
   artifact: PipelineArtifactRow
 ): PipelineArtifactSummary {
+  const metadata = parsePipelineArtifactMetadata(artifact.metadata);
+
   return {
     id: artifact.id,
     pipelineId: artifact.pipelineId,
@@ -78,9 +85,52 @@ export function toPipelineArtifactSummary(
     name: artifact.name,
     contentType: artifact.contentType as ArtifactContentType,
     storageRef: artifact.storageRef,
-    metadata: artifact.metadata
-      ? (sanitizeJson(artifact.metadata) as Record<string, unknown>)
-      : null,
+    metadata,
     createdAt: artifact.createdAt.toISOString()
   };
+}
+
+function compareArtifacts(left: PipelineArtifactRow, right: PipelineArtifactRow) {
+  if (left.version !== right.version) {
+    return right.version - left.version;
+  }
+
+  return right.createdAt.getTime() - left.createdAt.getTime();
+}
+
+function parsePipelineArtifactMetadata(
+  value: Prisma.JsonValue | null
+): PipelineArtifactMetadata | null {
+  if (!value) {
+    return null;
+  }
+
+  const metadata = sanitizeJson(value) as Record<string, unknown>;
+  const artifactKey = metadata.artifactKey;
+  const attempt = metadata.attempt;
+  const version = metadata.version;
+
+  if (
+    !isPipelineArtifactKey(artifactKey) ||
+    typeof attempt !== 'number' ||
+    !Number.isInteger(attempt) ||
+    attempt < 1 ||
+    typeof version !== 'number' ||
+    !Number.isInteger(version) ||
+    version < 1
+  ) {
+    return null;
+  }
+
+  return {
+    artifactKey,
+    attempt,
+    version
+  };
+}
+
+function isPipelineArtifactKey(value: unknown): value is PipelineArtifactKey {
+  return (
+    value === 'prd' || value === 'ac_spec' || value === 'plan_report'
+  );
 }

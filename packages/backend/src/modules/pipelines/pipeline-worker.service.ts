@@ -7,6 +7,7 @@ import {
 import type { Prisma } from '@prisma/client';
 
 import {
+  PipelineArtifactKey,
   PipelineStageStatus,
   PipelineStageType,
   PipelineStatus
@@ -130,7 +131,7 @@ export class PipelineWorkerService
 
       const runtimeState = parsePipelineRuntimeState(pipeline.state);
       if (runtimeState.currentStep === 'complete') {
-        await this.completePipeline(pipeline.id);
+        await this.pipelinesService.completeExecution(pipeline.id);
         return;
       }
 
@@ -225,6 +226,9 @@ export class PipelineWorkerService
     await this.completeStage(pipelineId, stage, nextState, {
       retryCount: nextState.retryCount
     });
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return;
+    }
     await this.writeArtifacts(
       pipelineId,
       stage.id,
@@ -315,6 +319,9 @@ export class PipelineWorkerService
     };
 
     await this.completeStage(pipelineId, stage, nextState);
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return;
+    }
     await this.writeArtifacts(
       pipelineId,
       stage.id,
@@ -344,6 +351,9 @@ export class PipelineWorkerService
     };
 
     await this.completeStage(pipelineId, stage, nextState);
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return;
+    }
     await this.writeArtifacts(
       pipelineId,
       stage.id,
@@ -488,45 +498,9 @@ export class PipelineWorkerService
     });
   }
 
-  private async completePipeline(pipelineId: string) {
-    await this.prisma.pipeline.update({
-      where: { id: pipelineId },
-      data: {
-        status: PipelineStatus.Completed
-      }
-    });
-
-    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
-    await this.pipelineEventStore.append({
-      kind: 'pipeline_completed',
-      pipelineId,
-      eventId,
-      timestamp: new Date().toISOString()
-    });
-
-    this.pipelineEventStore.complete(pipelineId);
-  }
-
   private async failPipeline(pipelineId: string, reason: string) {
     this.logger.warn(`Pipeline ${pipelineId} failed: ${reason}`);
-
-    await this.prisma.pipeline.update({
-      where: { id: pipelineId },
-      data: {
-        status: PipelineStatus.Failed
-      }
-    });
-
-    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
-    await this.pipelineEventStore.append({
-      kind: 'pipeline_failed',
-      pipelineId,
-      eventId,
-      timestamp: new Date().toISOString(),
-      data: { reason }
-    });
-
-    this.pipelineEventStore.complete(pipelineId);
+    await this.pipelinesService.failExecution(pipelineId, reason);
   }
 
   private async persistRuntimeState(
@@ -552,6 +526,8 @@ export class PipelineWorkerService
     if (stageType === PipelineStageType.Breakdown && runtimeState.prd) {
       await this.pipelinesService.createArtifact(pipelineId, {
         stageId,
+        artifactKey: PipelineArtifactKey.Prd,
+        attempt: runtimeState.attempt,
         name: 'prd.json',
         contentType: 'application/json',
         content: JSON.stringify(runtimeState.prd, null, 2)
@@ -561,6 +537,8 @@ export class PipelineWorkerService
     if (stageType === PipelineStageType.Spec && runtimeState.acSpec.length > 0) {
       await this.pipelinesService.createArtifact(pipelineId, {
         stageId,
+        artifactKey: PipelineArtifactKey.AcSpec,
+        attempt: runtimeState.attempt,
         name: 'ac-spec.json',
         contentType: 'application/json',
         content: JSON.stringify(runtimeState.acSpec, null, 2)
@@ -570,6 +548,8 @@ export class PipelineWorkerService
     if (stageType === PipelineStageType.Estimate && runtimeState.planReport) {
       await this.pipelinesService.createArtifact(pipelineId, {
         stageId,
+        artifactKey: PipelineArtifactKey.PlanReport,
+        attempt: runtimeState.attempt,
         name: 'plan-report.md',
         contentType: 'text/markdown',
         content: runtimeState.planReport
