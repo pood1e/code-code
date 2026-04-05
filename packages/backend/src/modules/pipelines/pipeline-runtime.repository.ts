@@ -45,6 +45,7 @@ export abstract class PipelineRuntimeRepository {
   abstract startDraftPipeline(input: {
     pipelineId: string;
     runnerId: string;
+    expectedVersion: number;
     config: PipelineConfig;
     runtimeState: PipelineRuntimeState;
     stageDefinitions: Array<{
@@ -58,11 +59,13 @@ export abstract class PipelineRuntimeRepository {
   abstract startStage(
     pipelineId: string,
     ownerId: string,
+    expectedVersion: number,
     stageType: PipelineStageType
   ): Promise<PipelineRuntimeMutationResult<PipelineStageRecord> | null>;
   abstract completeStage(input: {
     pipelineId: string;
     ownerId: string;
+    expectedVersion: number;
     stageId: string;
     stageType: PipelineStageType;
     nextState: PipelineRuntimeState;
@@ -72,6 +75,7 @@ export abstract class PipelineRuntimeRepository {
   abstract failStage(input: {
     pipelineId: string;
     ownerId: string;
+    expectedVersion: number;
     stageId: string;
     stageType: PipelineStageType;
     reason: string;
@@ -81,22 +85,27 @@ export abstract class PipelineRuntimeRepository {
   abstract pauseForHumanReview(
     pipelineId: string,
     ownerId: string,
+    expectedVersion: number,
     runtimeState: PipelineRuntimeState
   ): Promise<PipelineRuntimeMutationResult<boolean> | null>;
   abstract completeExecution(
     pipelineId: string,
-    ownerId: string
+    ownerId: string,
+    expectedVersion: number
   ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
   abstract failExecution(
     pipelineId: string,
     ownerId: string,
-    reason: string
+    reason: string,
+    expectedVersion: number
   ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
   abstract cancelPipeline(
-    pipelineId: string
+    pipelineId: string,
+    expectedVersion: number
   ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
   abstract resumeFromHumanReview(input: {
     pipelineId: string;
+    expectedVersion: number;
     nextState: PipelineRuntimeState;
     stageStatusOverrides: Array<{
       stageType: PipelineStageType;

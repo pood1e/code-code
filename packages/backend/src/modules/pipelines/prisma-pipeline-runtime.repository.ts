@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import {
   type PipelineEvent,
   PipelineStageStatus,
+  StageExecutionAttemptStatus,
   PipelineStageType,
   PipelineStatus
 } from '@agent-workbench/shared';
@@ -35,12 +36,48 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
   }
 
   async recoverInterruptedPipelines(): Promise<number> {
-    return 0;
+    const now = new Date();
+    const [releasedAttempts, recoveredPipelines] = await this.prisma.$transaction([
+      this.prisma.stageExecutionAttempt.updateMany({
+        where: {
+          ownerLeaseToken: { not: null },
+          leaseExpiresAt: { lt: now },
+          status: {
+            in: [
+              StageExecutionAttemptStatus.Pending,
+              StageExecutionAttemptStatus.Running,
+              StageExecutionAttemptStatus.WaitingRepair
+            ] as string[]
+          }
+        },
+        data: {
+          ownerLeaseToken: null,
+          leaseExpiresAt: null
+        }
+      }),
+      this.prisma.pipeline.updateMany({
+        where: {
+          status: PipelineStatus.Running,
+          executionLeaseExpiresAt: { lt: now }
+        },
+        data: {
+          status: PipelineStatus.Pending,
+          executionOwnerId: null,
+          executionLeaseExpiresAt: null,
+          version: {
+            increment: 1
+          }
+        }
+      })
+    ]);
+
+    return releasedAttempts.count + recoveredPipelines.count;
   }
 
   async startDraftPipeline(input: {
     pipelineId: string;
     runnerId: string;
+    expectedVersion: number;
     config: {
       maxRetry: number;
       requireHumanReviewOnSuccess: boolean;
@@ -57,12 +94,16 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
       const started = await tx.pipeline.updateMany({
         where: {
           id: input.pipelineId,
-          status: PipelineStatus.Draft
+          status: PipelineStatus.Draft,
+          version: input.expectedVersion
         },
         data: {
           runnerId: input.runnerId,
           status: PipelineStatus.Pending,
           currentStageId: null,
+          version: {
+            increment: 1
+          },
           state: toInputJson(
             input.runtimeState as unknown as Prisma.InputJsonValue
           )
@@ -127,6 +168,7 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
   async startStage(
     pipelineId: string,
     ownerId: string,
+    expectedVersion: number,
     stageType: PipelineStageType
   ): Promise<PipelineRuntimeMutationResult<ReturnType<typeof toPipelineStageRecord>> | null> {
     const stage = await this.findStage(this.prisma, pipelineId, stageType);
@@ -138,10 +180,14 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         where: {
           id: pipelineId,
           status: PipelineStatus.Running,
+          version: expectedVersion,
           ...this.executionOwnerWhere(ownerId, now)
         },
         data: {
-          currentStageId: stage.id
+          currentStageId: stage.id,
+          version: {
+            increment: 1
+          }
         }
       });
 
@@ -179,6 +225,7 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
   async completeStage(input: {
     pipelineId: string;
     ownerId: string;
+    expectedVersion: number;
     stageId: string;
     stageType: PipelineStageType;
     nextState: PipelineRuntimeState;
@@ -193,11 +240,15 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         where: {
           id: input.pipelineId,
           status: PipelineStatus.Running,
+          version: input.expectedVersion,
           ...this.executionOwnerWhere(input.ownerId, now)
         },
         data: {
           state: toInputJson(input.nextState as unknown as Prisma.InputJsonValue),
-          currentStageId: input.stageId
+          currentStageId: input.stageId,
+          version: {
+            increment: 1
+          }
         }
       });
 
@@ -251,6 +302,7 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
   async failStage(input: {
     pipelineId: string;
     ownerId: string;
+    expectedVersion: number;
     stageId: string;
     stageType: PipelineStageType;
     reason: string;
@@ -265,6 +317,7 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         where: {
           id: input.pipelineId,
           status: PipelineStatus.Running,
+          version: input.expectedVersion,
           ...this.executionOwnerWhere(input.ownerId, now)
         },
         data: {
@@ -275,7 +328,10 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
                 )
               }
             : {}),
-          currentStageId: input.stageId
+          currentStageId: input.stageId,
+          version: {
+            increment: 1
+          }
         }
       });
 
@@ -312,6 +368,7 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
   async pauseForHumanReview(
     pipelineId: string,
     ownerId: string,
+    expectedVersion: number,
     runtimeState: PipelineRuntimeState
   ): Promise<PipelineRuntimeMutationResult<boolean> | null> {
     const stage = await this.findStage(
@@ -327,6 +384,7 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         where: {
           id: pipelineId,
           status: PipelineStatus.Running,
+          version: expectedVersion,
           ...this.executionOwnerWhere(ownerId, now)
         },
         data: {
@@ -334,6 +392,9 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
           currentStageId: stage.id,
           executionOwnerId: null,
           executionLeaseExpiresAt: null,
+          version: {
+            increment: 1
+          },
           state: toInputJson(runtimeState as unknown as Prisma.InputJsonValue)
         }
       });
@@ -373,34 +434,43 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
 
   async completeExecution(
     pipelineId: string,
-    ownerId: string
+    ownerId: string,
+    expectedVersion: number
   ): Promise<PipelineRuntimeMutationResult<ReturnType<typeof toPipelineRecord>> | null> {
     return this.transitionToTerminalState(pipelineId, {
       allowedFrom: [PipelineStatus.Running],
       ownerId,
+      expectedVersion,
       targetStatus: PipelineStatus.Completed,
       activeStageStatus: PipelineStageStatus.Completed,
-      eventKind: 'pipeline_completed'
+      eventKind: 'pipeline_completed',
+      activeAttemptStatus: null
     });
   }
 
   async failExecution(
     pipelineId: string,
     ownerId: string,
-    reason: string
+    reason: string,
+    expectedVersion: number
   ): Promise<PipelineRuntimeMutationResult<ReturnType<typeof toPipelineRecord>> | null> {
     return this.transitionToTerminalState(pipelineId, {
       allowedFrom: [PipelineStatus.Running],
       ownerId,
+      expectedVersion,
       targetStatus: PipelineStatus.Failed,
       activeStageStatus: PipelineStageStatus.Failed,
       eventKind: 'pipeline_failed',
+      activeAttemptStatus: StageExecutionAttemptStatus.Failed,
+      activeAttemptFailureCode: 'PIPELINE_FAILED',
+      activeAttemptFailureMessage: reason,
       data: { reason }
     });
   }
 
   async cancelPipeline(
-    pipelineId: string
+    pipelineId: string,
+    expectedVersion: number
   ): Promise<PipelineRuntimeMutationResult<ReturnType<typeof toPipelineRecord>> | null> {
     return this.transitionToTerminalState(pipelineId, {
       allowedFrom: [
@@ -408,14 +478,19 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         PipelineStatus.Running,
         PipelineStatus.Paused
       ],
+      expectedVersion,
       targetStatus: PipelineStatus.Cancelled,
       activeStageStatus: PipelineStageStatus.Cancelled,
-      eventKind: 'pipeline_cancelled'
+      eventKind: 'pipeline_cancelled',
+      activeAttemptStatus: StageExecutionAttemptStatus.Cancelled,
+      activeAttemptFailureCode: 'PIPELINE_CANCELLED',
+      activeAttemptFailureMessage: 'Pipeline execution cancelled'
     });
   }
 
   async resumeFromHumanReview(input: {
     pipelineId: string;
+    expectedVersion: number;
     nextState: PipelineRuntimeState;
     stageStatusOverrides: Array<{
       stageType: PipelineStageType;
@@ -428,13 +503,17 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
       const updated = await tx.pipeline.updateMany({
         where: {
           id: input.pipelineId,
-          status: PipelineStatus.Paused
+          status: PipelineStatus.Paused,
+          version: input.expectedVersion
         },
         data: {
           status: PipelineStatus.Pending,
           currentStageId: null,
           executionOwnerId: null,
           executionLeaseExpiresAt: null,
+          version: {
+            increment: 1
+          },
           state: toInputJson(input.nextState as unknown as Prisma.InputJsonValue)
         }
       });
@@ -473,11 +552,18 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
     options: {
       allowedFrom: readonly PipelineStatus[];
       ownerId?: string;
+      expectedVersion: number;
       targetStatus: PipelineStatus.Completed | PipelineStatus.Failed | PipelineStatus.Cancelled;
       activeStageStatus:
         | PipelineStageStatus.Completed
         | PipelineStageStatus.Failed
         | PipelineStageStatus.Cancelled;
+      activeAttemptStatus:
+        | StageExecutionAttemptStatus.Failed
+        | StageExecutionAttemptStatus.Cancelled
+        | null;
+      activeAttemptFailureCode?: string;
+      activeAttemptFailureMessage?: string;
       eventKind: Extract<
         PipelineEvent['kind'],
         'pipeline_completed' | 'pipeline_failed' | 'pipeline_cancelled'
@@ -495,13 +581,17 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
           status: {
             in: [...options.allowedFrom]
           },
+          version: options.expectedVersion,
           ...(options.ownerId ? this.executionOwnerWhere(options.ownerId, now) : {})
         },
         data: {
           status: options.targetStatus,
           currentStageId: null,
           executionOwnerId: null,
-          executionLeaseExpiresAt: null
+          executionLeaseExpiresAt: null,
+          version: {
+            increment: 1
+          }
         }
       });
 
@@ -523,6 +613,29 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
           status: options.activeStageStatus
         }
       });
+
+      if (options.activeAttemptStatus) {
+        await tx.stageExecutionAttempt.updateMany({
+          where: {
+            stage: { pipelineId },
+            status: {
+              in: [
+                StageExecutionAttemptStatus.Pending,
+                StageExecutionAttemptStatus.Running,
+                StageExecutionAttemptStatus.WaitingRepair
+              ]
+            }
+          },
+          data: {
+            status: options.activeAttemptStatus,
+            failureCode: options.activeAttemptFailureCode ?? null,
+            failureMessage: options.activeAttemptFailureMessage ?? null,
+            finishedAt: new Date(),
+            ownerLeaseToken: null,
+            leaseExpiresAt: null
+          }
+        });
+      }
 
       const pipeline = await tx.pipeline.findUniqueOrThrow({
         where: { id: pipelineId }

@@ -133,6 +133,7 @@ export function HumanReviewPanel({ pipelineId, scopeId, review }: Props) {
         <div className="flex flex-wrap gap-2 text-[11px] text-amber-800 dark:text-amber-300">
           <span>原因: {review.reason}</span>
           {review.sourceStageKey ? <span>来源阶段: {review.sourceStageKey}</span> : null}
+          {review.sourceAttemptId ? <span>Attempt: {review.sourceAttemptId}</span> : null}
           {review.sourceSessionId ? <span>Session: {review.sourceSessionId}</span> : null}
         </div>
       </div>

@@ -120,7 +120,10 @@ export class PipelinesService {
       );
     }
 
-    return this.pipelineRuntimeCommandService.cancelPipeline(id).then(
+    return this.pipelineRuntimeCommandService.cancelPipeline(
+      id,
+      existing.version
+    ).then(
       toPipelineSummary
     );
   }
@@ -236,6 +239,7 @@ export class PipelinesService {
     const result = await this.pipelineRuntimeCommandService.startDraftPipeline({
       pipelineId: id,
       runnerId: input.runnerId,
+      expectedVersion: pipeline.version,
       config,
       runtimeState,
       stageDefinitions: PLAN_STAGE_DEFINITIONS.map(({ stageType, name, order }) => ({
@@ -300,7 +304,10 @@ export class PipelinesService {
     }
 
     if (parsedDecision.action === HumanReviewAction.Terminate) {
-      await this.pipelineRuntimeCommandService.cancelPipeline(id);
+      await this.pipelineRuntimeCommandService.cancelPipeline(
+        id,
+        context.pipeline.version
+      );
       return;
     }
 
@@ -326,6 +333,7 @@ export class PipelinesService {
 
       await this.pipelineRuntimeCommandService.resumeFromHumanReview(
         id,
+        context.pipeline.version,
         nextState,
         getStageStatusOverridesForEditAndContinue(humanReview.sourceStageKey)
       );
@@ -345,6 +353,7 @@ export class PipelinesService {
 
       await this.pipelineRuntimeCommandService.resumeFromHumanReview(
         id,
+        context.pipeline.version,
         nextState,
         getStageStatusOverridesForSkip(humanReview.sourceStageKey)
       );
@@ -358,6 +367,7 @@ export class PipelinesService {
     );
     await this.pipelineRuntimeCommandService.resumeFromHumanReview(
       id,
+      context.pipeline.version,
       nextState,
       getStageStatusOverridesForRetry(humanReview.sourceStageKey)
     );

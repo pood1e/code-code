@@ -35,6 +35,14 @@ export type PipelineSessionResult =
       messageId: string | null;
     };
 
+export type PipelineSessionMessageSnapshot = {
+  id: string;
+  status: MessageStatus;
+  outputText: string | null;
+  errorPayload: Record<string, unknown> | null;
+  createdAt: Date;
+};
+
 @Injectable()
 export class PipelineSessionBridgeService {
   constructor(
@@ -151,6 +159,28 @@ export class PipelineSessionBridgeService {
     };
   }
 
+  async getAssistantMessageSnapshot(
+    sessionId: string,
+    messageId: string
+  ): Promise<PipelineSessionMessageSnapshot | null> {
+    const message = await this.prisma.sessionMessage.findFirst({
+      where: {
+        id: messageId,
+        sessionId,
+        role: MessageRole.Assistant
+      }
+    });
+
+    return message ? toMessageSnapshot(message) : null;
+  }
+
+  async getLatestAssistantMessageSnapshot(
+    sessionId: string
+  ): Promise<PipelineSessionMessageSnapshot | null> {
+    const message = await this.getLatestAssistantMessage(sessionId);
+    return message ? toMessageSnapshot(message) : null;
+  }
+
   private getLatestAssistantMessage(sessionId: string) {
     return this.prisma.sessionMessage.findFirst({
       where: {
@@ -166,4 +196,21 @@ function sleep(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function toMessageSnapshot(
+  message: NonNullable<
+    Awaited<ReturnType<PipelineSessionBridgeService['getLatestAssistantMessage']>>
+  >
+): PipelineSessionMessageSnapshot {
+  return {
+    id: message.id,
+    status: message.status as MessageStatus,
+    outputText: message.outputText,
+    errorPayload:
+      message.errorPayload && typeof message.errorPayload === 'object'
+        ? (message.errorPayload as Record<string, unknown>)
+        : null,
+    createdAt: message.createdAt
+  };
 }

@@ -46,6 +46,7 @@ export class PipelineRuntimeCommandService {
   startDraftPipeline(input: {
     pipelineId: string;
     runnerId: string;
+    expectedVersion: number;
     config: PipelineConfig;
     runtimeState: PipelineRuntimeState;
     stageDefinitions: Array<{
@@ -72,11 +73,13 @@ export class PipelineRuntimeCommandService {
   async startStage(
     pipelineId: string,
     ownerId: string,
+    expectedVersion: number,
     stageType: PipelineStageType
   ) {
     const result = await this.pipelineRuntimeRepository.startStage(
       pipelineId,
       ownerId,
+      expectedVersion,
       stageType
     );
     if (!result) {
@@ -90,6 +93,7 @@ export class PipelineRuntimeCommandService {
   async completeStage(input: {
     pipelineId: string;
     ownerId: string;
+    expectedVersion: number;
     stageId: string;
     stageType: PipelineStageType;
     nextState: PipelineRuntimeState;
@@ -108,6 +112,7 @@ export class PipelineRuntimeCommandService {
   async failStage(input: {
     pipelineId: string;
     ownerId: string;
+    expectedVersion: number;
     stageId: string;
     stageType: PipelineStageType;
     reason: string;
@@ -126,11 +131,13 @@ export class PipelineRuntimeCommandService {
   async pauseForHumanReview(
     pipelineId: string,
     ownerId: string,
+    expectedVersion: number,
     runtimeState: PipelineRuntimeState
   ): Promise<boolean> {
     const result = await this.pipelineRuntimeRepository.pauseForHumanReview(
       pipelineId,
       ownerId,
+      expectedVersion,
       runtimeState
     );
     if (!result) {
@@ -141,10 +148,15 @@ export class PipelineRuntimeCommandService {
     return result.value;
   }
 
-  async completeExecution(pipelineId: string, ownerId: string): Promise<boolean> {
+  async completeExecution(
+    pipelineId: string,
+    ownerId: string,
+    expectedVersion: number
+  ): Promise<boolean> {
     const result = await this.pipelineRuntimeRepository.completeExecution(
       pipelineId,
-      ownerId
+      ownerId,
+      expectedVersion
     );
     if (!result) {
       return false;
@@ -157,12 +169,14 @@ export class PipelineRuntimeCommandService {
   async failExecution(
     pipelineId: string,
     ownerId: string,
-    reason: string
+    reason: string,
+    expectedVersion: number
   ): Promise<boolean> {
     const result = await this.pipelineRuntimeRepository.failExecution(
       pipelineId,
       ownerId,
-      reason
+      reason,
+      expectedVersion
     );
     if (!result) {
       return false;
@@ -172,8 +186,11 @@ export class PipelineRuntimeCommandService {
     return true;
   }
 
-  async cancelPipeline(pipelineId: string) {
-    const result = await this.pipelineRuntimeRepository.cancelPipeline(pipelineId);
+  async cancelPipeline(pipelineId: string, expectedVersion: number) {
+    const result = await this.pipelineRuntimeRepository.cancelPipeline(
+      pipelineId,
+      expectedVersion
+    );
     if (!result) {
       const current = await this.pipelineRuntimeRepository.getDecisionContext(
         pipelineId
@@ -192,6 +209,7 @@ export class PipelineRuntimeCommandService {
 
   async resumeFromHumanReview(
     pipelineId: string,
+    expectedVersion: number,
     nextState: PipelineRuntimeState,
     stageStatusOverrides: Array<{
       stageType: PipelineStageType;
@@ -200,6 +218,7 @@ export class PipelineRuntimeCommandService {
   ): Promise<void> {
     const result = await this.pipelineRuntimeRepository.resumeFromHumanReview({
       pipelineId,
+      expectedVersion,
       nextState,
       stageStatusOverrides
     });
