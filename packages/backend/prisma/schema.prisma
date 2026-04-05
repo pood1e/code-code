@@ -286,11 +286,24 @@ model Pipeline {
   runner         AgentRunner?       @relation(fields: [runnerId], references: [id], onDelete: Restrict)
   stages         PipelineStage[]
   artifacts      PipelineArtifact[]
+  artifactSeries PipelineArtifactSeries[]
   events         PipelineEvent[]
 
   @@index([scopeId], name: "idx_pipeline_scope_id")
   @@index([status], name: "idx_pipeline_status")
   @@index([runnerId], name: "idx_pipeline_runner_id")
+}
+
+model PipelineArtifactSeries {
+  pipelineId  String
+  artifactKey String
+  nextVersion Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  @@id([pipelineId, artifactKey])
+  @@index([pipelineId], name: "idx_pipeline_artifact_series_pipeline_id")
 }
 
 
@@ -318,9 +331,9 @@ model PipelineArtifact {
   id          String         @id @default(cuid())
   pipelineId  String
   stageId     String?
-  artifactKey String
-  attempt     Int
-  version     Int
+  artifactKey String?
+  attempt     Int?
+  version     Int?
   name        String
   contentType String
   storageRef  String
@@ -331,7 +344,7 @@ model PipelineArtifact {
 
   @@index([pipelineId], name: "idx_pipeline_artifact_pipeline_id")
   @@index([stageId], name: "idx_pipeline_artifact_stage_id")
-  @@index([pipelineId, artifactKey, version], name: "idx_pipeline_artifact_version")
+  @@unique([pipelineId, artifactKey, version], name: "uq_pipeline_artifact_version")
 }
 
 model PipelineEvent {

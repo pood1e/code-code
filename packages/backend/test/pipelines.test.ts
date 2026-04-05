@@ -46,8 +46,6 @@ describe('Pipelines API', () => {
     const pipelinesService = getApp().get(PipelinesService);
 
     return pipelinesService.createArtifact(pipelineId, {
-      artifactKey: PipelineArtifactKey.Prd,
-      attempt: 1,
       name,
       contentType: 'text/plain',
       content
@@ -98,6 +96,42 @@ describe('Pipelines API', () => {
         `/api/pipelines/${pipelineB.id}/artifacts/${artifact.id}/content`
       ),
       404
+    );
+  });
+
+  it('并发写入同一 artifactKey 时应分配唯一且单调的 version', async () => {
+    const project = await seedProject();
+    const pipeline = await createPipeline(project.id, '版本化流水线');
+    const pipelinesService = getApp().get(PipelinesService);
+
+    await Promise.all(
+      Array.from({ length: 6 }, (_, index) =>
+        pipelinesService.createManagedArtifact(pipeline.id, {
+          artifactKey: PipelineArtifactKey.Prd,
+          attempt: index + 1,
+          name: 'prd.json',
+          contentType: 'application/json',
+          content: JSON.stringify({ version: index + 1 })
+        })
+      )
+    );
+
+    const detail = await pipelinesService.getDetail(pipeline.id);
+    const prdArtifacts = detail.artifacts.filter(
+      (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.Prd
+    );
+
+    expect(prdArtifacts).toHaveLength(6);
+    expect(prdArtifacts.map((artifact) => artifact.metadata?.version)).toEqual([
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]);
+    expect(new Set(prdArtifacts.map((artifact) => artifact.metadata?.version)).size).toBe(
+      6
     );
   });
 });

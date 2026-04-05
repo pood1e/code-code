@@ -7,6 +7,7 @@ import {
 import { FsArtifactStorage } from './artifact-storage/fs-artifact-storage';
 import { PipelineEventStore } from './pipeline-event.store';
 import { PipelineQueryService } from './pipeline-query.service';
+import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
 import { PipelineWorkerService } from './pipeline-worker.service';
 import { PipelinesController } from './pipelines.controller';
 import { PipelinesService } from './pipelines.service';
@@ -17,6 +18,7 @@ import { PipelinesService } from './pipelines.service';
   providers: [
     PipelineEventStore,
     PipelineQueryService,
+    PipelineRuntimeCommandService,
     PipelineWorkerService,
     PipelinesService,
     {
@@ -27,4 +29,3 @@ import { PipelinesService } from './pipelines.service';
   exports: [PipelinesService, PipelineQueryService, PipelineEventStore]
 })
 export class PipelinesModule {}
-

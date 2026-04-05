@@ -6,6 +6,7 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 
 import {
   DEFAULT_PIPELINE_CONFIG,
@@ -29,7 +30,7 @@ import {
   type ArtifactStorage
 } from './artifact-storage/artifact-storage.interface';
 import { toPipelineArtifactSummary, toPipelineDetail, toPipelineSummary } from './pipeline-mapper';
-import { PipelineEventStore } from './pipeline-event.store';
+import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
 import { createInitialPipelineRuntimeState, parsePipelineRuntimeState, type PipelineRuntimeState } from './pipeline-runtime-state';
 import { PLAN_STAGE_DEFINITIONS } from './pipeline-stage.constants';
 
@@ -37,7 +38,7 @@ import { PLAN_STAGE_DEFINITIONS } from './pipeline-stage.constants';
 export class PipelinesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pipelineEventStore: PipelineEventStore,
+    private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService,
     @Inject(ARTIFACT_STORAGE)
     private readonly artifactStorage: ArtifactStorage
   ) {}
@@ -136,11 +137,7 @@ export class PipelinesService {
       );
     }
 
-    return this.transitionPipelineToTerminalState(id, {
-      status: PipelineStatus.Cancelled,
-      activeStageStatus: PipelineStageStatus.Cancelled,
-      eventKind: 'pipeline_cancelled'
-    });
+    return this.pipelineRuntimeCommandService.cancelPipeline(id);
   }
 
   async getDetail(id: string) {
@@ -160,6 +157,51 @@ export class PipelinesService {
     pipelineId: string,
     input: {
       stageId?: string | null;
+      name: string;
+      contentType: ArtifactContentType;
+      content: string;
+      metadata?: Record<string, unknown> | null;
+    }
+  ) {
+    const pipeline = await this.prisma.pipeline.findUnique({
+      where: { id: pipelineId }
+    });
+
+    if (!pipeline) {
+      throw new NotFoundException(`Pipeline not found: ${pipelineId}`);
+    }
+
+    const storageRef = await this.artifactStorage.write(
+      pipelineId,
+      input.name,
+      input.content,
+      input.contentType
+    );
+
+    const artifact = await this.prisma.pipelineArtifact.create({
+      data: {
+        pipelineId,
+        ...(input.stageId ? { stageId: input.stageId } : {}),
+        name: input.name,
+        contentType: input.contentType,
+        storageRef,
+        ...(input.metadata
+          ? {
+              metadata: toOptionalInputJson(
+                input.metadata as Prisma.InputJsonValue | undefined
+              )
+            }
+          : {})
+      }
+    });
+
+    return toPipelineArtifactSummary(artifact);
+  }
+
+  async createManagedArtifact(
+    pipelineId: string,
+    input: {
+      stageId?: string | null;
       artifactKey: PipelineArtifactKey;
       attempt: number;
       name: string;
@@ -175,34 +217,44 @@ export class PipelinesService {
       throw new NotFoundException(`Pipeline not found: ${pipelineId}`);
     }
 
-    const version = await this.getNextArtifactVersion(pipelineId, input.artifactKey);
-    const metadata = {
-      artifactKey: input.artifactKey,
-      attempt: input.attempt,
-      version
-    };
+    const storageName = this.toManagedArtifactStorageName(
+      input.name,
+      input.artifactKey
+    );
     const storageRef = await this.artifactStorage.write(
       pipelineId,
-      this.toArtifactStorageName(input.name, input.attempt, version),
+      storageName,
       input.content,
       input.contentType
     );
 
-    const artifact = await this.prisma.pipelineArtifact.create({
-      data: {
-        pipelineId,
-        stageId: input.stageId ?? null,
-        artifactKey: input.artifactKey,
-        attempt: input.attempt,
-        version,
-        name: input.name,
-        contentType: input.contentType,
-        storageRef,
-        metadata: toOptionalInputJson(metadata as Prisma.InputJsonValue)
-      }
-    });
+    try {
+      const artifact = await this.prisma.$transaction(async (tx) => {
+        const version = await this.reserveManagedArtifactVersion(
+          tx,
+          pipelineId,
+          input.artifactKey
+        );
 
-    return toPipelineArtifactSummary(artifact);
+        return tx.pipelineArtifact.create({
+          data: {
+            pipelineId,
+            ...(input.stageId ? { stageId: input.stageId } : {}),
+            artifactKey: input.artifactKey,
+            attempt: input.attempt,
+            version,
+            name: input.name,
+            contentType: input.contentType,
+            storageRef
+          }
+        });
+      });
+
+      return toPipelineArtifactSummary(artifact);
+    } catch (error) {
+      await this.artifactStorage.delete(storageRef).catch(() => undefined);
+      throw error;
+    }
   }
 
   async readArtifactContent(artifactId: string): Promise<Buffer> {
@@ -306,30 +358,12 @@ export class PipelinesService {
         (stage.stageType as PipelineStageType) === PipelineStageType.HumanReview
     );
 
-    await this.prisma.$transaction(async (tx) => {
-      if (humanReviewStage) {
-        await tx.pipelineStage.update({
-          where: { id: humanReviewStage.id },
-          data: {
-            status:
-              nextState.currentStep === 'complete'
-                ? PipelineStageStatus.Completed
-                : PipelineStageStatus.Pending
-          }
-        });
-      }
-
-      await this.resetStagesForNextStep(tx, id, nextState.currentStep);
-
-      await tx.pipeline.update({
-        where: { id },
-        data: {
-          status: PipelineStatus.Pending,
-          currentStageId: null,
-          state: this.toRuntimeStateJson(nextState)
-        }
-      });
-    });
+    await this.pipelineRuntimeCommandService.resumeFromHumanReview(
+      id,
+      nextState,
+      humanReviewStage?.id ?? null,
+      getResetStageTypes(nextState.currentStep)
+    );
   }
 
   private applyDecisionToRuntimeState(
@@ -371,27 +405,6 @@ export class PipelinesService {
     }
   }
 
-  private async resetStagesForNextStep(
-    tx: Prisma.TransactionClient,
-    pipelineId: string,
-    nextStep: PipelineRuntimeState['currentStep']
-  ) {
-    const stageTypes = getResetStageTypes(nextStep);
-    if (stageTypes.length === 0) {
-      return;
-    }
-
-    await tx.pipelineStage.updateMany({
-      where: {
-        pipelineId,
-        stageType: { in: stageTypes }
-      },
-      data: {
-        status: PipelineStageStatus.Pending
-      }
-    });
-  }
-
   private async assertRunnerExists(runnerId: string) {
     const runner = await this.prisma.agentRunner.findUnique({
       where: { id: runnerId },
@@ -407,95 +420,50 @@ export class PipelinesService {
     return toInputJson(runtimeState as unknown as Prisma.InputJsonValue);
   }
 
-  async completeExecution(id: string) {
-    await this.transitionPipelineToTerminalState(id, {
-      status: PipelineStatus.Completed,
-      activeStageStatus: PipelineStageStatus.Completed,
-      eventKind: 'pipeline_completed'
-    });
-  }
-
-  async failExecution(id: string, reason: string) {
-    await this.transitionPipelineToTerminalState(id, {
-      status: PipelineStatus.Failed,
-      activeStageStatus: PipelineStageStatus.Failed,
-      eventKind: 'pipeline_failed',
-      data: { reason }
-    });
-  }
-
-  private async transitionPipelineToTerminalState(
-    pipelineId: string,
-    options: {
-      status: PipelineStatus.Completed | PipelineStatus.Failed | PipelineStatus.Cancelled;
-      activeStageStatus:
-        | PipelineStageStatus.Completed
-        | PipelineStageStatus.Failed
-        | PipelineStageStatus.Cancelled;
-      eventKind: 'pipeline_completed' | 'pipeline_failed' | 'pipeline_cancelled';
-      data?: Record<string, unknown>;
-    }
-  ) {
-    const updated = await this.prisma.$transaction(async (tx) => {
-      await tx.pipelineStage.updateMany({
-        where: {
-          pipelineId,
-          status: {
-            in: [
-              PipelineStageStatus.Running,
-              PipelineStageStatus.AwaitingReview
-            ]
-          }
-        },
-        data: {
-          status: options.activeStageStatus
-        }
-      });
-
-      return tx.pipeline.update({
-        where: { id: pipelineId },
-        data: {
-          status: options.status,
-          currentStageId: null
-        }
-      });
-    });
-
-    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
-    await this.pipelineEventStore.append({
-      kind: options.eventKind,
-      pipelineId,
-      eventId,
-      timestamp: new Date().toISOString(),
-      data: options.data
-    });
-    this.pipelineEventStore.complete(pipelineId);
-
-    return toPipelineSummary(updated);
-  }
-
-  private async getNextArtifactVersion(
+  private async reserveManagedArtifactVersion(
+    tx: Prisma.TransactionClient,
     pipelineId: string,
     artifactKey: PipelineArtifactKey
   ) {
-    const existing = await this.prisma.pipelineArtifact.findFirst({
-      where: {
-        pipelineId,
-        artifactKey
-      },
-      orderBy: {
-        version: 'desc'
-      },
-      select: {
-        version: true
-      }
-    });
+    const rows = await tx.$queryRaw<Array<{ version: number }>>`
+      INSERT INTO "PipelineArtifactSeries" (
+        "pipelineId",
+        "artifactKey",
+        "nextVersion",
+        "createdAt",
+        "updatedAt"
+      )
+      VALUES (
+        ${pipelineId},
+        ${artifactKey},
+        2,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT ("pipelineId", "artifactKey")
+      DO UPDATE SET
+        "nextVersion" = "PipelineArtifactSeries"."nextVersion" + 1,
+        "updatedAt" = CURRENT_TIMESTAMP
+      RETURNING "nextVersion" - 1 AS "version"
+    `;
 
-    return (existing?.version ?? 0) + 1;
+    const rawVersion = rows.at(0)?.version;
+    const version =
+      typeof rawVersion === 'bigint' ? Number(rawVersion) : rawVersion;
+    if (!version || !Number.isSafeInteger(version) || version < 1) {
+      throw new ConflictException(
+        `Failed to allocate artifact version for ${pipelineId}/${artifactKey}`
+      );
+    }
+
+    return version;
   }
 
-  private toArtifactStorageName(name: string, attempt: number, version: number) {
-    return `attempt-${attempt}_v${version}_${name}`;
+  private toManagedArtifactStorageName(
+    name: string,
+    artifactKey: PipelineArtifactKey
+  ) {
+    return `${artifactKey}_${randomUUID()}_${name}`;
   }
 }
 

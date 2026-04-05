@@ -1,6 +1,6 @@
 import http from 'node:http';
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   HumanDecisionAction,
@@ -15,6 +15,7 @@ import {
   setupTestApp,
   teardownTestApp
 } from './setup';
+import { PipelineRuntimeCommandService } from '../src/modules/pipelines/pipeline-runtime-command.service';
 import {
   api,
   expectError,
@@ -424,6 +425,101 @@ describe('Pipelines Runtime API', () => {
       const replay = await collectSse(`/api/pipelines/${pipeline.id}/events`);
       expect(replay.events.map((event) => event.type)).toContain('pipeline_cancelled');
     });
+
+    it('cancel 与 complete 并发时只能收敛为一个终态事件', async () => {
+      const pipeline = await createDraftPipeline();
+      await startPipeline(pipeline.id);
+      await waitForPipelineStatus(pipeline.id, 'paused');
+
+      const runtimeCommandService = getApp().get(PipelineRuntimeCommandService);
+      const originalCompleteExecution =
+        runtimeCommandService.completeExecution.bind(runtimeCommandService);
+      const gate = createGate();
+      const completeSpy = vi
+        .spyOn(runtimeCommandService, 'completeExecution')
+        .mockImplementation(async (pipelineId: string) => {
+          await gate.wait();
+          return originalCompleteExecution(pipelineId);
+        });
+
+      try {
+        const decisionPromise = submitDecision(
+          pipeline.id,
+          HumanDecisionAction.Approve
+        );
+        await waitForCondition(() => completeSpy.mock.calls.length > 0);
+
+        const cancelResponse = await api().post(`/api/pipelines/${pipeline.id}/cancel`);
+        const cancelled = expectSuccess<PipelineSummary>(cancelResponse, 200);
+        expect(cancelled.status).toBe('cancelled');
+
+        gate.release();
+        await decisionPromise;
+        await waitForPipelineStatus(pipeline.id, 'cancelled');
+
+        const terminalEvents = (
+          await getPrisma().pipelineEvent.findMany({
+            where: {
+              pipelineId: pipeline.id,
+              kind: {
+                in: ['pipeline_completed', 'pipeline_failed', 'pipeline_cancelled']
+              }
+            },
+            orderBy: [{ eventId: 'asc' }, { id: 'asc' }]
+          })
+        ).map((event) => event.kind);
+
+        expect(terminalEvents).toEqual(['pipeline_cancelled']);
+      } finally {
+        gate.release();
+        completeSpy.mockRestore();
+      }
+    });
+
+    it('cancel 与 fail 并发时只能收敛为一个终态事件', async () => {
+      const pipeline = await createDraftPipeline({
+        featureRequest: '[invalid-breakdown] 用户可以搜索文章'
+      });
+      const runtimeCommandService = getApp().get(PipelineRuntimeCommandService);
+      const originalFailExecution =
+        runtimeCommandService.failExecution.bind(runtimeCommandService);
+      const gate = createGate();
+      const failSpy = vi
+        .spyOn(runtimeCommandService, 'failExecution')
+        .mockImplementation(async (pipelineId: string, reason: string) => {
+          await gate.wait();
+          return originalFailExecution(pipelineId, reason);
+        });
+
+      try {
+        await startPipeline(pipeline.id, { maxRetry: 1 });
+        await waitForCondition(() => failSpy.mock.calls.length > 0, 10_000);
+
+        const cancelResponse = await api().post(`/api/pipelines/${pipeline.id}/cancel`);
+        const cancelled = expectSuccess<PipelineSummary>(cancelResponse, 200);
+        expect(cancelled.status).toBe('cancelled');
+
+        gate.release();
+        await waitForPipelineStatus(pipeline.id, 'cancelled');
+
+        const terminalEvents = (
+          await getPrisma().pipelineEvent.findMany({
+            where: {
+              pipelineId: pipeline.id,
+              kind: {
+                in: ['pipeline_completed', 'pipeline_failed', 'pipeline_cancelled']
+              }
+            },
+            orderBy: [{ eventId: 'asc' }, { id: 'asc' }]
+          })
+        ).map((event) => event.kind);
+
+        expect(terminalEvents).toEqual(['pipeline_cancelled']);
+      } finally {
+        gate.release();
+        failSpy.mockRestore();
+      }
+    });
   });
 });
 
@@ -494,4 +590,38 @@ function parseSseEvents(payload: string): SseEvent[] {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function createGate() {
+  let released = false;
+  let releasePromise: (() => void) | null = null;
+  const promise = new Promise<void>((resolve) => {
+    releasePromise = () => {
+      if (released) {
+        return;
+      }
+      released = true;
+      resolve();
+    };
+  });
+
+  return {
+    wait: () => promise,
+    release: () => releasePromise?.()
+  };
+}
+
+async function waitForCondition(
+  condition: () => boolean,
+  timeoutMs = 5_000
+) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (condition()) {
+      return;
+    }
+    await sleep(25);
+  }
+
+  throw new Error('Condition was not met before timeout');
 }
