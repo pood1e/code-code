@@ -5,7 +5,9 @@ import {
   MessageRole,
   MessageStatus,
   MetricKind,
-  SessionStatus
+  SessionStatus,
+  SessionWorkspaceMode,
+  SessionWorkspaceResourceKind
 } from '../types/session';
 
 const idSchema = z.string().trim().min(1);
@@ -26,11 +28,21 @@ export const platformSessionMcpSchema = z.object({
 });
 
 export const platformSessionConfigSchema = z.object({
+  workspaceMode: z
+    .nativeEnum(SessionWorkspaceMode)
+    .default(SessionWorkspaceMode.Project),
+  workspaceRoot: z.string().trim().min(1).optional(),
   cwd: z.string().trim().min(1),
+  workspaceResources: z
+    .array(z.nativeEnum(SessionWorkspaceResourceKind))
+    .default([]),
   skillIds: z.array(idSchema),
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema)
-});
+}).transform((value) => ({
+  ...value,
+  workspaceRoot: value.workspaceRoot ?? value.cwd
+}));
 
 export const sendSessionMessageInputSchema = z.object({
   input: jsonObjectSchema,
@@ -40,6 +52,9 @@ export const sendSessionMessageInputSchema = z.object({
 export const createSessionInputSchema = z.object({
   scopeId: idSchema,
   runnerId: idSchema,
+  workspaceResources: z
+    .array(z.nativeEnum(SessionWorkspaceResourceKind))
+    .default([]),
   skillIds: z.array(idSchema),
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema),

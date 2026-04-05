@@ -47,6 +47,7 @@ describe('sessions api helpers', () => {
       createSession({
         scopeId: 'project-1',
         runnerId: 'runner-1',
+        workspaceResources: [],
         skillIds: [],
         ruleIds: [],
         mcps: [],
@@ -62,6 +63,7 @@ describe('sessions api helpers', () => {
     expect(apiClient.post).toHaveBeenCalledWith('/sessions', {
       scopeId: 'project-1',
       runnerId: 'runner-1',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: [],

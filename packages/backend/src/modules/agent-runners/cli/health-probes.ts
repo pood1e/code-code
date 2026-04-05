@@ -31,7 +31,8 @@ function wrapCommand(
  * Check Claude Code CLI health by running \`claude auth status --json\`.
  */
 export async function probeClaudeCodeHealth(
-  executorUser?: string
+  executorUser?: string,
+  env?: Record<string, string>
 ): Promise<HealthStatus> {
   try {
     const { command, args } = wrapCommand(executorUser, 'claude', [
@@ -39,7 +40,7 @@ export async function probeClaudeCodeHealth(
       'status',
       '--json'
     ]);
-    const output = await runProbeCommand(command, args);
+    const output = await runProbeCommand(command, args, env);
 
     const parsed = JSON.parse(output) as Record<string, unknown>;
     if (parsed.loggedIn === true) {
@@ -62,11 +63,12 @@ export async function probeClaudeCodeHealth(
  * Cursor returns plain text, not JSON.
  */
 export async function probeCursorCliHealth(
-  executorUser?: string
+  executorUser?: string,
+  env?: Record<string, string>
 ): Promise<HealthStatus> {
   try {
     const { command, args } = wrapCommand(executorUser, 'agent', ['about']);
-    const output = await runProbeCommand(command, args);
+    const output = await runProbeCommand(command, args, env);
 
     // Check for login status in the text output
     if (output.includes('Not logged in')) {
@@ -94,14 +96,15 @@ export async function probeCursorCliHealth(
  * Qwen returns plain text with status markers.
  */
 export async function probeQwenCliHealth(
-  executorUser?: string
+  executorUser?: string,
+  env?: Record<string, string>
 ): Promise<HealthStatus> {
   try {
     const { command, args } = wrapCommand(executorUser, 'qwen', [
       'auth',
       'status'
     ]);
-    const output = await runProbeCommand(command, args);
+    const output = await runProbeCommand(command, args, env);
 
     // Look for the success marker
     if (
@@ -123,14 +126,18 @@ export async function probeQwenCliHealth(
   }
 }
 
-function runProbeCommand(command: string, args: string[]): Promise<string> {
+function runProbeCommand(
+  command: string,
+  args: string[],
+  extraEnv?: Record<string, string>
+): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile(
       command,
       args,
       {
         timeout: PROBE_TIMEOUT_MS,
-        env: buildProbeEnv()
+        env: buildProbeEnv(extraEnv)
       },
       (error, stdout, stderr) => {
         if (error) {
@@ -150,7 +157,9 @@ function runProbeCommand(command: string, args: string[]): Promise<string> {
   });
 }
 
-function buildProbeEnv(): Record<string, string> {
+function buildProbeEnv(
+  extraEnv?: Record<string, string>
+): Record<string, string> {
   const env: Record<string, string> = {};
   const keys = ['PATH', 'HOME', 'SHELL', 'USER', 'LANG', 'TERM'];
   for (const key of keys) {
@@ -158,5 +167,8 @@ function buildProbeEnv(): Record<string, string> {
       env[key] = process.env[key];
     }
   }
-  return env;
+  return {
+    ...env,
+    ...(extraEnv ?? {})
+  };
 }

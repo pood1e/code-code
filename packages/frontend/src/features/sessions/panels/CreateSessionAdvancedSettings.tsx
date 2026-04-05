@@ -1,3 +1,4 @@
+import { SessionWorkspaceResourceKind } from '@agent-workbench/shared';
 import { SlidersHorizontal } from 'lucide-react';
 import type { Control } from 'react-hook-form';
 
@@ -27,6 +28,7 @@ export function CreateSessionAdvancedSettings({
   runtimeFields,
   runnerContext,
   resources,
+  selectedWorkspaceResources,
   selectedSkillIds,
   selectedRuleIds,
   selectedMcpIds,
@@ -39,11 +41,12 @@ export function CreateSessionAdvancedSettings({
   runtimeFields: RunnerConfigField[];
   runnerContext: RunnerContextOptions;
   resources: CreateSessionResources;
+  selectedWorkspaceResources: SessionWorkspaceResourceKind[];
   selectedSkillIds: string[];
   selectedRuleIds: string[];
   selectedMcpIds: string[];
   onToggleSelection: (
-    fieldName: 'skillIds' | 'ruleIds' | 'mcpIds',
+    fieldName: 'workspaceResources' | 'skillIds' | 'ruleIds' | 'mcpIds',
     resourceId: string
   ) => void;
 }) {
@@ -80,6 +83,44 @@ export function CreateSessionAdvancedSettings({
               control={control}
               runnerContext={runnerContext}
             />
+
+            <SetupSection title="工作目录">
+              <p className="text-sm text-muted-foreground">
+                会话固定运行在项目 Workspace 根目录下的独立目录：
+                <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-xs">
+                  {'{workspacePath}/{sessionId}'}
+                </code>
+                。
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <WorkspaceResourceOption
+                  title="Code"
+                  description="创建会话时自动 git clone 项目代码到该目录"
+                  checked={selectedWorkspaceResources.includes(
+                    SessionWorkspaceResourceKind.Code
+                  )}
+                  onToggle={() =>
+                    onToggleSelection(
+                      'workspaceResources',
+                      SessionWorkspaceResourceKind.Code
+                    )
+                  }
+                />
+                <WorkspaceResourceOption
+                  title="Doc"
+                  description="创建会话时在该目录下初始化 docs 子目录"
+                  checked={selectedWorkspaceResources.includes(
+                    SessionWorkspaceResourceKind.Doc
+                  )}
+                  onToggle={() =>
+                    onToggleSelection(
+                      'workspaceResources',
+                      SessionWorkspaceResourceKind.Doc
+                    )
+                  }
+                />
+              </div>
+            </SetupSection>
 
             <SetupSection title="资源">
               <div className="grid gap-5 xl:grid-cols-2">
@@ -118,6 +159,33 @@ export function CreateSessionAdvancedSettings({
         </div>
       </div>
     </div>
+  );
+}
+
+function WorkspaceResourceOption({
+  title,
+  description,
+  checked,
+  onToggle
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/40 bg-background/70 px-3 py-3">
+      <input
+        type="checkbox"
+        className="mt-0.5 size-4"
+        checked={checked}
+        onChange={onToggle}
+      />
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+      </div>
+    </label>
   );
 }
 

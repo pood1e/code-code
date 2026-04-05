@@ -16,7 +16,14 @@ import type {
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const claudeCodeRunnerConfigSchema = z.object({
-  executorUser: z.string().optional()
+  executorUser: z.string().optional(),
+  env: z
+    .record(z.string(), z.string())
+    .optional()
+    .meta({
+      label: '环境变量',
+      description: '以 KEY=VALUE 注入 Claude CLI 进程'
+    })
 });
 
 export const claudeCodeRunnerSessionConfigSchema = z.object({
@@ -54,7 +61,7 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
     runnerConfig: unknown
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
-    return probeClaudeCodeHealth(config.executorUser);
+    return probeClaudeCodeHealth(config.executorUser, config.env);
   }
 
   buildCommand(
@@ -119,14 +126,16 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
       return {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'claude', ...args],
-        cwd
+        cwd,
+        env: config.env
       };
     }
 
     return {
       command: 'claude',
       args,
-      cwd
+      cwd,
+      env: config.env
     };
   }
 

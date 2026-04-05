@@ -3,6 +3,7 @@ import {
   MessageRole,
   MessageStatus,
   SessionStatus,
+  SessionWorkspaceResourceKind,
   type OutputChunk,
   type ProfileDetail,
   type SessionMessageDetail
@@ -409,6 +410,7 @@ describe('project-sessions.form', () => {
     expect(buildCreateSessionFormValues()).toEqual({
       runnerId: '',
       profileId: '',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcpIds: [],
@@ -481,6 +483,7 @@ describe('project-sessions.form', () => {
         {
           ...buildCreateSessionFormValues(),
           runnerId: 'runner-1',
+          workspaceResources: [SessionWorkspaceResourceKind.Code],
           skillIds: ['skill-1'],
           ruleIds: ['rule-1'],
           mcpIds: ['mcp-1', 'mcp-2'],
@@ -501,6 +504,7 @@ describe('project-sessions.form', () => {
     ).toEqual({
       scopeId: 'project-1',
       runnerId: 'runner-1',
+      workspaceResources: [SessionWorkspaceResourceKind.Code],
       skillIds: ['skill-1'],
       ruleIds: ['rule-1'],
       mcps: [

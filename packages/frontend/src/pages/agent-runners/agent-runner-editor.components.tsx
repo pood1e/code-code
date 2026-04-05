@@ -1,3 +1,4 @@
+import { Plus, Trash2 } from 'lucide-react';
 import type { Control, UseFormRegister } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import type { RunnerTypeResponse } from '@agent-workbench/shared';
@@ -6,6 +7,7 @@ import { FormField } from '@/components/app/FormField';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { JsonEditor } from '@/components/JsonEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CompactNativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   getRunnerConfigDefaultSummary,
   getRunnerConfigFieldValue,
+  toStringMapEntries,
+  toStringMapObject,
   type ParsedRunnerConfigSchema,
   shouldRenderEmptyEnumOption,
   type AgentRunnerEditorFormValues,
@@ -227,6 +231,93 @@ function RunnerConfigFieldControl({
   fieldId: string;
   onChange: (nextValue: unknown) => void;
 }) {
+  if (field.kind === 'string_map') {
+    const entries = toStringMapEntries(controllerValue);
+
+    const updateEntry = (
+      index: number,
+      key: 'key' | 'value',
+      value: string
+    ) => {
+      const nextEntries =
+        entries.length > 0 ? [...entries] : [{ key: '', value: '' }];
+      nextEntries[index] = {
+        ...nextEntries[index],
+        [key]: value
+      };
+      onChange(toStringMapObject(nextEntries));
+    };
+
+    const removeEntry = (index: number) => {
+      onChange(toStringMapObject(entries.filter((_, entryIndex) => entryIndex !== index)));
+    };
+
+    const appendEntry = () => {
+      onChange(toStringMapObject([...entries, { key: '', value: '' }]));
+    };
+
+    return (
+      <FormField
+        label={field.label}
+        htmlFor={fieldId}
+        description={field.description}
+        error={error}
+      >
+        <div className="space-y-3 rounded-xl border border-border/40 bg-background/80 px-3 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-muted-foreground">
+              以 KEY / VALUE 形式配置
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              aria-label={`添加${field.label}`}
+              onClick={appendEntry}
+            >
+              <Plus className="size-4" />
+            </Button>
+          </div>
+
+          {entries.length > 0 ? (
+            entries.map((entry, index) => (
+              <div
+                key={`${field.name}-${index}`}
+                className="grid gap-3 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)_auto]"
+              >
+                <Input
+                  placeholder="KEY"
+                  value={entry.key}
+                  onChange={(event) =>
+                    updateEntry(index, 'key', event.target.value)
+                  }
+                />
+                <Input
+                  placeholder="VALUE"
+                  value={entry.value}
+                  onChange={(event) =>
+                    updateEntry(index, 'value', event.target.value)
+                  }
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label={`移除${field.label} ${index + 1}`}
+                  onClick={() => removeEntry(index)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">暂无配置项。</p>
+          )}
+        </div>
+      </FormField>
+    );
+  }
+
   if (field.kind === 'boolean') {
     return (
       <FormField

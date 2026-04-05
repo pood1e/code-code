@@ -16,7 +16,14 @@ import type {
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const qwenCliRunnerConfigSchema = z.object({
-  executorUser: z.string().optional()
+  executorUser: z.string().optional(),
+  env: z
+    .record(z.string(), z.string())
+    .optional()
+    .meta({
+      label: '环境变量',
+      description: '以 KEY=VALUE 注入 Qwen CLI 进程'
+    })
 });
 
 export const qwenCliRunnerSessionConfigSchema = z.object({});
@@ -51,7 +58,7 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
     runnerConfig: unknown
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = qwenCliRunnerConfigSchema.parse(runnerConfig);
-    return probeQwenCliHealth(config.executorUser);
+    return probeQwenCliHealth(config.executorUser, config.env);
   }
 
   buildCommand(
@@ -90,14 +97,16 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
       return {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'qwen', ...args],
-        cwd
+        cwd,
+        env: config.env
       };
     }
 
     return {
       command: 'qwen',
       args,
-      cwd
+      cwd,
+      env: config.env
     };
   }
 

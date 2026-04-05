@@ -10,7 +10,7 @@ import type {
   SessionDetail
 } from '@agent-workbench/shared';
 import type { SessionSummary } from '@agent-workbench/shared';
-import { SessionStatus } from '@agent-workbench/shared';
+import { SessionStatus, SessionWorkspaceMode } from '@agent-workbench/shared';
 import type {
   InfiniteData,
   UseInfiniteQueryResult,
@@ -96,7 +96,10 @@ function createSessionDetail(id: string): SessionDetail {
   return {
     ...createSessionSummary(id),
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp/project-1',
       cwd: '/tmp/project-1',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []

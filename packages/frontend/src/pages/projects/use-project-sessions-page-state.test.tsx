@@ -20,7 +20,7 @@ import type {
   SessionDetail,
   SessionSummary
 } from '@agent-workbench/shared';
-import { SessionStatus } from '@agent-workbench/shared';
+import { SessionStatus, SessionWorkspaceMode } from '@agent-workbench/shared';
 
 import { useSessionPageMutations } from '@/features/sessions/hooks/use-session-page-mutations';
 import { useSessionPageQueries } from '@/features/sessions/hooks/use-session-page-queries';
@@ -95,7 +95,10 @@ function createSessionDetail(id: string): SessionDetail {
   return {
     ...createSessionSummary(id),
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp/project-1',
       cwd: '/tmp/project-1',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []

@@ -7,7 +7,8 @@ import type {
   ChatSummary,
   Profile,
   ResourceByKind,
-  RunnerTypeResponse
+  RunnerTypeResponse,
+  SessionWorkspaceResourceKind
 } from '@agent-workbench/shared';
 
 import { probeAgentRunnerContext } from '@/api/agent-runners';
@@ -130,9 +131,22 @@ export function useCreateSessionPanelState({
   };
 
   const toggleSelection = (
-    fieldName: 'skillIds' | 'ruleIds' | 'mcpIds',
+    fieldName: 'workspaceResources' | 'skillIds' | 'ruleIds' | 'mcpIds',
     resourceId: string
   ) => {
+    if (fieldName === 'workspaceResources') {
+      const typedResourceId = resourceId as SessionWorkspaceResourceKind;
+      const currentValue = form.getValues('workspaceResources');
+      const nextValue = currentValue.includes(typedResourceId)
+        ? currentValue.filter((id) => id !== typedResourceId)
+        : [...currentValue, typedResourceId];
+
+      form.setValue('workspaceResources', nextValue, {
+        shouldDirty: true
+      });
+      return;
+    }
+
     const currentValue = form.getValues(fieldName);
     const nextValue = currentValue.includes(resourceId)
       ? currentValue.filter((id) => id !== resourceId)
@@ -149,6 +163,7 @@ export function useCreateSessionPanelState({
     submitError,
     selectedRunnerId: fieldValues.selectedRunnerId,
     selectedProfileId: fieldValues.selectedProfileId,
+    selectedWorkspaceResources: fieldValues.selectedWorkspaceResources,
     selectedSkillIds: fieldValues.selectedSkillIds,
     selectedRuleIds: fieldValues.selectedRuleIds,
     selectedMcpIds: fieldValues.selectedMcpIds,

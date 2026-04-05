@@ -39,6 +39,7 @@ export function CreateSessionPanel({
     submitError,
     selectedRunnerId,
     selectedProfileId,
+    selectedWorkspaceResources,
     selectedSkillIds,
     selectedRuleIds,
     selectedMcpIds,
@@ -90,6 +91,7 @@ export function CreateSessionPanel({
         runtimeFields={runtimeFields}
         runnerContext={runnerContext}
         resources={resources}
+        selectedWorkspaceResources={selectedWorkspaceResources}
         selectedSkillIds={selectedSkillIds}
         selectedRuleIds={selectedRuleIds}
         selectedMcpIds={selectedMcpIds}

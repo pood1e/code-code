@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
-import type { ResourceByKind } from '@agent-workbench/shared';
+import {
+  SessionWorkspaceResourceKind,
+  type ResourceByKind
+} from '@agent-workbench/shared';
 
 import {
   buildCreateSessionFormValues,
@@ -41,7 +44,7 @@ function renderAdvancedSettings({
   onToggleSelection = vi.fn()
 }: {
   onToggleSelection?: (
-    fieldName: 'skillIds' | 'ruleIds' | 'mcpIds',
+    fieldName: 'workspaceResources' | 'skillIds' | 'ruleIds' | 'mcpIds',
     resourceId: string
   ) => void;
 } = {}) {
@@ -87,6 +90,7 @@ function renderAdvancedSettings({
           rules: [],
           mcps: [createMcp('mcp-1', 'Filesystem MCP')]
         }}
+        selectedWorkspaceResources={[]}
         selectedSkillIds={[]}
         selectedRuleIds={[]}
         selectedMcpIds={[]}
@@ -144,6 +148,7 @@ describe('CreateSessionAdvancedSettings', () => {
             rules: [],
             mcps: [createMcp('mcp-1', 'Filesystem MCP')]
           }}
+          selectedWorkspaceResources={[]}
           selectedSkillIds={[]}
           selectedRuleIds={[]}
           selectedMcpIds={['mcp-1']}
@@ -155,5 +160,21 @@ describe('CreateSessionAdvancedSettings', () => {
     render(<Harness />);
 
     expect(screen.getByText('node')).toBeInTheDocument();
+  });
+
+  it('勾选工作目录初始化项时应触发 workspaceResources 切换', async () => {
+    const { user, onToggleSelection } = renderAdvancedSettings();
+
+    await user.click(screen.getByRole('checkbox', { name: /Code/i }));
+    await user.click(screen.getByRole('checkbox', { name: /Doc/i }));
+
+    expect(onToggleSelection).toHaveBeenCalledWith(
+      'workspaceResources',
+      SessionWorkspaceResourceKind.Code
+    );
+    expect(onToggleSelection).toHaveBeenCalledWith(
+      'workspaceResources',
+      SessionWorkspaceResourceKind.Doc
+    );
   });
 });
