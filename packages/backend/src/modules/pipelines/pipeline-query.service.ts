@@ -70,7 +70,7 @@ export class PipelineQueryService {
 
     const artifacts = await this.prisma.pipelineArtifact.findMany({
       where: { pipelineId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ version: 'desc' }, { createdAt: 'desc' }]
     });
 
     return artifacts.map(toPipelineArtifactSummary);

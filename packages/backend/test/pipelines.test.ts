@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { PipelineArtifactKey } from '@agent-workbench/shared';
+
 import { PipelinesService } from '../src/modules/pipelines/pipelines.service';
 import { getApp, resetDatabase, setupTestApp, teardownTestApp } from './setup';
 import {
@@ -44,6 +46,8 @@ describe('Pipelines API', () => {
     const pipelinesService = getApp().get(PipelinesService);
 
     return pipelinesService.createArtifact(pipelineId, {
+      artifactKey: PipelineArtifactKey.Prd,
+      attempt: 1,
       name,
       contentType: 'text/plain',
       content

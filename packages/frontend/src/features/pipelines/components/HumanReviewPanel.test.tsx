@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,7 +15,26 @@ const mutationsMock = vi.hoisted(() => ({
 vi.mock('../hooks/use-pipeline-mutations', () => mutationsMock);
 
 describe('HumanReviewPanel', () => {
-  const mutate = vi.fn();
+  type MutationCallbacks = {
+    onSuccess?: () => void;
+  };
+  type MutationInput = {
+    action: HumanDecisionAction;
+    feedback?: string;
+  };
+  const mutate = vi.fn<(input: MutationInput, callbacks?: MutationCallbacks) => void>();
+
+  function getLastMutationCallbacks(): MutationCallbacks | undefined {
+    const lastCall = mutate.mock.calls.at(-1) as unknown;
+    if (!Array.isArray(lastCall)) {
+      return undefined;
+    }
+
+    const callbacks: unknown = lastCall[1];
+    return callbacks && typeof callbacks === 'object'
+      ? (callbacks as MutationCallbacks)
+      : undefined;
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -65,10 +84,27 @@ describe('HumanReviewPanel', () => {
     expect(rejectButton).toBeEnabled();
 
     await user.click(modifyButton);
-    expect(mutate).toHaveBeenCalledWith({
+    const modifyCall = mutate.mock.calls.at(-1);
+    expect(modifyCall?.[0]).toEqual({
       action: HumanDecisionAction.Modify,
       feedback: '补充失败路径'
     });
+    expect(
+      screen.getByPlaceholderText(
+        '修改或拒绝时请填写意见，例如：补充边界条件、重写 AC、重新分解任务...'
+      )
+    ).toHaveValue('补充失败路径');
+
+    const modifyOptions = getLastMutationCallbacks();
+    expect(modifyOptions?.onSuccess).toEqual(expect.any(Function));
+    act(() => {
+      modifyOptions?.onSuccess?.();
+    });
+    expect(
+      screen.getByPlaceholderText(
+        '修改或拒绝时请填写意见，例如：补充边界条件、重写 AC、重新分解任务...'
+      )
+    ).toHaveValue('');
 
     await user.type(
       screen.getByPlaceholderText(
@@ -78,9 +114,20 @@ describe('HumanReviewPanel', () => {
     );
     await user.click(rejectButton);
 
-    expect(mutate).toHaveBeenCalledWith({
+    const rejectCall = mutate.mock.calls.at(-1);
+    expect(rejectCall?.[0]).toEqual({
       action: HumanDecisionAction.Reject,
       feedback: '重新拆分任务'
     });
+    const rejectOptions = getLastMutationCallbacks();
+    expect(rejectOptions?.onSuccess).toEqual(expect.any(Function));
+    act(() => {
+      rejectOptions?.onSuccess?.();
+    });
+    expect(
+      screen.getByPlaceholderText(
+        '修改或拒绝时请填写意见，例如：补充边界条件、重写 AC、重新分解任务...'
+      )
+    ).toHaveValue('');
   });
 });

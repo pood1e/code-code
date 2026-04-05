@@ -1,4 +1,5 @@
 import {
+  Ban,
   CheckCircle2,
   CircleDashed,
   Clock,
@@ -7,7 +8,10 @@ import {
   Eye
 } from 'lucide-react';
 
-import type { PipelineStageSummary } from '@agent-workbench/shared';
+import {
+  PipelineStageStatus,
+  type PipelineStageSummary
+} from '@agent-workbench/shared';
 
 type Props = {
   stages: PipelineStageSummary[];
@@ -21,33 +25,36 @@ const STAGE_LABEL: Record<string, string> = {
   human_review: 'Human Review'
 };
 
-function StageIcon({ status }: { status: string }) {
+function StageIcon({ status }: { status: PipelineStageStatus }) {
   switch (status) {
-    case 'completed':
+    case PipelineStageStatus.Completed:
       return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-    case 'running':
+    case PipelineStageStatus.Running:
       return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
-    case 'failed':
+    case PipelineStageStatus.Failed:
       return <XCircle className="h-4 w-4 text-red-500" />;
-    case 'awaiting_review':
+    case PipelineStageStatus.Cancelled:
+      return <Ban className="h-4 w-4 text-slate-500" />;
+    case PipelineStageStatus.AwaitingReview:
       return <Eye className="h-4 w-4 text-amber-500" />;
-    case 'skipped':
+    case PipelineStageStatus.Skipped:
       return <Clock className="h-4 w-4 text-muted-foreground" />;
     default:
       return <CircleDashed className="h-4 w-4 text-muted-foreground" />;
   }
 }
 
-function stageStatusLabel(status: string) {
-  const map: Record<string, string> = {
-    pending: '等待中',
-    running: '执行中',
-    completed: '已完成',
-    failed: '失败',
-    skipped: '已跳过',
-    awaiting_review: '等待审核'
+function stageStatusLabel(status: PipelineStageStatus) {
+  const map: Record<PipelineStageStatus, string> = {
+    [PipelineStageStatus.Pending]: '等待中',
+    [PipelineStageStatus.Running]: '执行中',
+    [PipelineStageStatus.Completed]: '已完成',
+    [PipelineStageStatus.Failed]: '失败',
+    [PipelineStageStatus.Cancelled]: '已取消',
+    [PipelineStageStatus.Skipped]: '已跳过',
+    [PipelineStageStatus.AwaitingReview]: '等待审核'
   };
-  return map[status] ?? status;
+  return map[status];
 }
 
 export function PipelineStageTimeline({ stages }: Props) {
@@ -75,21 +82,23 @@ export function PipelineStageTimeline({ stages }: Props) {
               </span>
               <span
                 className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                  stage.status === 'completed'
+                  stage.status === PipelineStageStatus.Completed
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : stage.status === 'running'
+                    : stage.status === PipelineStageStatus.Running
                       ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      : stage.status === 'failed'
+                      : stage.status === PipelineStageStatus.Failed
                         ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        : stage.status === 'awaiting_review'
-                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                          : 'bg-muted text-muted-foreground'
+                        : stage.status === PipelineStageStatus.Cancelled
+                          ? 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300'
+                          : stage.status === PipelineStageStatus.AwaitingReview
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            : 'bg-muted text-muted-foreground'
                 }`}
               >
                 {stageStatusLabel(stage.status)}
               </span>
             </div>
-            {stage.status === 'failed' && stage.retryCount > 0 && (
+            {stage.status === PipelineStageStatus.Failed && stage.retryCount > 0 && (
               <p className="text-xs text-muted-foreground mt-0.5">
                 已重试 {stage.retryCount} 次
               </p>

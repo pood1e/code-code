@@ -318,6 +318,9 @@ model PipelineArtifact {
   id          String         @id @default(cuid())
   pipelineId  String
   stageId     String?
+  artifactKey String
+  attempt     Int
+  version     Int
   name        String
   contentType String
   storageRef  String
@@ -328,6 +331,7 @@ model PipelineArtifact {
 
   @@index([pipelineId], name: "idx_pipeline_artifact_pipeline_id")
   @@index([stageId], name: "idx_pipeline_artifact_stage_id")
+  @@index([pipelineId, artifactKey, version], name: "idx_pipeline_artifact_version")
 }
 
 model PipelineEvent {
@@ -336,6 +340,7 @@ model PipelineEvent {
   eventId     Int
   kind        String
   stageId     String?
+  stageType   String?
   timestampMs BigInt
   data        Json?
   createdAt   DateTime @default(now())
