@@ -3,28 +3,20 @@ import { Injectable } from '@nestjs/common';
 import {
   HumanReviewAction,
   HumanReviewReason,
-  type PipelineRuntimeState,
   type ReviewableStageKey
 } from '@agent-workbench/shared';
 
-import type {
-  PipelineArtifactRecord,
-  PipelineStageRecord,
-  StageExecutionAttemptRecord
-} from './pipeline.repository';
+import type { StageExecutionAttemptRecord } from './pipeline.repository';
 
 @Injectable()
 export class HumanReviewAssemblerService {
   build(input: {
-    runtimeState: PipelineRuntimeState;
     reason: HumanReviewReason;
     sourceStageKey: ReviewableStageKey | null;
     sourceAttempt: StageExecutionAttemptRecord | null;
     summary: string;
     candidateOutput?: unknown;
-    stages: PipelineStageRecord[];
-    artifacts: PipelineArtifactRecord[];
-  }): PipelineRuntimeState['feedback']['humanReview'] {
+  }) {
     return {
       reason: input.reason,
       sourceStageKey: input.sourceStageKey,

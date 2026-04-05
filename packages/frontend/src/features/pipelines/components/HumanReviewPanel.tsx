@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, Pencil, RefreshCw, SkipForward, SquareX } from 'lucide-react';
 
 import {
@@ -46,6 +46,12 @@ export function HumanReviewPanel({ pipelineId, scopeId, review }: Props) {
     HumanReviewAction.Terminate
   );
   const canSubmitComment = commentValue.length > 0;
+
+  useEffect(() => {
+    setComment(review.reviewerComment ?? '');
+    setEditedOutputText(formatJson(review.candidateOutput));
+    setOutputError(null);
+  }, [review]);
 
   function clearComment() {
     setComment('');
@@ -175,6 +181,8 @@ export function HumanReviewPanel({ pipelineId, scopeId, review }: Props) {
             <p key={artifact.artifactId}>
               {artifact.name}
               {artifact.artifactKey ? ` · ${artifact.artifactKey}` : ''}
+              {artifact.attempt ? ` · Attempt ${artifact.attempt}` : ''}
+              {artifact.version ? ` · v${artifact.version}` : ''}
             </p>
           ))}
         </div>

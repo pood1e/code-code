@@ -298,27 +298,4 @@ export class PipelineStageAttemptService {
     return updated.count === 1;
   }
 
-  async markCancelled(input: {
-    attemptId: string;
-    ownerLeaseToken: string;
-    failureCode: string;
-    failureMessage: string;
-  }): Promise<boolean> {
-    const updated = await this.prisma.stageExecutionAttempt.updateMany({
-      where: {
-        id: input.attemptId,
-        ownerLeaseToken: input.ownerLeaseToken
-      },
-      data: {
-        status: StageExecutionAttemptStatus.Cancelled,
-        failureCode: input.failureCode,
-        failureMessage: input.failureMessage,
-        finishedAt: new Date(),
-        ownerLeaseToken: null,
-        leaseExpiresAt: null
-      }
-    });
-
-    return updated.count === 1;
-  }
 }

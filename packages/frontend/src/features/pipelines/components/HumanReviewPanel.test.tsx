@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   HumanReviewAction,
   HumanReviewReason,
+  PipelineArtifactKey,
   StageExecutionAttemptStatus,
   type PipelineHumanReviewPayload
 } from '@agent-workbench/shared';
@@ -79,7 +80,16 @@ describe('HumanReviewPanel', () => {
           updatedAt: '2026-04-05T00:01:00.000Z'
         }
       ],
-      artifacts: [],
+      artifacts: [
+        {
+          artifactId: 'artifact-1',
+          artifactKey: PipelineArtifactKey.AcSpec,
+          name: 'ac-spec.json',
+          contentType: 'application/json',
+          attempt: 2,
+          version: 3
+        }
+      ],
       ...overrides
     };
   }
@@ -118,6 +128,7 @@ describe('HumanReviewPanel', () => {
 
     expect(screen.getByText('Attempt: attempt-1')).toBeInTheDocument();
     expect(screen.getByText('Session: session-1')).toBeInTheDocument();
+    expect(screen.getByText('ac-spec.json · ac_spec · Attempt 2 · v3')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '重试' }));
 
@@ -231,5 +242,58 @@ describe('HumanReviewPanel', () => {
       action: HumanReviewAction.Terminate,
       comment: '人工终止'
     });
+  });
+
+  it('review payload 更新后会重置 comment 和结构化输出编辑区', async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderWithProviders(
+      <HumanReviewPanel
+        pipelineId="pipeline-1"
+        scopeId="project-1"
+        review={createReview()}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(
+        '填写 reviewer comment；skip / terminate 必填，retry / edit_and_continue 可选。'
+      ),
+      '临时 comment'
+    );
+    fireEvent.change(screen.getByPlaceholderText('编辑结构化输出 JSON'), {
+      target: {
+        value: '{"taskId":"task-1","ac":[]}'
+      }
+    });
+
+    rerender(
+      <HumanReviewPanel
+        pipelineId="pipeline-1"
+        scopeId="project-1"
+        review={createReview({
+          reviewerComment: 'server-side comment',
+          candidateOutput: {
+            taskId: 'task-2',
+            ac: [{ id: 'ac-1', given: 'g', when: 'w', then: 't' }]
+          }
+        })}
+      />
+    );
+
+    expect(
+      screen.getByPlaceholderText(
+        '填写 reviewer comment；skip / terminate 必填，retry / edit_and_continue 可选。'
+      )
+    ).toHaveValue('server-side comment');
+    expect(screen.getByPlaceholderText('编辑结构化输出 JSON')).toHaveValue(
+      JSON.stringify(
+        {
+          taskId: 'task-2',
+          ac: [{ id: 'ac-1', given: 'g', when: 'w', then: 't' }]
+        },
+        null,
+        2
+      )
+    );
   });
 });
