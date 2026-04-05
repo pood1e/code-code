@@ -25,6 +25,7 @@ export function toPipelineSummary(pipeline: PipelineRow): PipelineSummary {
   return {
     id: pipeline.id,
     scopeId: pipeline.scopeId,
+    runnerId: pipeline.runnerId,
     name: pipeline.name,
     description: pipeline.description,
     status: pipeline.status as PipelineStatus,

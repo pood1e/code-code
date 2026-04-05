@@ -8,6 +8,18 @@ import {
 export const humanDecisionSchema = z.object({
   action: z.nativeEnum(HumanDecisionAction),
   feedback: z.string().optional()
+}).superRefine((value, context) => {
+  if (
+    (value.action === HumanDecisionAction.Modify ||
+      value.action === HumanDecisionAction.Reject) &&
+    (!value.feedback || value.feedback.trim().length === 0)
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'feedback must not be empty for modify/reject decisions',
+      path: ['feedback']
+    });
+  }
 });
 
 export const createPipelineInputSchema = z.object({
@@ -58,4 +70,3 @@ export const startPipelineInputSchema = z.object({
   runnerId: z.string().min(1, 'runnerId must not be empty'),
   config: pipelineConfigSchema.partial().optional()
 });
-

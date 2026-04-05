@@ -1,8 +1,8 @@
 import {
   IsEnum,
   IsNotEmpty,
-  IsOptional,
   IsString,
+  ValidateIf,
   ValidateNested
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -16,8 +16,13 @@ export class HumanDecisionDto {
   action!: HumanDecisionAction;
 
   @ApiPropertyOptional({ description: 'Optional feedback or modification instructions' })
+  @ValidateIf(
+    ({ action }: HumanDecisionDto) =>
+      action === HumanDecisionAction.Modify ||
+      action === HumanDecisionAction.Reject
+  )
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   feedback?: string;
 }
 

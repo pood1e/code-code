@@ -1,18 +1,23 @@
 import type { PRD } from '@agent-workbench/shared';
 
-import type { PlanStateType, PlanStateUpdate } from '../plan-graph.state';
+import type { PipelineRuntimeState } from '../../pipeline-runtime-state';
 
 /**
  * Breakdown Agent (mock) — converts featureRequest into a structured PRD.
  * Will be replaced with real LLM invocation in a future iteration.
  */
-export async function breakdownAgent(
-  state: PlanStateType
-): Promise<PlanStateUpdate> {
+export function breakdownAgent(
+  state: Pick<
+    PipelineRuntimeState,
+    'breakdownFeedback' | 'prd' | 'acSpec' | 'planReport'
+  > & { featureRequest: string }
+): Pick<PipelineRuntimeState, 'prd' | 'breakdownFeedback'> {
   const feedback = state.breakdownFeedback;
+  const shouldProduceInvalidBreakdown = state.featureRequest.includes(
+    '[invalid-breakdown]'
+  );
 
-  // Build a mock PRD — in real usage this calls an LLM
-  const prd: PRD = {
+  const basePrd: PRD = {
     feature: state.featureRequest || 'Untitled Feature',
     userStories: [
       'As a user, I can perform the core action',
@@ -50,9 +55,24 @@ export async function breakdownAgent(
     ]
   };
 
+  const prd: PRD = shouldProduceInvalidBreakdown
+    ? {
+        ...basePrd,
+        tasks: [
+          {
+            id: 'task-invalid',
+            title: 'Invalid task',
+            description: 'too short',
+            dependencies: [],
+            type: 'other',
+            estimatedAC: 1
+          }
+        ]
+      }
+    : basePrd;
+
   return {
     prd,
-    breakdownFeedback: null,
-    retryCount: state.retryCount + (feedback ? 1 : 0)
+    breakdownFeedback: null
   };
 }
