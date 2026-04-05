@@ -10,11 +10,24 @@ const { notifyMock } = vi.hoisted(() => ({
   notifyMock: vi.fn()
 }));
 
+const { execFileMock } = vi.hoisted(() => ({
+  execFileMock: vi.fn()
+}));
+
 vi.mock('node-notifier', () => ({
   default: {
     notify: notifyMock
   }
 }));
+
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+
+  return {
+    ...actual,
+    execFile: execFileMock
+  };
+});
 
 import { NotificationDispatcherService } from '../src/modules/notifications/notification-dispatcher.service';
 import { NotificationMaintenanceService } from '../src/modules/notifications/notification-maintenance.service';
@@ -92,6 +105,16 @@ function mockNotifySuccess() {
       callback?.(null);
     }
   );
+
+  execFileMock.mockImplementation(
+    (
+      _file: string,
+      _args: readonly string[],
+      callback?: (error: Error | null) => void
+    ) => {
+      callback?.(null);
+    }
+  );
 }
 
 function mockNotifyFailure(message = 'notify failed') {
@@ -103,6 +126,27 @@ function mockNotifyFailure(message = 'notify failed') {
       callback?.(new Error(message));
     }
   );
+
+  execFileMock.mockImplementation(
+    (
+      _file: string,
+      _args: readonly string[],
+      callback?: (error: Error | null) => void
+    ) => {
+      callback?.(new Error(message));
+    }
+  );
+}
+
+function expectLocalNotificationSent() {
+  if (process.platform === 'darwin') {
+    expect(execFileMock).toHaveBeenCalledTimes(1);
+    expect(notifyMock).not.toHaveBeenCalled();
+    return;
+  }
+
+  expect(notifyMock).toHaveBeenCalledTimes(1);
+  expect(execFileMock).not.toHaveBeenCalled();
 }
 
 async function waitForTaskStatus(
@@ -136,6 +180,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   notifyMock.mockReset();
+  execFileMock.mockReset();
   mockNotifySuccess();
   await resetDatabase();
   await seedProjects();
@@ -417,7 +462,7 @@ describe('Dispatcher and retry', () => {
 
     expect(settledTask.status).toBe(NotificationTaskStatus.Success);
     expect(tasks.body.data[0].channelName).toBe('本地通知');
-    expect(notifyMock).toHaveBeenCalledTimes(1);
+    expectLocalNotificationSent();
   });
 
   it('mapMessage 抛错时任务会立即标记为 failed', async () => {

@@ -1,9 +1,11 @@
 import type {
   CreatePipelineInput,
+  HumanDecision,
   PipelineArtifactSummary,
   PipelineDetail,
   PipelineStageSummary,
   PipelineSummary,
+  StartPipelineInput,
   UpdatePipelineInput
 } from '@agent-workbench/shared';
 
@@ -45,6 +47,21 @@ export async function cancelPipeline(id: string) {
   return response.data;
 }
 
+export async function startPipeline(id: string, payload: StartPipelineInput) {
+  const response = await apiClient.post<PipelineSummary>(
+    `/pipelines/${id}/start`,
+    payload
+  );
+  return response.data;
+}
+
+export async function submitPipelineDecision(
+  id: string,
+  decision: HumanDecision
+) {
+  await apiClient.post<void>(`/pipelines/${id}/decision`, { decision });
+}
+
 export async function listPipelineStages(pipelineId: string) {
   const response = await apiClient.get<PipelineStageSummary[]>(
     `/pipelines/${pipelineId}/stages`
@@ -65,3 +82,15 @@ export function getPipelineArtifactContentUrl(
 ) {
   return `/api/pipelines/${pipelineId}/artifacts/${artifactId}/content`;
 }
+
+/** Create an SSE EventSource for real-time pipeline events */
+export function createPipelineEventSource(
+  pipelineId: string,
+  lastEventId?: number
+): EventSource {
+  const url = lastEventId
+    ? `/api/pipelines/${pipelineId}/events?lastEventId=${lastEventId}`
+    : `/api/pipelines/${pipelineId}/events`;
+  return new EventSource(url);
+}
+
