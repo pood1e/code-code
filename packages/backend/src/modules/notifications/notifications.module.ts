@@ -3,6 +3,9 @@ import { DiscoveryModule } from '@nestjs/core';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { LocalNotificationCapability } from './capabilities/local-notification.capability';
+import { LocalNotificationSenderService } from './capabilities/local-notification-sender.service';
+import { MacOsLocalNotificationSenderService } from './capabilities/macos-local-notification-sender.service';
+import { NodeNotifierLocalNotificationSenderService } from './capabilities/node-notifier-local-notification-sender.service';
 import { NotificationCapabilitiesService } from './notification-capabilities.service';
 import { NotificationChannelsService } from './notification-channels.service';
 import { NotificationCapabilityRegistry } from './notification-capability.registry';
@@ -27,6 +30,9 @@ import { NotificationsController } from './notifications.controller';
     NotificationReceiverService,
     NotificationDispatcherService,
     NotificationMaintenanceService,
+    MacOsLocalNotificationSenderService,
+    NodeNotifierLocalNotificationSenderService,
+    LocalNotificationSenderService,
     LocalNotificationCapability
   ],
   exports: [NotificationReceiverService, NotificationCapabilityRegistry]

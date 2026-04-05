@@ -1,19 +1,29 @@
 import {
   BadRequestException,
+  ConflictException,
+  forwardRef,
   Inject,
   Injectable,
   NotFoundException
 } from '@nestjs/common';
+
 import type { Prisma } from '@prisma/client';
 
 import {
+  DEFAULT_PIPELINE_CONFIG,
+  PipelineStageStatus,
+  PipelineStageType,
   PipelineStatus,
   type ArtifactContentType,
   type CreatePipelineInput,
+  type HumanDecision,
+  type PipelineConfig,
+  type StartPipelineInput,
   type UpdatePipelineInput
 } from '@agent-workbench/shared';
 
-import { toOptionalInputJson } from '../../common/json.utils';
+
+import { toInputJson, toOptionalInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ARTIFACT_STORAGE,
@@ -32,6 +42,7 @@ export class PipelinesService {
     @Inject(ARTIFACT_STORAGE)
     private readonly artifactStorage: ArtifactStorage
   ) {}
+
 
   async create(input: CreatePipelineInput) {
     const projectExists = await this.prisma.project.findUnique({
@@ -200,5 +211,75 @@ export class PipelinesService {
     }
 
     return this.artifactStorage.read(artifact.storageRef);
+  }
+
+  async start(id: string, input: StartPipelineInput) {
+    const pipeline = await this.prisma.pipeline.findUnique({ where: { id } });
+
+    if (!pipeline) {
+      throw new NotFoundException(`Pipeline not found: ${id}`);
+    }
+
+    if (pipeline.status !== PipelineStatus.Draft) {
+      throw new ConflictException(
+        `Pipeline can only be started from 'draft' status, current: ${pipeline.status}`
+      );
+    }
+
+    const config: PipelineConfig = {
+      maxRetry: input.config?.maxRetry ?? DEFAULT_PIPELINE_CONFIG.maxRetry
+    };
+
+    // Inline stage definitions — keeps PipelinesService free of circular Worker dependency
+    const planStages: Array<{ stageType: PipelineStageType; name: string }> = [
+      { stageType: PipelineStageType.Breakdown, name: 'Breakdown' },
+      { stageType: PipelineStageType.Evaluation, name: 'Evaluation' },
+      { stageType: PipelineStageType.Spec, name: 'Spec' },
+      { stageType: PipelineStageType.Estimate, name: 'Estimate' },
+      { stageType: PipelineStageType.HumanReview, name: 'Human Review' }
+    ];
+
+    await this.prisma.pipelineStage.createMany({
+      data: planStages.map(({ stageType, name }, index) => ({
+        pipelineId: id,
+        name,
+        stageType,
+        order: index,
+        status: PipelineStageStatus.Pending
+      }))
+    });
+
+    const updated = await this.prisma.pipeline.update({
+      where: { id },
+      data: {
+        status: PipelineStatus.Pending,
+        state: toInputJson(config as unknown as Prisma.InputJsonValue)
+      }
+    });
+
+    return toPipelineSummary(updated);
+  }
+
+  async submitDecision(id: string, decision: HumanDecision) {
+    const pipeline = await this.prisma.pipeline.findUnique({ where: { id } });
+
+    if (!pipeline) {
+      throw new NotFoundException(`Pipeline not found: ${id}`);
+    }
+
+    if (pipeline.status !== PipelineStatus.Paused) {
+      throw new BadRequestException(
+        `Pipeline must be in 'paused' status to submit a decision, current: ${pipeline.status}`
+      );
+    }
+
+    // Write resumePayload and flip to Pending — Worker's pollLoop will pick it up
+    await this.prisma.pipeline.update({
+      where: { id },
+      data: {
+        status: PipelineStatus.Pending,
+        resumePayload: JSON.stringify(decision)
+      }
+    });
   }
 }

@@ -4,14 +4,17 @@ import {
   Delete,
   Get,
   HttpCode,
+  MessageEvent,
   NotFoundException,
   Param,
   Patch,
   Post,
   Query,
-  Res
+  Res,
+  Sse
 } from '@nestjs/common';
 import type { Response } from 'express';
+import type { Observable } from 'rxjs';
 import {
   ApiOperation,
   ApiParam,
@@ -31,16 +34,22 @@ import {
   PipelineQueryDto,
   UpdatePipelineDto
 } from './dto/pipeline.dto';
+import { StartPipelineDto } from './dto/start-pipeline.dto';
+import { SubmitHumanDecisionDto } from './dto/human-decision.dto';
+import { PipelineEventStore } from './pipeline-event.store';
 import { PipelineQueryService } from './pipeline-query.service';
 import { PipelinesService } from './pipelines.service';
+
 
 @ApiTags('Pipelines')
 @Controller(apiRouteConfig.pipelines.path)
 export class PipelinesController {
   constructor(
     private readonly pipelinesService: PipelinesService,
-    private readonly pipelineQueryService: PipelineQueryService
+    private readonly pipelineQueryService: PipelineQueryService,
+    private readonly pipelineEventStore: PipelineEventStore
   ) {}
+
 
   @Post()
   @ApiOperation({ summary: 'Create a pipeline' })
@@ -193,4 +202,68 @@ export class PipelinesController {
     res.setHeader('Content-Type', contentType);
     res.send(content);
   }
+
+  @Post(':id/start')
+  @HttpCode(200)
+  @ResponseMessage('Pipeline started successfully')
+  @ApiOperation({ summary: 'Start a pipeline (Draft → Pending)' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Pipeline enqueued for execution.' })
+  @ApiWrappedErrorResponse({
+    status: 404,
+    description: 'Pipeline not found.',
+    messageExample: 'Pipeline not found: pipe_123'
+  })
+  @ApiWrappedErrorResponse({
+    status: 409,
+    description: 'Pipeline is not in draft status.',
+    messageExample: "Pipeline can only be started from 'draft' status, current: running"
+  })
+  async startPipeline(
+    @Param('id') id: string,
+    @Body() dto: StartPipelineDto
+  ) {
+    return this.pipelinesService.start(id, {
+      runnerId: dto.runnerId,
+      config: dto.maxRetry !== undefined ? { maxRetry: dto.maxRetry } : undefined
+    });
+  }
+
+  @Post(':id/decision')
+  @HttpCode(200)
+  @ResponseMessage('Decision submitted successfully')
+  @ApiOperation({ summary: 'Submit human review decision (Paused → Pending)' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Decision accepted, pipeline will resume.' })
+  @ApiWrappedErrorResponse({
+    status: 404,
+    description: 'Pipeline not found.',
+    messageExample: 'Pipeline not found: pipe_123'
+  })
+  @ApiWrappedErrorResponse({
+    status: 400,
+    description: 'Pipeline is not in paused status.',
+    messageExample: "Pipeline must be in 'paused' status to submit a decision, current: running"
+  })
+  async submitDecision(
+    @Param('id') id: string,
+    @Body() dto: SubmitHumanDecisionDto
+  ) {
+    await this.pipelinesService.submitDecision(id, dto.decision);
+  }
+
+  @Sse(':id/events')
+  @SkipApiResponse()
+  @ApiOperation({ summary: 'SSE stream for real-time pipeline events' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiQuery({ name: 'lastEventId', type: Number, required: false })
+  @ApiResponse({ status: 200, description: 'SSE stream of pipeline events.' })
+  async streamEvents(
+    @Param('id') id: string,
+    @Query('lastEventId') lastEventId?: string
+  ): Promise<Observable<MessageEvent>> {
+    const afterEventId = lastEventId ? parseInt(lastEventId, 10) : 0;
+    return this.pipelineEventStore.createStream(id, afterEventId);
+  }
 }
+

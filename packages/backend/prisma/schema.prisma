@@ -277,14 +277,18 @@ model Pipeline {
   status         String             @default("draft")
   currentStageId String?
   state          Json?
+  resumePayload  String?            // JSON-encoded HumanDecision for Worker resume
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   project        Project            @relation(fields: [scopeId], references: [id], onDelete: Cascade)
   stages         PipelineStage[]
   artifacts      PipelineArtifact[]
+  events         PipelineEvent[]
 
   @@index([scopeId], name: "idx_pipeline_scope_id")
+  @@index([status], name: "idx_pipeline_status")
 }
+
 
 model PipelineStage {
   id         String             @id @default(cuid())
@@ -322,3 +326,17 @@ model PipelineArtifact {
   @@index([stageId], name: "idx_pipeline_artifact_stage_id")
 }
 
+model PipelineEvent {
+  id          String   @id @default(cuid())
+  pipelineId  String
+  eventId     Int
+  kind        String
+  stageId     String?
+  timestampMs BigInt
+  data        Json?
+  createdAt   DateTime @default(now())
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  @@unique([pipelineId, eventId], name: "uq_pipeline_event_id")
+  @@index([pipelineId], name: "idx_pipeline_event_pipeline_id")
+}

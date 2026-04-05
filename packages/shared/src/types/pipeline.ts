@@ -1,5 +1,6 @@
 export enum PipelineStatus {
   Draft = 'draft',
+  Pending = 'pending',
   Running = 'running',
   Paused = 'paused',
   Completed = 'completed',
@@ -128,4 +129,82 @@ export type CreatePipelineArtifactInput = {
   contentType: ArtifactContentType;
   content: string;
   metadata?: Record<string, unknown> | null;
+};
+
+// ─── Plan Pipeline: PRD & AC Spec ────────────────────────────────────────────
+
+export type PRDTask = {
+  id: string;
+  title: string;
+  description: string;
+  interface?: string;
+  dependencies: string[];
+  type: 'api' | 'ui' | 'infra' | 'other';
+  estimatedAC: number;
+};
+
+export type PRD = {
+  feature: string;
+  userStories: string[];
+  systemBoundary: { in: string[]; out: string[]; outOfScope: string[] };
+  ambiguities: string[];
+  tasks: PRDTask[];
+};
+
+export type AcceptanceCriterion = {
+  id: string;
+  given: string;
+  when: string;
+  then: string;
+};
+
+export type TaskACSpec = {
+  taskId: string;
+  ac: AcceptanceCriterion[];
+};
+
+export type BreakdownMode = 'full' | 'partial' | 'split';
+
+export type BreakdownFeedback = {
+  mode: BreakdownMode;
+  targetTaskIds?: string[];
+  reason: string;
+  suggestion?: string;
+};
+
+// ─── Pipeline Runtime Config ──────────────────────────────────────────────────
+
+export type PipelineConfig = {
+  /** Maximum breakdown/evaluation retry loops before Pipeline → failed. Default: 3 */
+  maxRetry: number;
+};
+
+export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
+  maxRetry: 3
+};
+
+export type StartPipelineInput = {
+  runnerId: string;
+  config?: Partial<PipelineConfig>;
+};
+
+// ─── Pipeline SSE Events ──────────────────────────────────────────────────────
+
+export type PipelineEventKind =
+  | 'stage_started'
+  | 'stage_completed'
+  | 'stage_failed'
+  | 'pipeline_paused'
+  | 'pipeline_completed'
+  | 'pipeline_failed'
+  | 'pipeline_cancelled';
+
+export type PipelineEvent = {
+  kind: PipelineEventKind;
+  pipelineId: string;
+  eventId: number;
+  stageId?: string;
+  stageType?: PipelineStageType;
+  timestamp: string;
+  data?: Record<string, unknown>;
 };

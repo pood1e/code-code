@@ -49,3 +49,13 @@ export const pipelineStageTypeValues = Object.values(PipelineStageType) as [
   PipelineStageType,
   ...PipelineStageType[]
 ];
+
+export const pipelineConfigSchema = z.object({
+  maxRetry: z.number().int().min(1).max(10).default(3)
+});
+
+export const startPipelineInputSchema = z.object({
+  runnerId: z.string().min(1, 'runnerId must not be empty'),
+  config: pipelineConfigSchema.partial().optional()
+});
+
