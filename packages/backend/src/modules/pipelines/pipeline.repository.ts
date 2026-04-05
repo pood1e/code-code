@@ -1,7 +1,11 @@
 import type {
   ArtifactContentType,
+  HumanReviewAction,
+  HumanReviewReason,
+  PipelineArtifactKey,
   PipelineStageStatus,
   PipelineStageType,
+  StageExecutionAttemptStatus,
   PipelineStatus
 } from '@agent-workbench/shared';
 
@@ -18,7 +22,30 @@ export type PipelineRecord = {
   currentStageId: string | null;
   executionOwnerId: string | null;
   executionLeaseExpiresAt: Date | null;
+  version: number;
   state: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type StageExecutionAttemptRecord = {
+  id: string;
+  stageId: string;
+  attemptNo: number;
+  status: StageExecutionAttemptStatus;
+  sessionId: string | null;
+  activeRequestMessageId: string | null;
+  reviewReason: HumanReviewReason | null;
+  failureCode: string | null;
+  failureMessage: string | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  resolvedAgentConfig: unknown;
+  inputSnapshot: unknown;
+  candidateOutput: unknown;
+  parsedOutput: unknown;
+  ownerLeaseToken: string | null;
+  leaseExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -31,7 +58,7 @@ export type PipelineStageRecord = {
   order: number;
   status: PipelineStageStatus;
   retryCount: number;
-  sessionId: string | null;
+  attempts: StageExecutionAttemptRecord[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -57,9 +84,32 @@ export type PipelineArtifactRecord = {
   updatedAt: Date;
 };
 
+export type PipelineHumanReviewArtifactRecord = {
+  artifactId: string;
+  artifactKey: PipelineArtifactKey | null;
+  name: string;
+  contentType: ArtifactContentType;
+  attempt: number | null;
+  version: number | null;
+};
+
+export type PipelineHumanReviewRecord = {
+  reason: HumanReviewReason;
+  sourceStageKey: 'breakdown' | 'spec' | 'estimate' | null;
+  sourceAttemptId: string | null;
+  sourceSessionId: string | null;
+  summary: string;
+  candidateOutput: unknown | null;
+  suggestedActions: HumanReviewAction[];
+  reviewerComment: string | null;
+  attempts: StageExecutionAttemptRecord[];
+  artifacts: PipelineHumanReviewArtifactRecord[];
+};
+
 export type PipelineDetailRecord = PipelineRecord & {
   stages: PipelineStageRecord[];
   artifacts: PipelineArtifactRecord[];
+  humanReview: PipelineHumanReviewRecord | null;
 };
 
 export abstract class PipelineRepository {

@@ -4,15 +4,21 @@ import type {
   PipelineArtifactMetadata,
   PipelineArtifactSummary,
   PipelineDetail,
+  PipelineHumanReviewArtifactSummary,
+  PipelineHumanReviewPayload,
   PipelineStageSummary,
+  StageExecutionAttemptSummary,
   PipelineSummary
 } from '@agent-workbench/shared';
 
 import type {
   PipelineArtifactRecord,
   PipelineDetailRecord,
+  PipelineHumanReviewArtifactRecord,
+  PipelineHumanReviewRecord,
   PipelineRecord,
-  PipelineStageRecord
+  PipelineStageRecord,
+  StageExecutionAttemptRecord
 } from './pipeline.repository';
 
 export function toPipelineSummary(pipeline: PipelineRecord): PipelineSummary {
@@ -42,7 +48,10 @@ export function toPipelineDetail(
     artifacts: pipeline.artifacts
       .slice()
       .sort(compareArtifacts)
-      .map(toPipelineArtifactSummary)
+      .map(toPipelineArtifactSummary),
+    humanReview: pipeline.humanReview
+      ? toPipelineHumanReviewPayload(pipeline.humanReview)
+      : null
   };
 }
 
@@ -57,9 +66,32 @@ export function toPipelineStageSummary(
     order: stage.order,
     status: stage.status,
     retryCount: stage.retryCount,
-    sessionId: stage.sessionId,
+    attemptCount: stage.attempts.length,
+    latestFailureReason: stage.attempts.find((attempt) => attempt.failureMessage)
+      ?.failureMessage ?? null,
+    attempts: stage.attempts.map(toStageExecutionAttemptSummary),
     createdAt: stage.createdAt.toISOString(),
     updatedAt: stage.updatedAt.toISOString()
+  };
+}
+
+export function toStageExecutionAttemptSummary(
+  attempt: StageExecutionAttemptRecord
+): StageExecutionAttemptSummary {
+  return {
+    id: attempt.id,
+    stageId: attempt.stageId,
+    attemptNo: attempt.attemptNo,
+    status: attempt.status,
+    sessionId: attempt.sessionId,
+    activeRequestMessageId: attempt.activeRequestMessageId,
+    reviewReason: attempt.reviewReason,
+    failureCode: attempt.failureCode,
+    failureMessage: attempt.failureMessage,
+    startedAt: attempt.startedAt?.toISOString() ?? null,
+    finishedAt: attempt.finishedAt?.toISOString() ?? null,
+    createdAt: attempt.createdAt.toISOString(),
+    updatedAt: attempt.updatedAt.toISOString()
   };
 }
 
@@ -76,6 +108,22 @@ export function toPipelineArtifactSummary(
     metadata: toPipelineArtifactMetadata(artifact),
     createdAt: artifact.createdAt.toISOString()
   };
+}
+
+function toPipelineHumanReviewPayload(
+  review: PipelineHumanReviewRecord
+): PipelineHumanReviewPayload {
+  return {
+    ...review,
+    attempts: review.attempts.map(toStageExecutionAttemptSummary),
+    artifacts: review.artifacts.map(toPipelineHumanReviewArtifactSummary)
+  };
+}
+
+function toPipelineHumanReviewArtifactSummary(
+  artifact: PipelineHumanReviewArtifactRecord
+): PipelineHumanReviewArtifactSummary {
+  return artifact;
 }
 
 function compareArtifacts(left: PipelineArtifactRecord, right: PipelineArtifactRecord) {

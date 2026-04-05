@@ -3,7 +3,7 @@ import http from 'node:http';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  HumanDecisionAction,
+  HumanReviewAction,
   PipelineArtifactKey,
   PipelineStageStatus
 } from '@agent-workbench/shared';
@@ -57,6 +57,9 @@ type PipelineDetail = PipelineSummary & {
       version: number;
     } | null;
   }>;
+  humanReview: {
+    candidateOutput: unknown | null;
+  } | null;
 };
 
 type SseEvent = {
@@ -126,14 +129,27 @@ describe('Pipelines Runtime API', () => {
 
   async function submitDecision(
     pipelineId: string,
-    action: HumanDecisionAction,
-    feedback?: string
+    decision: Record<string, unknown>
   ) {
     const response = await api()
       .post(`/api/pipelines/${pipelineId}/decision`)
-      .send({ decision: { action, feedback } });
+      .send({ decision });
 
     return expectSuccess(response, 200);
+  }
+
+  async function submitEditAndContinueCurrentOutput(
+    pipelineId: string,
+    comment = 'accept current output'
+  ) {
+    const detail = await getPipelineDetail(pipelineId);
+    expect(detail.humanReview?.candidateOutput).not.toBeNull();
+
+    return submitDecision(pipelineId, {
+      action: HumanReviewAction.EditAndContinue,
+      comment,
+      editedOutput: detail.humanReview?.candidateOutput
+    });
   }
 
   async function getPipelineDetail(pipelineId: string) {
@@ -175,7 +191,9 @@ describe('Pipelines Runtime API', () => {
 
   describe('POST /pipelines/:id/start', () => {
     it('应校验 runnerId 存在并持久化到 pipeline', async () => {
-      const pipeline = await createDraftPipeline();
+      const pipeline = await createDraftPipeline({
+        featureRequest: '[invalid-breakdown] 用户可以搜索文章'
+      });
 
       expectError(
         await api()
@@ -253,7 +271,7 @@ describe('Pipelines Runtime API', () => {
           )
           .expect(200);
 
-        expect(contentResponse.headers['content-type']).toContain('text/markdown');
+        expect(contentResponse.headers['content-type']).toContain('application/json');
         expect(contentResponse.text.length).toBeGreaterThan(0);
 
         const failedMaterialization = await waitForArtifactMaterializationFailure(
@@ -268,7 +286,7 @@ describe('Pipelines Runtime API', () => {
   });
 
   describe('human review resume and replay', () => {
-    it('重启后仍可 approve 继续执行，eventId 保持单调递增且 afterEventId replay 不重复', async () => {
+    it('重启后仍可通过 edit_and_continue 继续执行，eventId 保持单调递增且 afterEventId replay 不重复', async () => {
       const pipeline = await createDraftPipeline();
       await startPipeline(pipeline.id);
       await waitForPipelineStatus(pipeline.id, 'paused');
@@ -280,7 +298,7 @@ describe('Pipelines Runtime API', () => {
 
       await restartTestAppPreservingDatabase();
 
-      await submitDecision(pipeline.id, HumanDecisionAction.Approve);
+      await submitEditAndContinueCurrentOutput(pipeline.id);
       await waitForPipelineStatus(pipeline.id, 'completed');
 
       const afterRestart = await getPrisma().pipeline.findUniqueOrThrow({
@@ -331,8 +349,10 @@ describe('Pipelines Runtime API', () => {
 
       await submitDecision(
         pipeline.id,
-        HumanDecisionAction.Modify,
-        '补充边界条件'
+        {
+          action: HumanReviewAction.Retry,
+          comment: '重新估算边界条件'
+        }
       );
       await waitForPipelineStatus(pipeline.id, 'paused');
 
@@ -344,7 +364,7 @@ describe('Pipelines Runtime API', () => {
   });
 
   describe('POST /pipelines/:id/decision', () => {
-    it('modify/reject 必须提供反馈；modify 仅重跑 spec 之后的阶段', async () => {
+    it('skip 必须提供反馈；retry 成功 review 时应仅重跑 estimate', async () => {
       const pipeline = await createDraftPipeline();
       await startPipeline(pipeline.id);
       await waitForPipelineStatus(pipeline.id, 'paused');
@@ -352,62 +372,46 @@ describe('Pipelines Runtime API', () => {
       expectError(
         await api()
           .post(`/api/pipelines/${pipeline.id}/decision`)
-          .send({ decision: { action: HumanDecisionAction.Modify } }),
+          .send({ decision: { action: HumanReviewAction.Skip } }),
         400
       );
 
       const initialDetail = await getPipelineDetail(pipeline.id);
-      const initialBreakdownUpdatedAt = initialDetail.stages.find(
-        (stage) => stage.stageType === 'breakdown'
-      )?.updatedAt;
-      const initialSpecUpdatedAt = initialDetail.stages.find(
-        (stage) => stage.stageType === 'spec'
+      const initialEstimateUpdatedAt = initialDetail.stages.find(
+        (stage) => stage.stageType === 'estimate'
       )?.updatedAt;
 
       await sleep(1100);
       await submitDecision(
         pipeline.id,
-        HumanDecisionAction.Modify,
-        '补充 AC 的失败路径'
+        {
+          action: HumanReviewAction.Retry,
+          comment: '重新执行 estimate'
+        }
       );
       await waitForPipelineStatus(pipeline.id, 'paused');
 
       const modifiedDetail = await getPipelineDetail(pipeline.id);
-      const modifiedBreakdown = modifiedDetail.stages.find(
-        (stage) => stage.stageType === 'breakdown'
-      );
       const modifiedSpec = modifiedDetail.stages.find(
         (stage) => stage.stageType === 'spec'
       );
-      expect(modifiedBreakdown?.updatedAt).toBe(initialBreakdownUpdatedAt);
-      expect(modifiedSpec?.updatedAt).not.toBe(initialSpecUpdatedAt);
-      await waitForArtifactVersions(pipeline.id, PipelineArtifactKey.AcSpec, [2, 1]);
-      await waitForArtifactVersions(
-        pipeline.id,
-        PipelineArtifactKey.PlanReport,
-        [2, 1]
+      const modifiedEstimate = modifiedDetail.stages.find(
+        (stage) => stage.stageType === 'estimate'
       );
-
-      const readyModifiedDetail = await getPipelineDetail(pipeline.id);
-      const readySpecArtifacts = readyModifiedDetail.artifacts.filter(
-        (artifact) => artifact.metadata?.artifactKey === PipelineArtifactKey.AcSpec
+      expect(modifiedSpec?.updatedAt).toBe(
+        initialDetail.stages.find((stage) => stage.stageType === 'spec')?.updatedAt
       );
-      const readyEstimateArtifacts = readyModifiedDetail.artifacts.filter(
-        (artifact) =>
-          artifact.metadata?.artifactKey === PipelineArtifactKey.PlanReport
-      );
-
-      expect(
-        readySpecArtifacts.map((artifact) => artifact.metadata?.attempt)
-      ).toEqual([2, 1]);
-      expect(
-        readyEstimateArtifacts.map((artifact) => artifact.metadata?.version)
-      ).toEqual([2, 1]);
+      expect(modifiedEstimate?.updatedAt).not.toBe(initialEstimateUpdatedAt);
+      await waitForArtifactVersions(pipeline.id, PipelineArtifactKey.PlanReport, [2, 1]);
     });
 
-    it('reject 会从 breakdown 重新执行', async () => {
-      const pipeline = await createDraftPipeline();
-      await startPipeline(pipeline.id);
+    it('evaluation reject 进入 human_review 后 retry 会从 breakdown 重新执行', async () => {
+      const pipeline = await createDraftPipeline({
+        featureRequest: '[invalid-breakdown] 用户可以搜索文章'
+      });
+      await api()
+        .post(`/api/pipelines/${pipeline.id}/start`)
+        .send({ runnerId, maxRetry: 1 });
       await waitForPipelineStatus(pipeline.id, 'paused');
 
       const initialDetail = await getPipelineDetail(pipeline.id);
@@ -418,8 +422,10 @@ describe('Pipelines Runtime API', () => {
       await sleep(1100);
       await submitDecision(
         pipeline.id,
-        HumanDecisionAction.Reject,
-        '请重新拆分任务粒度'
+        {
+          action: HumanReviewAction.Retry,
+          comment: '请重新拆分任务粒度'
+        }
       );
       await waitForPipelineStatus(pipeline.id, 'paused');
 
@@ -428,7 +434,7 @@ describe('Pipelines Runtime API', () => {
         (stage) => stage.stageType === 'breakdown'
       );
       expect(rejectedBreakdown?.updatedAt).not.toBe(initialBreakdownUpdatedAt);
-      await waitForArtifactVersions(pipeline.id, PipelineArtifactKey.Prd, [2, 1]);
+      await waitForArtifactVersions(pipeline.id, PipelineArtifactKey.Prd, [3, 2, 1]);
 
       const readyRejectedDetail = await getPipelineDetail(pipeline.id);
       const readyPrdArtifacts = readyRejectedDetail.artifacts.filter(
@@ -436,6 +442,7 @@ describe('Pipelines Runtime API', () => {
       );
 
       expect(readyPrdArtifacts.map((artifact) => artifact.metadata?.attempt)).toEqual([
+        3,
         2,
         1
       ]);
@@ -443,13 +450,13 @@ describe('Pipelines Runtime API', () => {
   });
 
   describe('worker state transitions', () => {
-    it('evaluation 连续失败时应按 maxRetry 进入 failed，并发出 stage_failed/pipeline_failed', async () => {
+    it('evaluation reject 耗尽预算时应进入 human_review，并发出 stage_failed/pipeline_paused', async () => {
       const pipeline = await createDraftPipeline({
         featureRequest: '[invalid-breakdown] 用户可以搜索文章'
       });
       await startPipeline(pipeline.id, { maxRetry: 1 });
 
-      await waitForPipelineStatus(pipeline.id, 'failed', 10_000);
+      await waitForPipelineStatus(pipeline.id, 'paused', 10_000);
 
       const detail = await getPipelineDetail(pipeline.id);
       const evaluationStage = detail.stages.find(
@@ -466,7 +473,7 @@ describe('Pipelines Runtime API', () => {
         })
       ).map((event) => event.kind);
       expect(eventKinds).toContain('stage_failed');
-      expect(eventKinds).toContain('pipeline_failed');
+      expect(eventKinds).toContain('pipeline_paused');
     });
 
     it('running 状态下取消后不得再被 worker 覆盖为其他终态', async () => {
@@ -547,7 +554,12 @@ describe('Pipelines Runtime API', () => {
       try {
         const decisionPromise = submitDecision(
           pipeline.id,
-          HumanDecisionAction.Approve
+          {
+            action: HumanReviewAction.EditAndContinue,
+            comment: 'accept current output',
+            editedOutput: (await getPipelineDetail(pipeline.id)).humanReview
+              ?.candidateOutput
+          }
         );
         await waitForCondition(() => completeSpy.mock.calls.length > 0);
 
@@ -578,26 +590,26 @@ describe('Pipelines Runtime API', () => {
       }
     });
 
-    it('cancel 与 fail 并发时只能收敛为一个终态事件', async () => {
+    it('cancel 与 pause 并发时只能收敛为一个终态事件', async () => {
       const pipeline = await createDraftPipeline({
         featureRequest: '[invalid-breakdown] 用户可以搜索文章'
       });
       const runtimeCommandService = getApp().get(PipelineRuntimeCommandService);
-      const originalFailExecution =
-        runtimeCommandService.failExecution.bind(runtimeCommandService);
+      const originalPauseForHumanReview =
+        runtimeCommandService.pauseForHumanReview.bind(runtimeCommandService);
       const gate = createGate();
-      const failSpy = vi
-        .spyOn(runtimeCommandService, 'failExecution')
+      const pauseSpy = vi
+        .spyOn(runtimeCommandService, 'pauseForHumanReview')
         .mockImplementation(
-          async (pipelineId: string, ownerId: string, reason: string) => {
-          await gate.wait();
-            return originalFailExecution(pipelineId, ownerId, reason);
+          async (pipelineId: string, ownerId: string, runtimeState) => {
+            await gate.wait();
+            return originalPauseForHumanReview(pipelineId, ownerId, runtimeState);
           }
         );
 
       try {
         await startPipeline(pipeline.id, { maxRetry: 1 });
-        await waitForCondition(() => failSpy.mock.calls.length > 0, 10_000);
+        await waitForCondition(() => pauseSpy.mock.calls.length > 0, 10_000);
 
         const cancelResponse = await api().post(`/api/pipelines/${pipeline.id}/cancel`);
         const cancelled = expectSuccess<PipelineSummary>(cancelResponse, 200);
@@ -621,7 +633,7 @@ describe('Pipelines Runtime API', () => {
         expect(terminalEvents).toEqual(['pipeline_cancelled']);
       } finally {
         gate.release();
-        failSpy.mockRestore();
+        pauseSpy.mockRestore();
       }
     });
   });

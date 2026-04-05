@@ -140,6 +140,7 @@ model AgentSession {
   events                 SessionEvent[]
   chat                   Chat?
   pipelineStage          PipelineStage?
+  stageAttempts          StageExecutionAttempt[]
 
   @@index([scopeId])
 }
@@ -282,6 +283,7 @@ model Pipeline {
   currentStageId String?
   executionOwnerId String?
   executionLeaseExpiresAt DateTime?
+  version        Int                @default(1)
   state          Json?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -326,9 +328,38 @@ model PipelineStage {
   pipeline   Pipeline           @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
   session    AgentSession?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   artifacts  PipelineArtifact[]
+  attempts   StageExecutionAttempt[]
 
   @@index([pipelineId], name: "idx_pipeline_stage_pipeline_id")
   @@unique([pipelineId, order], name: "uq_pipeline_stage_order")
+}
+
+model StageExecutionAttempt {
+  id                    String   @id @default(cuid())
+  stageId               String
+  attemptNo             Int
+  status                String   @default("pending")
+  sessionId             String?  @unique
+  activeRequestMessageId String?
+  ownerLeaseToken       String?
+  leaseExpiresAt        DateTime?
+  reviewReason          String?
+  failureCode           String?
+  failureMessage        String?
+  resolvedAgentConfig   Json?
+  inputSnapshot         Json?
+  candidateOutput       Json?
+  parsedOutput          Json?
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  stage                 PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  session               AgentSession?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([stageId], name: "idx_stage_execution_attempt_stage_id")
+  @@index([status, leaseExpiresAt], name: "idx_stage_execution_attempt_lease")
+  @@unique([stageId, attemptNo], name: "uq_stage_execution_attempt_stage_attempt")
 }
 
 model PipelineArtifact {

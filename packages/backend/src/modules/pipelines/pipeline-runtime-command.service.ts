@@ -193,14 +193,15 @@ export class PipelineRuntimeCommandService {
   async resumeFromHumanReview(
     pipelineId: string,
     nextState: PipelineRuntimeState,
-    humanReviewStageId: string | null,
-    resetStageTypes: readonly PipelineStageType[]
+    stageStatusOverrides: Array<{
+      stageType: PipelineStageType;
+      status: import('@agent-workbench/shared').PipelineStageStatus;
+    }>
   ): Promise<void> {
     const result = await this.pipelineRuntimeRepository.resumeFromHumanReview({
       pipelineId,
       nextState,
-      humanReviewStageId,
-      resetStageTypes
+      stageStatusOverrides
     });
 
     if (!result) {

@@ -22,7 +22,11 @@ import type { PipelineRuntimeState } from './pipeline-runtime-state';
 import { toPipelineRecord, toPipelineStageRecord } from './prisma-pipeline.repository';
 
 type PipelineRow = Prisma.PipelineGetPayload<object>;
-type PipelineStageRow = Prisma.PipelineStageGetPayload<object>;
+type PipelineStageRow = Prisma.PipelineStageGetPayload<{
+  include: {
+    attempts: true;
+  };
+}>;
 
 @Injectable()
 export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
@@ -37,7 +41,10 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
   async startDraftPipeline(input: {
     pipelineId: string;
     runnerId: string;
-    config: { maxRetry: number };
+    config: {
+      maxRetry: number;
+      requireHumanReviewOnSuccess: boolean;
+    };
     runtimeState: PipelineRuntimeState;
     stageDefinitions: Array<{
       stageType: PipelineStageType;
@@ -97,7 +104,13 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
     const pipeline = await this.prisma.pipeline.findUnique({
       where: { id },
       include: {
-        stages: true
+        stages: {
+          include: {
+            attempts: {
+              orderBy: [{ attemptNo: 'desc' }, { createdAt: 'desc' }]
+            }
+          }
+        }
       }
     });
 
@@ -140,6 +153,11 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         where: { id: stage.id },
         data: {
           status: PipelineStageStatus.Running
+        },
+        include: {
+          attempts: {
+            orderBy: [{ attemptNo: 'desc' }, { createdAt: 'desc' }]
+          }
         }
       });
 
@@ -399,8 +417,10 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
   async resumeFromHumanReview(input: {
     pipelineId: string;
     nextState: PipelineRuntimeState;
-    humanReviewStageId: string | null;
-    resetStageTypes: readonly PipelineStageType[];
+    stageStatusOverrides: Array<{
+      stageType: PipelineStageType;
+      status: PipelineStageStatus;
+    }>;
   }): Promise<PipelineRuntimeMutationResult<boolean> | null> {
     const timestamp = new Date().toISOString();
 
@@ -423,26 +443,14 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
         return null;
       }
 
-      if (input.humanReviewStageId) {
-        await tx.pipelineStage.update({
-          where: { id: input.humanReviewStageId },
-          data: {
-            status:
-              input.nextState.currentStep === 'complete'
-                ? PipelineStageStatus.Completed
-                : PipelineStageStatus.Pending
-          }
-        });
-      }
-
-      if (input.resetStageTypes.length > 0) {
+      for (const override of input.stageStatusOverrides) {
         await tx.pipelineStage.updateMany({
           where: {
             pipelineId: input.pipelineId,
-            stageType: { in: [...input.resetStageTypes] }
+            stageType: override.stageType
           },
           data: {
-            status: PipelineStageStatus.Pending
+            status: override.status
           }
         });
       }
@@ -548,7 +556,12 @@ export class PrismaPipelineRuntimeRepository extends PipelineRuntimeRepository {
     stageType: PipelineStageType
   ): Promise<PipelineStageRow> {
     const stage = await client.pipelineStage.findFirst({
-      where: { pipelineId, stageType }
+      where: { pipelineId, stageType },
+      include: {
+        attempts: {
+          orderBy: [{ attemptNo: 'desc' }, { createdAt: 'desc' }]
+        }
+      }
     });
 
     if (!stage) {
