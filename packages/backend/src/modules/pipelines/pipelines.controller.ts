@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 
 import { PipelineStatus } from '@agent-workbench/shared';
+import type { PipelineHumanReviewDecision } from '@agent-workbench/shared';
 
 import { ApiWrappedErrorResponse } from '../../common/api-error-response.decorator';
 import { ResponseMessage } from '../../common/response-message.decorator';
@@ -224,7 +225,19 @@ export class PipelinesController {
   ) {
     return this.pipelinesService.start(id, {
       runnerId: dto.runnerId,
-      config: dto.maxRetry !== undefined ? { maxRetry: dto.maxRetry } : undefined
+      config:
+        dto.maxRetry !== undefined ||
+        dto.requireHumanReviewOnSuccess !== undefined
+          ? {
+              ...(dto.maxRetry !== undefined ? { maxRetry: dto.maxRetry } : {}),
+              ...(dto.requireHumanReviewOnSuccess !== undefined
+                ? {
+                    requireHumanReviewOnSuccess:
+                      dto.requireHumanReviewOnSuccess
+                  }
+                : {})
+            }
+          : undefined
     });
   }
 
@@ -248,7 +261,18 @@ export class PipelinesController {
     @Param('id') id: string,
     @Body() dto: SubmitHumanDecisionDto
   ) {
-    await this.pipelinesService.submitDecision(id, dto.decision);
+    await this.pipelinesService.submitDecision(
+      id,
+      {
+        action: dto.decision.action,
+        ...(dto.decision.comment !== undefined
+          ? { comment: dto.decision.comment }
+          : {}),
+        ...(dto.decision.editedOutput !== undefined
+          ? { editedOutput: dto.decision.editedOutput }
+          : {})
+      } as PipelineHumanReviewDecision
+    );
   }
 
   @Sse(':id/events')

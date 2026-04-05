@@ -3,13 +3,14 @@ import {
   CheckCircle2,
   CircleDashed,
   Clock,
+  Eye,
   Loader2,
-  XCircle,
-  Eye
+  XCircle
 } from 'lucide-react';
 
 import {
   PipelineStageStatus,
+  StageExecutionAttemptStatus,
   type PipelineStageSummary
 } from '@agent-workbench/shared';
 
@@ -30,7 +31,7 @@ function StageIcon({ status }: { status: PipelineStageStatus }) {
     case PipelineStageStatus.Completed:
       return <CheckCircle2 className="h-4 w-4 text-green-500" />;
     case PipelineStageStatus.Running:
-      return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+      return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
     case PipelineStageStatus.Failed:
       return <XCircle className="h-4 w-4 text-red-500" />;
     case PipelineStageStatus.Cancelled:
@@ -57,6 +58,20 @@ function stageStatusLabel(status: PipelineStageStatus) {
   return map[status];
 }
 
+function attemptStatusLabel(status: StageExecutionAttemptStatus) {
+  const map: Record<StageExecutionAttemptStatus, string> = {
+    [StageExecutionAttemptStatus.Pending]: '等待中',
+    [StageExecutionAttemptStatus.Running]: '执行中',
+    [StageExecutionAttemptStatus.WaitingRepair]: '等待修复',
+    [StageExecutionAttemptStatus.Succeeded]: '成功',
+    [StageExecutionAttemptStatus.Failed]: '失败',
+    [StageExecutionAttemptStatus.NeedsHumanReview]: '等待人工处理',
+    [StageExecutionAttemptStatus.ResolvedByHuman]: '人工处理完成',
+    [StageExecutionAttemptStatus.Cancelled]: '已取消'
+  };
+  return map[status];
+}
+
 export function PipelineStageTimeline({ stages }: Props) {
   const sorted = [...stages].sort((a, b) => a.order - b.order);
 
@@ -64,24 +79,22 @@ export function PipelineStageTimeline({ stages }: Props) {
     <div className="flex flex-col gap-0">
       {sorted.map((stage, index) => (
         <div key={stage.id} className="flex items-start gap-3">
-          {/* Connector line + icon */}
           <div className="flex flex-col items-center">
             <div className="mt-1 flex-shrink-0">
               <StageIcon status={stage.status} />
             </div>
-            {index < sorted.length - 1 && (
-              <div className="mt-1 w-px flex-1 bg-border min-h-[20px]" />
-            )}
+            {index < sorted.length - 1 ? (
+              <div className="mt-1 min-h-[20px] w-px flex-1 bg-border" />
+            ) : null}
           </div>
 
-          {/* Content */}
-          <div className="pb-4 flex-1 min-w-0">
+          <div className="min-w-0 flex-1 pb-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium">
                 {STAGE_LABEL[stage.stageType] ?? stage.name}
               </span>
               <span
-                className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${
                   stage.status === PipelineStageStatus.Completed
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     : stage.status === PipelineStageStatus.Running
@@ -98,11 +111,36 @@ export function PipelineStageTimeline({ stages }: Props) {
                 {stageStatusLabel(stage.status)}
               </span>
             </div>
-            {stage.status === PipelineStageStatus.Failed && stage.retryCount > 0 && (
-              <p className="text-xs text-muted-foreground mt-0.5">
+
+            {stage.status === PipelineStageStatus.Failed && stage.retryCount > 0 ? (
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 已重试 {stage.retryCount} 次
               </p>
-            )}
+            ) : null}
+
+            {stage.attemptCount > 0 ? (
+              <div className="mt-2 space-y-1 rounded-md border border-border/70 bg-muted/30 p-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Attempts: {stage.attemptCount}
+                </p>
+                {stage.attempts.map((attempt) => (
+                  <div key={attempt.id} className="text-[11px] text-muted-foreground">
+                    <p>
+                      尝试 {attempt.attemptNo}: {attemptStatusLabel(attempt.status)}
+                    </p>
+                    {attempt.sessionId ? <p>Session: {attempt.sessionId}</p> : null}
+                    {attempt.failureMessage ? (
+                      <p>失败原因: {attempt.failureMessage}</p>
+                    ) : null}
+                  </div>
+                ))}
+                {stage.latestFailureReason ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    最近失败: {stage.latestFailureReason}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       ))}

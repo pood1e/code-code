@@ -1,9 +1,9 @@
 import {
   DEFAULT_PIPELINE_CONFIG,
-  type BreakdownFeedback,
+  pipelineRuntimeStateSchema,
   type PipelineConfig,
-  type PRD,
-  type TaskACSpec
+  type PipelineRuntimeStageKey,
+  type PipelineRuntimeState as SharedPipelineRuntimeState
 } from '@agent-workbench/shared';
 
 export const PIPELINE_RUNTIME_STEPS = [
@@ -16,87 +16,70 @@ export const PIPELINE_RUNTIME_STEPS = [
 ] as const;
 
 export type PipelineRuntimeStep = (typeof PIPELINE_RUNTIME_STEPS)[number];
-
-export type PipelineRuntimeState = {
-  currentStep: PipelineRuntimeStep;
-  config: PipelineConfig;
-  attempt: number;
-  prd: PRD | null;
-  breakdownFeedback: BreakdownFeedback | null;
-  acSpec: TaskACSpec[];
-  planReport: string | null;
-  humanFeedback: string | null;
-  retryCount: number;
-};
+export type PipelineRuntimeState = SharedPipelineRuntimeState;
 
 export function createInitialPipelineRuntimeState(
   config: PipelineConfig
 ): PipelineRuntimeState {
+  const initialRemaining = config.maxRetry + 1;
+
   return {
-    currentStep: 'breakdown',
+    currentStageKey: 'breakdown',
     config,
-    attempt: 1,
-    prd: null,
-    breakdownFeedback: null,
-    acSpec: [],
-    planReport: null,
-    humanFeedback: null,
-    retryCount: 0
-  };
-}
-
-export function parsePipelineRuntimeState(
-  value: unknown
-): PipelineRuntimeState {
-  const raw = toRecord(value);
-  const configRecord = toRecord(raw.config);
-  const currentStep = isPipelineRuntimeStep(raw.currentStep)
-    ? raw.currentStep
-    : 'breakdown';
-
-  return {
-    currentStep,
-    config: {
-      maxRetry:
-        typeof configRecord.maxRetry === 'number' &&
-        Number.isInteger(configRecord.maxRetry) &&
-        configRecord.maxRetry >= 1
-          ? configRecord.maxRetry
-          : DEFAULT_PIPELINE_CONFIG.maxRetry
+    retryBudget: {
+      breakdown: {
+        remaining: initialRemaining,
+        agentFailureCount: 0,
+        evaluationRejectCount: 0
+      },
+      spec: {
+        remaining: initialRemaining
+      },
+      estimate: {
+        remaining: initialRemaining
+      }
     },
-    attempt:
-      typeof raw.attempt === 'number' &&
-      Number.isInteger(raw.attempt) &&
-      raw.attempt >= 1
-        ? raw.attempt
-        : 1,
-    prd: raw.prd && typeof raw.prd === 'object' ? (raw.prd as PRD) : null,
-    breakdownFeedback:
-      raw.breakdownFeedback && typeof raw.breakdownFeedback === 'object'
-        ? (raw.breakdownFeedback as BreakdownFeedback)
-        : null,
-    acSpec: Array.isArray(raw.acSpec) ? (raw.acSpec as TaskACSpec[]) : [],
-    planReport: typeof raw.planReport === 'string' ? raw.planReport : null,
-    humanFeedback:
-      typeof raw.humanFeedback === 'string' ? raw.humanFeedback : null,
-    retryCount:
-      typeof raw.retryCount === 'number' &&
-      Number.isInteger(raw.retryCount) &&
-      raw.retryCount >= 0
-        ? raw.retryCount
-        : 0
+    artifacts: {
+      prd: null,
+      acSpec: null,
+      planReport: null
+    },
+    feedback: {
+      breakdownRejectionHistory: [],
+      humanReview: null
+    },
+    lastError: null
   };
 }
 
-function isPipelineRuntimeStep(value: unknown): value is PipelineRuntimeStep {
-  return (
-    typeof value === 'string' &&
-    (PIPELINE_RUNTIME_STEPS as readonly string[]).includes(value)
-  );
+export function parsePipelineRuntimeState(value: unknown): PipelineRuntimeState {
+  const parseResult = pipelineRuntimeStateSchema.safeParse(value);
+  if (parseResult.success) {
+    return parseResult.data;
+  }
+
+  return createInitialPipelineRuntimeState(DEFAULT_PIPELINE_CONFIG);
 }
 
-function toRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object'
-    ? (value as Record<string, unknown>)
-    : {};
+export function getNextPipelineStageKey(
+  currentStageKey: PipelineRuntimeStageKey
+): PipelineRuntimeStageKey {
+  switch (currentStageKey) {
+    case 'breakdown':
+      return 'evaluation';
+    case 'evaluation':
+      return 'spec';
+    case 'spec':
+      return 'estimate';
+    case 'estimate':
+      return 'human_review';
+    case 'human_review':
+      return 'complete';
+    case 'complete':
+      return 'complete';
+    default: {
+      const neverStageKey: never = currentStageKey;
+      return neverStageKey;
+    }
+  }
 }

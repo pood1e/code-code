@@ -1,8 +1,8 @@
 import type {
   CreatePipelineInput,
-  HumanDecision,
   PipelineArtifactSummary,
   PipelineDetail,
+  PipelineHumanReviewDecision,
   PipelineStageSummary,
   PipelineSummary,
   StartPipelineInput,
@@ -57,7 +57,7 @@ export async function startPipeline(id: string, payload: StartPipelineInput) {
 
 export async function submitPipelineDecision(
   id: string,
-  decision: HumanDecision
+  decision: PipelineHumanReviewDecision
 ) {
   await apiClient.post<void>(`/pipelines/${id}/decision`, { decision });
 }
@@ -93,4 +93,3 @@ export function createPipelineEventSource(
     : `/api/pipelines/${pipelineId}/events`;
   return new EventSource(url);
 }
-

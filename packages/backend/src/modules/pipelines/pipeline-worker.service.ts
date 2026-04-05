@@ -7,25 +7,34 @@ import {
 import { randomUUID } from 'node:crypto';
 
 import {
+  HumanReviewReason,
   PipelineArtifactKey,
   PipelineStageType,
-  PipelineStatus
+  PipelineStatus,
+  type ArtifactRef,
+  type PipelineRuntimeState,
+  type PRD,
+  type TaskACSpec,
+  type ReviewableStageKey
 } from '@agent-workbench/shared';
 
 import { LeaseHeartbeatRunner } from './lease-heartbeat-runner.service';
+import { PipelineAgentConfigResolverService } from './pipeline-agent-config-resolver.service';
 import { PipelineArtifactVersionRepository } from './pipeline-artifact-version.repository';
-import { PipelineRepository } from './pipeline.repository';
+import { HumanReviewAssemblerService } from './human-review-assembler.service';
+import {
+  PipelineRepository,
+  type PipelineDetailRecord,
+  type PipelineStageRecord
+} from './pipeline.repository';
 import type { ManagedArtifactIntent } from './pipeline-runtime.repository';
 import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
+import { PipelineSessionBridgeService } from './pipeline-session-bridge.service';
+import { PipelineStageAttemptService } from './pipeline-stage-attempt.service';
+import { PipelineStagePromptService } from './pipeline-stage-prompt.service';
 import { getStageTypeForStep } from './pipeline-stage.constants';
-import {
-  parsePipelineRuntimeState,
-  type PipelineRuntimeState
-} from './pipeline-runtime-state';
-import { estimateAgent } from './plan-graph/agents/estimate.agent';
-import { breakdownAgent } from './plan-graph/agents/breakdown.agent';
-import { specAgent } from './plan-graph/agents/spec.agent';
-import { evaluationNode } from './plan-graph/nodes/evaluation.node';
+import { parsePipelineRuntimeState } from './pipeline-runtime-state';
+import { StructuredOutputParser } from './structured-output.parser';
 
 @Injectable()
 export class PipelineWorkerService
@@ -42,7 +51,13 @@ export class PipelineWorkerService
     private readonly pipelineRepository: PipelineRepository,
     private readonly pipelineArtifactVersionRepository: PipelineArtifactVersionRepository,
     private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService,
-    private readonly leaseHeartbeatRunner: LeaseHeartbeatRunner
+    private readonly leaseHeartbeatRunner: LeaseHeartbeatRunner,
+    private readonly pipelineAgentConfigResolver: PipelineAgentConfigResolverService,
+    private readonly pipelineStagePromptService: PipelineStagePromptService,
+    private readonly pipelineSessionBridgeService: PipelineSessionBridgeService,
+    private readonly pipelineStageAttemptService: PipelineStageAttemptService,
+    private readonly structuredOutputParser: StructuredOutputParser,
+    private readonly humanReviewAssembler: HumanReviewAssemblerService
   ) {}
 
   onApplicationBootstrap(): void {
@@ -63,7 +78,7 @@ export class PipelineWorkerService
         }
       );
       if (pipeline) {
-        await this.processClaimedPipeline(pipeline).catch((error) => {
+        await this.processClaimedPipeline(pipeline.id).catch((error) => {
           this.logger.error(
             `Unhandled error processing pipeline ${pipeline.id}: ${
               error instanceof Error ? error.message : String(error)
@@ -76,14 +91,12 @@ export class PipelineWorkerService
     }
   }
 
-  private async processClaimedPipeline(
-    claimedPipeline: { id: string }
-  ): Promise<void> {
+  private async processClaimedPipeline(pipelineId: string): Promise<void> {
     const heartbeat = this.leaseHeartbeatRunner.start({
       intervalMs: PipelineWorkerService.LEASE_RENEW_INTERVAL_MS,
       renew: () =>
         this.pipelineRuntimeCommandService.renewPipelineExecutionLease({
-          pipelineId: claimedPipeline.id,
+          pipelineId,
           ownerId: this.ownerId,
           ...this.createLeaseWindow()
         })
@@ -91,28 +104,17 @@ export class PipelineWorkerService
 
     try {
       while (this.isRunning && heartbeat.hasLease()) {
-        const pipeline = await this.pipelineRepository.findPipelineById(
-          claimedPipeline.id
-        );
+        const pipeline = await this.pipelineRepository.getPipelineDetail(pipelineId);
         if (!pipeline) {
           return;
         }
 
-        if (
-          pipeline.status === PipelineStatus.Cancelled ||
-          pipeline.status === PipelineStatus.Completed ||
-          pipeline.status === PipelineStatus.Failed ||
-          pipeline.status === PipelineStatus.Paused
-        ) {
-          return;
-        }
-
-        if (!heartbeat.hasLease()) {
+        if (isTerminalPipelineStatus(pipeline.status)) {
           return;
         }
 
         const runtimeState = parsePipelineRuntimeState(pipeline.state);
-        if (runtimeState.currentStep === 'complete') {
+        if (runtimeState.currentStageKey === 'complete') {
           await this.pipelineRuntimeCommandService.completeExecution(
             pipeline.id,
             this.ownerId
@@ -120,7 +122,7 @@ export class PipelineWorkerService
           return;
         }
 
-        if (runtimeState.currentStep === 'human_review') {
+        if (runtimeState.currentStageKey === 'human_review') {
           await this.pipelineRuntimeCommandService.pauseForHumanReview(
             pipeline.id,
             this.ownerId,
@@ -129,73 +131,39 @@ export class PipelineWorkerService
           return;
         }
 
-        const stageType = getStageTypeForStep(runtimeState.currentStep);
+        const stageType = getStageTypeForStep(runtimeState.currentStageKey);
         if (!stageType) {
           await this.failPipeline(
             pipeline.id,
-            `Unsupported pipeline step: ${runtimeState.currentStep}`
+            `Unsupported pipeline stage key: ${runtimeState.currentStageKey}`
           );
           return;
         }
 
-        if (await this.isPipelineCancelled(pipeline.id)) {
+        const stage = pipeline.stages.find((item) => item.stageType === stageType);
+        if (!stage) {
+          await this.failPipeline(
+            pipeline.id,
+            `Pipeline stage not found for ${stageType}`
+          );
           return;
         }
 
-        const stage = await this.pipelineRuntimeCommandService.startStage(
+        const startedStage = await this.pipelineRuntimeCommandService.startStage(
           pipeline.id,
           this.ownerId,
           stageType
         );
-        if (!stage) {
+        if (!startedStage) {
           return;
         }
 
-        try {
-          await waitForConfiguredTestDelay();
-          if (!heartbeat.hasLease()) {
-            return;
-          }
+        const shouldContinue =
+          runtimeState.currentStageKey === 'evaluation'
+            ? await this.runEvaluationStage(pipeline, stage, runtimeState)
+            : await this.runAgentStage(pipeline, stage, runtimeState);
 
-          switch (runtimeState.currentStep) {
-            case 'breakdown':
-              await this.runBreakdownStep(
-                pipeline.id,
-                pipeline.featureRequest,
-                runtimeState,
-                stage
-              );
-              break;
-            case 'evaluation':
-              if (
-                await this.runEvaluationStep(pipeline.id, runtimeState, stage)
-              ) {
-                continue;
-              }
-              return;
-            case 'spec':
-              await this.runSpecStep(pipeline.id, runtimeState, stage);
-              break;
-            case 'estimate':
-              await this.runEstimateStep(pipeline.id, runtimeState, stage);
-              return;
-          }
-        } catch (error) {
-          if (!heartbeat.hasLease() || (await this.isPipelineCancelled(pipeline.id))) {
-            return;
-          }
-
-          await this.pipelineRuntimeCommandService.failStage({
-            pipelineId: pipeline.id,
-            ownerId: this.ownerId,
-            stageId: stage.id,
-            stageType: stage.stageType,
-            reason: error instanceof Error ? error.message : String(error)
-          });
-          await this.failPipeline(
-            pipeline.id,
-            error instanceof Error ? error.message : String(error)
-          );
+        if (!shouldContinue) {
           return;
         }
       }
@@ -204,220 +172,508 @@ export class PipelineWorkerService
     }
   }
 
-  private async runBreakdownStep(
-    pipelineId: string,
-    featureRequest: string | null,
-    runtimeState: PipelineRuntimeState,
-    stage: { id: string; stageType: PipelineStageType }
-  ) {
-    const update = breakdownAgent({
-      featureRequest: featureRequest ?? '',
-      breakdownFeedback: runtimeState.breakdownFeedback,
-      prd: runtimeState.prd,
-      acSpec: runtimeState.acSpec,
-      planReport: runtimeState.planReport
+  private async runAgentStage(
+    pipeline: PipelineDetailRecord,
+    stage: PipelineStageRecord,
+    runtimeState: PipelineRuntimeState
+  ): Promise<boolean> {
+    const agentConfig = this.pipelineAgentConfigResolver.resolve({
+      stageType: stage.stageType,
+      stageState: null
     });
 
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return;
+    let attempt = await this.pipelineStageAttemptService.getLatestAttempt(stage.id);
+    if (!attempt || isTerminalAttemptStatus(attempt.status)) {
+      const prompt = this.pipelineStagePromptService.buildStagePrompt({
+        stageType: stage.stageType,
+        featureRequest: pipeline.featureRequest,
+        runtimeState,
+        attemptNo: (attempt?.attemptNo ?? 0) + 1,
+        reviewerComment: runtimeState.feedback.humanReview?.reviewerComment ?? null
+      });
+      attempt = await this.pipelineStageAttemptService.createAttempt({
+        stageId: stage.id,
+        resolvedAgentConfig: agentConfig,
+        inputSnapshot: prompt.inputSnapshot,
+        ownerLeaseToken: this.ownerId,
+        leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
+      });
     }
 
-    const nextState: PipelineRuntimeState = {
-      ...runtimeState,
-      ...update,
-      currentStep: 'evaluation'
-    };
-
-    await this.pipelineRuntimeCommandService.completeStage({
-      pipelineId,
-      ownerId: this.ownerId,
-      stageId: stage.id,
-      stageType: stage.stageType,
-      nextState,
-      retryCount: nextState.retryCount,
-      artifactIntents: nextState.prd
-        ? [
-            await this.createManagedArtifactIntent({
-              pipelineId,
-              stageId: stage.id,
-              artifactKey: PipelineArtifactKey.Prd,
-              attempt: nextState.attempt,
-              name: 'prd.json',
-              contentType: 'application/json',
-              content: JSON.stringify(nextState.prd, null, 2)
-            })
-          ]
-        : []
+    await this.pipelineStageAttemptService.markRunning({
+      attemptId: attempt.id,
+      ownerLeaseToken: this.ownerId,
+      leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
     });
+
+    const prompt = this.pipelineStagePromptService.buildStagePrompt({
+      stageType: stage.stageType,
+      featureRequest: pipeline.featureRequest,
+      runtimeState,
+      attemptNo: attempt.attemptNo,
+      reviewerComment: runtimeState.feedback.humanReview?.reviewerComment ?? null
+    });
+
+    let sessionId = attempt.sessionId;
+    let activeRequestMessageId = attempt.activeRequestMessageId;
+
+    if (!sessionId) {
+      const created = await this.pipelineSessionBridgeService.createSessionAndSendPrompt({
+        pipeline,
+        agentConfig,
+        prompt: prompt.prompt
+      });
+      sessionId = created.sessionId;
+      activeRequestMessageId = created.messageId;
+      await this.pipelineStageAttemptService.attachSession({
+        attemptId: attempt.id,
+        sessionId,
+        activeRequestMessageId
+      });
+    }
+
+    const firstResult = await this.pipelineSessionBridgeService.waitForResult(
+      sessionId,
+      activeRequestMessageId
+    );
+    if (firstResult.status !== 'completed') {
+      return this.handleAgentFailure({
+        pipeline,
+        stage,
+        attemptId: attempt.id,
+        runtimeState,
+        reason:
+          firstResult.status === 'timeout'
+            ? HumanReviewReason.AgentTimeout
+            : HumanReviewReason.AgentRuntimeError,
+        errorCode:
+          firstResult.status === 'timeout' ? 'AGENT_TIMEOUT' : firstResult.code,
+        errorMessage:
+          firstResult.status === 'timeout'
+            ? `Stage ${stage.stageType} timed out`
+            : firstResult.message,
+        candidateOutput: firstResult.status === 'error' ? firstResult.outputText : null
+      });
+    }
+
+    try {
+      const parsedOutput = this.structuredOutputParser.parse(
+        stage.stageType,
+        firstResult.outputText
+      );
+      await this.pipelineStageAttemptService.markSucceeded({
+        attemptId: attempt.id,
+        activeRequestMessageId: firstResult.messageId,
+        candidateOutput: firstResult.outputText,
+        parsedOutput
+      });
+      return this.completeAgentStage({
+        pipeline,
+        stage,
+        attemptNo: attempt.attemptNo,
+        runtimeState,
+        parsedOutput
+      });
+    } catch (error) {
+      const repairPrompt = this.pipelineStagePromptService.buildRepairPrompt(
+        stage.stageType,
+        error instanceof Error ? error.message : String(error)
+      );
+      const repairMessageId =
+        await this.pipelineSessionBridgeService.sendFollowUpPrompt({
+          sessionId,
+          prompt: repairPrompt,
+          agentConfig
+        });
+
+      await this.pipelineStageAttemptService.markWaitingRepair({
+        attemptId: attempt.id,
+        activeRequestMessageId: repairMessageId,
+        failureCode: 'PARSE_FAILED',
+        failureMessage: error instanceof Error ? error.message : String(error),
+        candidateOutput: firstResult.outputText
+      });
+
+      const repairedResult = await this.pipelineSessionBridgeService.waitForResult(
+        sessionId,
+        repairMessageId
+      );
+      if (repairedResult.status !== 'completed') {
+        return this.handleAgentFailure({
+          pipeline,
+          stage,
+          attemptId: attempt.id,
+          runtimeState,
+          reason:
+            repairedResult.status === 'timeout'
+              ? HumanReviewReason.AgentTimeout
+              : HumanReviewReason.AgentRuntimeError,
+          errorCode:
+            repairedResult.status === 'timeout'
+              ? 'AGENT_TIMEOUT'
+              : repairedResult.code,
+          errorMessage:
+            repairedResult.status === 'timeout'
+              ? `Stage ${stage.stageType} timed out after repair request`
+              : repairedResult.message,
+          candidateOutput:
+            repairedResult.status === 'error' ? repairedResult.outputText : null
+        });
+      }
+
+      try {
+        const parsedOutput = this.structuredOutputParser.parse(
+          stage.stageType,
+          repairedResult.outputText
+        );
+        await this.pipelineStageAttemptService.markSucceeded({
+          attemptId: attempt.id,
+          activeRequestMessageId: repairedResult.messageId,
+          candidateOutput: repairedResult.outputText,
+          parsedOutput
+        });
+        return this.completeAgentStage({
+          pipeline,
+          stage,
+          attemptNo: attempt.attemptNo,
+          runtimeState,
+          parsedOutput
+        });
+      } catch (repairError) {
+        return this.handleAgentFailure({
+          pipeline,
+          stage,
+          attemptId: attempt.id,
+          runtimeState,
+          reason: HumanReviewReason.ParseFailed,
+          errorCode: 'PARSE_FAILED',
+          errorMessage:
+            repairError instanceof Error
+              ? repairError.message
+              : String(repairError),
+          candidateOutput: repairedResult.outputText
+        });
+      }
+    }
   }
 
-  private async runEvaluationStep(
-    pipelineId: string,
-    runtimeState: PipelineRuntimeState,
-    stage: { id: string; stageType: PipelineStageType }
+  private async runEvaluationStage(
+    pipeline: PipelineDetailRecord,
+    stage: PipelineStageRecord,
+    runtimeState: PipelineRuntimeState
   ): Promise<boolean> {
-    const update = evaluationNode({
-      prd: runtimeState.prd,
-      acSpec: runtimeState.acSpec,
-      planReport: runtimeState.planReport,
-      breakdownFeedback: runtimeState.breakdownFeedback,
-      featureRequest: '',
-      humanDecision: null,
-      retryCount: runtimeState.retryCount,
-      errors: []
-    });
-
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return false;
+    const prd = runtimeState.artifacts.prd;
+    if (!prd || isArtifactRef(prd)) {
+      return this.routeToHumanReview({
+        pipeline,
+        stage,
+        runtimeState,
+        sourceStageKey: 'breakdown',
+        sourceAttempt: stage.attempts[0] ?? null,
+        reason: HumanReviewReason.EvaluationRejected,
+        summary: 'Evaluation requires an inline PRD output but none is available.',
+        candidateOutput: prd
+      });
     }
 
-    if (update.breakdownFeedback) {
-      const nextRetryCount = runtimeState.retryCount + 1;
-      const exceeded = nextRetryCount > runtimeState.config.maxRetry;
+    const violation = evaluatePrd(prd);
+    if (!violation) {
+      const nextState: PipelineRuntimeState = {
+        ...runtimeState,
+        currentStageKey: 'spec',
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
 
-      const failed = await this.pipelineRuntimeCommandService.failStage({
-        pipelineId,
+      await this.pipelineRuntimeCommandService.completeStage({
+        pipelineId: pipeline.id,
         ownerId: this.ownerId,
         stageId: stage.id,
         stageType: stage.stageType,
-        reason: update.breakdownFeedback.reason,
-        retryCount: nextRetryCount,
-        nextState: exceeded
-          ? undefined
-          : {
-              ...runtimeState,
-              breakdownFeedback: update.breakdownFeedback,
-              retryCount: nextRetryCount,
-              currentStep: 'breakdown'
-            }
+        nextState,
+        retryCount: stage.retryCount
       });
-      if (!failed) {
-        return false;
-      }
-
-      if (exceeded) {
-        await this.failPipeline(
-          pipelineId,
-          `Max retry count (${runtimeState.config.maxRetry}) exceeded`
-        );
-        return false;
-      }
-
       return true;
     }
 
+    const remaining = runtimeState.retryBudget.breakdown.remaining - 1;
     const nextState: PipelineRuntimeState = {
       ...runtimeState,
-      breakdownFeedback: null,
-      currentStep: 'spec'
-    };
-
-    return this.pipelineRuntimeCommandService.completeStage({
-      pipelineId,
-      ownerId: this.ownerId,
-      stageId: stage.id,
-      stageType: stage.stageType,
-      nextState,
-      retryCount: nextState.retryCount
-    });
-  }
-
-  private async runSpecStep(
-    pipelineId: string,
-    runtimeState: PipelineRuntimeState,
-    stage: { id: string; stageType: PipelineStageType }
-  ) {
-    const update = specAgent({
-      prd: runtimeState.prd,
-      humanFeedback: runtimeState.humanFeedback
-    });
-
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return;
-    }
-
-    const nextState: PipelineRuntimeState = {
-      ...runtimeState,
-      ...update,
-      currentStep: 'estimate'
-    };
-
-    await this.pipelineRuntimeCommandService.completeStage({
-      pipelineId,
-      ownerId: this.ownerId,
-      stageId: stage.id,
-      stageType: stage.stageType,
-      nextState,
-      artifactIntents:
-        nextState.acSpec.length > 0
-          ? [
-              await this.createManagedArtifactIntent({
-                pipelineId,
-                stageId: stage.id,
-                artifactKey: PipelineArtifactKey.AcSpec,
-                attempt: nextState.attempt,
-                name: 'ac-spec.json',
-                contentType: 'application/json',
-                content: JSON.stringify(nextState.acSpec, null, 2)
+      currentStageKey: remaining > 0 ? 'breakdown' : 'human_review',
+      retryBudget: {
+        ...runtimeState.retryBudget,
+        breakdown: {
+          ...runtimeState.retryBudget.breakdown,
+          remaining: Math.max(remaining, 0),
+          evaluationRejectCount:
+            runtimeState.retryBudget.breakdown.evaluationRejectCount + 1
+        }
+      },
+      feedback: {
+        breakdownRejectionHistory: [
+          ...runtimeState.feedback.breakdownRejectionHistory,
+          violation
+        ],
+        humanReview:
+          remaining > 0
+            ? null
+            : this.humanReviewAssembler.build({
+                runtimeState,
+                reason: HumanReviewReason.EvaluationRejected,
+                sourceStageKey: 'breakdown',
+                sourceAttempt: stage.attempts[0] ?? null,
+                summary: violation,
+                candidateOutput: prd,
+                stages: pipeline.stages,
+                artifacts: pipeline.artifacts
               })
-            ]
-          : []
-    });
-  }
-
-  private async runEstimateStep(
-    pipelineId: string,
-    runtimeState: PipelineRuntimeState,
-    stage: { id: string; stageType: PipelineStageType }
-  ) {
-    const update = estimateAgent({
-      prd: runtimeState.prd,
-      acSpec: runtimeState.acSpec
-    });
-
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return;
-    }
-
-    const nextState: PipelineRuntimeState = {
-      ...runtimeState,
-      ...update,
-      currentStep: 'human_review'
+      },
+      lastError: {
+        stageKey: 'evaluation',
+        attemptId: stage.attempts[0]?.id ?? null,
+        code: 'EVALUATION_REJECTED',
+        message: violation,
+        at: new Date().toISOString()
+      }
     };
 
-    const completed = await this.pipelineRuntimeCommandService.completeStage({
-      pipelineId,
+    await this.pipelineRuntimeCommandService.failStage({
+      pipelineId: pipeline.id,
       ownerId: this.ownerId,
       stageId: stage.id,
       stageType: stage.stageType,
-      nextState,
-      artifactIntents: nextState.planReport
-        ? [
-            await this.createManagedArtifactIntent({
-              pipelineId,
-              stageId: stage.id,
-              artifactKey: PipelineArtifactKey.PlanReport,
-              attempt: nextState.attempt,
-              name: 'plan-report.md',
-              contentType: 'text/markdown',
-              content: nextState.planReport
-            })
-          ]
-        : []
+      reason: violation,
+      retryCount: stage.retryCount + 1,
+      nextState
     });
-    if (!completed) {
-      return;
-    }
 
-    if (await this.isPipelineCancelled(pipelineId)) {
-      return;
+    if (remaining > 0) {
+      return true;
     }
 
     await this.pipelineRuntimeCommandService.pauseForHumanReview(
-      pipelineId,
+      pipeline.id,
       this.ownerId,
       nextState
     );
+    return false;
+  }
+
+  private async completeAgentStage(input: {
+    pipeline: PipelineDetailRecord;
+    stage: PipelineStageRecord;
+    attemptNo: number;
+    runtimeState: PipelineRuntimeState;
+    parsedOutput: unknown;
+  }): Promise<boolean> {
+    const nextState = buildNextRuntimeStateAfterSuccess(
+      input.runtimeState,
+      input.stage.stageType,
+      input.parsedOutput
+    );
+
+    const artifactIntents = await this.createArtifactIntents({
+      pipelineId: input.pipeline.id,
+      stageId: input.stage.id,
+      stageType: input.stage.stageType,
+      parsedOutput: input.parsedOutput,
+      attemptNo: input.attemptNo
+    });
+
+    await this.pipelineRuntimeCommandService.completeStage({
+      pipelineId: input.pipeline.id,
+      ownerId: this.ownerId,
+      stageId: input.stage.id,
+      stageType: input.stage.stageType,
+      nextState,
+      retryCount: input.stage.retryCount,
+      artifactIntents
+    });
+
+    if (
+      input.stage.stageType === PipelineStageType.Estimate &&
+      nextState.currentStageKey === 'human_review'
+    ) {
+      const sourceAttempt =
+        await this.pipelineStageAttemptService.getLatestAttempt(input.stage.id);
+      const reviewState = this.humanReviewAssembler.build({
+        runtimeState: nextState,
+        reason: HumanReviewReason.ManualEscalation,
+        sourceStageKey: 'estimate',
+        sourceAttempt,
+        summary: 'Estimate completed successfully and now requires manual review.',
+        candidateOutput: input.parsedOutput,
+        stages: input.pipeline.stages,
+        artifacts: input.pipeline.artifacts
+      });
+      const pausedState: PipelineRuntimeState = {
+        ...nextState,
+        feedback: {
+          ...nextState.feedback,
+          humanReview: reviewState
+        }
+      };
+
+      await this.pipelineRuntimeCommandService.pauseForHumanReview(
+        input.pipeline.id,
+        this.ownerId,
+        pausedState
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  private async handleAgentFailure(input: {
+    pipeline: PipelineDetailRecord;
+    stage: PipelineStageRecord;
+    attemptId: string;
+    runtimeState: PipelineRuntimeState;
+    reason: HumanReviewReason;
+    errorCode: string;
+    errorMessage: string;
+    candidateOutput?: unknown;
+  }): Promise<boolean> {
+    const nextState = decrementBudgetForStage(
+      input.runtimeState,
+      input.stage.stageType,
+      input.reason,
+      input.attemptId,
+      input.errorCode,
+      input.errorMessage
+    );
+    const remainingBudget = getRemainingBudget(nextState, input.stage.stageType);
+
+    await this.pipelineStageAttemptService.markFailed({
+      attemptId: input.attemptId,
+      reviewReason: remainingBudget > 0 ? null : input.reason,
+      failureCode: input.errorCode,
+      failureMessage: input.errorMessage,
+      candidateOutput: input.candidateOutput
+    });
+
+    if (remainingBudget > 0) {
+      await this.pipelineRuntimeCommandService.failStage({
+        pipelineId: input.pipeline.id,
+        ownerId: this.ownerId,
+        stageId: input.stage.id,
+        stageType: input.stage.stageType,
+        reason: input.errorMessage,
+        retryCount: input.stage.retryCount + 1,
+        nextState
+      });
+      return true;
+    }
+
+    return this.routeToHumanReview({
+      pipeline: input.pipeline,
+      stage: input.stage,
+      runtimeState: nextState,
+      sourceStageKey: toReviewableStageKey(input.stage.stageType),
+      sourceAttempt:
+        await this.pipelineStageAttemptService.getLatestAttempt(input.stage.id),
+      reason: input.reason,
+      summary: input.errorMessage,
+      candidateOutput: input.candidateOutput
+    });
+  }
+
+  private async routeToHumanReview(input: {
+    pipeline: PipelineDetailRecord;
+    stage: PipelineStageRecord;
+    runtimeState: PipelineRuntimeState;
+    sourceStageKey: ReviewableStageKey | null;
+    sourceAttempt: PipelineStageRecord['attempts'][number] | null;
+    reason: HumanReviewReason;
+    summary: string;
+    candidateOutput?: unknown;
+  }): Promise<boolean> {
+    const nextState: PipelineRuntimeState = {
+      ...input.runtimeState,
+      currentStageKey: 'human_review',
+      feedback: {
+        ...input.runtimeState.feedback,
+        humanReview: this.humanReviewAssembler.build({
+          runtimeState: input.runtimeState,
+          reason: input.reason,
+          sourceStageKey: input.sourceStageKey,
+          sourceAttempt: input.sourceAttempt,
+          summary: input.summary,
+          candidateOutput: input.candidateOutput,
+          stages: input.pipeline.stages,
+          artifacts: input.pipeline.artifacts
+        })
+      }
+    };
+
+    await this.pipelineRuntimeCommandService.failStage({
+      pipelineId: input.pipeline.id,
+      ownerId: this.ownerId,
+      stageId: input.stage.id,
+      stageType: input.stage.stageType,
+      reason: input.summary,
+      retryCount: input.stage.retryCount + 1,
+      nextState
+    });
+    await this.pipelineRuntimeCommandService.pauseForHumanReview(
+      input.pipeline.id,
+      this.ownerId,
+      nextState
+    );
+    return false;
+  }
+
+  private async createArtifactIntents(input: {
+    pipelineId: string;
+    stageId: string;
+    stageType: PipelineStageType;
+    parsedOutput: unknown;
+    attemptNo: number;
+  }): Promise<ManagedArtifactIntent[]> {
+    switch (input.stageType) {
+      case PipelineStageType.Breakdown:
+        return [
+          await this.createManagedArtifactIntent({
+            pipelineId: input.pipelineId,
+            stageId: input.stageId,
+            artifactKey: PipelineArtifactKey.Prd,
+            attempt: input.attemptNo,
+            name: 'prd.json',
+            contentType: 'application/json',
+            content: JSON.stringify(input.parsedOutput, null, 2)
+          })
+        ];
+      case PipelineStageType.Spec:
+        return [
+          await this.createManagedArtifactIntent({
+            pipelineId: input.pipelineId,
+            stageId: input.stageId,
+            artifactKey: PipelineArtifactKey.AcSpec,
+            attempt: input.attemptNo,
+            name: 'ac-spec.json',
+            contentType: 'application/json',
+            content: JSON.stringify(input.parsedOutput, null, 2)
+          })
+        ];
+      case PipelineStageType.Estimate:
+        return [
+          await this.createManagedArtifactIntent({
+            pipelineId: input.pipelineId,
+            stageId: input.stageId,
+            artifactKey: PipelineArtifactKey.PlanReport,
+            attempt: input.attemptNo,
+            name: 'plan-report.json',
+            contentType: 'application/json',
+            content: JSON.stringify(input.parsedOutput, null, 2)
+          })
+        ];
+      default:
+        return [];
+    }
   }
 
   private async failPipeline(pipelineId: string, reason: string) {
@@ -427,11 +683,6 @@ export class PipelineWorkerService
       this.ownerId,
       reason
     );
-  }
-
-  private async isPipelineCancelled(pipelineId: string): Promise<boolean> {
-    const pipeline = await this.pipelineRepository.findPipelineById(pipelineId);
-    return pipeline?.status === PipelineStatus.Cancelled;
   }
 
   private createLeaseWindow() {
@@ -469,20 +720,204 @@ export class PipelineWorkerService
   }
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function buildNextRuntimeStateAfterSuccess(
+  runtimeState: PipelineRuntimeState,
+  stageType: PipelineStageType,
+  parsedOutput: unknown
+): PipelineRuntimeState {
+  switch (stageType) {
+    case PipelineStageType.Breakdown:
+      return {
+        ...runtimeState,
+        currentStageKey: 'evaluation',
+        artifacts: {
+          ...runtimeState.artifacts,
+          prd: parsedOutput as PRD
+        },
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
+    case PipelineStageType.Spec:
+      return {
+        ...runtimeState,
+        currentStageKey: 'estimate',
+        artifacts: {
+          ...runtimeState.artifacts,
+          acSpec: parsedOutput as TaskACSpec[]
+        },
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
+    case PipelineStageType.Estimate:
+      return {
+        ...runtimeState,
+        currentStageKey: runtimeState.config.requireHumanReviewOnSuccess
+          ? 'human_review'
+          : 'complete',
+        artifacts: {
+          ...runtimeState.artifacts,
+          planReport: parsedOutput as PipelineRuntimeState['artifacts']['planReport']
+        },
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
+    default:
+      return runtimeState;
+  }
 }
 
-async function waitForConfiguredTestDelay() {
-  const rawValue = process.env.PIPELINE_STEP_DELAY_MS;
-  if (!rawValue) {
-    return;
+function decrementBudgetForStage(
+  runtimeState: PipelineRuntimeState,
+  stageType: PipelineStageType,
+  reason: HumanReviewReason,
+  attemptId: string,
+  errorCode: string,
+  errorMessage: string
+): PipelineRuntimeState {
+  const lastError = {
+    stageKey: stageType,
+    attemptId,
+    code: errorCode,
+    message: errorMessage,
+    at: new Date().toISOString()
+  };
+
+  switch (stageType) {
+    case PipelineStageType.Breakdown:
+      return {
+        ...runtimeState,
+        currentStageKey:
+          runtimeState.retryBudget.breakdown.remaining > 1
+            ? 'breakdown'
+            : 'human_review',
+        retryBudget: {
+          ...runtimeState.retryBudget,
+          breakdown: {
+            ...runtimeState.retryBudget.breakdown,
+            remaining: Math.max(runtimeState.retryBudget.breakdown.remaining - 1, 0),
+            agentFailureCount:
+              reason === HumanReviewReason.EvaluationRejected
+                ? runtimeState.retryBudget.breakdown.agentFailureCount
+                : runtimeState.retryBudget.breakdown.agentFailureCount + 1
+          }
+        },
+        lastError
+      };
+    case PipelineStageType.Spec:
+      return {
+        ...runtimeState,
+        currentStageKey:
+          runtimeState.retryBudget.spec.remaining > 1 ? 'spec' : 'human_review',
+        retryBudget: {
+          ...runtimeState.retryBudget,
+          spec: {
+            remaining: Math.max(runtimeState.retryBudget.spec.remaining - 1, 0)
+          }
+        },
+        lastError
+      };
+    case PipelineStageType.Estimate:
+      return {
+        ...runtimeState,
+        currentStageKey:
+          runtimeState.retryBudget.estimate.remaining > 1
+            ? 'estimate'
+            : 'human_review',
+        retryBudget: {
+          ...runtimeState.retryBudget,
+          estimate: {
+            remaining: Math.max(
+              runtimeState.retryBudget.estimate.remaining - 1,
+              0
+            )
+          }
+        },
+        lastError
+      };
+    default:
+      return {
+        ...runtimeState,
+        lastError
+      };
+  }
+}
+
+function getRemainingBudget(
+  runtimeState: PipelineRuntimeState,
+  stageType: PipelineStageType
+) {
+  switch (stageType) {
+    case PipelineStageType.Breakdown:
+      return runtimeState.retryBudget.breakdown.remaining;
+    case PipelineStageType.Spec:
+      return runtimeState.retryBudget.spec.remaining;
+    case PipelineStageType.Estimate:
+      return runtimeState.retryBudget.estimate.remaining;
+    default:
+      return 0;
+  }
+}
+
+function evaluatePrd(prd: PRD): string | null {
+  if (prd.tasks.length === 0) {
+    return 'PRD must contain at least one task.';
   }
 
-  const delayMs = Number.parseInt(rawValue, 10);
-  if (!Number.isFinite(delayMs) || delayMs <= 0) {
-    return;
+  const oversizedTask = prd.tasks.find((task) => task.estimatedAC > 6);
+  if (oversizedTask) {
+    return `Task ${oversizedTask.id} is still too coarse and should be split further.`;
   }
 
-  await sleep(delayMs);
+  return null;
+}
+
+function isArtifactRef(value: PRD | ArtifactRef): value is ArtifactRef {
+  return 'filePath' in value;
+}
+
+function isTerminalPipelineStatus(status: PipelineStatus) {
+  return (
+    status === PipelineStatus.Completed ||
+    status === PipelineStatus.Cancelled ||
+    status === PipelineStatus.Failed ||
+    status === PipelineStatus.Paused
+  );
+}
+
+function isTerminalAttemptStatus(status: string) {
+  return [
+    'succeeded',
+    'failed',
+    'needs_human_review',
+    'resolved_by_human',
+    'cancelled'
+  ].includes(status);
+}
+
+function toReviewableStageKey(
+  stageType: PipelineStageType
+): ReviewableStageKey | null {
+  switch (stageType) {
+    case PipelineStageType.Breakdown:
+      return 'breakdown';
+    case PipelineStageType.Spec:
+      return 'spec';
+    case PipelineStageType.Estimate:
+      return 'estimate';
+    default:
+      return null;
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

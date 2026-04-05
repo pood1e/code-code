@@ -8,18 +8,20 @@ import {
 
 import {
   DEFAULT_PIPELINE_CONFIG,
-  HumanDecisionAction,
+  HumanReviewAction,
   PipelineArtifactKey,
   PipelineStageStatus,
   PipelineStageType,
   PipelineStatus,
+  submitHumanDecisionInputSchema,
   type ArtifactContentType,
   type CreatePipelineInput,
-  type HumanDecision,
   type PipelineConfig,
+  type PipelineHumanReviewDecision,
   type StartPipelineInput,
   type UpdatePipelineInput
 } from '@agent-workbench/shared';
+import { ZodError } from 'zod';
 
 import {
   ARTIFACT_STORAGE,
@@ -34,12 +36,14 @@ import {
 import { PipelineArtifactRepository } from './pipeline-artifact.repository';
 import { PipelineRepository } from './pipeline.repository';
 import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
+import { PipelineStageAttemptService } from './pipeline-stage-attempt.service';
 import {
   createInitialPipelineRuntimeState,
   parsePipelineRuntimeState,
   type PipelineRuntimeState
 } from './pipeline-runtime-state';
 import { PLAN_STAGE_DEFINITIONS } from './pipeline-stage.constants';
+import { StructuredOutputParser } from './structured-output.parser';
 
 @Injectable()
 export class PipelinesService {
@@ -48,6 +52,8 @@ export class PipelinesService {
     private readonly pipelineArtifactRepository: PipelineArtifactRepository,
     private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService,
     private readonly artifactContentRepository: ArtifactContentRepository,
+    private readonly pipelineStageAttemptService: PipelineStageAttemptService,
+    private readonly structuredOutputParser: StructuredOutputParser,
     @Inject(ARTIFACT_STORAGE)
     private readonly artifactStorage: ArtifactStorage
   ) {}
@@ -220,7 +226,10 @@ export class PipelinesService {
     }
 
     const config: PipelineConfig = {
-      maxRetry: input.config?.maxRetry ?? DEFAULT_PIPELINE_CONFIG.maxRetry
+      maxRetry: input.config?.maxRetry ?? DEFAULT_PIPELINE_CONFIG.maxRetry,
+      requireHumanReviewOnSuccess:
+        input.config?.requireHumanReviewOnSuccess ??
+        DEFAULT_PIPELINE_CONFIG.requireHumanReviewOnSuccess
     };
     const runtimeState = createInitialPipelineRuntimeState(config);
 
@@ -248,7 +257,21 @@ export class PipelinesService {
     return toPipelineSummary(result);
   }
 
-  async submitDecision(id: string, decision: HumanDecision) {
+  async submitDecision(id: string, decision: PipelineHumanReviewDecision) {
+    let parsedDecision: PipelineHumanReviewDecision;
+    try {
+      parsedDecision = submitHumanDecisionInputSchema.parse({
+        decision
+      }).decision;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException(
+          error.issues[0]?.message ?? 'Invalid human review decision'
+        );
+      }
+
+      throw error;
+    }
     const context = await this.pipelineRuntimeCommandService.getDecisionContext(id);
     if (!context) {
       throw new NotFoundException(`Pipeline not found: ${id}`);
@@ -260,99 +283,336 @@ export class PipelinesService {
       );
     }
 
-    const feedback = decision.feedback?.trim();
-    if (
-      (decision.action === HumanDecisionAction.Modify ||
-        decision.action === HumanDecisionAction.Reject) &&
-      !feedback
-    ) {
-      throw new BadRequestException(
-        'Decision feedback is required for modify/reject actions'
-      );
-    }
-
     const runtimeState = parsePipelineRuntimeState(context.pipeline.state);
-    if (runtimeState.currentStep !== 'human_review') {
+    if (runtimeState.currentStageKey !== 'human_review') {
       throw new ConflictException(
-        `Pipeline is not awaiting a human review decision, current step: ${runtimeState.currentStep}`
+        `Pipeline is not awaiting a human review decision, current step: ${runtimeState.currentStageKey}`
       );
     }
 
-    const nextState = this.applyDecisionToRuntimeState(runtimeState, {
-      ...decision,
-      feedback
-    });
-    const humanReviewStage = context.stages.find(
-      (stage) => stage.stageType === PipelineStageType.HumanReview
-    );
+    const humanReview = runtimeState.feedback.humanReview;
+    if (!humanReview) {
+      throw new ConflictException('Pipeline is paused without human review payload');
+    }
 
+    if (!humanReview.sourceStageKey) {
+      throw new ConflictException('Human review payload is missing source stage');
+    }
+
+    if (parsedDecision.action === HumanReviewAction.Terminate) {
+      await this.pipelineRuntimeCommandService.cancelPipeline(id);
+      return;
+    }
+
+    if (parsedDecision.action === HumanReviewAction.EditAndContinue) {
+      const sourceStageType = getStageTypeForReviewSource(humanReview.sourceStageKey);
+      const editedOutput = this.structuredOutputParser.validateValue(
+        sourceStageType,
+        parsedDecision.editedOutput
+      );
+
+      if (humanReview.sourceAttemptId) {
+        await this.pipelineStageAttemptService.markResolvedByHuman(
+          humanReview.sourceAttemptId
+        );
+      }
+
+      const nextState = applyEditAndContinueDecision(
+        runtimeState,
+        humanReview.sourceStageKey,
+        editedOutput,
+        parsedDecision.comment ?? null
+      );
+
+      await this.pipelineRuntimeCommandService.resumeFromHumanReview(
+        id,
+        nextState,
+        getStageStatusOverridesForEditAndContinue(humanReview.sourceStageKey)
+      );
+      return;
+    }
+
+    if (parsedDecision.action === HumanReviewAction.Skip) {
+      if (humanReview.sourceStageKey === 'breakdown') {
+        throw new BadRequestException('Breakdown stage cannot be skipped');
+      }
+
+      const nextState = applySkipDecision(
+        runtimeState,
+        humanReview.sourceStageKey,
+        parsedDecision.comment
+      );
+
+      await this.pipelineRuntimeCommandService.resumeFromHumanReview(
+        id,
+        nextState,
+        getStageStatusOverridesForSkip(humanReview.sourceStageKey)
+      );
+      return;
+    }
+
+    const nextState = applyRetryDecision(
+      runtimeState,
+      humanReview.sourceStageKey,
+      parsedDecision.comment ?? null
+    );
     await this.pipelineRuntimeCommandService.resumeFromHumanReview(
       id,
       nextState,
-      humanReviewStage?.id ?? null,
-      getResetStageTypes(nextState.currentStep)
+      getStageStatusOverridesForRetry(humanReview.sourceStageKey)
     );
   }
+}
 
-  private applyDecisionToRuntimeState(
-    runtimeState: PipelineRuntimeState,
-    decision: HumanDecision
-  ): PipelineRuntimeState {
-    switch (decision.action) {
-      case HumanDecisionAction.Approve:
-        return {
-          ...runtimeState,
-          currentStep: 'complete',
-          humanFeedback: decision.feedback ?? null
-        };
-      case HumanDecisionAction.Modify:
-        return {
-          ...runtimeState,
-          attempt: runtimeState.attempt + 1,
-          currentStep: 'spec',
-          humanFeedback: decision.feedback ?? null,
-          retryCount: 0
-        };
-      case HumanDecisionAction.Reject:
-        return {
-          ...runtimeState,
-          attempt: runtimeState.attempt + 1,
-          currentStep: 'breakdown',
-          humanFeedback: decision.feedback ?? null,
-          retryCount: 0,
-          breakdownFeedback: {
-            mode: 'full',
-            reason:
-              decision.feedback ?? 'Human review requested a full re-breakdown',
-            suggestion: decision.feedback ?? undefined
-          }
-        };
-      default: {
-        const neverAction: never = decision.action;
-        return neverAction;
-      }
+function applyRetryDecision(
+  runtimeState: PipelineRuntimeState,
+  sourceStageKey: 'breakdown' | 'spec' | 'estimate',
+  comment: string | null
+): PipelineRuntimeState {
+  return {
+    ...runtimeState,
+    currentStageKey: sourceStageKey,
+    retryBudget: resetRetryBudget(runtimeState.retryBudget, sourceStageKey, runtimeState.config.maxRetry),
+    feedback: {
+      ...runtimeState.feedback,
+      humanReview: null
+    },
+    lastError: null
+  };
+}
+
+function applyEditAndContinueDecision(
+  runtimeState: PipelineRuntimeState,
+  sourceStageKey: 'breakdown' | 'spec' | 'estimate',
+  editedOutput: unknown,
+  comment: string | null
+): PipelineRuntimeState {
+  switch (sourceStageKey) {
+    case 'breakdown':
+      return {
+        ...runtimeState,
+        currentStageKey: 'evaluation',
+        artifacts: {
+          ...runtimeState.artifacts,
+          prd: editedOutput as PipelineRuntimeState['artifacts']['prd']
+        },
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
+    case 'spec':
+      return {
+        ...runtimeState,
+        currentStageKey: 'estimate',
+        artifacts: {
+          ...runtimeState.artifacts,
+          acSpec: editedOutput as PipelineRuntimeState['artifacts']['acSpec']
+        },
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
+    case 'estimate':
+      return {
+        ...runtimeState,
+        currentStageKey: 'complete',
+        artifacts: {
+          ...runtimeState.artifacts,
+          planReport: editedOutput as PipelineRuntimeState['artifacts']['planReport']
+        },
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
+    default: {
+      const neverStageKey: never = sourceStageKey;
+      return neverStageKey;
     }
   }
 }
 
-function getResetStageTypes(nextStep: PipelineRuntimeState['currentStep']) {
-  switch (nextStep) {
-    case 'breakdown':
-      return PLAN_STAGE_DEFINITIONS.map((stage) => stage.stageType);
+function applySkipDecision(
+  runtimeState: PipelineRuntimeState,
+  sourceStageKey: 'spec' | 'estimate',
+  comment: string
+): PipelineRuntimeState {
+  switch (sourceStageKey) {
     case 'spec':
-      return [
-        PipelineStageType.Spec,
-        PipelineStageType.Estimate,
-        PipelineStageType.HumanReview
-      ];
-    case 'complete':
-    case 'evaluation':
+      return {
+        ...runtimeState,
+        currentStageKey: 'estimate',
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
     case 'estimate':
-    case 'human_review':
-      return [];
+      return {
+        ...runtimeState,
+        currentStageKey: 'complete',
+        feedback: {
+          ...runtimeState.feedback,
+          humanReview: null
+        },
+        lastError: null
+      };
     default: {
-      const neverStep: never = nextStep;
-      return neverStep;
+      const neverStageKey: never = sourceStageKey;
+      return neverStageKey;
     }
   }
+}
+
+function resetRetryBudget(
+  retryBudget: PipelineRuntimeState['retryBudget'],
+  sourceStageKey: 'breakdown' | 'spec' | 'estimate',
+  maxRetry: number
+): PipelineRuntimeState['retryBudget'] {
+  const initialRemaining = maxRetry + 1;
+
+  switch (sourceStageKey) {
+    case 'breakdown':
+      return {
+        ...retryBudget,
+        breakdown: {
+          remaining: initialRemaining,
+          agentFailureCount: 0,
+          evaluationRejectCount: 0
+        }
+      };
+    case 'spec':
+      return {
+        ...retryBudget,
+        spec: {
+          remaining: initialRemaining
+        }
+      };
+    case 'estimate':
+      return {
+        ...retryBudget,
+        estimate: {
+          remaining: initialRemaining
+        }
+      };
+    default: {
+      const neverStageKey: never = sourceStageKey;
+      return neverStageKey;
+    }
+  }
+}
+
+function getStageTypeForReviewSource(
+  sourceStageKey: 'breakdown' | 'spec' | 'estimate'
+) {
+  switch (sourceStageKey) {
+    case 'breakdown':
+      return PipelineStageType.Breakdown;
+    case 'spec':
+      return PipelineStageType.Spec;
+    case 'estimate':
+      return PipelineStageType.Estimate;
+    default: {
+      const neverStageKey: never = sourceStageKey;
+      return neverStageKey;
+    }
+  }
+}
+
+function getStageStatusOverridesForRetry(
+  sourceStageKey: 'breakdown' | 'spec' | 'estimate'
+) {
+  switch (sourceStageKey) {
+    case 'breakdown':
+      return [
+        stageOverride(PipelineStageType.Breakdown, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.Evaluation, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.Spec, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Pending)
+      ];
+    case 'spec':
+      return [
+        stageOverride(PipelineStageType.Spec, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Pending)
+      ];
+    case 'estimate':
+      return [
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Pending)
+      ];
+    default: {
+      const neverStageKey: never = sourceStageKey;
+      return neverStageKey;
+    }
+  }
+}
+
+function getStageStatusOverridesForEditAndContinue(
+  sourceStageKey: 'breakdown' | 'spec' | 'estimate'
+) {
+  switch (sourceStageKey) {
+    case 'breakdown':
+      return [
+        stageOverride(PipelineStageType.Breakdown, PipelineStageStatus.Completed),
+        stageOverride(PipelineStageType.Evaluation, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.Spec, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Completed)
+      ];
+    case 'spec':
+      return [
+        stageOverride(PipelineStageType.Spec, PipelineStageStatus.Completed),
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Completed)
+      ];
+    case 'estimate':
+      return [
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Completed),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Completed)
+      ];
+    default: {
+      const neverStageKey: never = sourceStageKey;
+      return neverStageKey;
+    }
+  }
+}
+
+function getStageStatusOverridesForSkip(
+  sourceStageKey: 'spec' | 'estimate'
+) {
+  switch (sourceStageKey) {
+    case 'spec':
+      return [
+        stageOverride(PipelineStageType.Spec, PipelineStageStatus.Skipped),
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Pending),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Completed)
+      ];
+    case 'estimate':
+      return [
+        stageOverride(PipelineStageType.Estimate, PipelineStageStatus.Skipped),
+        stageOverride(PipelineStageType.HumanReview, PipelineStageStatus.Completed)
+      ];
+    default: {
+      const neverStageKey: never = sourceStageKey;
+      return neverStageKey;
+    }
+  }
+}
+
+function stageOverride(
+  stageType: PipelineStageType,
+  status: PipelineStageStatus
+) {
+  return {
+    stageType,
+    status
+  };
 }

@@ -98,7 +98,9 @@ export abstract class PipelineRuntimeRepository {
   abstract resumeFromHumanReview(input: {
     pipelineId: string;
     nextState: PipelineRuntimeState;
-    humanReviewStageId: string | null;
-    resetStageTypes: readonly PipelineStageType[];
+    stageStatusOverrides: Array<{
+      stageType: PipelineStageType;
+      status: PipelineStageStatus;
+    }>;
   }): Promise<PipelineRuntimeMutationResult<boolean> | null>;
 }

@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
+import { SessionsModule } from '../sessions/sessions.module';
 import { ArtifactContentRepository } from './artifact-content.repository';
+import { HumanReviewAssemblerService } from './human-review-assembler.service';
 import { LeaseHeartbeatRunner } from './lease-heartbeat-runner.service';
+import { PipelineAgentConfigResolverService } from './pipeline-agent-config-resolver.service';
 import { PipelineArtifactMaterializerService } from './pipeline-artifact-materializer.service';
 import { PipelineArtifactRepository } from './pipeline-artifact.repository';
 import { PipelineArtifactVersionRepository } from './pipeline-artifact-version.repository';
@@ -19,6 +22,9 @@ import { PipelineQueryService } from './pipeline-query.service';
 import { PipelineRepository } from './pipeline.repository';
 import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
 import { PipelineRuntimeRepository } from './pipeline-runtime.repository';
+import { PipelineSessionBridgeService } from './pipeline-session-bridge.service';
+import { PipelineStageAttemptService } from './pipeline-stage-attempt.service';
+import { PipelineStagePromptService } from './pipeline-stage-prompt.service';
 import { PipelineWorkerService } from './pipeline-worker.service';
 import { PipelinesController } from './pipelines.controller';
 import { PipelinesService } from './pipelines.service';
@@ -28,14 +34,21 @@ import { PrismaPipelineEventRepository } from './prisma-pipeline-event.repositor
 import { PrismaPipelineExecutionLeaseRepository } from './prisma-pipeline-execution-lease.repository';
 import { PrismaPipelineRepository } from './prisma-pipeline.repository';
 import { PrismaPipelineRuntimeRepository } from './prisma-pipeline-runtime.repository';
+import { StructuredOutputParser } from './structured-output.parser';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SessionsModule],
   controllers: [PipelinesController],
   providers: [
     PipelineEventBroker,
     PipelineEventStreamService,
     LeaseHeartbeatRunner,
+    PipelineAgentConfigResolverService,
+    PipelineStagePromptService,
+    PipelineSessionBridgeService,
+    PipelineStageAttemptService,
+    StructuredOutputParser,
+    HumanReviewAssemblerService,
     PipelineQueryService,
     PipelineRuntimeCommandService,
     PipelineArtifactMaterializerService,

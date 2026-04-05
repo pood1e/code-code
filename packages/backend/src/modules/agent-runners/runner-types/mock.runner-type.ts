@@ -162,6 +162,56 @@ class MockRunnerSession {
   ) {
     const runVersion = ++this.runVersion;
     const prompt = input.prompt.trim();
+    const pipelineStage = extractPipelineStage(prompt);
+    if (pipelineStage) {
+      const pipelineOutput = buildPipelineMockOutput(pipelineStage, prompt);
+      const responseText =
+        pipelineOutput.kind === 'invalid-json'
+          ? pipelineOutput.text
+          : [
+              `Mock pipeline stage: ${pipelineStage}`,
+              '```json pipeline-output',
+              JSON.stringify(pipelineOutput.payload, null, 2),
+              '```'
+            ].join('\n');
+
+      this.emitChunk({
+        kind: 'thinking_delta',
+        messageId,
+        timestampMs: Date.now(),
+        data: {
+          deltaText: `Mock runner is preparing ${pipelineStage} output...`,
+          accumulatedText: `Mock runner is preparing ${pipelineStage} output...`
+        }
+      });
+      await sleep(60);
+      if (!this.isRunActive(runVersion)) return;
+
+      this.emitChunk({
+        kind: 'message_delta',
+        messageId,
+        timestampMs: Date.now(),
+        data: {
+          deltaText: responseText,
+          accumulatedText: responseText
+        }
+      });
+      await sleep(60);
+      if (!this.isRunActive(runVersion)) return;
+
+      this.emitChunk({
+        kind: 'message_result',
+        messageId,
+        timestampMs: Date.now(),
+        data: {
+          text: responseText,
+          stopReason: 'mock_pipeline_complete',
+          durationMs: 120
+        }
+      });
+      return;
+    }
+
     const messageChunks = [
       '这是一个 Mock Session，用于打通 Session 运行时链路。',
       `收到输入：${prompt}`,
@@ -259,4 +309,153 @@ function sleep(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function extractPipelineStage(prompt: string): 'breakdown' | 'spec' | 'estimate' | null {
+  const match = prompt.match(/^STAGE:(breakdown|spec|estimate)$/m);
+  return match ? (match[1] as 'breakdown' | 'spec' | 'estimate') : null;
+}
+
+function buildPipelineMockOutput(
+  stage: 'breakdown' | 'spec' | 'estimate',
+  prompt: string
+):
+  | { kind: 'json'; payload: unknown }
+  | { kind: 'invalid-json'; text: string } {
+  const inputSnapshot = extractPipelineInputSnapshot(prompt);
+  if (
+    typeof inputSnapshot?.featureRequest === 'string' &&
+    inputSnapshot.featureRequest.includes('[parse-fail-once]') &&
+    !prompt.includes('Parser error:')
+  ) {
+    return {
+      kind: 'invalid-json',
+      text: '```json pipeline-output\n{"broken": true\n```'
+    };
+  }
+
+  switch (stage) {
+    case 'breakdown':
+      return {
+        kind: 'json',
+        payload: buildBreakdownPayload(inputSnapshot)
+      };
+    case 'spec':
+      return {
+        kind: 'json',
+        payload: buildSpecPayload(inputSnapshot)
+      };
+    case 'estimate':
+      return {
+        kind: 'json',
+        payload: buildEstimatePayload(inputSnapshot)
+      };
+    default:
+      return {
+        kind: 'json',
+        payload: {}
+      };
+  }
+}
+
+function extractPipelineInputSnapshot(prompt: string): Record<string, unknown> {
+  const match = prompt.match(
+    /PIPELINE_INPUT_JSON_START\n([\s\S]*?)\nPIPELINE_INPUT_JSON_END/
+  );
+  if (!match?.[1]) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(match[1]) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function buildBreakdownPayload(inputSnapshot: Record<string, unknown>) {
+  const featureRequest =
+    typeof inputSnapshot.featureRequest === 'string'
+      ? inputSnapshot.featureRequest
+      : 'Implement the requested feature';
+  const breakdownRejectionHistory = Array.isArray(
+    inputSnapshot.breakdownRejectionHistory
+  )
+    ? inputSnapshot.breakdownRejectionHistory
+    : [];
+  const invalidBreakdown =
+    featureRequest.includes('[invalid-breakdown]') &&
+    breakdownRejectionHistory.length < 2;
+
+  return {
+    feature: featureRequest.replace(/\[[^\]]+\]\s*/g, '').trim(),
+    userStories: ['As a user, I can complete the requested workflow end to end.'],
+    systemBoundary: {
+      in: ['Frontend form changes', 'Backend pipeline execution'],
+      out: ['Unrelated platform modules'],
+      outOfScope: ['Legacy compatibility branches']
+    },
+    ambiguities: invalidBreakdown ? ['Task decomposition remains too coarse.'] : [],
+    tasks: [
+      {
+        id: 'task-1',
+        title: 'Update shared contracts',
+        description: 'Align shared pipeline types and schemas.',
+        interface: 'shared pipeline contracts',
+        dependencies: [],
+        type: 'infra',
+        estimatedAC: invalidBreakdown ? 8 : 3
+      },
+      {
+        id: 'task-2',
+        title: 'Implement backend orchestration',
+        description: 'Wire runtime state, sessions, and review handling.',
+        interface: 'pipeline backend module',
+        dependencies: ['task-1'],
+        type: 'api',
+        estimatedAC: 4
+      }
+    ]
+  };
+}
+
+function buildSpecPayload(inputSnapshot: Record<string, unknown>) {
+  const prd =
+    inputSnapshot.prd && typeof inputSnapshot.prd === 'object'
+      ? (inputSnapshot.prd as { tasks?: Array<{ id: string; estimatedAC: number }> })
+      : { tasks: [] };
+  const tasks = Array.isArray(prd.tasks) ? prd.tasks : [];
+
+  return tasks.map((task, index) => ({
+    taskId: task.id,
+    ac: Array.from({ length: Math.max(1, Math.min(task.estimatedAC ?? 1, 4)) }, (_, acIndex) => ({
+      id: `${task.id}-ac-${acIndex + 1}`,
+      given: `Given prerequisite ${acIndex + 1} for ${task.id}`,
+      when: `When workflow step ${acIndex + 1} executes`,
+      then: `Then task ${index + 1} behavior ${acIndex + 1} succeeds`
+    }))
+  }));
+}
+
+function buildEstimatePayload(inputSnapshot: Record<string, unknown>) {
+  const prd =
+    inputSnapshot.prd && typeof inputSnapshot.prd === 'object'
+      ? (inputSnapshot.prd as { tasks?: Array<{ id: string; title: string }> })
+      : { tasks: [] };
+  const tasks = Array.isArray(prd.tasks) ? prd.tasks : [];
+
+  return {
+    totalEstimateDays: tasks.length === 0 ? 1 : tasks.length * 2,
+    confidence: 0.72,
+    taskEstimates: tasks.map((task, index) => ({
+      taskId: task.id,
+      title: task.title,
+      estimateDays: 2,
+      complexity: index === 0 ? 'medium' : 'high',
+      risks: ['Need alignment across shared/backend/frontend boundaries.']
+    })),
+    overallRisks: ['Schema and workflow changes need coordinated rollout.'],
+    assumptions: ['Existing session runtime remains the execution substrate.'],
+    notes: 'Generated by mock runner pipeline stage.'
+  };
 }

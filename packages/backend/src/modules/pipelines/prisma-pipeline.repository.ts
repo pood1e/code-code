@@ -1,24 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
-import type { PipelineStatus } from '@agent-workbench/shared';
+import {
+  HumanReviewReason,
+  PipelineArtifactKey,
+  type PipelineStatus,
+  type HumanReviewAction
+} from '@agent-workbench/shared';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { PIPELINE_ARTIFACT_STATUS } from './pipeline-artifact.constants';
+import { parsePipelineRuntimeState } from './pipeline-runtime-state';
 import type {
   PipelineArtifactRecord,
   PipelineDetailRecord,
+  PipelineHumanReviewRecord,
   PipelineRecord,
-  PipelineStageRecord
+  PipelineStageRecord,
+  StageExecutionAttemptRecord
 } from './pipeline.repository';
 import { PipelineRepository } from './pipeline.repository';
 
 type PipelineRow = Prisma.PipelineGetPayload<object>;
-type PipelineStageRow = Prisma.PipelineStageGetPayload<object>;
+type PipelineStageRow = Prisma.PipelineStageGetPayload<{
+  include: {
+    attempts: true;
+  };
+}>;
+type StageExecutionAttemptRow = Prisma.StageExecutionAttemptGetPayload<object>;
 type PipelineArtifactRow = Prisma.PipelineArtifactGetPayload<object>;
 type PipelineDetailRow = Prisma.PipelineGetPayload<{
   include: {
-    stages: true;
+    stages: {
+      include: {
+        attempts: true;
+      };
+    };
     artifacts: {
       where: {
         status: string;
@@ -126,7 +143,13 @@ export class PrismaPipelineRepository extends PipelineRepository {
     const pipeline = await this.prisma.pipeline.findUnique({
       where: { id },
       include: {
-        stages: true,
+        stages: {
+          include: {
+            attempts: {
+              orderBy: [{ attemptNo: 'desc' }, { createdAt: 'desc' }]
+            }
+          }
+        },
         artifacts: {
           where: {
             status: PIPELINE_ARTIFACT_STATUS.Ready
@@ -141,6 +164,11 @@ export class PrismaPipelineRepository extends PipelineRepository {
   async getPipelineStages(id: string): Promise<PipelineStageRecord[]> {
     const stages = await this.prisma.pipelineStage.findMany({
       where: { pipelineId: id },
+      include: {
+        attempts: {
+          orderBy: [{ attemptNo: 'desc' }, { createdAt: 'desc' }]
+        }
+      },
       orderBy: { order: 'asc' }
     });
 
@@ -163,10 +191,12 @@ export class PrismaPipelineRepository extends PipelineRepository {
 }
 
 function toPipelineDetailRecord(pipeline: PipelineDetailRow): PipelineDetailRecord {
+  const runtimeState = parsePipelineRuntimeState(pipeline.state);
   return {
     ...toPipelineRecord(pipeline),
     stages: pipeline.stages.map(toPipelineStageRecord),
-    artifacts: pipeline.artifacts.map(toPipelineArtifactRecord)
+    artifacts: pipeline.artifacts.map(toPipelineArtifactRecord),
+    humanReview: toPipelineHumanReviewPayload(runtimeState.feedback.humanReview, pipeline)
   };
 }
 
@@ -182,6 +212,7 @@ export function toPipelineRecord(pipeline: PipelineRow): PipelineRecord {
     currentStageId: pipeline.currentStageId,
     executionOwnerId: pipeline.executionOwnerId,
     executionLeaseExpiresAt: pipeline.executionLeaseExpiresAt,
+    version: pipeline.version,
     state: pipeline.state,
     createdAt: pipeline.createdAt,
     updatedAt: pipeline.updatedAt
@@ -197,9 +228,41 @@ export function toPipelineStageRecord(stage: PipelineStageRow): PipelineStageRec
     order: stage.order,
     status: stage.status as PipelineStageRecord['status'],
     retryCount: stage.retryCount,
-    sessionId: stage.sessionId,
+    attempts: stage.attempts.map(toStageExecutionAttemptRecord),
     createdAt: stage.createdAt,
     updatedAt: stage.updatedAt
+  };
+}
+
+export function toStageExecutionAttemptRecord(
+  attempt: StageExecutionAttemptRow
+): StageExecutionAttemptRecord {
+  return {
+    id: attempt.id,
+    stageId: attempt.stageId,
+    attemptNo: attempt.attemptNo,
+    status: attempt.status as StageExecutionAttemptRecord['status'],
+    sessionId: attempt.sessionId,
+    activeRequestMessageId: attempt.activeRequestMessageId,
+    reviewReason:
+      typeof attempt.reviewReason === 'string' &&
+      Object.values(HumanReviewReason).includes(
+        attempt.reviewReason as HumanReviewReason
+      )
+        ? (attempt.reviewReason as HumanReviewReason)
+        : null,
+    failureCode: attempt.failureCode,
+    failureMessage: attempt.failureMessage,
+    startedAt: attempt.startedAt,
+    finishedAt: attempt.finishedAt,
+    resolvedAgentConfig: attempt.resolvedAgentConfig,
+    inputSnapshot: attempt.inputSnapshot,
+    candidateOutput: attempt.candidateOutput,
+    parsedOutput: attempt.parsedOutput,
+    ownerLeaseToken: attempt.ownerLeaseToken,
+    leaseExpiresAt: attempt.leaseExpiresAt,
+    createdAt: attempt.createdAt,
+    updatedAt: attempt.updatedAt
   };
 }
 
@@ -226,4 +289,53 @@ export function toPipelineArtifactRecord(
     createdAt: artifact.createdAt,
     updatedAt: artifact.updatedAt
   };
+}
+
+function toPipelineHumanReviewPayload(
+  humanReview: ReturnType<typeof parsePipelineRuntimeState>['feedback']['humanReview'],
+  pipeline: PipelineDetailRow
+): PipelineHumanReviewRecord | null {
+  if (!humanReview) {
+    return null;
+  }
+
+  const attempts = pipeline.stages.flatMap((stage) =>
+    stage.attempts.map(toStageExecutionAttemptRecord)
+  );
+  const sourceAttempt = humanReview.sourceAttemptId
+    ? attempts.find((attempt) => attempt.id === humanReview.sourceAttemptId) ?? null
+    : null;
+
+  return {
+    reason: humanReview.reason,
+    sourceStageKey: humanReview.sourceStageKey,
+    sourceAttemptId: humanReview.sourceAttemptId,
+    sourceSessionId: sourceAttempt?.sessionId ?? null,
+    summary: humanReview.summary,
+    candidateOutput: humanReview.candidateOutput ?? null,
+    suggestedActions: humanReview.suggestedActions,
+    reviewerComment: humanReview.reviewerComment ?? null,
+    attempts,
+    artifacts: pipeline.artifacts.map((artifact) => ({
+      artifactId: artifact.id,
+      artifactKey: toArtifactKey(artifact.artifactKey),
+      name: artifact.name,
+      contentType: artifact.contentType as PipelineHumanReviewRecord['artifacts'][number]['contentType'],
+      attempt: artifact.attempt,
+      version: artifact.version
+    }))
+  };
+}
+
+function toArtifactKey(value: string | null): PipelineArtifactKey | null {
+  switch (value) {
+    case PipelineArtifactKey.Prd:
+      return PipelineArtifactKey.Prd;
+    case PipelineArtifactKey.AcSpec:
+      return PipelineArtifactKey.AcSpec;
+    case PipelineArtifactKey.PlanReport:
+      return PipelineArtifactKey.PlanReport;
+    default:
+      return null;
+  }
 }

@@ -217,7 +217,13 @@ export function PipelineDetail({ pipelineId, scopeId, pipeline, isLoading }: Pro
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {/* Human review */}
-        {isPaused && <HumanReviewPanel pipelineId={pipelineId} scopeId={scopeId} />}
+        {isPaused && pipeline.humanReview ? (
+          <HumanReviewPanel
+            pipelineId={pipelineId}
+            scopeId={scopeId}
+            review={pipeline.humanReview}
+          />
+        ) : null}
 
         {/* Stage timeline */}
         {pipeline.stages.length > 0 && (
