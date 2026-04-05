@@ -98,6 +98,7 @@ export async function resetDatabase(): Promise<void> {
     db.messageToolUse.deleteMany(),
     db.sessionMessage.deleteMany(),
     db.pipelineArtifact.deleteMany(),
+    db.pipelineArtifactSeries.deleteMany(),
     db.pipelineStage.deleteMany(),
     db.pipeline.deleteMany(),
     db.chat.deleteMany(),

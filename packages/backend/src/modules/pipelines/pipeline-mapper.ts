@@ -13,8 +13,6 @@ import type {
   PipelineSummary
 } from '@agent-workbench/shared';
 
-import { sanitizeJson } from '../../common/json.utils';
-
 type PipelineRow = Prisma.PipelineGetPayload<object>;
 type PipelineStageRow = Prisma.PipelineStageGetPayload<object>;
 type PipelineArtifactRow = Prisma.PipelineArtifactGetPayload<object>;
@@ -76,7 +74,7 @@ export function toPipelineStageSummary(
 export function toPipelineArtifactSummary(
   artifact: PipelineArtifactRow
 ): PipelineArtifactSummary {
-  const metadata = parsePipelineArtifactMetadata(artifact.metadata);
+  const metadata = toPipelineArtifactMetadata(artifact);
 
   return {
     id: artifact.id,
@@ -91,41 +89,40 @@ export function toPipelineArtifactSummary(
 }
 
 function compareArtifacts(left: PipelineArtifactRow, right: PipelineArtifactRow) {
-  if (left.version !== right.version) {
+  if (left.version !== null && right.version !== null && left.version !== right.version) {
     return right.version - left.version;
+  }
+
+  if (left.version !== null && right.version === null) {
+    return -1;
+  }
+
+  if (left.version === null && right.version !== null) {
+    return 1;
   }
 
   return right.createdAt.getTime() - left.createdAt.getTime();
 }
 
-function parsePipelineArtifactMetadata(
-  value: Prisma.JsonValue | null
+function toPipelineArtifactMetadata(
+  artifact: PipelineArtifactRow
 ): PipelineArtifactMetadata | null {
-  if (!value) {
-    return null;
-  }
-
-  const metadata = sanitizeJson(value) as Record<string, unknown>;
-  const artifactKey = metadata.artifactKey;
-  const attempt = metadata.attempt;
-  const version = metadata.version;
-
   if (
-    !isPipelineArtifactKey(artifactKey) ||
-    typeof attempt !== 'number' ||
-    !Number.isInteger(attempt) ||
-    attempt < 1 ||
-    typeof version !== 'number' ||
-    !Number.isInteger(version) ||
-    version < 1
+    !isPipelineArtifactKey(artifact.artifactKey) ||
+    artifact.attempt === null ||
+    artifact.version === null
   ) {
     return null;
   }
 
+  if (artifact.attempt < 1 || artifact.version < 1) {
+    return null;
+  }
+
   return {
-    artifactKey,
-    attempt,
-    version
+    artifactKey: artifact.artifactKey,
+    attempt: artifact.attempt,
+    version: artifact.version
   };
 }
 

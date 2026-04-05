@@ -8,14 +8,12 @@ import type { Prisma } from '@prisma/client';
 
 import {
   PipelineArtifactKey,
-  PipelineStageStatus,
   PipelineStageType,
   PipelineStatus
 } from '@agent-workbench/shared';
 
-import { toInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PipelineEventStore } from './pipeline-event.store';
+import { PipelineRuntimeCommandService } from './pipeline-runtime-command.service';
 import { getStageTypeForStep } from './pipeline-stage.constants';
 import {
   parsePipelineRuntimeState,
@@ -44,7 +42,7 @@ export class PipelineWorkerService
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pipelineEventStore: PipelineEventStore,
+    private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService,
     private readonly pipelinesService: PipelinesService
   ) {}
 
@@ -60,7 +58,7 @@ export class PipelineWorkerService
 
   private async pollLoop(): Promise<void> {
     while (this.isRunning) {
-      const pipeline = await this.claimPendingPipeline();
+      const pipeline = await this.pipelineRuntimeCommandService.claimNextPendingPipeline();
       if (pipeline) {
         await this.processClaimedPipeline(pipeline).catch((error) => {
           this.logger.error(
@@ -73,32 +71,6 @@ export class PipelineWorkerService
         await sleep(1000);
       }
     }
-  }
-
-  private async claimPendingPipeline(): Promise<ClaimedPipelineRow | null> {
-    const pending = await this.prisma.pipeline.findFirst({
-      where: { status: PipelineStatus.Pending },
-      orderBy: { updatedAt: 'asc' },
-      select: {
-        id: true,
-        featureRequest: true,
-        state: true
-      }
-    });
-
-    if (!pending) {
-      return null;
-    }
-
-    const claimed = await this.prisma.pipeline.updateMany({
-      where: {
-        id: pending.id,
-        status: PipelineStatus.Pending
-      },
-      data: { status: PipelineStatus.Running }
-    });
-
-    return claimed.count === 1 ? pending : null;
   }
 
   private async processClaimedPipeline(
@@ -131,12 +103,15 @@ export class PipelineWorkerService
 
       const runtimeState = parsePipelineRuntimeState(pipeline.state);
       if (runtimeState.currentStep === 'complete') {
-        await this.pipelinesService.completeExecution(pipeline.id);
+        await this.pipelineRuntimeCommandService.completeExecution(pipeline.id);
         return;
       }
 
       if (runtimeState.currentStep === 'human_review') {
-        await this.pauseForHumanReview(pipeline.id, runtimeState);
+        await this.pipelineRuntimeCommandService.pauseForHumanReview(
+          pipeline.id,
+          runtimeState
+        );
         return;
       }
 
@@ -153,7 +128,13 @@ export class PipelineWorkerService
         return;
       }
 
-      const stage = await this.markStageStarted(pipeline.id, stageType);
+      const stage = await this.pipelineRuntimeCommandService.startStage(
+        pipeline.id,
+        stageType
+      );
+      if (!stage) {
+        return;
+      }
 
       try {
         await waitForConfiguredTestDelay();
@@ -185,7 +166,7 @@ export class PipelineWorkerService
           return;
         }
 
-        await this.failStage(
+        await this.pipelineRuntimeCommandService.failStage(
           pipeline.id,
           stage,
           error instanceof Error ? error.message : String(error)
@@ -223,9 +204,17 @@ export class PipelineWorkerService
       currentStep: 'evaluation'
     };
 
-    await this.completeStage(pipelineId, stage, nextState, {
-      retryCount: nextState.retryCount
-    });
+    const completed = await this.pipelineRuntimeCommandService.completeStage(
+      pipelineId,
+      stage,
+      nextState,
+      {
+        retryCount: nextState.retryCount
+      }
+    );
+    if (!completed) {
+      return;
+    }
     if (await this.isPipelineCancelled(pipelineId)) {
       return;
     }
@@ -261,12 +250,25 @@ export class PipelineWorkerService
       const nextRetryCount = runtimeState.retryCount + 1;
       const exceeded = nextRetryCount > runtimeState.config.maxRetry;
 
-      await this.failStage(
+      const failed = await this.pipelineRuntimeCommandService.failStage(
         pipelineId,
         stage,
         update.breakdownFeedback.reason,
-        nextRetryCount
+        {
+          retryCount: nextRetryCount,
+          nextState: exceeded
+            ? undefined
+            : {
+                ...runtimeState,
+                breakdownFeedback: update.breakdownFeedback,
+                retryCount: nextRetryCount,
+                currentStep: 'breakdown'
+              }
+        }
       );
+      if (!failed) {
+        return false;
+      }
 
       if (exceeded) {
         await this.failPipeline(
@@ -275,13 +277,6 @@ export class PipelineWorkerService
         );
         return false;
       }
-
-      await this.persistRuntimeState(pipelineId, {
-        ...runtimeState,
-        breakdownFeedback: update.breakdownFeedback,
-        retryCount: nextRetryCount,
-        currentStep: 'breakdown'
-      });
 
       return true;
     }
@@ -292,9 +287,17 @@ export class PipelineWorkerService
       currentStep: 'spec'
     };
 
-    await this.completeStage(pipelineId, stage, nextState, {
-      retryCount: nextState.retryCount
-    });
+    const completed = await this.pipelineRuntimeCommandService.completeStage(
+      pipelineId,
+      stage,
+      nextState,
+      {
+        retryCount: nextState.retryCount
+      }
+    );
+    if (!completed) {
+      return false;
+    }
     return true;
   }
 
@@ -318,7 +321,14 @@ export class PipelineWorkerService
       currentStep: 'estimate'
     };
 
-    await this.completeStage(pipelineId, stage, nextState);
+    const completed = await this.pipelineRuntimeCommandService.completeStage(
+      pipelineId,
+      stage,
+      nextState
+    );
+    if (!completed) {
+      return;
+    }
     if (await this.isPipelineCancelled(pipelineId)) {
       return;
     }
@@ -350,7 +360,14 @@ export class PipelineWorkerService
       currentStep: 'human_review'
     };
 
-    await this.completeStage(pipelineId, stage, nextState);
+    const completed = await this.pipelineRuntimeCommandService.completeStage(
+      pipelineId,
+      stage,
+      nextState
+    );
+    if (!completed) {
+      return;
+    }
     if (await this.isPipelineCancelled(pipelineId)) {
       return;
     }
@@ -365,156 +382,15 @@ export class PipelineWorkerService
       return;
     }
 
-    await this.pauseForHumanReview(pipelineId, nextState);
-  }
-
-  private async markStageStarted(
-    pipelineId: string,
-    stageType: PipelineStageType
-  ): Promise<PipelineStageRow> {
-    const stage = await this.prisma.pipelineStage.findFirst({
-      where: { pipelineId, stageType }
-    });
-
-    if (!stage) {
-      throw new Error(`Pipeline stage not found: ${pipelineId}/${stageType}`);
-    }
-
-    const updatedStage = await this.prisma.pipelineStage.update({
-      where: { id: stage.id },
-      data: {
-        status: PipelineStageStatus.Running
-      }
-    });
-
-    await this.prisma.pipeline.update({
-      where: { id: pipelineId },
-      data: { currentStageId: stage.id }
-    });
-
-    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
-    await this.pipelineEventStore.append({
-      kind: 'stage_started',
+    await this.pipelineRuntimeCommandService.pauseForHumanReview(
       pipelineId,
-      eventId,
-      stageId: stage.id,
-      stageType,
-      timestamp: new Date().toISOString()
-    });
-
-    return updatedStage;
-  }
-
-  private async completeStage(
-    pipelineId: string,
-    stage: PipelineStageRow,
-    nextState: PipelineRuntimeState,
-    options?: {
-      retryCount?: number;
-    }
-  ) {
-    await this.prisma.pipelineStage.update({
-      where: { id: stage.id },
-      data: {
-        status: PipelineStageStatus.Completed,
-        ...(options?.retryCount !== undefined
-          ? { retryCount: options.retryCount }
-          : {})
-      }
-    });
-
-    await this.persistRuntimeState(pipelineId, nextState, stage.id);
-
-    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
-    await this.pipelineEventStore.append({
-      kind: 'stage_completed',
-      pipelineId,
-      eventId,
-      stageId: stage.id,
-      stageType: stage.stageType as PipelineStageType,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  private async failStage(
-    pipelineId: string,
-    stage: PipelineStageRow,
-    reason: string,
-    retryCount?: number
-  ) {
-    await this.prisma.pipelineStage.update({
-      where: { id: stage.id },
-      data: {
-        status: PipelineStageStatus.Failed,
-        ...(retryCount !== undefined ? { retryCount } : {})
-      }
-    });
-
-    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
-    await this.pipelineEventStore.append({
-      kind: 'stage_failed',
-      pipelineId,
-      eventId,
-      stageId: stage.id,
-      stageType: stage.stageType as PipelineStageType,
-      timestamp: new Date().toISOString(),
-      data: { reason }
-    });
-  }
-
-  private async pauseForHumanReview(
-    pipelineId: string,
-    runtimeState: PipelineRuntimeState
-  ) {
-    const stage = await this.markStageStarted(
-      pipelineId,
-      PipelineStageType.HumanReview
+      nextState
     );
-
-    await this.prisma.pipelineStage.update({
-      where: { id: stage.id },
-      data: {
-        status: PipelineStageStatus.AwaitingReview
-      }
-    });
-
-    await this.prisma.pipeline.update({
-      where: { id: pipelineId },
-      data: {
-        status: PipelineStatus.Paused,
-        currentStageId: stage.id,
-        state: toInputJson(runtimeState as unknown as Prisma.InputJsonValue)
-      }
-    });
-
-    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
-    await this.pipelineEventStore.append({
-      kind: 'pipeline_paused',
-      pipelineId,
-      eventId,
-      stageId: stage.id,
-      stageType: PipelineStageType.HumanReview,
-      timestamp: new Date().toISOString()
-    });
   }
 
   private async failPipeline(pipelineId: string, reason: string) {
     this.logger.warn(`Pipeline ${pipelineId} failed: ${reason}`);
-    await this.pipelinesService.failExecution(pipelineId, reason);
-  }
-
-  private async persistRuntimeState(
-    pipelineId: string,
-    runtimeState: PipelineRuntimeState,
-    currentStageId?: string | null
-  ) {
-    await this.prisma.pipeline.update({
-      where: { id: pipelineId },
-      data: {
-        state: toInputJson(runtimeState as unknown as Prisma.InputJsonValue),
-        ...(currentStageId !== undefined ? { currentStageId } : {})
-      }
-    });
+    await this.pipelineRuntimeCommandService.failExecution(pipelineId, reason);
   }
 
   private async writeArtifacts(
@@ -524,7 +400,7 @@ export class PipelineWorkerService
     runtimeState: PipelineRuntimeState
   ) {
     if (stageType === PipelineStageType.Breakdown && runtimeState.prd) {
-      await this.pipelinesService.createArtifact(pipelineId, {
+      await this.pipelinesService.createManagedArtifact(pipelineId, {
         stageId,
         artifactKey: PipelineArtifactKey.Prd,
         attempt: runtimeState.attempt,
@@ -535,7 +411,7 @@ export class PipelineWorkerService
     }
 
     if (stageType === PipelineStageType.Spec && runtimeState.acSpec.length > 0) {
-      await this.pipelinesService.createArtifact(pipelineId, {
+      await this.pipelinesService.createManagedArtifact(pipelineId, {
         stageId,
         artifactKey: PipelineArtifactKey.AcSpec,
         attempt: runtimeState.attempt,
@@ -546,7 +422,7 @@ export class PipelineWorkerService
     }
 
     if (stageType === PipelineStageType.Estimate && runtimeState.planReport) {
-      await this.pipelinesService.createArtifact(pipelineId, {
+      await this.pipelinesService.createManagedArtifact(pipelineId, {
         stageId,
         artifactKey: PipelineArtifactKey.PlanReport,
         attempt: runtimeState.attempt,

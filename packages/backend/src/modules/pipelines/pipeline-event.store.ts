@@ -9,6 +9,7 @@ import { sanitizeJson, toOptionalInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 
 type PipelineEventRow = Prisma.PipelineEventGetPayload<object>;
+type AppendPipelineEventInput = Omit<PipelineEvent, 'eventId'>;
 
 @Injectable()
 export class PipelineEventStore {
@@ -16,9 +17,12 @@ export class PipelineEventStore {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async nextEventId(pipelineId: string) {
-    const pipeline = await this.prisma.pipeline.update({
-      where: { id: pipelineId },
+  async appendInTransaction(
+    tx: Prisma.TransactionClient,
+    event: AppendPipelineEventInput
+  ): Promise<PipelineEvent> {
+    const pipeline = await tx.pipeline.update({
+      where: { id: event.pipelineId },
       data: {
         lastEventId: {
           increment: 1
@@ -29,26 +33,36 @@ export class PipelineEventStore {
       }
     });
 
-    return pipeline.lastEventId;
-  }
+    const persistedEvent: PipelineEvent = {
+      ...event,
+      eventId: pipeline.lastEventId
+    };
 
-  async append(event: PipelineEvent): Promise<PipelineEvent> {
-    await this.prisma.pipelineEvent.create({
+    await tx.pipelineEvent.create({
       data: {
-        pipelineId: event.pipelineId,
-        eventId: event.eventId,
-        kind: event.kind,
-        stageId: event.stageId ?? null,
-        stageType: event.stageType ?? null,
-        timestampMs: BigInt(new Date(event.timestamp).getTime()),
+        pipelineId: persistedEvent.pipelineId,
+        eventId: persistedEvent.eventId,
+        kind: persistedEvent.kind,
+        stageId: persistedEvent.stageId ?? null,
+        stageType: persistedEvent.stageType ?? null,
+        timestampMs: BigInt(new Date(persistedEvent.timestamp).getTime()),
         data: toOptionalInputJson(
-          event.data as Prisma.InputJsonValue | undefined
+          persistedEvent.data as Prisma.InputJsonValue | undefined
         )
       }
     });
 
+    return persistedEvent;
+  }
+
+  publish(event: PipelineEvent): void {
     this.getSubject(event.pipelineId).next(event);
-    return event;
+  }
+
+  publishAll(events: readonly PipelineEvent[]): void {
+    for (const event of events) {
+      this.publish(event);
+    }
   }
 
   async createStream(
