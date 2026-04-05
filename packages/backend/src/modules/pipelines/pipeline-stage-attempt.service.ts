@@ -58,13 +58,55 @@ export class PipelineStageAttemptService {
     return toStageExecutionAttemptRecord(attempt);
   }
 
+  async claimAttempt(input: {
+    attemptId: string;
+    ownerLeaseToken: string;
+    now: Date;
+    leaseExpiresAt: Date;
+  }): Promise<StageExecutionAttemptRecord | null> {
+    const claimed = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        status: {
+          in: [
+            StageExecutionAttemptStatus.Pending,
+            StageExecutionAttemptStatus.Running,
+            StageExecutionAttemptStatus.WaitingRepair
+          ]
+        },
+        OR: [
+          { ownerLeaseToken: null },
+          { ownerLeaseToken: input.ownerLeaseToken },
+          { leaseExpiresAt: null },
+          { leaseExpiresAt: { lt: input.now } }
+        ]
+      },
+      data: {
+        ownerLeaseToken: input.ownerLeaseToken,
+        leaseExpiresAt: input.leaseExpiresAt
+      }
+    });
+
+    if (claimed.count !== 1) {
+      return null;
+    }
+
+    const attempt = await this.prisma.stageExecutionAttempt.findUnique({
+      where: { id: input.attemptId }
+    });
+    return attempt ? toStageExecutionAttemptRecord(attempt) : null;
+  }
+
   async markRunning(input: {
     attemptId: string;
     ownerLeaseToken: string;
     leaseExpiresAt: Date;
-  }): Promise<void> {
-    await this.prisma.stageExecutionAttempt.update({
-      where: { id: input.attemptId },
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
       data: {
         status: StageExecutionAttemptStatus.Running,
         ownerLeaseToken: input.ownerLeaseToken,
@@ -72,31 +114,61 @@ export class PipelineStageAttemptService {
         startedAt: new Date()
       }
     });
+
+    return updated.count === 1;
   }
 
   async attachSession(input: {
     attemptId: string;
+    ownerLeaseToken: string;
     sessionId: string;
     activeRequestMessageId: string | null;
-  }): Promise<void> {
-    await this.prisma.stageExecutionAttempt.update({
-      where: { id: input.attemptId },
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
       data: {
         sessionId: input.sessionId,
         activeRequestMessageId: input.activeRequestMessageId
       }
     });
+
+    return updated.count === 1;
+  }
+
+  async updateActiveRequestMessage(input: {
+    attemptId: string;
+    ownerLeaseToken: string;
+    activeRequestMessageId: string | null;
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
+      data: {
+        activeRequestMessageId: input.activeRequestMessageId
+      }
+    });
+
+    return updated.count === 1;
   }
 
   async markWaitingRepair(input: {
     attemptId: string;
+    ownerLeaseToken: string;
     activeRequestMessageId: string | null;
     failureCode: string;
     failureMessage: string;
     candidateOutput?: unknown;
-  }): Promise<void> {
-    await this.prisma.stageExecutionAttempt.update({
-      where: { id: input.attemptId },
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
       data: {
         status: StageExecutionAttemptStatus.WaitingRepair,
         activeRequestMessageId: input.activeRequestMessageId,
@@ -107,16 +179,22 @@ export class PipelineStageAttemptService {
         )
       }
     });
+
+    return updated.count === 1;
   }
 
   async markSucceeded(input: {
     attemptId: string;
+    ownerLeaseToken: string;
     activeRequestMessageId: string | null;
     candidateOutput?: unknown;
     parsedOutput: unknown;
-  }): Promise<void> {
-    await this.prisma.stageExecutionAttempt.update({
-      where: { id: input.attemptId },
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
       data: {
         status: StageExecutionAttemptStatus.Succeeded,
         activeRequestMessageId: input.activeRequestMessageId,
@@ -134,17 +212,23 @@ export class PipelineStageAttemptService {
         failureMessage: null
       }
     });
+
+    return updated.count === 1;
   }
 
   async markFailed(input: {
     attemptId: string;
+    ownerLeaseToken: string;
     reviewReason: HumanReviewReason | null;
     failureCode: string;
     failureMessage: string;
     candidateOutput?: unknown;
-  }): Promise<void> {
-    await this.prisma.stageExecutionAttempt.update({
-      where: { id: input.attemptId },
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
       data: {
         status: input.reviewReason
           ? StageExecutionAttemptStatus.NeedsHumanReview
@@ -160,6 +244,8 @@ export class PipelineStageAttemptService {
         leaseExpiresAt: null
       }
     });
+
+    return updated.count === 1;
   }
 
   async markResolvedByHuman(attemptId: string): Promise<void> {
@@ -177,16 +263,62 @@ export class PipelineStageAttemptService {
   async renewLease(input: {
     attemptId: string;
     ownerLeaseToken: string;
+    now: Date;
     leaseExpiresAt: Date;
-  }): Promise<void> {
-    await this.prisma.stageExecutionAttempt.updateMany({
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
       where: {
         id: input.attemptId,
-        ownerLeaseToken: input.ownerLeaseToken
+        ownerLeaseToken: input.ownerLeaseToken,
+        leaseExpiresAt: { gte: input.now }
       },
       data: {
         leaseExpiresAt: input.leaseExpiresAt
       }
     });
+
+    return updated.count === 1;
+  }
+
+  async releaseLease(input: {
+    attemptId: string;
+    ownerLeaseToken: string;
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
+      data: {
+        ownerLeaseToken: null,
+        leaseExpiresAt: null
+      }
+    });
+
+    return updated.count === 1;
+  }
+
+  async markCancelled(input: {
+    attemptId: string;
+    ownerLeaseToken: string;
+    failureCode: string;
+    failureMessage: string;
+  }): Promise<boolean> {
+    const updated = await this.prisma.stageExecutionAttempt.updateMany({
+      where: {
+        id: input.attemptId,
+        ownerLeaseToken: input.ownerLeaseToken
+      },
+      data: {
+        status: StageExecutionAttemptStatus.Cancelled,
+        failureCode: input.failureCode,
+        failureMessage: input.failureMessage,
+        finishedAt: new Date(),
+        ownerLeaseToken: null,
+        leaseExpiresAt: null
+      }
+    });
+
+    return updated.count === 1;
   }
 }

@@ -116,6 +116,9 @@ describe('HumanReviewPanel', () => {
       />
     );
 
+    expect(screen.getByText('Attempt: attempt-1')).toBeInTheDocument();
+    expect(screen.getByText('Session: session-1')).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: '重试' }));
 
     expect(mutationsMock.useSubmitDecisionMutation).toHaveBeenCalledWith(

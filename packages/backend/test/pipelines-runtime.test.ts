@@ -4,8 +4,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 import {
   HumanReviewAction,
+  MessageRole,
+  MessageStatus,
   PipelineArtifactKey,
-  PipelineStageStatus
+  PipelineStageStatus,
+  PipelineStageType,
+  StageExecutionAttemptStatus
 } from '@agent-workbench/shared';
 
 import {
@@ -20,6 +24,7 @@ import {
   teardownTestApp
 } from './setup';
 import { PipelineRuntimeCommandService } from '../src/modules/pipelines/pipeline-runtime-command.service';
+import { PipelineSessionBridgeService } from '../src/modules/pipelines/pipeline-session-bridge.service';
 import {
   api,
   expectError,
@@ -286,6 +291,78 @@ describe('Pipelines Runtime API', () => {
   });
 
   describe('human review resume and replay', () => {
+    it('WAITING_REPAIR 恢复后若 repair 响应已存在则不重复发送 follow-up prompt', async () => {
+      const pipeline = await createDraftPipeline({
+        featureRequest: '[parse-fail-once] 用户可以搜索文章'
+      });
+      const bridgeService = getApp().get(PipelineSessionBridgeService);
+      const originalWaitForResult = bridgeService.waitForResult.bind(bridgeService);
+      const gate = createGate();
+      let waitInvocationCount = 0;
+      const waitSpy = vi
+        .spyOn(bridgeService, 'waitForResult')
+        .mockImplementation(async (sessionId, messageId, timeoutMs) => {
+          waitInvocationCount += 1;
+          if (waitInvocationCount === 2) {
+            await gate.wait();
+          }
+
+          return originalWaitForResult(sessionId, messageId, timeoutMs);
+        });
+
+      try {
+        await startPipeline(pipeline.id);
+        await waitForCondition(async () => {
+          const attempt = await getLatestAttemptByStageType(
+            pipeline.id,
+            PipelineStageType.Breakdown
+          );
+          return attempt?.status === StageExecutionAttemptStatus.WaitingRepair;
+        }, 10_000);
+
+        const waitingRepairAttempt = await getLatestAttemptByStageType(
+          pipeline.id,
+          PipelineStageType.Breakdown
+        );
+        expect(waitingRepairAttempt?.sessionId).toBeTruthy();
+
+        const sessionId = waitingRepairAttempt?.sessionId as string;
+        await waitForAssistantMessagesReady(sessionId, 2, 10_000);
+
+        const expiredAt = new Date(Date.now() - 60_000);
+        await getPrisma().pipeline.update({
+          where: { id: pipeline.id },
+          data: {
+            executionLeaseExpiresAt: expiredAt
+          }
+        });
+        await getPrisma().stageExecutionAttempt.update({
+          where: { id: waitingRepairAttempt!.id },
+          data: {
+            leaseExpiresAt: expiredAt
+          }
+        });
+
+        await restartTestAppPreservingDatabase();
+        gate.release();
+
+        await waitForPipelineStatus(pipeline.id, 'paused', 10_000);
+
+        const assistantMessages = await getPrisma().sessionMessage.findMany({
+          where: {
+            sessionId,
+            role: MessageRole.Assistant
+          },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+        });
+
+        expect(assistantMessages).toHaveLength(2);
+      } finally {
+        gate.release();
+        waitSpy.mockRestore();
+      }
+    });
+
     it('重启后仍可通过 edit_and_continue 继续执行，eventId 保持单调递增且 afterEventId replay 不重复', async () => {
       const pipeline = await createDraftPipeline();
       await startPipeline(pipeline.id);
@@ -450,6 +527,81 @@ describe('Pipelines Runtime API', () => {
   });
 
   describe('worker state transitions', () => {
+    it('stale running lease 在重启恢复后会复用同一 attempt 继续推进', async () => {
+      const pipeline = await createDraftPipeline();
+      const bridgeService = getApp().get(PipelineSessionBridgeService);
+      const originalWaitForResult = bridgeService.waitForResult.bind(bridgeService);
+      const gate = createGate();
+      const waitSpy = vi
+        .spyOn(bridgeService, 'waitForResult')
+        .mockImplementation(async (sessionId, messageId, timeoutMs) => {
+          await gate.wait();
+          return originalWaitForResult(sessionId, messageId, timeoutMs);
+        });
+
+      try {
+        await startPipeline(pipeline.id);
+        await waitForCondition(async () => {
+          const attempt = await getLatestAttemptByStageType(
+            pipeline.id,
+            PipelineStageType.Breakdown
+          );
+          return (
+            attempt?.status === StageExecutionAttemptStatus.Running &&
+            Boolean(attempt.sessionId) &&
+            Boolean(attempt.activeRequestMessageId)
+          );
+        }, 10_000);
+
+        const staleAttempt = await getLatestAttemptByStageType(
+          pipeline.id,
+          PipelineStageType.Breakdown
+        );
+        expect(staleAttempt).not.toBeNull();
+
+        const sessionId = staleAttempt?.sessionId as string;
+        await waitForAssistantMessagesReady(sessionId, 1, 10_000);
+
+        const expiredAt = new Date(Date.now() - 60_000);
+        await getPrisma().pipeline.update({
+          where: { id: pipeline.id },
+          data: {
+            executionLeaseExpiresAt: expiredAt
+          }
+        });
+        await getPrisma().stageExecutionAttempt.update({
+          where: { id: staleAttempt!.id },
+          data: {
+            leaseExpiresAt: expiredAt
+          }
+        });
+
+        await restartTestAppPreservingDatabase();
+        gate.release();
+
+        await waitForPipelineStatus(pipeline.id, 'paused', 10_000);
+
+        const recoveredAttempt = await getLatestAttemptByStageType(
+          pipeline.id,
+          PipelineStageType.Breakdown
+        );
+        const assistantMessages = await getPrisma().sessionMessage.findMany({
+          where: {
+            sessionId,
+            role: MessageRole.Assistant
+          }
+        });
+
+        expect(recoveredAttempt?.id).toBe(staleAttempt?.id);
+        expect(recoveredAttempt?.attemptNo).toBe(1);
+        expect(recoveredAttempt?.status).toBe(StageExecutionAttemptStatus.Succeeded);
+        expect(assistantMessages).toHaveLength(1);
+      } finally {
+        gate.release();
+        waitSpy.mockRestore();
+      }
+    });
+
     it('evaluation reject 耗尽预算时应进入 human_review，并发出 stage_failed/pipeline_paused', async () => {
       const pipeline = await createDraftPipeline({
         featureRequest: '[invalid-breakdown] 用户可以搜索文章'
@@ -513,6 +665,20 @@ describe('Pipelines Runtime API', () => {
       ).map((event) => event.kind);
       expect(eventKinds).toContain('pipeline_cancelled');
       expect(eventKinds).not.toContain('pipeline_completed');
+
+      const activeAttempts = await getPrisma().stageExecutionAttempt.findMany({
+        where: {
+          stage: { pipelineId: pipeline.id },
+          status: {
+            in: [
+              StageExecutionAttemptStatus.Pending,
+              StageExecutionAttemptStatus.Running,
+              StageExecutionAttemptStatus.WaitingRepair
+            ]
+          }
+        }
+      });
+      expect(activeAttempts).toHaveLength(0);
     });
 
     it('paused 状态下取消应保持 cancelled，并通过 SSE replay 可见', async () => {
@@ -546,10 +712,12 @@ describe('Pipelines Runtime API', () => {
       const gate = createGate();
       const completeSpy = vi
         .spyOn(runtimeCommandService, 'completeExecution')
-        .mockImplementation(async (pipelineId: string, ownerId: string) => {
+        .mockImplementation(
+          async (pipelineId: string, ownerId: string, expectedVersion: number) => {
           await gate.wait();
-          return originalCompleteExecution(pipelineId, ownerId);
-        });
+            return originalCompleteExecution(pipelineId, ownerId, expectedVersion);
+          }
+        );
 
       try {
         const decisionPromise = submitDecision(
@@ -601,9 +769,19 @@ describe('Pipelines Runtime API', () => {
       const pauseSpy = vi
         .spyOn(runtimeCommandService, 'pauseForHumanReview')
         .mockImplementation(
-          async (pipelineId: string, ownerId: string, runtimeState) => {
+          async (
+            pipelineId: string,
+            ownerId: string,
+            expectedVersion: number,
+            runtimeState
+          ) => {
             await gate.wait();
-            return originalPauseForHumanReview(pipelineId, ownerId, runtimeState);
+            return originalPauseForHumanReview(
+              pipelineId,
+              ownerId,
+              expectedVersion,
+              runtimeState
+            );
           }
         );
 
@@ -728,18 +906,71 @@ function createGate() {
 }
 
 async function waitForCondition(
-  condition: () => boolean,
+  condition: () => boolean | Promise<boolean>,
   timeoutMs = 5_000
 ) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (condition()) {
+    if (await condition()) {
       return;
     }
     await sleep(25);
   }
 
   throw new Error('Condition was not met before timeout');
+}
+
+async function getLatestAttemptByStageType(
+  pipelineId: string,
+  stageType: PipelineStageType
+) {
+  return getPrisma().stageExecutionAttempt.findFirst({
+    where: {
+      stage: {
+        pipelineId,
+        stageType
+      }
+    },
+    orderBy: [{ attemptNo: 'desc' }, { createdAt: 'desc' }]
+  });
+}
+
+async function waitForAssistantMessageCount(
+  sessionId: string,
+  expectedCount: number,
+  timeoutMs = 5_000
+) {
+  await waitForCondition(async () => {
+    const count = await getPrisma().sessionMessage.count({
+      where: {
+        sessionId,
+        role: MessageRole.Assistant
+      }
+    });
+
+    return count === expectedCount;
+  }, timeoutMs);
+}
+
+async function waitForAssistantMessagesReady(
+  sessionId: string,
+  expectedCount: number,
+  timeoutMs = 5_000
+) {
+  await waitForCondition(async () => {
+    const messages = await getPrisma().sessionMessage.findMany({
+      where: {
+        sessionId,
+        role: MessageRole.Assistant
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+    });
+
+    return (
+      messages.length === expectedCount &&
+      messages.every((message) => message.status === MessageStatus.Complete)
+    );
+  }, timeoutMs);
 }
 
 async function waitForArtifactVersions(

@@ -11,6 +11,7 @@ import {
   PipelineArtifactKey,
   PipelineStageType,
   PipelineStatus,
+  StageExecutionAttemptStatus,
   type ArtifactRef,
   type PipelineRuntimeState,
   type PRD,
@@ -62,11 +63,16 @@ export class PipelineWorkerService
 
   onApplicationBootstrap(): void {
     this.isRunning = true;
-    void this.pollLoop();
+    void this.bootstrapAndPoll();
   }
 
   onApplicationShutdown(): void {
     this.isRunning = false;
+  }
+
+  private async bootstrapAndPoll(): Promise<void> {
+    await this.pipelineRuntimeCommandService.recoverInterruptedPipelinesOnBoot();
+    await this.pollLoop();
   }
 
   private async pollLoop(): Promise<void> {
@@ -117,7 +123,8 @@ export class PipelineWorkerService
         if (runtimeState.currentStageKey === 'complete') {
           await this.pipelineRuntimeCommandService.completeExecution(
             pipeline.id,
-            this.ownerId
+            this.ownerId,
+            pipeline.version
           );
           return;
         }
@@ -126,6 +133,7 @@ export class PipelineWorkerService
           await this.pipelineRuntimeCommandService.pauseForHumanReview(
             pipeline.id,
             this.ownerId,
+            pipeline.version,
             runtimeState
           );
           return;
@@ -152,16 +160,38 @@ export class PipelineWorkerService
         const startedStage = await this.pipelineRuntimeCommandService.startStage(
           pipeline.id,
           this.ownerId,
+          pipeline.version,
           stageType
         );
         if (!startedStage) {
           return;
         }
 
+        const activePipeline = await this.pipelineRepository.getPipelineDetail(pipeline.id);
+        if (!activePipeline) {
+          return;
+        }
+
+        const activeRuntimeState = parsePipelineRuntimeState(activePipeline.state);
+        const activeStage = activePipeline.stages.find(
+          (item) => item.stageType === stageType
+        );
+        if (!activeStage) {
+          return;
+        }
+
         const shouldContinue =
-          runtimeState.currentStageKey === 'evaluation'
-            ? await this.runEvaluationStage(pipeline, stage, runtimeState)
-            : await this.runAgentStage(pipeline, stage, runtimeState);
+          activeRuntimeState.currentStageKey === 'evaluation'
+            ? await this.runEvaluationStage(
+                activePipeline,
+                activeStage,
+                activeRuntimeState
+              )
+            : await this.runAgentStage(
+                activePipeline,
+                activeStage,
+                activeRuntimeState
+              );
 
         if (!shouldContinue) {
           return;
@@ -182,178 +212,106 @@ export class PipelineWorkerService
       stageState: null
     });
 
-    let attempt = await this.pipelineStageAttemptService.getLatestAttempt(stage.id);
-    if (!attempt || isTerminalAttemptStatus(attempt.status)) {
+    const attempt = await this.claimOrCreateAttempt(
+      pipeline,
+      stage,
+      runtimeState,
+      agentConfig
+    );
+    if (!attempt) {
+      return false;
+    }
+
+    const attemptHeartbeat = this.leaseHeartbeatRunner.start({
+      intervalMs: PipelineWorkerService.LEASE_RENEW_INTERVAL_MS,
+      renew: () =>
+        this.pipelineStageAttemptService.renewLease({
+          attemptId: attempt.id,
+          ownerLeaseToken: this.ownerId,
+          ...this.createLeaseWindow()
+        })
+    });
+
+    try {
+      const markedRunning = await this.pipelineStageAttemptService.markRunning({
+        attemptId: attempt.id,
+        ownerLeaseToken: this.ownerId,
+        leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
+      });
+      if (!markedRunning) {
+        return false;
+      }
+
       const prompt = this.pipelineStagePromptService.buildStagePrompt({
         stageType: stage.stageType,
         featureRequest: pipeline.featureRequest,
         runtimeState,
-        attemptNo: (attempt?.attemptNo ?? 0) + 1,
+        attemptNo: attempt.attemptNo,
         reviewerComment: runtimeState.feedback.humanReview?.reviewerComment ?? null
       });
-      attempt = await this.pipelineStageAttemptService.createAttempt({
-        stageId: stage.id,
-        resolvedAgentConfig: agentConfig,
-        inputSnapshot: prompt.inputSnapshot,
-        ownerLeaseToken: this.ownerId,
-        leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
-      });
-    }
 
-    await this.pipelineStageAttemptService.markRunning({
-      attemptId: attempt.id,
-      ownerLeaseToken: this.ownerId,
-      leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
-    });
+      let sessionId = attempt.sessionId;
+      let activeRequestMessageId = attempt.activeRequestMessageId;
 
-    const prompt = this.pipelineStagePromptService.buildStagePrompt({
-      stageType: stage.stageType,
-      featureRequest: pipeline.featureRequest,
-      runtimeState,
-      attemptNo: attempt.attemptNo,
-      reviewerComment: runtimeState.feedback.humanReview?.reviewerComment ?? null
-    });
+      if (!sessionId) {
+        const created =
+          await this.pipelineSessionBridgeService.createSessionAndSendPrompt({
+            pipeline,
+            agentConfig,
+            prompt: prompt.prompt
+          });
+        sessionId = created.sessionId;
+        activeRequestMessageId = created.messageId;
+        const attached = await this.pipelineStageAttemptService.attachSession({
+          attemptId: attempt.id,
+          ownerLeaseToken: this.ownerId,
+          sessionId,
+          activeRequestMessageId
+        });
+        if (!attached) {
+          return false;
+        }
+      }
 
-    let sessionId = attempt.sessionId;
-    let activeRequestMessageId = attempt.activeRequestMessageId;
+      if (!sessionId) {
+        return false;
+      }
 
-    if (!sessionId) {
-      const created = await this.pipelineSessionBridgeService.createSessionAndSendPrompt({
-        pipeline,
-        agentConfig,
-        prompt: prompt.prompt
-      });
-      sessionId = created.sessionId;
-      activeRequestMessageId = created.messageId;
-      await this.pipelineStageAttemptService.attachSession({
-        attemptId: attempt.id,
+      if (attempt.status === StageExecutionAttemptStatus.WaitingRepair) {
+        return await this.resumeWaitingRepairAttempt({
+          pipeline,
+          stage,
+          attempt,
+          runtimeState,
+          agentConfig,
+          sessionId
+        });
+      }
+
+      const firstResult = await this.pipelineSessionBridgeService.waitForResult(
         sessionId,
         activeRequestMessageId
-      });
-    }
+      );
+      if (!attemptHeartbeat.hasLease()) {
+        return false;
+      }
 
-    const firstResult = await this.pipelineSessionBridgeService.waitForResult(
-      sessionId,
-      activeRequestMessageId
-    );
-    if (firstResult.status !== 'completed') {
-      return this.handleAgentFailure({
+      return await this.handleCompletedAgentResponse({
         pipeline,
         stage,
-        attemptId: attempt.id,
+        attempt,
         runtimeState,
-        reason:
-          firstResult.status === 'timeout'
-            ? HumanReviewReason.AgentTimeout
-            : HumanReviewReason.AgentRuntimeError,
-        errorCode:
-          firstResult.status === 'timeout' ? 'AGENT_TIMEOUT' : firstResult.code,
-        errorMessage:
-          firstResult.status === 'timeout'
-            ? `Stage ${stage.stageType} timed out`
-            : firstResult.message,
-        candidateOutput: firstResult.status === 'error' ? firstResult.outputText : null
-      });
-    }
-
-    try {
-      const parsedOutput = this.structuredOutputParser.parse(
-        stage.stageType,
-        firstResult.outputText
-      );
-      await this.pipelineStageAttemptService.markSucceeded({
-        attemptId: attempt.id,
-        activeRequestMessageId: firstResult.messageId,
-        candidateOutput: firstResult.outputText,
-        parsedOutput
-      });
-      return this.completeAgentStage({
-        pipeline,
-        stage,
-        attemptNo: attempt.attemptNo,
-        runtimeState,
-        parsedOutput
-      });
-    } catch (error) {
-      const repairPrompt = this.pipelineStagePromptService.buildRepairPrompt(
-        stage.stageType,
-        error instanceof Error ? error.message : String(error)
-      );
-      const repairMessageId =
-        await this.pipelineSessionBridgeService.sendFollowUpPrompt({
-          sessionId,
-          prompt: repairPrompt,
-          agentConfig
-        });
-
-      await this.pipelineStageAttemptService.markWaitingRepair({
-        attemptId: attempt.id,
-        activeRequestMessageId: repairMessageId,
-        failureCode: 'PARSE_FAILED',
-        failureMessage: error instanceof Error ? error.message : String(error),
-        candidateOutput: firstResult.outputText
-      });
-
-      const repairedResult = await this.pipelineSessionBridgeService.waitForResult(
+        agentConfig,
         sessionId,
-        repairMessageId
-      );
-      if (repairedResult.status !== 'completed') {
-        return this.handleAgentFailure({
-          pipeline,
-          stage,
-          attemptId: attempt.id,
-          runtimeState,
-          reason:
-            repairedResult.status === 'timeout'
-              ? HumanReviewReason.AgentTimeout
-              : HumanReviewReason.AgentRuntimeError,
-          errorCode:
-            repairedResult.status === 'timeout'
-              ? 'AGENT_TIMEOUT'
-              : repairedResult.code,
-          errorMessage:
-            repairedResult.status === 'timeout'
-              ? `Stage ${stage.stageType} timed out after repair request`
-              : repairedResult.message,
-          candidateOutput:
-            repairedResult.status === 'error' ? repairedResult.outputText : null
-        });
-      }
-
-      try {
-        const parsedOutput = this.structuredOutputParser.parse(
-          stage.stageType,
-          repairedResult.outputText
-        );
-        await this.pipelineStageAttemptService.markSucceeded({
-          attemptId: attempt.id,
-          activeRequestMessageId: repairedResult.messageId,
-          candidateOutput: repairedResult.outputText,
-          parsedOutput
-        });
-        return this.completeAgentStage({
-          pipeline,
-          stage,
-          attemptNo: attempt.attemptNo,
-          runtimeState,
-          parsedOutput
-        });
-      } catch (repairError) {
-        return this.handleAgentFailure({
-          pipeline,
-          stage,
-          attemptId: attempt.id,
-          runtimeState,
-          reason: HumanReviewReason.ParseFailed,
-          errorCode: 'PARSE_FAILED',
-          errorMessage:
-            repairError instanceof Error
-              ? repairError.message
-              : String(repairError),
-          candidateOutput: repairedResult.outputText
-        });
-      }
+        result: firstResult,
+        timeoutMessage: `Stage ${stage.stageType} timed out`
+      });
+    } finally {
+      await attemptHeartbeat.stop();
+      await this.pipelineStageAttemptService.releaseLease({
+        attemptId: attempt.id,
+        ownerLeaseToken: this.ownerId
+      });
     }
   }
 
@@ -391,6 +349,7 @@ export class PipelineWorkerService
       await this.pipelineRuntimeCommandService.completeStage({
         pipelineId: pipeline.id,
         ownerId: this.ownerId,
+        expectedVersion: pipeline.version,
         stageId: stage.id,
         stageType: stage.stageType,
         nextState,
@@ -443,6 +402,7 @@ export class PipelineWorkerService
     await this.pipelineRuntimeCommandService.failStage({
       pipelineId: pipeline.id,
       ownerId: this.ownerId,
+      expectedVersion: pipeline.version,
       stageId: stage.id,
       stageType: stage.stageType,
       reason: violation,
@@ -454,9 +414,17 @@ export class PipelineWorkerService
       return true;
     }
 
+    const refreshedPipeline = await this.pipelineRepository.getPipelineDetail(
+      pipeline.id
+    );
+    if (!refreshedPipeline) {
+      return false;
+    }
+
     await this.pipelineRuntimeCommandService.pauseForHumanReview(
-      pipeline.id,
+      refreshedPipeline.id,
       this.ownerId,
+      refreshedPipeline.version,
       nextState
     );
     return false;
@@ -486,6 +454,7 @@ export class PipelineWorkerService
     await this.pipelineRuntimeCommandService.completeStage({
       pipelineId: input.pipeline.id,
       ownerId: this.ownerId,
+      expectedVersion: input.pipeline.version,
       stageId: input.stage.id,
       stageType: input.stage.stageType,
       nextState,
@@ -517,9 +486,17 @@ export class PipelineWorkerService
         }
       };
 
+      const refreshedPipeline = await this.pipelineRepository.getPipelineDetail(
+        input.pipeline.id
+      );
+      if (!refreshedPipeline) {
+        return false;
+      }
+
       await this.pipelineRuntimeCommandService.pauseForHumanReview(
-        input.pipeline.id,
+        refreshedPipeline.id,
         this.ownerId,
+        refreshedPipeline.version,
         pausedState
       );
       return false;
@@ -532,6 +509,7 @@ export class PipelineWorkerService
     pipeline: PipelineDetailRecord;
     stage: PipelineStageRecord;
     attemptId: string;
+    ownerLeaseToken: string;
     runtimeState: PipelineRuntimeState;
     reason: HumanReviewReason;
     errorCode: string;
@@ -548,18 +526,23 @@ export class PipelineWorkerService
     );
     const remainingBudget = getRemainingBudget(nextState, input.stage.stageType);
 
-    await this.pipelineStageAttemptService.markFailed({
+    const markedFailed = await this.pipelineStageAttemptService.markFailed({
       attemptId: input.attemptId,
+      ownerLeaseToken: input.ownerLeaseToken,
       reviewReason: remainingBudget > 0 ? null : input.reason,
       failureCode: input.errorCode,
       failureMessage: input.errorMessage,
       candidateOutput: input.candidateOutput
     });
+    if (!markedFailed) {
+      return false;
+    }
 
     if (remainingBudget > 0) {
       await this.pipelineRuntimeCommandService.failStage({
         pipelineId: input.pipeline.id,
         ownerId: this.ownerId,
+        expectedVersion: input.pipeline.version,
         stageId: input.stage.id,
         stageType: input.stage.stageType,
         reason: input.errorMessage,
@@ -613,15 +596,24 @@ export class PipelineWorkerService
     await this.pipelineRuntimeCommandService.failStage({
       pipelineId: input.pipeline.id,
       ownerId: this.ownerId,
+      expectedVersion: input.pipeline.version,
       stageId: input.stage.id,
       stageType: input.stage.stageType,
       reason: input.summary,
       retryCount: input.stage.retryCount + 1,
       nextState
     });
+    const refreshedPipeline = await this.pipelineRepository.getPipelineDetail(
+      input.pipeline.id
+    );
+    if (!refreshedPipeline) {
+      return false;
+    }
+
     await this.pipelineRuntimeCommandService.pauseForHumanReview(
-      input.pipeline.id,
+      refreshedPipeline.id,
       this.ownerId,
+      refreshedPipeline.version,
       nextState
     );
     return false;
@@ -678,11 +670,271 @@ export class PipelineWorkerService
 
   private async failPipeline(pipelineId: string, reason: string) {
     this.logger.warn(`Pipeline ${pipelineId} failed: ${reason}`);
+    const pipeline = await this.pipelineRepository.findPipelineById(pipelineId);
+    if (!pipeline) {
+      return;
+    }
     await this.pipelineRuntimeCommandService.failExecution(
       pipelineId,
       this.ownerId,
-      reason
+      reason,
+      pipeline.version
     );
+  }
+
+  private async claimOrCreateAttempt(
+    pipeline: PipelineDetailRecord,
+    stage: PipelineStageRecord,
+    runtimeState: PipelineRuntimeState,
+    agentConfig: ReturnType<PipelineAgentConfigResolverService['resolve']>
+  ) {
+    let attempt = await this.pipelineStageAttemptService.getLatestAttempt(stage.id);
+    if (!attempt || isTerminalAttemptStatus(attempt.status)) {
+      const prompt = this.pipelineStagePromptService.buildStagePrompt({
+        stageType: stage.stageType,
+        featureRequest: pipeline.featureRequest,
+        runtimeState,
+        attemptNo: (attempt?.attemptNo ?? 0) + 1,
+        reviewerComment: runtimeState.feedback.humanReview?.reviewerComment ?? null
+      });
+      return this.pipelineStageAttemptService.createAttempt({
+        stageId: stage.id,
+        resolvedAgentConfig: agentConfig,
+        inputSnapshot: prompt.inputSnapshot,
+        ownerLeaseToken: this.ownerId,
+        leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
+      });
+    }
+
+    return this.pipelineStageAttemptService.claimAttempt({
+      attemptId: attempt.id,
+      ownerLeaseToken: this.ownerId,
+      ...this.createLeaseWindow()
+    });
+  }
+
+  private async handleCompletedAgentResponse(input: {
+    pipeline: PipelineDetailRecord;
+    stage: PipelineStageRecord;
+    attempt: PipelineStageRecord['attempts'][number];
+    runtimeState: PipelineRuntimeState;
+    agentConfig: ReturnType<PipelineAgentConfigResolverService['resolve']>;
+    sessionId: string;
+    result: Awaited<ReturnType<PipelineSessionBridgeService['waitForResult']>>;
+    timeoutMessage: string;
+  }): Promise<boolean> {
+    if (input.result.status !== 'completed') {
+      return this.handleAgentFailure({
+        pipeline: input.pipeline,
+        stage: input.stage,
+        attemptId: input.attempt.id,
+        ownerLeaseToken: this.ownerId,
+        runtimeState: input.runtimeState,
+        reason:
+          input.result.status === 'timeout'
+            ? HumanReviewReason.AgentTimeout
+            : HumanReviewReason.AgentRuntimeError,
+        errorCode:
+          input.result.status === 'timeout'
+            ? 'AGENT_TIMEOUT'
+            : input.result.code,
+        errorMessage:
+          input.result.status === 'timeout'
+            ? input.timeoutMessage
+            : input.result.message,
+        candidateOutput:
+          input.result.status === 'error' ? input.result.outputText : null
+      });
+    }
+
+    try {
+      const parsedOutput = this.structuredOutputParser.parse(
+        input.stage.stageType,
+        input.result.outputText
+      );
+      const markedSucceeded = await this.pipelineStageAttemptService.markSucceeded({
+        attemptId: input.attempt.id,
+        ownerLeaseToken: this.ownerId,
+        activeRequestMessageId: input.result.messageId,
+        candidateOutput: input.result.outputText,
+        parsedOutput
+      });
+      if (!markedSucceeded) {
+        return false;
+      }
+
+      return this.completeAgentStage({
+        pipeline: input.pipeline,
+        stage: input.stage,
+        attemptNo: input.attempt.attemptNo,
+        runtimeState: input.runtimeState,
+        parsedOutput
+      });
+    } catch (error) {
+      return this.sendRepairPromptAndHandle({
+        pipeline: input.pipeline,
+        stage: input.stage,
+        attempt: input.attempt,
+        runtimeState: input.runtimeState,
+        agentConfig: input.agentConfig,
+        sessionId: input.sessionId,
+        parseError: error instanceof Error ? error.message : String(error),
+        candidateOutput: input.result.outputText
+      });
+    }
+  }
+
+  private async sendRepairPromptAndHandle(input: {
+    pipeline: PipelineDetailRecord;
+    stage: PipelineStageRecord;
+    attempt: PipelineStageRecord['attempts'][number];
+    runtimeState: PipelineRuntimeState;
+    agentConfig: ReturnType<PipelineAgentConfigResolverService['resolve']>;
+    sessionId: string;
+    parseError: string;
+    candidateOutput: string;
+  }): Promise<boolean> {
+    const repairPrompt = this.pipelineStagePromptService.buildRepairPrompt(
+      input.stage.stageType,
+      input.parseError
+    );
+    const repairMessageId =
+      await this.pipelineSessionBridgeService.sendFollowUpPrompt({
+        sessionId: input.sessionId,
+        prompt: repairPrompt,
+        agentConfig: input.agentConfig
+      });
+
+    const markedWaitingRepair =
+      await this.pipelineStageAttemptService.markWaitingRepair({
+        attemptId: input.attempt.id,
+        ownerLeaseToken: this.ownerId,
+        activeRequestMessageId: repairMessageId,
+        failureCode: 'PARSE_FAILED',
+        failureMessage: input.parseError,
+        candidateOutput: input.candidateOutput
+      });
+    if (!markedWaitingRepair) {
+      return false;
+    }
+
+    return this.waitForRepairResult({
+      pipeline: input.pipeline,
+      stage: input.stage,
+      attempt: input.attempt,
+      runtimeState: input.runtimeState,
+      sessionId: input.sessionId,
+      repairMessageId,
+      timeoutMessage: `Stage ${input.stage.stageType} timed out after repair request`
+    });
+  }
+
+  private async resumeWaitingRepairAttempt(input: {
+    pipeline: PipelineDetailRecord;
+    stage: PipelineStageRecord;
+    attempt: PipelineStageRecord['attempts'][number];
+    runtimeState: PipelineRuntimeState;
+    agentConfig: ReturnType<PipelineAgentConfigResolverService['resolve']>;
+    sessionId: string;
+  }): Promise<boolean> {
+    let repairMessageId = input.attempt.activeRequestMessageId;
+    if (repairMessageId) {
+      const trackedMessage =
+        await this.pipelineSessionBridgeService.getAssistantMessageSnapshot(
+          input.sessionId,
+          repairMessageId
+        );
+      if (!trackedMessage) {
+        const latestMessage =
+          await this.pipelineSessionBridgeService.getLatestAssistantMessageSnapshot(
+            input.sessionId
+          );
+        if (latestMessage && latestMessage.id !== repairMessageId) {
+          repairMessageId = latestMessage.id;
+          const updated =
+            await this.pipelineStageAttemptService.updateActiveRequestMessage({
+              attemptId: input.attempt.id,
+              ownerLeaseToken: this.ownerId,
+              activeRequestMessageId: repairMessageId
+            });
+          if (!updated) {
+            return false;
+          }
+        }
+      }
+    } else {
+      const latestMessage =
+        await this.pipelineSessionBridgeService.getLatestAssistantMessageSnapshot(
+          input.sessionId
+        );
+      if (latestMessage) {
+        repairMessageId = latestMessage.id;
+        const updated =
+          await this.pipelineStageAttemptService.updateActiveRequestMessage({
+            attemptId: input.attempt.id,
+            ownerLeaseToken: this.ownerId,
+            activeRequestMessageId: repairMessageId
+          });
+        if (!updated) {
+          return false;
+        }
+      }
+    }
+
+    if (!repairMessageId) {
+      return this.sendRepairPromptAndHandle({
+        pipeline: input.pipeline,
+        stage: input.stage,
+        attempt: input.attempt,
+        runtimeState: input.runtimeState,
+        agentConfig: input.agentConfig,
+        sessionId: input.sessionId,
+        parseError:
+          input.attempt.failureMessage ?? 'Previous repair request is missing.',
+        candidateOutput:
+          typeof input.attempt.candidateOutput === 'string'
+            ? input.attempt.candidateOutput
+            : JSON.stringify(input.attempt.candidateOutput ?? null)
+      });
+    }
+
+    return this.waitForRepairResult({
+      pipeline: input.pipeline,
+      stage: input.stage,
+      attempt: input.attempt,
+      runtimeState: input.runtimeState,
+      sessionId: input.sessionId,
+      repairMessageId,
+      timeoutMessage: `Stage ${input.stage.stageType} timed out after repair request`
+    });
+  }
+
+  private async waitForRepairResult(input: {
+    pipeline: PipelineDetailRecord;
+    stage: PipelineStageRecord;
+    attempt: PipelineStageRecord['attempts'][number];
+    runtimeState: PipelineRuntimeState;
+    sessionId: string;
+    repairMessageId: string | null;
+    timeoutMessage: string;
+  }): Promise<boolean> {
+    const repairedResult = await this.pipelineSessionBridgeService.waitForResult(
+      input.sessionId,
+      input.repairMessageId
+    );
+    return this.handleCompletedAgentResponse({
+      pipeline: input.pipeline,
+      stage: input.stage,
+      attempt: input.attempt,
+      runtimeState: input.runtimeState,
+      agentConfig: this.pipelineAgentConfigResolver.resolve({
+        stageType: input.stage.stageType,
+        stageState: null
+      }),
+      sessionId: input.sessionId,
+      result: repairedResult,
+      timeoutMessage: input.timeoutMessage
+    });
   }
 
   private createLeaseWindow() {
