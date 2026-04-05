@@ -1,3 +1,4 @@
+import { SessionWorkspaceResourceKind } from '@agent-workbench/shared';
 import { useEffect, useMemo, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -108,6 +109,13 @@ export function SessionDetailsPanel({
     Object.keys(session.defaultRuntimeConfig ?? {}).length > 0;
   const hasResources =
     skillNames.length > 0 || ruleNames.length > 0 || mcpNames.length > 0;
+  const workspaceResourceLabels = useMemo(
+    () =>
+      session.platformSessionConfig.workspaceResources.map((resource) =>
+        getWorkspaceResourceLabel(resource)
+      ),
+    [session.platformSessionConfig.workspaceResources]
+  );
 
   useEffect(() => {
     if (!open) {
@@ -187,6 +195,20 @@ export function SessionDetailsPanel({
         </div>
 
         <div className="space-y-4">
+          <SetupSection title="工作目录初始化">
+            <div className="space-y-3">
+              <SessionDetailList
+                label="模式"
+                values={[session.platformSessionConfig.workspaceMode]}
+              />
+              <SessionDetailList
+                label="资源"
+                values={workspaceResourceLabels}
+                emptyLabel="未初始化附加目录"
+              />
+            </div>
+          </SetupSection>
+
           {hasResources ? (
             <SetupSection title="资源快照">
               <div className="space-y-3">
@@ -232,4 +254,13 @@ export function SessionDetailsPanel({
       </div>
     </div>
   );
+}
+
+function getWorkspaceResourceLabel(resource: SessionWorkspaceResourceKind) {
+  switch (resource) {
+    case SessionWorkspaceResourceKind.Code:
+      return 'Code';
+    case SessionWorkspaceResourceKind.Doc:
+      return 'Doc';
+  }
 }

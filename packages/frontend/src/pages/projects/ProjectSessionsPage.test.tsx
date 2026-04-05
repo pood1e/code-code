@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import {
   SessionStatus,
+  SessionWorkspaceMode,
   type AgentRunnerDetail,
   type AgentRunnerSummary,
   type ChatSummary,
@@ -200,7 +201,10 @@ function createSessionDetail(id: string): SessionDetail {
   return {
     ...createSessionSummary(id),
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp/project-1',
       cwd: '/tmp/project-1',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []

@@ -1,17 +1,20 @@
 import type {
   CreateSessionInput,
   ProfileDetail,
-  SendSessionMessageInput
+  SendSessionMessageInput,
+  SessionWorkspaceResourceKind
 } from '@agent-workbench/shared';
 import {
   createSessionInputSchema,
-  sendSessionMessageInputSchema
+  sendSessionMessageInputSchema,
+  SessionWorkspaceResourceKind as SessionWorkspaceResourceKindEnum
 } from '@agent-workbench/shared';
 import { z } from 'zod';
 
 export const createSessionFormSchema = z.object({
   runnerId: z.string().trim().min(1, '请选择 AgentRunner'),
   profileId: z.string().trim().optional(),
+  workspaceResources: z.array(z.nativeEnum(SessionWorkspaceResourceKindEnum)),
   skillIds: z.array(z.string()),
   ruleIds: z.array(z.string()),
   mcpIds: z.array(z.string()),
@@ -33,6 +36,7 @@ export function buildCreateSessionFormValues(): CreateSessionFormValues {
   return {
     runnerId: '',
     profileId: '',
+    workspaceResources: [],
     skillIds: [],
     ruleIds: [],
     mcpIds: [],
@@ -53,6 +57,8 @@ export function buildCreateSessionPayload(
   return createSessionInputSchema.parse({
     scopeId,
     runnerId: values.runnerId,
+    workspaceResources:
+      values.workspaceResources as SessionWorkspaceResourceKind[],
     skillIds: values.skillIds,
     ruleIds: values.ruleIds,
     mcps: values.mcpIds.map((resourceId) => ({

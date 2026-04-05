@@ -77,6 +77,7 @@ function createFormValues(
   return {
     runnerId: 'runner-1',
     profileId: '',
+    workspaceResources: [],
     skillIds: ['skill-1'],
     ruleIds: [],
     mcpIds: ['mcp-1'],
@@ -181,6 +182,7 @@ describe('useCreateSessionMutation', () => {
     expect(vi.mocked(createChat).mock.calls[0]?.[0]).toEqual({
       scopeId: 'project-1',
       runnerId: 'runner-1',
+      workspaceResources: [],
       skillIds: ['skill-1'],
       ruleIds: [],
       mcps: [

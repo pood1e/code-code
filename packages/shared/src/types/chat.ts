@@ -1,4 +1,7 @@
-import type { SessionStatus } from './session';
+import type {
+  SessionStatus,
+  SessionWorkspaceResourceKind
+} from './session';
 
 export type ChatSummary = {
   id: string;
@@ -17,6 +20,7 @@ export type CreateChatInput = {
   scopeId: string;
   runnerId: string;
   title?: string | null;
+  workspaceResources: SessionWorkspaceResourceKind[];
   skillIds: string[];
   ruleIds: string[];
   mcps: Array<{

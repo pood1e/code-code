@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { SessionStatus, type AgentRunnerDetail, type ResourceByKind, type RunnerTypeResponse, type SessionDetail } from '@agent-workbench/shared';
+import { SessionStatus, SessionWorkspaceMode, SessionWorkspaceResourceKind, type AgentRunnerDetail, type ResourceByKind, type RunnerTypeResponse, type SessionDetail } from '@agent-workbench/shared';
 
 import { SessionDetailsPanel } from './SessionDetailsPanel';
 
@@ -18,7 +18,10 @@ function createSessionDetail(): SessionDetail {
     createdAt: timestamp,
     updatedAt: timestamp,
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Session,
+      workspaceRoot: '/tmp/project-root',
       cwd: '/tmp/project-1',
+      workspaceResources: [SessionWorkspaceResourceKind.Code],
       skillIds: ['skill-1'],
       ruleIds: ['rule-missing'],
       mcps: [

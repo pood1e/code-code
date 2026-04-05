@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SessionWorkspaceResourceKind } from '@agent-workbench/shared';
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -69,6 +71,16 @@ export class CreateSessionDto {
   @IsString()
   @IsNotEmpty()
   runnerId!: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    enum: SessionWorkspaceResourceKind,
+    example: [SessionWorkspaceResourceKind.Code, SessionWorkspaceResourceKind.Doc]
+  })
+  @IsArray()
+  @IsEnum(SessionWorkspaceResourceKind, { each: true })
+  @IsOptional()
+  workspaceResources?: SessionWorkspaceResourceKind[];
 
   @ApiProperty({ type: [String], example: ['skill_web_search'] })
   @IsArray()

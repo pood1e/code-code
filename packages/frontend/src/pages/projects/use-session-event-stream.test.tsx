@@ -4,6 +4,7 @@ import {
   MessageRole,
   MessageStatus,
   SessionStatus,
+  SessionWorkspaceMode,
   type OutputChunk,
   type PagedSessionMessages,
   type SessionDetail,
@@ -75,7 +76,10 @@ function createSessionDetail(overrides: Partial<SessionDetail> = {}): SessionDet
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z',
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp',
       cwd: '/tmp',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []

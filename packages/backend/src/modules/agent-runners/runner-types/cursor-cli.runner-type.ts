@@ -18,7 +18,14 @@ import type { RunnerContext } from '@agent-workbench/shared';
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const cursorCliRunnerConfigSchema = z.object({
-  executorUser: z.string().optional()
+  executorUser: z.string().optional(),
+  env: z
+    .record(z.string(), z.string())
+    .optional()
+    .meta({
+      label: '环境变量',
+      description: '以 KEY=VALUE 注入 Cursor CLI 进程'
+    })
 });
 
 export const cursorCliRunnerSessionConfigSchema = z.object({});
@@ -57,7 +64,7 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
     runnerConfig: unknown
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
-    return probeCursorCliHealth(config.executorUser);
+    return probeCursorCliHealth(config.executorUser, config.env);
   }
 
   async probeContext(runnerConfig: unknown): Promise<RunnerContext> {
@@ -77,7 +84,8 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
             PATH: process.env.PATH,
             HOME: process.env.HOME,
             USER: process.env.USER,
-            LANG: process.env.LANG
+            LANG: process.env.LANG,
+            ...(config.env ?? {})
           }
         },
         (error, stdout) => {
@@ -160,14 +168,16 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
       return {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'agent', ...args],
-        cwd
+        cwd,
+        env: config.env
       };
     }
 
     return {
       command: 'agent',
       args,
-      cwd
+      cwd,
+      env: config.env
     };
   }
 

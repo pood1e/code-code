@@ -4,7 +4,8 @@ import type { SessionDetail, SessionMessageDetail } from '@agent-workbench/share
 import {
   MessageRole,
   MessageStatus,
-  SessionStatus
+  SessionStatus,
+  SessionWorkspaceMode
 } from '@agent-workbench/shared';
 
 import { SessionAssistantThreadBody } from './SessionAssistantThreadBody';
@@ -60,7 +61,10 @@ function createSession(): SessionDetail {
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z',
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp',
       cwd: '/tmp',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []

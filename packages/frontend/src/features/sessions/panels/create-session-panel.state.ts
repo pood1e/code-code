@@ -29,6 +29,10 @@ export function useCreateSessionFieldValues(
       control,
       name: 'profileId'
     }),
+    selectedWorkspaceResources: useWatch({
+      control,
+      name: 'workspaceResources'
+    }),
     selectedSkillIds: useWatch({
       control,
       name: 'skillIds'

@@ -135,6 +135,32 @@ describe('AgentRunners API', () => {
         )?.label
       ).toBe('权限模式');
     });
+
+    it('CLI runnerConfig 应支持环境变量 string_map 字段', async () => {
+      const res = await api().get('/api/agent-runner-types');
+      const data = expectSuccess<
+        Array<{
+          id: string;
+          runnerConfigSchema: {
+            fields: Array<{ name: string; kind: string; label: string }>;
+          };
+        }>
+      >(res);
+
+      for (const runnerTypeId of ['claude-code', 'cursor-cli', 'qwen-cli']) {
+        const runnerType = data.find((item) => item.id === runnerTypeId);
+        expect(runnerType).toBeDefined();
+        expect(runnerType!.runnerConfigSchema.fields).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              name: 'env',
+              kind: 'string_map',
+              label: '环境变量'
+            })
+          ])
+        );
+      }
+    });
   });
 
   // ---- CRUD 正常路径 ----

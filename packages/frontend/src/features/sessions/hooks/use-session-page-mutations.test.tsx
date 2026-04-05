@@ -3,7 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatSummary, SessionDetail } from '@agent-workbench/shared';
-import { SessionStatus } from '@agent-workbench/shared';
+import { SessionStatus, SessionWorkspaceMode } from '@agent-workbench/shared';
 
 import { deleteChat, getChat, updateChat } from '@/api/chats';
 import {
@@ -41,7 +41,10 @@ function createSessionDetail(id: string): SessionDetail {
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z',
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp',
       cwd: '/tmp',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []
