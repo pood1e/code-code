@@ -192,7 +192,6 @@ function SelectedSessionView({
               open={detailsPanelOpen}
               onClose={() => setDetailsPanelOpen(false)}
               session={session}
-              runnerDetail={selectedRunnerQuery.data}
               runnerType={selectedRunnerType}
               runners={runners}
               resources={resources}

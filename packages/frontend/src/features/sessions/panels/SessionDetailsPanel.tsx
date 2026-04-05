@@ -7,7 +7,6 @@ import { SetupSection } from '../components/SetupSection';
 import { ReadonlyRunnerConfigSection } from '../components/RunnerConfigSections';
 import { cn } from '@/lib/utils';
 import type {
-  AgentRunnerDetail,
   ResourceByKind,
   RunnerTypeResponse,
   SessionDetail
@@ -25,7 +24,7 @@ function SessionDetailList({
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="text-xs font-medium text-muted-foreground">
         {label}
       </p>
       {values.length === 0 ? (
@@ -47,42 +46,46 @@ function SessionDetailList({
   );
 }
 
-type SessionAttachedResource = {
-  kind: 'skill' | 'rule' | 'mcp';
-  label: string;
-  name: string;
-  hint?: string;
-};
-
-function SessionResourceBadgeList({
-  items
+function SessionTagList({
+  values
 }: {
-  items: SessionAttachedResource[];
+  values: string[];
 }) {
-  if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">未附加资源</p>;
-  }
-
   return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
+    <div className="flex flex-wrap gap-1.5">
+      {values.map((value) => (
         <Badge
-          key={`${item.kind}-${item.name}`}
-          title={item.hint}
-          variant="secondary"
-          className={cn(
-            'h-auto gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
-            item.kind === 'skill' && 'bg-sky-500/10 text-sky-700',
-            item.kind === 'rule' && 'bg-amber-500/10 text-amber-700',
-            item.kind === 'mcp' && 'bg-emerald-500/10 text-emerald-700'
-          )}
+          key={value}
+          variant="outline"
+          className="rounded-md text-xs"
         >
-          <span className="rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-            {item.label}
-          </span>
-          <span>{item.name}</span>
+          {value}
         </Badge>
       ))}
+    </div>
+  );
+}
+
+function SessionTextRow({
+  label,
+  value,
+  valueClassName
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div
+        className={cn(
+          'text-sm text-foreground',
+          valueClassName
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -91,7 +94,6 @@ export function SessionDetailsPanel({
   open,
   onClose,
   session,
-  runnerDetail,
   runnerType,
   runners,
   resources
@@ -99,7 +101,6 @@ export function SessionDetailsPanel({
   open: boolean;
   onClose?: () => void;
   session: SessionDetail;
-  runnerDetail?: AgentRunnerDetail;
   runnerType?: RunnerTypeResponse;
   runners: Awaited<ReturnType<typeof listAgentRunners>>;
   resources: {
@@ -143,56 +144,16 @@ export function SessionDetailsPanel({
       }),
     [resources.mcps, session.platformSessionConfig.mcps]
   );
-  const attachedResources = useMemo<SessionAttachedResource[]>(
+  const attachedResourceTags = useMemo(
     () => [
-      ...session.platformSessionConfig.skillIds.map((resourceId) => {
-        const resource = resources.skills.find((item) => item.id === resourceId);
-        return {
-          kind: 'skill' as const,
-          label: 'Skill',
-          name: resource?.name ?? resourceId,
-          hint: resource?.description ?? resourceId
-        };
-      }),
-      ...session.platformSessionConfig.ruleIds.map((resourceId) => {
-        const resource = resources.rules.find((item) => item.id === resourceId);
-        return {
-          kind: 'rule' as const,
-          label: 'Rule',
-          name: resource?.name ?? resourceId,
-          hint: resource?.description ?? resourceId
-        };
-      }),
-      ...session.platformSessionConfig.mcps.map((item) => {
-        const resource = resources.mcps.find(
-          (entry) => entry.id === item.resourceId
-        );
-        return {
-          kind: 'mcp' as const,
-          label: 'MCP',
-          name: item.configOverride
-            ? `${resource?.name ?? item.resourceId} · override`
-            : (resource?.name ?? item.resourceId),
-          hint:
-            typeof resource?.content === 'object' && resource.content
-              ? resource.content.command
-              : (resource?.description ?? item.resourceId)
-        };
-      })
+      ...skillNames.map((name) => `Skill · ${name}`),
+      ...ruleNames.map((name) => `Rule · ${name}`),
+      ...mcpNames.map((name) => `MCP · ${name}`)
     ],
-    [
-      resources.mcps,
-      resources.rules,
-      resources.skills,
-      session.platformSessionConfig.mcps,
-      session.platformSessionConfig.ruleIds,
-      session.platformSessionConfig.skillIds
-    ]
+    [mcpNames, ruleNames, skillNames]
   );
   const hasSessionConfig =
     Object.keys(session.runnerSessionConfig).length > 0;
-  const hasRuntimeConfig =
-    Object.keys(session.defaultRuntimeConfig ?? {}).length > 0;
   const hasResources =
     skillNames.length > 0 || ruleNames.length > 0 || mcpNames.length > 0;
   const workspaceResourceLabels = useMemo(
@@ -201,6 +162,13 @@ export function SessionDetailsPanel({
         getWorkspaceResourceLabel(resource)
       ),
     [session.platformSessionConfig.workspaceResources]
+  );
+  const workspaceResourceConfigLabels = useMemo(
+    () =>
+      getWorkspaceResourceConfigLabels(
+        session.platformSessionConfig.workspaceResourceConfig
+      ),
+    [session.platformSessionConfig.workspaceResourceConfig]
   );
 
   useEffect(() => {
@@ -239,16 +207,22 @@ export function SessionDetailsPanel({
       role="dialog"
       aria-label="会话设置"
       className={cn(
-        'absolute top-full right-4 z-20 mt-2 w-[min(36rem,calc(100vw-2rem))] rounded-2xl border border-border/60 bg-background/95 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/90'
+        'absolute top-full right-4 z-20 mt-2 w-[min(40rem,calc(100vw-2rem))] rounded-2xl border border-border/60 bg-background/95 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/90'
       )}
     >
       <div className="max-h-[min(70vh,42rem)] overflow-y-auto px-4 py-4 sm:px-5">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h2 className="text-sm font-semibold text-foreground">会话设置</h2>
-            <p className="text-sm text-muted-foreground">
-              只展示当前会话真正影响运行的配置。
-            </p>
+        <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/40 pb-4">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">会话设置</h2>
+              <SessionStatusBadge status={session.status} />
+            </div>
+            <div className="space-y-1">
+              <p className="truncate text-sm text-foreground">{runnerName}</p>
+              <p className="text-xs text-muted-foreground">
+                工作区、资源与会话参数。
+              </p>
+            </div>
           </div>
           <Button
             type="button"
@@ -261,43 +235,44 @@ export function SessionDetailsPanel({
           </Button>
         </div>
 
-        <div className="mb-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-border/40 bg-muted/15 px-3 py-2.5">
-            <p className="text-[11px] font-medium text-muted-foreground">状态</p>
-            <div className="mt-1">
-              <SessionStatusBadge status={session.status} />
-            </div>
-          </div>
-          <div className="rounded-xl border border-border/40 bg-muted/15 px-3 py-2.5">
-            <p className="text-[11px] font-medium text-muted-foreground">Runner</p>
-            <p className="mt-1 truncate text-sm text-foreground">{runnerName}</p>
-          </div>
-          <div className="rounded-xl border border-border/40 bg-muted/15 px-3 py-2.5">
-            <p className="text-[11px] font-medium text-muted-foreground">工作目录</p>
-            <p className="mt-1 line-clamp-2 break-all text-sm text-foreground">
-              {session.platformSessionConfig.cwd}
-            </p>
-          </div>
-        </div>
-
         <div className="space-y-4">
-          <SetupSection title="工作目录初始化">
-            <div className="space-y-3">
-              <SessionDetailList
-                label="模式"
-                values={[session.platformSessionConfig.workspaceMode]}
-              />
-              <SessionDetailList
-                label="资源"
-                values={workspaceResourceLabels}
-                emptyLabel="未初始化附加目录"
-              />
+          <SetupSection title="工作区">
+            <div className="space-y-4">
+              <div className="space-y-3 border-b border-border/40 pb-4">
+                <SessionTextRow
+                  label="当前目录"
+                  value={session.platformSessionConfig.cwd}
+                  valueClassName="break-all"
+                />
+                <SessionTextRow
+                  label="工作区根目录"
+                  value={session.platformSessionConfig.workspaceRoot}
+                  valueClassName="break-all"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <SessionDetailList
+                  label="模式"
+                  values={[session.platformSessionConfig.workspaceMode]}
+                />
+                <SessionDetailList
+                  label="目录挂载"
+                  values={workspaceResourceLabels}
+                  emptyLabel="未初始化附加目录"
+                />
+                <SessionDetailList
+                  label="代码 / 文档分支"
+                  values={workspaceResourceConfigLabels}
+                  emptyLabel="未指定额外分支"
+                />
+              </div>
             </div>
           </SetupSection>
 
           {hasResources ? (
             <SetupSection title="附加资源">
-              <SessionResourceBadgeList items={attachedResources} />
+              <SessionTagList values={attachedResourceTags} />
             </SetupSection>
           ) : null}
 
@@ -307,30 +282,6 @@ export function SessionDetailsPanel({
               schema={runnerType?.runnerSessionConfigSchema}
               values={session.runnerSessionConfig}
             />
-          ) : null}
-
-          {hasRuntimeConfig ? (
-            <ReadonlyRunnerConfigSection
-              title="默认运行参数"
-              schema={runnerType?.runtimeConfigSchema}
-              values={session.defaultRuntimeConfig ?? undefined}
-            />
-          ) : null}
-
-          {!hasResources && !hasSessionConfig && !hasRuntimeConfig ? (
-            <SetupSection title="额外设置">
-              <p className="text-sm text-muted-foreground">
-                当前会话没有额外资源或参数覆盖。
-              </p>
-            </SetupSection>
-          ) : null}
-
-          {runnerDetail?.description ? (
-            <SetupSection title="Runner 说明">
-              <p className="text-sm text-muted-foreground">
-                {runnerDetail.description}
-              </p>
-            </SetupSection>
           ) : null}
         </div>
       </div>
@@ -345,4 +296,24 @@ function getWorkspaceResourceLabel(resource: SessionWorkspaceResourceKind) {
     case SessionWorkspaceResourceKind.Doc:
       return 'Doc';
   }
+}
+
+function getWorkspaceResourceConfigLabels(
+  config: SessionDetail['platformSessionConfig']['workspaceResourceConfig'] | undefined
+) {
+  if (!config) {
+    return [];
+  }
+
+  const labels: string[] = [];
+
+  if (config.code?.branch) {
+    labels.push(`Code · ${config.code.branch}`);
+  }
+
+  if (config.doc?.branch) {
+    labels.push(`Doc · ${config.doc.branch}`);
+  }
+
+  return labels;
 }
