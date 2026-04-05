@@ -3,18 +3,16 @@ import type { Prisma } from '@prisma/client';
 
 import {
   HumanReviewReason,
-  PipelineArtifactKey,
-  type PipelineStatus,
-  type HumanReviewAction
+  type PipelineStatus
 } from '@agent-workbench/shared';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { PIPELINE_ARTIFACT_STATUS } from './pipeline-artifact.constants';
+import { buildPipelineHumanReviewRecord } from './pipeline-human-review-record';
 import { parsePipelineRuntimeState } from './pipeline-runtime-state';
 import type {
   PipelineArtifactRecord,
   PipelineDetailRecord,
-  PipelineHumanReviewRecord,
   PipelineRecord,
   PipelineStageRecord,
   StageExecutionAttemptRecord
@@ -192,11 +190,17 @@ export class PrismaPipelineRepository extends PipelineRepository {
 
 function toPipelineDetailRecord(pipeline: PipelineDetailRow): PipelineDetailRecord {
   const runtimeState = parsePipelineRuntimeState(pipeline.state);
+  const stages = pipeline.stages.map(toPipelineStageRecord);
+  const artifacts = pipeline.artifacts.map(toPipelineArtifactRecord);
   return {
     ...toPipelineRecord(pipeline),
-    stages: pipeline.stages.map(toPipelineStageRecord),
-    artifacts: pipeline.artifacts.map(toPipelineArtifactRecord),
-    humanReview: toPipelineHumanReviewPayload(runtimeState.feedback.humanReview, pipeline)
+    stages,
+    artifacts,
+    humanReview: buildPipelineHumanReviewRecord({
+      humanReview: runtimeState.feedback.humanReview,
+      attempts: stages.flatMap((stage) => stage.attempts),
+      artifacts
+    })
   };
 }
 
@@ -289,53 +293,4 @@ export function toPipelineArtifactRecord(
     createdAt: artifact.createdAt,
     updatedAt: artifact.updatedAt
   };
-}
-
-function toPipelineHumanReviewPayload(
-  humanReview: ReturnType<typeof parsePipelineRuntimeState>['feedback']['humanReview'],
-  pipeline: PipelineDetailRow
-): PipelineHumanReviewRecord | null {
-  if (!humanReview) {
-    return null;
-  }
-
-  const attempts = pipeline.stages.flatMap((stage) =>
-    stage.attempts.map(toStageExecutionAttemptRecord)
-  );
-  const sourceAttempt = humanReview.sourceAttemptId
-    ? attempts.find((attempt) => attempt.id === humanReview.sourceAttemptId) ?? null
-    : null;
-
-  return {
-    reason: humanReview.reason,
-    sourceStageKey: humanReview.sourceStageKey,
-    sourceAttemptId: humanReview.sourceAttemptId,
-    sourceSessionId: sourceAttempt?.sessionId ?? null,
-    summary: humanReview.summary,
-    candidateOutput: humanReview.candidateOutput ?? null,
-    suggestedActions: humanReview.suggestedActions,
-    reviewerComment: humanReview.reviewerComment ?? null,
-    attempts,
-    artifacts: pipeline.artifacts.map((artifact) => ({
-      artifactId: artifact.id,
-      artifactKey: toArtifactKey(artifact.artifactKey),
-      name: artifact.name,
-      contentType: artifact.contentType as PipelineHumanReviewRecord['artifacts'][number]['contentType'],
-      attempt: artifact.attempt,
-      version: artifact.version
-    }))
-  };
-}
-
-function toArtifactKey(value: string | null): PipelineArtifactKey | null {
-  switch (value) {
-    case PipelineArtifactKey.Prd:
-      return PipelineArtifactKey.Prd;
-    case PipelineArtifactKey.AcSpec:
-      return PipelineArtifactKey.AcSpec;
-    case PipelineArtifactKey.PlanReport:
-      return PipelineArtifactKey.PlanReport;
-    default:
-      return null;
-  }
 }

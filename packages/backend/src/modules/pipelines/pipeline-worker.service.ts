@@ -233,27 +233,28 @@ export class PipelineWorkerService
     });
 
     try {
-      const markedRunning = await this.pipelineStageAttemptService.markRunning({
-        attemptId: attempt.id,
-        ownerLeaseToken: this.ownerId,
-        leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
-      });
-      if (!markedRunning) {
-        return false;
+      if (attempt.status === StageExecutionAttemptStatus.Pending) {
+        const markedRunning = await this.pipelineStageAttemptService.markRunning({
+          attemptId: attempt.id,
+          ownerLeaseToken: this.ownerId,
+          leaseExpiresAt: this.createLeaseWindow().leaseExpiresAt
+        });
+        if (!markedRunning) {
+          return false;
+        }
       }
-
-      const prompt = this.pipelineStagePromptService.buildStagePrompt({
-        stageType: stage.stageType,
-        featureRequest: pipeline.featureRequest,
-        runtimeState,
-        attemptNo: attempt.attemptNo,
-        reviewerComment: runtimeState.feedback.humanReview?.reviewerComment ?? null
-      });
 
       let sessionId = attempt.sessionId;
       let activeRequestMessageId = attempt.activeRequestMessageId;
 
       if (!sessionId) {
+        const prompt = this.pipelineStagePromptService.buildStagePrompt({
+          stageType: stage.stageType,
+          featureRequest: pipeline.featureRequest,
+          runtimeState,
+          attemptNo: attempt.attemptNo,
+          reviewerComment: runtimeState.feedback.humanReview?.reviewerComment ?? null
+        });
         const created =
           await this.pipelineSessionBridgeService.createSessionAndSendPrompt({
             pipeline,
@@ -346,7 +347,7 @@ export class PipelineWorkerService
         lastError: null
       };
 
-      await this.pipelineRuntimeCommandService.completeStage({
+      const completed = await this.pipelineRuntimeCommandService.completeStage({
         pipelineId: pipeline.id,
         ownerId: this.ownerId,
         expectedVersion: pipeline.version,
@@ -355,7 +356,7 @@ export class PipelineWorkerService
         nextState,
         retryCount: stage.retryCount
       });
-      return true;
+      return completed;
     }
 
     const remaining = runtimeState.retryBudget.breakdown.remaining - 1;
@@ -380,14 +381,11 @@ export class PipelineWorkerService
           remaining > 0
             ? null
             : this.humanReviewAssembler.build({
-                runtimeState,
                 reason: HumanReviewReason.EvaluationRejected,
                 sourceStageKey: 'breakdown',
                 sourceAttempt: stage.attempts[0] ?? null,
                 summary: violation,
-                candidateOutput: prd,
-                stages: pipeline.stages,
-                artifacts: pipeline.artifacts
+                candidateOutput: prd
               })
       },
       lastError: {
@@ -399,7 +397,7 @@ export class PipelineWorkerService
       }
     };
 
-    await this.pipelineRuntimeCommandService.failStage({
+    const failedStage = await this.pipelineRuntimeCommandService.failStage({
       pipelineId: pipeline.id,
       ownerId: this.ownerId,
       expectedVersion: pipeline.version,
@@ -409,6 +407,9 @@ export class PipelineWorkerService
       retryCount: stage.retryCount + 1,
       nextState
     });
+    if (!failedStage) {
+      return false;
+    }
 
     if (remaining > 0) {
       return true;
@@ -421,12 +422,16 @@ export class PipelineWorkerService
       return false;
     }
 
-    await this.pipelineRuntimeCommandService.pauseForHumanReview(
-      refreshedPipeline.id,
-      this.ownerId,
-      refreshedPipeline.version,
-      nextState
-    );
+    if (
+      !(await this.pipelineRuntimeCommandService.pauseForHumanReview(
+        refreshedPipeline.id,
+        this.ownerId,
+        refreshedPipeline.version,
+        nextState
+      ))
+    ) {
+      return false;
+    }
     return false;
   }
 
@@ -451,7 +456,7 @@ export class PipelineWorkerService
       attemptNo: input.attemptNo
     });
 
-    await this.pipelineRuntimeCommandService.completeStage({
+    const completed = await this.pipelineRuntimeCommandService.completeStage({
       pipelineId: input.pipeline.id,
       ownerId: this.ownerId,
       expectedVersion: input.pipeline.version,
@@ -461,6 +466,9 @@ export class PipelineWorkerService
       retryCount: input.stage.retryCount,
       artifactIntents
     });
+    if (!completed) {
+      return false;
+    }
 
     if (
       input.stage.stageType === PipelineStageType.Estimate &&
@@ -469,14 +477,11 @@ export class PipelineWorkerService
       const sourceAttempt =
         await this.pipelineStageAttemptService.getLatestAttempt(input.stage.id);
       const reviewState = this.humanReviewAssembler.build({
-        runtimeState: nextState,
         reason: HumanReviewReason.ManualEscalation,
         sourceStageKey: 'estimate',
         sourceAttempt,
         summary: 'Estimate completed successfully and now requires manual review.',
-        candidateOutput: input.parsedOutput,
-        stages: input.pipeline.stages,
-        artifacts: input.pipeline.artifacts
+        candidateOutput: input.parsedOutput
       });
       const pausedState: PipelineRuntimeState = {
         ...nextState,
@@ -493,12 +498,16 @@ export class PipelineWorkerService
         return false;
       }
 
-      await this.pipelineRuntimeCommandService.pauseForHumanReview(
-        refreshedPipeline.id,
-        this.ownerId,
-        refreshedPipeline.version,
-        pausedState
-      );
+      if (
+        !(await this.pipelineRuntimeCommandService.pauseForHumanReview(
+          refreshedPipeline.id,
+          this.ownerId,
+          refreshedPipeline.version,
+          pausedState
+        ))
+      ) {
+        return false;
+      }
       return false;
     }
 
@@ -539,7 +548,7 @@ export class PipelineWorkerService
     }
 
     if (remainingBudget > 0) {
-      await this.pipelineRuntimeCommandService.failStage({
+      const failedStage = await this.pipelineRuntimeCommandService.failStage({
         pipelineId: input.pipeline.id,
         ownerId: this.ownerId,
         expectedVersion: input.pipeline.version,
@@ -549,7 +558,7 @@ export class PipelineWorkerService
         retryCount: input.stage.retryCount + 1,
         nextState
       });
-      return true;
+      return failedStage;
     }
 
     return this.routeToHumanReview({
@@ -581,19 +590,16 @@ export class PipelineWorkerService
       feedback: {
         ...input.runtimeState.feedback,
         humanReview: this.humanReviewAssembler.build({
-          runtimeState: input.runtimeState,
           reason: input.reason,
           sourceStageKey: input.sourceStageKey,
           sourceAttempt: input.sourceAttempt,
           summary: input.summary,
-          candidateOutput: input.candidateOutput,
-          stages: input.pipeline.stages,
-          artifacts: input.pipeline.artifacts
+          candidateOutput: input.candidateOutput
         })
       }
     };
 
-    await this.pipelineRuntimeCommandService.failStage({
+    const failedStage = await this.pipelineRuntimeCommandService.failStage({
       pipelineId: input.pipeline.id,
       ownerId: this.ownerId,
       expectedVersion: input.pipeline.version,
@@ -603,6 +609,9 @@ export class PipelineWorkerService
       retryCount: input.stage.retryCount + 1,
       nextState
     });
+    if (!failedStage) {
+      return false;
+    }
     const refreshedPipeline = await this.pipelineRepository.getPipelineDetail(
       input.pipeline.id
     );
@@ -610,12 +619,16 @@ export class PipelineWorkerService
       return false;
     }
 
-    await this.pipelineRuntimeCommandService.pauseForHumanReview(
-      refreshedPipeline.id,
-      this.ownerId,
-      refreshedPipeline.version,
-      nextState
-    );
+    if (
+      !(await this.pipelineRuntimeCommandService.pauseForHumanReview(
+        refreshedPipeline.id,
+        this.ownerId,
+        refreshedPipeline.version,
+        nextState
+      ))
+    ) {
+      return false;
+    }
     return false;
   }
 

@@ -602,6 +602,98 @@ describe('Pipelines Runtime API', () => {
       }
     });
 
+    it('failed 终态会清理 active attempts 并阻止旧 worker 覆盖结果', async () => {
+      const pipeline = await createDraftPipeline();
+      const bridgeService = getApp().get(PipelineSessionBridgeService);
+      const runtimeCommandService = getApp().get(PipelineRuntimeCommandService);
+      const originalWaitForResult = bridgeService.waitForResult.bind(bridgeService);
+      const gate = createGate();
+      let completedWaitCount = 0;
+      const waitSpy = vi
+        .spyOn(bridgeService, 'waitForResult')
+        .mockImplementation(async (sessionId, messageId, timeoutMs) => {
+          try {
+            await gate.wait();
+            return originalWaitForResult(sessionId, messageId, timeoutMs);
+          } finally {
+            completedWaitCount += 1;
+          }
+        });
+
+      try {
+        await startPipeline(pipeline.id);
+        await waitForCondition(async () => {
+          const attempt = await getLatestAttemptByStageType(
+            pipeline.id,
+            PipelineStageType.Breakdown
+          );
+          return (
+            attempt?.status === StageExecutionAttemptStatus.Running &&
+            Boolean(attempt.sessionId) &&
+            Boolean(attempt.activeRequestMessageId)
+          );
+        }, 10_000);
+
+        const activeAttempt = await getLatestAttemptByStageType(
+          pipeline.id,
+          PipelineStageType.Breakdown
+        );
+        expect(activeAttempt).not.toBeNull();
+
+        const execution = await getPrisma().pipeline.findUniqueOrThrow({
+          where: { id: pipeline.id },
+          select: {
+            executionOwnerId: true,
+            version: true
+          }
+        });
+        expect(execution.executionOwnerId).toBeTruthy();
+
+        const failed = await runtimeCommandService.failExecution(
+          pipeline.id,
+          execution.executionOwnerId as string,
+          'forced failure for cleanup test',
+          execution.version
+        );
+        expect(failed).toBe(true);
+
+        gate.release();
+        await waitForPipelineStatus(pipeline.id, 'failed', 10_000);
+        await waitForCondition(() => completedWaitCount > 0, 10_000);
+
+        const finalAttempt = await getPrisma().stageExecutionAttempt.findUniqueOrThrow({
+          where: { id: activeAttempt!.id }
+        });
+        const activeAttempts = await getPrisma().stageExecutionAttempt.findMany({
+          where: {
+            stage: { pipelineId: pipeline.id },
+            status: {
+              in: [
+                StageExecutionAttemptStatus.Pending,
+                StageExecutionAttemptStatus.Running,
+                StageExecutionAttemptStatus.WaitingRepair
+              ]
+            }
+          }
+        });
+
+        expect(activeAttempts).toHaveLength(0);
+        expect(finalAttempt.status).toBe(StageExecutionAttemptStatus.Failed);
+        expect(finalAttempt.failureCode).toBe('PIPELINE_FAILED');
+        expect(finalAttempt.failureMessage).toBe('forced failure for cleanup test');
+
+        const followUpPipeline = await createDraftPipeline({
+          featureRequest:
+            '[invalid-breakdown] follow-up pipeline should still be claimable'
+        });
+        await startPipeline(followUpPipeline.id, { maxRetry: 1 });
+        await waitForPipelineStatus(followUpPipeline.id, 'paused', 10_000);
+      } finally {
+        gate.release();
+        waitSpy.mockRestore();
+      }
+    });
+
     it('evaluation reject 耗尽预算时应进入 human_review，并发出 stage_failed/pipeline_paused', async () => {
       const pipeline = await createDraftPipeline({
         featureRequest: '[invalid-breakdown] 用户可以搜索文章'
