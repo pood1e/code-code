@@ -18,6 +18,7 @@ const TERMINAL_PIPELINE_EVENT_KINDS = new Set<PipelineEventKind>([
 ]);
 
 const INVALIDATING_PIPELINE_EVENT_KINDS = new Set<PipelineEventKind>([
+  'pipeline_started',
   'stage_started',
   'stage_completed',
   'stage_failed',

@@ -25,6 +25,7 @@ import {
   ARTIFACT_STORAGE,
   type ArtifactStorage
 } from './artifact-storage/artifact-storage.interface';
+import { ArtifactContentRepository } from './artifact-content.repository';
 import {
   toPipelineArtifactSummary,
   toPipelineDetail,
@@ -46,6 +47,7 @@ export class PipelinesService {
     private readonly pipelineRepository: PipelineRepository,
     private readonly pipelineArtifactRepository: PipelineArtifactRepository,
     private readonly pipelineRuntimeCommandService: PipelineRuntimeCommandService,
+    private readonly artifactContentRepository: ArtifactContentRepository,
     @Inject(ARTIFACT_STORAGE)
     private readonly artifactStorage: ArtifactStorage
   ) {}
@@ -191,17 +193,7 @@ export class PipelinesService {
       throw new NotFoundException(`Artifact not found: ${artifactId}`);
     }
 
-    if (artifact.content !== null) {
-      return Buffer.from(artifact.content, 'utf8');
-    }
-
-    if (!artifact.storageRef) {
-      throw new ConflictException(
-        `Artifact content is not materialized yet: ${artifactId}`
-      );
-    }
-
-    return this.artifactStorage.read(artifact.storageRef);
+    return this.artifactContentRepository.readArtifactContent(artifact);
   }
 
   async getArtifactById(artifactId: string) {

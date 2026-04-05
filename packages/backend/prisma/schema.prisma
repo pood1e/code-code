@@ -279,6 +279,8 @@ model Pipeline {
   status         String             @default("draft")
   lastEventId    Int                @default(0)
   currentStageId String?
+  executionOwnerId String?
+  executionLeaseExpiresAt DateTime?
   state          Json?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -292,6 +294,7 @@ model Pipeline {
   @@index([scopeId], name: "idx_pipeline_scope_id")
   @@index([status], name: "idx_pipeline_status")
   @@index([runnerId], name: "idx_pipeline_runner_id")
+  @@index([status, executionLeaseExpiresAt], name: "idx_pipeline_execution_lease")
 }
 
 model PipelineArtifactSeries {
@@ -335,6 +338,8 @@ model PipelineArtifact {
   attempt     Int?
   version     Int?
   status      String         @default("pending")
+  materializerOwnerId String?
+  materializerLeaseExpiresAt DateTime?
   name        String
   contentType String
   storageRef  String?
@@ -350,6 +355,7 @@ model PipelineArtifact {
   @@index([pipelineId], name: "idx_pipeline_artifact_pipeline_id")
   @@index([stageId], name: "idx_pipeline_artifact_stage_id")
   @@index([status, updatedAt], name: "idx_pipeline_artifact_status_updated_at")
+  @@index([status, materializerLeaseExpiresAt], name: "idx_pipeline_artifact_materializer_lease")
   @@unique([pipelineId, artifactKey, version], name: "uq_pipeline_artifact_version")
 }
 

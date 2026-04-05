@@ -7,6 +7,7 @@ import {
 } from '@agent-workbench/shared';
 
 import { PipelineEventBroker } from './pipeline-event-broker.service';
+import { PipelineExecutionLeaseRepository } from './pipeline-execution-lease.repository';
 import type {
   ManagedArtifactIntent
 } from './pipeline-runtime.repository';
@@ -17,11 +18,25 @@ import type { PipelineRuntimeState } from './pipeline-runtime-state';
 export class PipelineRuntimeCommandService {
   constructor(
     private readonly pipelineRuntimeRepository: PipelineRuntimeRepository,
+    private readonly pipelineExecutionLeaseRepository: PipelineExecutionLeaseRepository,
     private readonly pipelineEventBroker: PipelineEventBroker
   ) {}
 
-  claimNextPendingPipeline() {
-    return this.pipelineRuntimeRepository.claimNextPendingPipeline();
+  claimNextPendingPipeline(input: {
+    ownerId: string;
+    now: Date;
+    leaseExpiresAt: Date;
+  }) {
+    return this.pipelineExecutionLeaseRepository.claimPipelineExecution(input);
+  }
+
+  renewPipelineExecutionLease(input: {
+    pipelineId: string;
+    ownerId: string;
+    now: Date;
+    leaseExpiresAt: Date;
+  }) {
+    return this.pipelineExecutionLeaseRepository.renewPipelineExecutionLease(input);
   }
 
   async recoverInterruptedPipelinesOnBoot(): Promise<number> {
@@ -47,9 +62,14 @@ export class PipelineRuntimeCommandService {
     return this.pipelineRuntimeRepository.getDecisionContext(pipelineId);
   }
 
-  async startStage(pipelineId: string, stageType: PipelineStageType) {
+  async startStage(
+    pipelineId: string,
+    ownerId: string,
+    stageType: PipelineStageType
+  ) {
     const result = await this.pipelineRuntimeRepository.startStage(
       pipelineId,
+      ownerId,
       stageType
     );
     if (!result) {
@@ -62,6 +82,7 @@ export class PipelineRuntimeCommandService {
 
   async completeStage(input: {
     pipelineId: string;
+    ownerId: string;
     stageId: string;
     stageType: PipelineStageType;
     nextState: PipelineRuntimeState;
@@ -79,6 +100,7 @@ export class PipelineRuntimeCommandService {
 
   async failStage(input: {
     pipelineId: string;
+    ownerId: string;
     stageId: string;
     stageType: PipelineStageType;
     reason: string;
@@ -96,10 +118,12 @@ export class PipelineRuntimeCommandService {
 
   async pauseForHumanReview(
     pipelineId: string,
+    ownerId: string,
     runtimeState: PipelineRuntimeState
   ): Promise<boolean> {
     const result = await this.pipelineRuntimeRepository.pauseForHumanReview(
       pipelineId,
+      ownerId,
       runtimeState
     );
     if (!result) {
@@ -110,9 +134,10 @@ export class PipelineRuntimeCommandService {
     return result.value;
   }
 
-  async completeExecution(pipelineId: string): Promise<boolean> {
+  async completeExecution(pipelineId: string, ownerId: string): Promise<boolean> {
     const result = await this.pipelineRuntimeRepository.completeExecution(
-      pipelineId
+      pipelineId,
+      ownerId
     );
     if (!result) {
       return false;
@@ -122,9 +147,14 @@ export class PipelineRuntimeCommandService {
     return true;
   }
 
-  async failExecution(pipelineId: string, reason: string): Promise<boolean> {
+  async failExecution(
+    pipelineId: string,
+    ownerId: string,
+    reason: string
+  ): Promise<boolean> {
     const result = await this.pipelineRuntimeRepository.failExecution(
       pipelineId,
+      ownerId,
       reason
     );
     if (!result) {

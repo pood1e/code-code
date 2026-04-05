@@ -40,7 +40,6 @@ export type ManagedArtifactIntent = {
 };
 
 export abstract class PipelineRuntimeRepository {
-  abstract claimNextPendingPipeline(): Promise<ClaimedPipelineRecord | null>;
   abstract recoverInterruptedPipelines(): Promise<number>;
   abstract startDraftPipeline(input: {
     pipelineId: string;
@@ -57,10 +56,12 @@ export abstract class PipelineRuntimeRepository {
   abstract getDecisionContext(id: string): Promise<PipelineDecisionContext | null>;
   abstract startStage(
     pipelineId: string,
+    ownerId: string,
     stageType: PipelineStageType
   ): Promise<PipelineRuntimeMutationResult<PipelineStageRecord> | null>;
   abstract completeStage(input: {
     pipelineId: string;
+    ownerId: string;
     stageId: string;
     stageType: PipelineStageType;
     nextState: PipelineRuntimeState;
@@ -69,6 +70,7 @@ export abstract class PipelineRuntimeRepository {
   }): Promise<PipelineRuntimeMutationResult<boolean> | null>;
   abstract failStage(input: {
     pipelineId: string;
+    ownerId: string;
     stageId: string;
     stageType: PipelineStageType;
     reason: string;
@@ -77,13 +79,16 @@ export abstract class PipelineRuntimeRepository {
   }): Promise<PipelineRuntimeMutationResult<boolean> | null>;
   abstract pauseForHumanReview(
     pipelineId: string,
+    ownerId: string,
     runtimeState: PipelineRuntimeState
   ): Promise<PipelineRuntimeMutationResult<boolean> | null>;
   abstract completeExecution(
-    pipelineId: string
+    pipelineId: string,
+    ownerId: string
   ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
   abstract failExecution(
     pipelineId: string,
+    ownerId: string,
     reason: string
   ): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
   abstract cancelPipeline(
@@ -95,8 +100,4 @@ export abstract class PipelineRuntimeRepository {
     humanReviewStageId: string | null;
     resetStageTypes: readonly PipelineStageType[];
   }): Promise<PipelineRuntimeMutationResult<boolean> | null>;
-  abstract listEventsAfterEventId(
-    pipelineId: string,
-    afterEventId: number
-  ): Promise<PipelineEvent[]>;
 }

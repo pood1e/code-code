@@ -5,23 +5,28 @@ import {
   OnApplicationBootstrap,
   OnApplicationShutdown
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 
 import {
   ARTIFACT_STORAGE,
   type ArtifactStorage
 } from './artifact-storage/artifact-storage.interface';
 import { PipelineArtifactRepository } from './pipeline-artifact.repository';
+import { PipelineExecutionLeaseRepository } from './pipeline-execution-lease.repository';
 
 const RETRY_BACKOFF_MS = 5_000;
+const MATERIALIZER_LEASE_MS = 30_000;
 
 @Injectable()
 export class PipelineArtifactMaterializerService
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(PipelineArtifactMaterializerService.name);
+  private readonly ownerId = `artifact-materializer:${randomUUID()}`;
   private isRunning = false;
 
   constructor(
+    private readonly pipelineExecutionLeaseRepository: PipelineExecutionLeaseRepository,
     private readonly pipelineArtifactRepository: PipelineArtifactRepository,
     @Inject(ARTIFACT_STORAGE)
     private readonly artifactStorage: ArtifactStorage
@@ -29,7 +34,6 @@ export class PipelineArtifactMaterializerService
 
   onApplicationBootstrap(): void {
     this.isRunning = true;
-    void this.recoverInterruptedArtifacts();
     void this.pollLoop();
   }
 
@@ -40,9 +44,11 @@ export class PipelineArtifactMaterializerService
   private async pollLoop(): Promise<void> {
     while (this.isRunning) {
       const artifact =
-        await this.pipelineArtifactRepository.claimNextArtifactToMaterialize(
-          new Date(Date.now() - RETRY_BACKOFF_MS)
-        );
+        await this.pipelineExecutionLeaseRepository.claimArtifactMaterialization({
+          ownerId: this.ownerId,
+          retryBefore: new Date(Date.now() - RETRY_BACKOFF_MS),
+          ...this.createLeaseWindow()
+        });
 
       if (!artifact) {
         await sleep(1000);
@@ -52,20 +58,33 @@ export class PipelineArtifactMaterializerService
       if (!artifact.content) {
         await this.pipelineArtifactRepository.markArtifactFailed(
           artifact.id,
+          this.ownerId,
           'Artifact content is missing'
         );
         continue;
       }
 
       try {
+        const renewed = await this.pipelineExecutionLeaseRepository.renewArtifactMaterializationLease(
+          {
+            artifactId: artifact.id,
+            ownerId: this.ownerId,
+            ...this.createLeaseWindow()
+          }
+        );
+        if (!renewed) {
+          continue;
+        }
+
         const storageRef = await this.artifactStorage.write(
           artifact.pipelineId,
-          artifact.name,
+          `${artifact.id}-${artifact.name}`,
           artifact.content,
           artifact.contentType
         );
         await this.pipelineArtifactRepository.markArtifactReady(
           artifact.id,
+          this.ownerId,
           storageRef
         );
       } catch (error) {
@@ -76,20 +95,19 @@ export class PipelineArtifactMaterializerService
         );
         await this.pipelineArtifactRepository.markArtifactFailed(
           artifact.id,
+          this.ownerId,
           reason
         );
       }
     }
   }
 
-  private async recoverInterruptedArtifacts(): Promise<void> {
-    const recovered =
-      await this.pipelineArtifactRepository.recoverProcessingArtifacts();
-    if (recovered > 0) {
-      this.logger.warn(
-        `Recovered ${recovered} pipeline artifact(s) from 'processing' -> 'pending'`
-      );
-    }
+  private createLeaseWindow() {
+    const now = new Date();
+    return {
+      now,
+      leaseExpiresAt: new Date(now.getTime() + MATERIALIZER_LEASE_MS)
+    };
   }
 }
 
