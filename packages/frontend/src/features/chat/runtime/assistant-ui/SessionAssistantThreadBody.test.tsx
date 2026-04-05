@@ -13,7 +13,13 @@ import type { SessionAssistantMessageRecord } from './thread-adapter';
 
 vi.mock('@assistant-ui/react', () => ({
   ThreadPrimitive: {
-    Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+    Root: ({
+      children,
+      className
+    }: {
+      children: React.ReactNode;
+      className?: string;
+    }) => <div data-testid="thread-root" className={className}>{children}</div>
   }
 }));
 
@@ -160,5 +166,12 @@ describe('SessionAssistantThreadBody', () => {
     expect(await screen.findByText('history:42')).toBeInTheDocument();
     expect(screen.getByText('reload-disabled')).toBeInTheDocument();
     expect(screen.getByText('load-more-enabled')).toBeInTheDocument();
+  });
+
+  it('线程根节点应裁剪整体滚动，保持消息区与输入区分层布局', () => {
+    renderBody();
+
+    expect(screen.getByTestId('thread-root')).toHaveClass('overflow-hidden');
+    expect(screen.getByTestId('thread-root')).toHaveClass('flex-1');
   });
 });
