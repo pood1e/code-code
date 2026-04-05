@@ -9,7 +9,9 @@ import * as path from 'node:path';
 
 import {
   platformSessionConfigSchema,
+  sshGitUrlSchema,
   SessionWorkspaceMode,
+  SessionWorkspaceResourceConfig,
   SessionWorkspaceResourceKind,
   type PlatformSessionConfig,
   type PlatformSessionMcp
@@ -18,6 +20,7 @@ import {
 type SessionWorkspaceProject = {
   id: string;
   gitUrl: string;
+  docSource?: string | null;
   workspacePath: string;
 };
 
@@ -29,6 +32,7 @@ export class SessionWorkspaceService {
     sessionId: string;
     project: SessionWorkspaceProject;
     workspaceResources: readonly SessionWorkspaceResourceKind[];
+    workspaceResourceConfig: SessionWorkspaceResourceConfig;
     skillIds: string[];
     ruleIds: string[];
     mcps: PlatformSessionMcp[];
@@ -37,16 +41,25 @@ export class SessionWorkspaceService {
       input.project.workspacePath,
       input.sessionId
     );
+    const codeDir = path.join(sessionDir, 'code');
 
     try {
+      await fs.mkdir(sessionDir, { recursive: true });
+
       if (input.workspaceResources.includes(SessionWorkspaceResourceKind.Code)) {
-        await this.cloneProjectRepository(input.project.gitUrl, sessionDir);
-      } else {
-        await fs.mkdir(sessionDir, { recursive: true });
+        await this.cloneRepository(
+          input.project.gitUrl,
+          codeDir,
+          input.workspaceResourceConfig.code?.branch
+        );
       }
 
       if (input.workspaceResources.includes(SessionWorkspaceResourceKind.Doc)) {
-        await fs.mkdir(path.join(sessionDir, 'docs'), { recursive: true });
+        await this.initializeDocsDirectory({
+          project: input.project,
+          targetDir: path.join(sessionDir, 'docs'),
+          branch: input.workspaceResourceConfig.doc?.branch
+        });
       }
     } catch (error) {
       await fs.rm(sessionDir, { recursive: true, force: true });
@@ -64,6 +77,7 @@ export class SessionWorkspaceService {
       workspaceRoot: input.project.workspacePath,
       cwd: sessionDir,
       workspaceResources: [...input.workspaceResources],
+      workspaceResourceConfig: input.workspaceResourceConfig,
       skillIds: input.skillIds,
       ruleIds: input.ruleIds,
       mcps: input.mcps
@@ -102,8 +116,46 @@ export class SessionWorkspaceService {
     );
   }
 
-  private async cloneProjectRepository(gitUrl: string, targetDir: string) {
-    await execFileAsync('git', ['clone', '--depth', '1', gitUrl, targetDir]);
+  private async initializeDocsDirectory(input: {
+    project: SessionWorkspaceProject;
+    targetDir: string;
+    branch?: string;
+  }) {
+    if (!input.project.docSource) {
+      await fs.mkdir(input.targetDir, { recursive: true });
+      return;
+    }
+
+    if (
+      input.branch?.trim() ||
+      sshGitUrlSchema.safeParse(input.project.docSource).success
+    ) {
+      await this.cloneRepository(
+        input.project.docSource,
+        input.targetDir,
+        input.branch
+      );
+      return;
+    }
+
+    await fs.cp(input.project.docSource, input.targetDir, {
+      recursive: true
+    });
+  }
+
+  private async cloneRepository(
+    repositoryUrl: string,
+    targetDir: string,
+    branch?: string
+  ) {
+    const args = ['clone', '--depth', '1'] as string[];
+
+    if (branch?.trim()) {
+      args.push('--branch', branch.trim(), '--single-branch');
+    }
+
+    args.push(repositoryUrl, targetDir);
+    await execFileAsync('git', args);
   }
 }
 

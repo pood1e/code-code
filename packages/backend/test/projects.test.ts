@@ -49,6 +49,25 @@ describe('Projects API', () => {
 
       expect(data.description).toBeNull();
     });
+
+    it('应支持保存本地文档目录地址', async () => {
+      const res = await api()
+        .post('/api/projects')
+        .send(createProjectPayload({ docSource: '/tmp' }));
+      const data = expectSuccess<{ docSource?: string | null }>(res, 201);
+
+      expect(data.docSource).toBe('/tmp');
+    });
+
+    it('应支持保存 SSH 文档仓库地址', async () => {
+      const docSource = 'git@github.com:acme/workbench-docs.git';
+      const res = await api()
+        .post('/api/projects')
+        .send(createProjectPayload({ docSource }));
+      const data = expectSuccess<{ docSource?: string | null }>(res, 201);
+
+      expect(data.docSource).toBe(docSource);
+    });
   });
 
   describe('GET /api/projects - 列表查询', () => {
@@ -170,6 +189,17 @@ describe('Projects API', () => {
 
       expect(data.description).toBeNull();
     });
+
+    it('应支持仅更新文档地址', async () => {
+      const created = await seedProject();
+
+      const res = await api().patch(`/api/projects/${created.id}`).send({
+        docSource: '/tmp'
+      });
+      const data = expectSuccess<{ docSource?: string | null }>(res);
+
+      expect(data.docSource).toBe('/tmp');
+    });
   });
 
   describe('DELETE /api/projects/:id - 删除 Project', () => {
@@ -207,6 +237,26 @@ describe('Projects API', () => {
       const res = await api()
         .post('/api/projects')
         .send(createProjectPayload({ workspacePath: '/etc/hosts' }));
+      expectError(res, 400);
+    });
+  });
+
+  describe('docSource 验证', () => {
+    it('相对本地路径返回 400', async () => {
+      const res = await api()
+        .post('/api/projects')
+        .send(createProjectPayload({ docSource: './docs' }));
+      expectError(res, 400);
+    });
+
+    it('不存在的本地目录返回 400', async () => {
+      const res = await api()
+        .post('/api/projects')
+        .send(
+          createProjectPayload({
+            docSource: '/nonexistent/path/that/surely/does/not/exist'
+          })
+        );
       expectError(res, 400);
     });
   });

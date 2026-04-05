@@ -43,8 +43,8 @@ export function ProjectDashboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
+    <div className="flex min-h-full flex-col">
+      <div className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-5xl space-y-4">
           <SurfaceCard className="py-10">
             <EmptyState

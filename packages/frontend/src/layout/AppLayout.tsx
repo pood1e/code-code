@@ -67,7 +67,7 @@ export function AppLayout() {
   }, [queryClient]);
 
   return (
-    <div className="relative min-h-screen lg:flex">
+    <div className="relative h-screen overflow-hidden lg:flex">
       <DesktopSidebar
         collapsed={sidebarCollapsed}
         selectedPrimaryKey={routeState.selectedPrimaryKey}
@@ -79,7 +79,7 @@ export function AppLayout() {
         onToggle={toggleSidebar}
       />
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-border/50 bg-background/95 px-4 py-3 backdrop-blur-sm lg:hidden">
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm font-semibold text-foreground">
@@ -94,7 +94,7 @@ export function AppLayout() {
 
         <main
           className={cn(
-            'flex-1',
+            'min-h-0 flex-1 overflow-y-auto',
             routeState.isProjectPage
               ? 'px-0 py-0'
               : 'px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8'

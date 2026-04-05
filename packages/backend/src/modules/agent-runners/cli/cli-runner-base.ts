@@ -1,6 +1,10 @@
 import { Logger } from '@nestjs/common';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import type {
   PlatformSessionConfig,
+  McpConfigOverride,
+  McpStdioContent,
   RunnerTypeCapabilities,
   RunnerContext
 } from '@agent-workbench/shared';
@@ -8,15 +12,12 @@ import type { ZodTypeAny } from 'zod';
 
 import type {
   RawOutputChunk,
+  RunnerProfileInstallInput,
   RunnerSendPayload,
   RunnerSessionRecord,
   RunnerType
 } from '../runner-type.interface';
 import { CliProcess, type CliProcessOptions } from './cli-process';
-import {
-  cleanupContext,
-  type MaterializerTarget
-} from './context-materializer';
 import type { CliSessionRegistry } from './cli-session-registry';
 
 const logger = new Logger('CliRunnerBase');
@@ -25,11 +26,25 @@ const logger = new Logger('CliRunnerBase');
  * Common state stored in `runnerState` for all CLI-backed runners.
  */
 export type CliRunnerState = {
+  /** Session workspace root where CLI-visible profile files are installed. */
   contextDir: string | null;
   mcpConfigPath: string | null;
   /** CLI-side session ID extracted from stream output. */
   cliSessionId: string | null;
+  profileInstallVersion?: number | null;
 };
+
+export type CliProfileInstallLayout = {
+  profileRootDir: string;
+  skillDir?: string | null;
+  ruleDir?: string | null;
+  ruleExtension?: '.md' | '.mdc' | null;
+  ruleUsesCursorFrontmatter?: boolean;
+  contextFileName?: string | null;
+  mcpConfigPath?: string | null;
+};
+
+const CLI_PROFILE_INSTALL_VERSION = 1;
 
 export type AsyncChunkQueueItem = RawOutputChunk;
 
@@ -153,7 +168,6 @@ export abstract class CliRunnerTypeBase implements RunnerType {
   abstract readonly id: string;
   abstract readonly name: string;
   abstract readonly capabilities: RunnerTypeCapabilities;
-  abstract readonly materializerTarget: MaterializerTarget;
   abstract readonly runnerConfigSchema: ZodTypeAny;
   abstract readonly runnerSessionConfigSchema: ZodTypeAny;
   abstract readonly inputSchema: ZodTypeAny;
@@ -182,7 +196,41 @@ export abstract class CliRunnerTypeBase implements RunnerType {
 
   abstract createParserState(messageId: string): Record<string, unknown>;
 
+  protected abstract buildProfileInstallLayout(
+    input: RunnerProfileInstallInput
+  ): CliProfileInstallLayout;
+
   extractSessionId?(parserState: Record<string, unknown>): string | null;
+
+  async installProfile(input: RunnerProfileInstallInput): Promise<void> {
+    const profileRootDir = input.platformConfig.cwd;
+    if (this.shouldSkipProfileInstall(input.runnerState, profileRootDir)) {
+      return;
+    }
+
+    const layout = this.buildProfileInstallLayout(input);
+    await fs.mkdir(layout.profileRootDir, { recursive: true });
+
+    if (layout.skillDir) {
+      await this.writeSkills(layout, input.resources.skills);
+    }
+
+    if (layout.ruleDir && layout.ruleExtension) {
+      await this.writeRuleFiles(layout, input.resources.rules);
+    }
+
+    if (layout.contextFileName) {
+      await this.writeContextFile(layout, input.resources.rules);
+    }
+
+    const mcpConfigPath = layout.mcpConfigPath
+      ? await this.writeMcpConfig(layout, input.resources.mcps)
+      : null;
+
+    input.runnerState.contextDir = layout.profileRootDir;
+    input.runnerState.mcpConfigPath = mcpConfigPath;
+    input.runnerState.profileInstallVersion = CLI_PROFILE_INSTALL_VERSION;
+  }
 
   createSession(
     sessionId: string,
@@ -197,7 +245,8 @@ export abstract class CliRunnerTypeBase implements RunnerType {
     const state: CliRunnerState = {
       contextDir: null,
       mcpConfigPath: null,
-      cliSessionId: null
+      cliSessionId: null,
+      profileInstallVersion: null
     };
 
     logger.log(`CLI session created: ${sessionId} (type: ${this.id})`);
@@ -215,11 +264,6 @@ export abstract class CliRunnerTypeBase implements RunnerType {
       handle.process?.kill();
       handle.queue.close();
       removeCliSessionHandle(session, this.cliSessionRegistry);
-    }
-
-    const state = session.runnerState as CliRunnerState;
-    if (state.contextDir) {
-      await cleanupContext(state.contextDir);
     }
 
     logger.log(`CLI session destroyed: ${session.id}`);
@@ -357,4 +401,136 @@ export abstract class CliRunnerTypeBase implements RunnerType {
     }
     return Promise.resolve();
   }
+
+  private shouldSkipProfileInstall(
+    runnerState: Record<string, unknown>,
+    profileRootDir: string
+  ) {
+    return (
+      runnerState.profileInstallVersion === CLI_PROFILE_INSTALL_VERSION &&
+      runnerState.contextDir === profileRootDir
+    );
+  }
+
+  private async writeSkills(
+    layout: CliProfileInstallLayout,
+    skills: Array<{ name: string; content: string }>
+  ) {
+    if (!layout.skillDir || skills.length === 0) {
+      return;
+    }
+
+    const skillsDir = path.join(layout.profileRootDir, layout.skillDir);
+    await fs.mkdir(skillsDir, { recursive: true });
+
+    for (const skill of skills) {
+      const safeName = sanitizeFileName(skill.name);
+      const skillDir = path.join(skillsDir, safeName);
+      await fs.mkdir(skillDir, { recursive: true });
+      await fs.writeFile(path.join(skillDir, 'SKILL.md'), skill.content, 'utf8');
+    }
+  }
+
+  private async writeRuleFiles(
+    layout: CliProfileInstallLayout,
+    rules: Array<{ name: string; content: string }>
+  ) {
+    if (!layout.ruleDir || !layout.ruleExtension || rules.length === 0) {
+      return;
+    }
+
+    const rulesDir = path.join(layout.profileRootDir, layout.ruleDir);
+    await fs.mkdir(rulesDir, { recursive: true });
+
+    for (const rule of rules) {
+      const safeName = sanitizeFileName(rule.name);
+      const content = layout.ruleUsesCursorFrontmatter
+        ? `---\nalwaysApply: true\n---\n\n${rule.content}`
+        : rule.content;
+      await fs.writeFile(
+        path.join(rulesDir, `${safeName}${layout.ruleExtension}`),
+        content,
+        'utf8'
+      );
+    }
+  }
+
+  private async writeContextFile(
+    layout: CliProfileInstallLayout,
+    rules: Array<{ name: string; content: string }>
+  ) {
+    if (!layout.contextFileName || rules.length === 0) {
+      return;
+    }
+
+    const content = rules
+      .map((rule) => {
+        const title = rule.name.trim() || 'Instruction';
+        return `## ${title}\n\n${rule.content.trim()}`;
+      })
+      .join('\n\n');
+
+    await fs.writeFile(
+      path.join(layout.profileRootDir, layout.contextFileName),
+      `${content}\n`,
+      'utf8'
+    );
+  }
+
+  private async writeMcpConfig(
+    layout: CliProfileInstallLayout,
+    mcps: Array<{
+      name: string;
+      content: McpStdioContent;
+      configOverride?: McpConfigOverride;
+    }>
+  ) {
+    if (!layout.mcpConfigPath || mcps.length === 0) {
+      return null;
+    }
+
+    const mcpServers = Object.fromEntries(
+      mcps.map((mcp) => [
+        mcp.name,
+        resolveMcpContent(mcp.content, mcp.configOverride)
+      ])
+    );
+
+    await fs.mkdir(path.dirname(layout.mcpConfigPath), { recursive: true });
+    await fs.writeFile(
+      layout.mcpConfigPath,
+      JSON.stringify({ mcpServers }, null, 2),
+      'utf8'
+    );
+
+    return layout.mcpConfigPath;
+  }
+}
+
+function resolveMcpContent(
+  content: McpStdioContent,
+  configOverride?: McpConfigOverride
+): McpStdioContent {
+  if (!configOverride) {
+    return content;
+  }
+
+  return {
+    type: configOverride.type ?? content.type,
+    command: configOverride.command ?? content.command,
+    args: configOverride.args ?? content.args,
+    env: configOverride.env
+      ? { ...content.env, ...configOverride.env }
+      : content.env
+  };
+}
+
+function sanitizeFileName(name: string): string {
+  return (
+    name
+      .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+      .replace(/\s+/g, '-')
+      .toLowerCase()
+      .slice(0, 64) || 'unnamed'
+  );
 }

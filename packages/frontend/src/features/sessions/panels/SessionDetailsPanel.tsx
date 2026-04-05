@@ -47,6 +47,46 @@ function SessionDetailList({
   );
 }
 
+type SessionAttachedResource = {
+  kind: 'skill' | 'rule' | 'mcp';
+  label: string;
+  name: string;
+  hint?: string;
+};
+
+function SessionResourceBadgeList({
+  items
+}: {
+  items: SessionAttachedResource[];
+}) {
+  if (items.length === 0) {
+    return <p className="text-sm text-muted-foreground">未附加资源</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <Badge
+          key={`${item.kind}-${item.name}`}
+          title={item.hint}
+          variant="secondary"
+          className={cn(
+            'h-auto gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+            item.kind === 'skill' && 'bg-sky-500/10 text-sky-700',
+            item.kind === 'rule' && 'bg-amber-500/10 text-amber-700',
+            item.kind === 'mcp' && 'bg-emerald-500/10 text-emerald-700'
+          )}
+        >
+          <span className="rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+            {item.label}
+          </span>
+          <span>{item.name}</span>
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 export function SessionDetailsPanel({
   open,
   onClose,
@@ -102,6 +142,52 @@ export function SessionDetailsPanel({
         return item.configOverride ? `${name} · override` : name;
       }),
     [resources.mcps, session.platformSessionConfig.mcps]
+  );
+  const attachedResources = useMemo<SessionAttachedResource[]>(
+    () => [
+      ...session.platformSessionConfig.skillIds.map((resourceId) => {
+        const resource = resources.skills.find((item) => item.id === resourceId);
+        return {
+          kind: 'skill' as const,
+          label: 'Skill',
+          name: resource?.name ?? resourceId,
+          hint: resource?.description ?? resourceId
+        };
+      }),
+      ...session.platformSessionConfig.ruleIds.map((resourceId) => {
+        const resource = resources.rules.find((item) => item.id === resourceId);
+        return {
+          kind: 'rule' as const,
+          label: 'Rule',
+          name: resource?.name ?? resourceId,
+          hint: resource?.description ?? resourceId
+        };
+      }),
+      ...session.platformSessionConfig.mcps.map((item) => {
+        const resource = resources.mcps.find(
+          (entry) => entry.id === item.resourceId
+        );
+        return {
+          kind: 'mcp' as const,
+          label: 'MCP',
+          name: item.configOverride
+            ? `${resource?.name ?? item.resourceId} · override`
+            : (resource?.name ?? item.resourceId),
+          hint:
+            typeof resource?.content === 'object' && resource.content
+              ? resource.content.command
+              : (resource?.description ?? item.resourceId)
+        };
+      })
+    ],
+    [
+      resources.mcps,
+      resources.rules,
+      resources.skills,
+      session.platformSessionConfig.mcps,
+      session.platformSessionConfig.ruleIds,
+      session.platformSessionConfig.skillIds
+    ]
   );
   const hasSessionConfig =
     Object.keys(session.runnerSessionConfig).length > 0;
@@ -210,12 +296,8 @@ export function SessionDetailsPanel({
           </SetupSection>
 
           {hasResources ? (
-            <SetupSection title="资源快照">
-              <div className="space-y-3">
-                <SessionDetailList label="Skills" values={skillNames} />
-                <SessionDetailList label="Rules" values={ruleNames} />
-                <SessionDetailList label="MCPs" values={mcpNames} />
-              </div>
+            <SetupSection title="附加资源">
+              <SessionResourceBadgeList items={attachedResources} />
             </SetupSection>
           ) : null}
 

@@ -13,11 +13,15 @@ import {
   type ValidationArguments,
   type ValidatorConstraintInterface
 } from 'class-validator';
-import { SessionWorkspaceResourceKind } from '@agent-workbench/shared';
+import {
+  SessionWorkspaceResourceConfig,
+  SessionWorkspaceResourceKind
+} from '@agent-workbench/shared';
 
 import {
   SendSessionMessageDto,
-  SessionMcpItemDto
+  SessionMcpItemDto,
+  SessionWorkspaceResourceConfigDto
 } from '../../sessions/dto/session.dto';
 
 @ValidatorConstraint({ name: 'chatUpdateNotEmpty', async: false })
@@ -52,6 +56,15 @@ export class CreateChatDto {
   @IsEnum(SessionWorkspaceResourceKind, { each: true })
   @IsOptional()
   workspaceResources?: SessionWorkspaceResourceKind[];
+
+  @ApiPropertyOptional({
+    description: 'Optional per-resource workspace configuration',
+    type: SessionWorkspaceResourceConfigDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceConfigDto)
+  workspaceResourceConfig?: SessionWorkspaceResourceConfig;
 
   @ApiPropertyOptional({ description: 'Chat title' })
   @IsString()

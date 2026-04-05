@@ -1,32 +1,17 @@
 import { SessionWorkspaceResourceKind } from '@agent-workbench/shared';
-import { SlidersHorizontal } from 'lucide-react';
-import type { Control } from 'react-hook-form';
+import { FolderTree, SlidersHorizontal } from 'lucide-react';
+import { Controller, type Control } from 'react-hook-form';
 
-import { cn } from '@/lib/utils';
-import type { RunnerConfigField } from '@/lib/runner-config-schema';
+import { FormField } from '@/components/app/FormField';
+import { Input } from '@/components/ui/input';
 import type { CreateSessionFormValues } from '@/pages/projects/project-sessions.form';
 
-import { DynamicConfigFieldInput } from '../components/DynamicConfigFieldInput';
-import { ResourceSelectionSection } from '../components/ResourceSelectionSection';
+import { SessionResourcePicker } from '../components/SessionResourcePicker';
 import { SetupSection } from '../components/SetupSection';
 import type { CreateSessionResources } from './use-create-session-panel-state';
 
-type CreateSessionConfigFieldPrefix =
-  | 'initialInputConfig'
-  | 'runnerSessionConfig'
-  | 'initialRuntimeConfig';
-
-type RunnerContextOptions =
-  | Record<string, Array<{ label: string; value: string } | string>>
-  | undefined;
-
 export function CreateSessionAdvancedSettings({
-  open,
   control,
-  additionalInputFields,
-  sessionConfigFields,
-  runtimeFields,
-  runnerContext,
   resources,
   selectedWorkspaceResources,
   selectedSkillIds,
@@ -34,12 +19,7 @@ export function CreateSessionAdvancedSettings({
   selectedMcpIds,
   onToggleSelection
 }: {
-  open: boolean;
   control: Control<CreateSessionFormValues>;
-  additionalInputFields: RunnerConfigField[];
-  sessionConfigFields: RunnerConfigField[];
-  runtimeFields: RunnerConfigField[];
-  runnerContext: RunnerContextOptions;
   resources: CreateSessionResources;
   selectedWorkspaceResources: SessionWorkspaceResourceKind[];
   selectedSkillIds: string[];
@@ -51,141 +31,135 @@ export function CreateSessionAdvancedSettings({
   ) => void;
 }) {
   return (
-    <div
-      className={cn(
-        'grid transition-all duration-300 ease-in-out',
-        open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-      )}
-    >
-      <div className="overflow-hidden">
-        <div className="mx-auto max-w-4xl border-t border-border/30 px-5 py-5">
-          <CreateSessionAdvancedHeader />
+    <section className="rounded-2xl border border-border/40 bg-muted/10 px-3 py-3 sm:px-4">
+      <CreateSessionAdvancedHeader />
 
-          <div className="space-y-5">
-            <ConfigFieldsSection
-              title="输入参数"
-              fields={additionalInputFields}
-              namePrefix="initialInputConfig"
+      <div className="space-y-4">
+        <SetupSection title="工作目录">
+          <p className="text-sm text-muted-foreground">
+            会话固定运行在项目 Workspace 根目录下的独立目录：
+            <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-xs">
+              {'{workspacePath}/{sessionId}'}
+            </code>
+            。
+          </p>
+          <div className="mt-3 grid gap-2.5">
+            <WorkspaceResourceOption
               control={control}
-              runnerContext={runnerContext}
+              title="Code"
+              description="git clone 项目代码到当前会话目录"
+              fieldName="workspaceResourceConfig.code.branch"
+              branchDescription="可选。留空使用远端默认分支。"
+              checked={selectedWorkspaceResources.includes(
+                SessionWorkspaceResourceKind.Code
+              )}
+              onToggle={() =>
+                onToggleSelection(
+                  'workspaceResources',
+                  SessionWorkspaceResourceKind.Code
+                )
+              }
             />
-            <ConfigFieldsSection
-              title="会话参数 (Session Config)"
-              fields={sessionConfigFields}
-              namePrefix="runnerSessionConfig"
+            <WorkspaceResourceOption
               control={control}
-              runnerContext={runnerContext}
+              title="Doc"
+              description="初始化 docs 目录，可从项目文档地址拉取或复制"
+              fieldName="workspaceResourceConfig.doc.branch"
+              branchDescription="可选。仅 Git 文档地址支持 branch；本地目录会直接复制。"
+              checked={selectedWorkspaceResources.includes(
+                SessionWorkspaceResourceKind.Doc
+              )}
+              onToggle={() =>
+                onToggleSelection(
+                  'workspaceResources',
+                  SessionWorkspaceResourceKind.Doc
+                )
+              }
             />
-            <ConfigFieldsSection
-              title="运行参数 (Runtime Config)"
-              fields={runtimeFields}
-              namePrefix="initialRuntimeConfig"
-              control={control}
-              runnerContext={runnerContext}
-            />
-
-            <SetupSection title="工作目录">
-              <p className="text-sm text-muted-foreground">
-                会话固定运行在项目 Workspace 根目录下的独立目录：
-                <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-xs">
-                  {'{workspacePath}/{sessionId}'}
-                </code>
-                。
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <WorkspaceResourceOption
-                  title="Code"
-                  description="创建会话时自动 git clone 项目代码到该目录"
-                  checked={selectedWorkspaceResources.includes(
-                    SessionWorkspaceResourceKind.Code
-                  )}
-                  onToggle={() =>
-                    onToggleSelection(
-                      'workspaceResources',
-                      SessionWorkspaceResourceKind.Code
-                    )
-                  }
-                />
-                <WorkspaceResourceOption
-                  title="Doc"
-                  description="创建会话时在该目录下初始化 docs 子目录"
-                  checked={selectedWorkspaceResources.includes(
-                    SessionWorkspaceResourceKind.Doc
-                  )}
-                  onToggle={() =>
-                    onToggleSelection(
-                      'workspaceResources',
-                      SessionWorkspaceResourceKind.Doc
-                    )
-                  }
-                />
-              </div>
-            </SetupSection>
-
-            <SetupSection title="资源">
-              <div className="grid gap-5 xl:grid-cols-2">
-                <ResourceSelectionSection
-                  label="技能"
-                  items={resources.skills}
-                  value={selectedSkillIds}
-                  onToggle={(resourceId) =>
-                    onToggleSelection('skillIds', resourceId)
-                  }
-                />
-                <ResourceSelectionSection
-                  label="规则"
-                  items={resources.rules}
-                  value={selectedRuleIds}
-                  onToggle={(resourceId) =>
-                    onToggleSelection('ruleIds', resourceId)
-                  }
-                />
-                <ResourceSelectionSection
-                  label="MCP"
-                  items={resources.mcps}
-                  value={selectedMcpIds}
-                  onToggle={(resourceId) =>
-                    onToggleSelection('mcpIds', resourceId)
-                  }
-                  getHint={(item) =>
-                    typeof item.content === 'object' && item.content
-                      ? item.content.command
-                      : undefined
-                  }
-                />
-              </div>
-            </SetupSection>
           </div>
-        </div>
+        </SetupSection>
+
+        <SetupSection title="资源">
+          <SessionResourcePicker
+            resources={resources}
+            selectedSkillIds={selectedSkillIds}
+            selectedRuleIds={selectedRuleIds}
+            selectedMcpIds={selectedMcpIds}
+            onToggleSelection={(fieldName, resourceId) =>
+              onToggleSelection(fieldName, resourceId)
+            }
+          />
+        </SetupSection>
       </div>
-    </div>
+    </section>
   );
 }
 
 function WorkspaceResourceOption({
+  control,
   title,
   description,
+  fieldName,
+  branchDescription,
   checked,
   onToggle
 }: {
+  control: Control<CreateSessionFormValues>;
   title: string;
   description: string;
+  fieldName:
+    | 'workspaceResourceConfig.code.branch'
+    | 'workspaceResourceConfig.doc.branch';
+  branchDescription: string;
   checked: boolean;
   onToggle: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/40 bg-background/70 px-3 py-3">
-      <input
-        type="checkbox"
-        className="mt-0.5 size-4"
-        checked={checked}
-        onChange={onToggle}
-      />
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
-      </div>
-    </label>
+    <div className="rounded-xl border border-border/40 bg-background/80 px-3 py-3">
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          className="mt-0.5 size-4"
+          checked={checked}
+          onChange={onToggle}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <FolderTree className="size-4 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground">{title}</p>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </label>
+
+      {checked ? (
+        <div className="mt-3 border-t border-border/40 pt-3">
+          <Controller
+            control={control}
+            name={fieldName}
+            render={({ field }) => (
+              <FormField
+                label={`${title} Branch`}
+                htmlFor={fieldName}
+                description={branchDescription}
+              >
+                <Input
+                  id={fieldName}
+                  placeholder="例如：main"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                />
+              </FormField>
+            )}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -193,42 +167,8 @@ function CreateSessionAdvancedHeader() {
   return (
     <div className="mb-4 flex items-center gap-2">
       <SlidersHorizontal className="size-4 text-muted-foreground" />
-      <p className="text-sm font-medium text-foreground">高级设置</p>
-      <p className="text-xs text-muted-foreground">资源、输入参数和会话参数</p>
+      <p className="text-sm font-medium text-foreground">工作区与资源</p>
+      <p className="text-xs text-muted-foreground">会话目录初始化与资源挂载</p>
     </div>
-  );
-}
-
-function ConfigFieldsSection({
-  title,
-  fields,
-  namePrefix,
-  control,
-  runnerContext
-}: {
-  title: string;
-  fields: RunnerConfigField[];
-  namePrefix: CreateSessionConfigFieldPrefix;
-  control: Control<CreateSessionFormValues>;
-  runnerContext: RunnerContextOptions;
-}) {
-  if (fields.length === 0) {
-    return null;
-  }
-
-  return (
-    <SetupSection title={title}>
-      <div className="grid gap-4">
-        {fields.map((field) => (
-          <DynamicConfigFieldInput
-            key={field.name}
-            field={field}
-            namePrefix={namePrefix}
-            control={control}
-            discoveredOptions={runnerContext}
-          />
-        ))}
-      </div>
-    </SetupSection>
   );
 }

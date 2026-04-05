@@ -39,6 +39,7 @@ function registerTestRunnerType(
     runtimeConfigSchema: testRuntimeConfigSchema,
     checkHealth: runnerType.checkHealth,
     probeContext: runnerType.probeContext,
+    installProfile: async () => undefined,
     createSession: async () => ({}),
     shouldReusePersistedState: () => false,
     destroySession: async () => undefined,

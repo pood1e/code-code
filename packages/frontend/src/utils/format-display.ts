@@ -12,6 +12,10 @@ export function formatNullableDescription(value: string | null) {
   return value?.trim() ? value : '暂无描述';
 }
 
+export function normalizeOptionalText(value?: string | null) {
+  return value?.trim() ? value.trim() : null;
+}
+
 export function normalizeDescription(description?: string) {
-  return description?.trim() ? description.trim() : null;
+  return normalizeOptionalText(description);
 }

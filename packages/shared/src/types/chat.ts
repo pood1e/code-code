@@ -1,5 +1,6 @@
 import type {
   SessionStatus,
+  SessionWorkspaceResourceConfig,
   SessionWorkspaceResourceKind
 } from './session';
 
@@ -21,6 +22,7 @@ export type CreateChatInput = {
   runnerId: string;
   title?: string | null;
   workspaceResources: SessionWorkspaceResourceKind[];
+  workspaceResourceConfig?: SessionWorkspaceResourceConfig;
   skillIds: string[];
   ruleIds: string[];
   mcps: Array<{

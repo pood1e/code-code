@@ -4,6 +4,7 @@ export type Project = {
   description: string | null;
   gitUrl: string;
   workspacePath: string;
+  docSource?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -13,10 +14,12 @@ export type CreateProjectInput = {
   description?: string | null;
   gitUrl: string;
   workspacePath: string;
+  docSource?: string | null;
 };
 
 export type UpdateProjectInput = {
   name?: string;
   description?: string | null;
   workspacePath?: string;
+  docSource?: string | null;
 };

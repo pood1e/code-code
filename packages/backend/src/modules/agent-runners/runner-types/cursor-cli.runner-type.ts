@@ -12,6 +12,7 @@ import {
 } from '../cli/parsers/cursor-cli.parser';
 import type {
   RawOutputChunk,
+  RunnerProfileInstallInput,
   RunnerSendPayload
 } from '../runner-type.interface';
 import type { RunnerContext } from '@agent-workbench/shared';
@@ -49,7 +50,6 @@ export const cursorCliRuntimeConfigSchema = z.object({
 export class CursorCliRunnerType extends CliRunnerTypeBase {
   readonly id = 'cursor-cli';
   readonly name = 'Cursor CLI';
-  readonly materializerTarget = 'cursor' as const;
   readonly capabilities = { skill: true, rule: true, mcp: true };
   readonly runnerConfigSchema = cursorCliRunnerConfigSchema;
   readonly runnerSessionConfigSchema = cursorCliRunnerSessionConfigSchema;
@@ -106,6 +106,19 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
         }
       );
     });
+  }
+
+  protected buildProfileInstallLayout(
+    input: RunnerProfileInstallInput
+  ) {
+    return {
+      profileRootDir: input.platformConfig.cwd,
+      skillDir: '.cursor/skills',
+      ruleDir: '.cursor/rules',
+      ruleExtension: '.mdc' as const,
+      ruleUsesCursorFrontmatter: true,
+      mcpConfigPath: `${input.platformConfig.cwd}/mcp.json`
+    };
   }
 
   buildCommand(

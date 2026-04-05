@@ -13,7 +13,8 @@ describe('project-form.utils', () => {
       name: '',
       description: '',
       gitUrl: '',
-      workspacePath: ''
+      workspacePath: '',
+      docSource: ''
     });
 
     expect(
@@ -23,6 +24,7 @@ describe('project-form.utils', () => {
         description: null,
         gitUrl: 'git@github.com:acme/workbench.git',
         workspacePath: '/tmp/workbench',
+        docSource: '/tmp/docs',
         createdAt: '2026-04-03T10:00:00.000Z',
         updatedAt: '2026-04-03T10:00:00.000Z'
       })
@@ -30,7 +32,8 @@ describe('project-form.utils', () => {
       name: 'Workbench',
       description: '',
       gitUrl: 'git@github.com:acme/workbench.git',
-      workspacePath: '/tmp/workbench'
+      workspacePath: '/tmp/workbench',
+      docSource: '/tmp/docs'
     });
   });
 
@@ -40,13 +43,15 @@ describe('project-form.utils', () => {
         name: ' Workbench ',
         description: '   ',
         gitUrl: 'git@github.com:acme/workbench.git',
-        workspacePath: '/tmp/workbench'
+        workspacePath: '/tmp/workbench',
+        docSource: '  /tmp/docs  '
       })
     ).toEqual({
       name: 'Workbench',
       description: null,
       gitUrl: 'git@github.com:acme/workbench.git',
-      workspacePath: '/tmp/workbench'
+      workspacePath: '/tmp/workbench',
+      docSource: '/tmp/docs'
     });
 
     expect(
@@ -54,12 +59,14 @@ describe('project-form.utils', () => {
         name: ' Workbench ',
         description: '  Agent project  ',
         gitUrl: 'git@github.com:acme/workbench.git',
-        workspacePath: '/tmp/workbench'
+        workspacePath: '/tmp/workbench',
+        docSource: '   '
       })
     ).toEqual({
       name: 'Workbench',
       description: 'Agent project',
-      workspacePath: '/tmp/workbench'
+      workspacePath: '/tmp/workbench',
+      docSource: null
     });
   });
 
@@ -68,7 +75,8 @@ describe('project-form.utils', () => {
       name: '',
       description: '',
       gitUrl: 'https://github.com/acme/workbench',
-      workspacePath: ''
+      workspacePath: '',
+      docSource: './docs'
     });
 
     expect(parsed.success).toBe(false);

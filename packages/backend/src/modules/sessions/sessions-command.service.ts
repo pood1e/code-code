@@ -89,6 +89,7 @@ export class SessionsCommandService {
       cwd: project.workspacePath,
       workspaceResources:
         parsed.workspaceResources ?? ([] satisfies SessionWorkspaceResourceKind[]),
+      workspaceResourceConfig: parsed.workspaceResourceConfig ?? {},
       skillIds: parsed.skillIds,
       ruleIds: parsed.ruleIds,
       mcps: parsed.mcps
@@ -118,6 +119,7 @@ export class SessionsCommandService {
           sessionId: created.id,
           project,
           workspaceResources: parsed.workspaceResources ?? [],
+          workspaceResourceConfig: parsed.workspaceResourceConfig ?? {},
           skillIds: parsed.skillIds,
           ruleIds: parsed.ruleIds,
           mcps: parsed.mcps

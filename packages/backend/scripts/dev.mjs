@@ -84,7 +84,7 @@ async function waitForPortFree(port, { timeout = 5000, interval = 150 } = {}) {
  */
 function killAndWait(child, signal = 'SIGTERM') {
   return new Promise((resolve) => {
-    if (child.exitCode !== null || child.killed) {
+    if (child.exitCode !== null) {
       resolve();
       return;
     }

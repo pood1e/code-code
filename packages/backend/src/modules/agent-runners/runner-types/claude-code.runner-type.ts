@@ -11,6 +11,7 @@ import {
 } from '../cli/parsers/claude-code.parser';
 import type {
   RawOutputChunk,
+  RunnerProfileInstallInput,
   RunnerSendPayload
 } from '../runner-type.interface';
 import { RunnerTypeProvider } from '../runner-type.decorator';
@@ -46,7 +47,6 @@ export const claudeCodeRuntimeConfigSchema = z.object({
 export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
   readonly id = 'claude-code';
   readonly name = 'Claude Code';
-  readonly materializerTarget = 'claude' as const;
   readonly capabilities = { skill: true, rule: true, mcp: true };
   readonly runnerConfigSchema = claudeCodeRunnerConfigSchema;
   readonly runnerSessionConfigSchema = claudeCodeRunnerSessionConfigSchema;
@@ -62,6 +62,18 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
     return probeClaudeCodeHealth(config.executorUser, config.env);
+  }
+
+  protected buildProfileInstallLayout(
+    input: RunnerProfileInstallInput
+  ) {
+    return {
+      profileRootDir: input.platformConfig.cwd,
+      skillDir: '.claude/skills',
+      ruleDir: '.claude/rules',
+      ruleExtension: '.md' as const,
+      mcpConfigPath: `${input.platformConfig.cwd}/.mcp.json`
+    };
   }
 
   buildCommand(
@@ -108,19 +120,10 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
       args.push('--mcp-config', cliState.mcpConfigPath);
     }
 
-    // Add context dir so Claude can see platform-injected rules/skills
-    if (cliState.contextDir) {
-      args.push('--add-dir', cliState.contextDir);
-    }
-
     // Prompt separator and prompt
     args.push('--', input.prompt);
 
-    // Determine cwd: use the original workspace cwd, not the context dir
-    // Claude uses the real workspace as cwd, context dir is added via --add-dir
-    const cwd = cliState.contextDir
-      ? (cliState.contextDir.split('/.agent-workbench/')[0] ?? '.')
-      : '.';
+    const cwd = cliState.contextDir ?? '.';
 
     if (config.executorUser) {
       return {

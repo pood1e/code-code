@@ -1,78 +1,103 @@
-import { ChevronDown, LoaderCircle, SlidersHorizontal } from 'lucide-react';
-import type { UseFormReturn } from 'react-hook-form';
-import type { AgentRunnerSummary, Profile } from '@agent-workbench/shared';
+import { LoaderCircle } from 'lucide-react';
+import {
+  type UseFormReturn,
+  useWatch
+} from 'react-hook-form';
 
 import {
   MessageComposerError,
   MessageComposerFooterActions,
+  MessageComposerFooterMeta,
   MessageComposerField,
   MessageComposerInputArea,
   MessageComposerShell
 } from '@/components/app/MessageComposer';
 import { Button } from '@/components/ui/button';
-import { CompactNativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import type { RunnerConfigField } from '@/lib/runner-config-schema';
 import type { CreateSessionFormValues } from '@/pages/projects/project-sessions.form';
+import {
+  AdditionalInputFields,
+  ThreadComposerRuntimeFields,
+  type ThreadComposerDiscoveredOptions
+} from '@/features/chat/runtime/assistant-ui/components/thread-composer.config';
 
 export function CreateSessionComposer({
   form,
-  runners,
-  profiles,
-  selectedRunnerId,
-  selectedProfileId,
+  runtimeFields,
+  additionalInputFields,
+  runnerContext,
   supportsStructuredInitialInput,
   hasInitialMessageDraft,
-  advancedOpen,
   submitError,
   canCancel,
   isCreating,
-  onToggleAdvanced,
   onCancel,
   onSubmit,
   onPromptKeyDown
 }: {
   form: UseFormReturn<CreateSessionFormValues>;
-  runners: AgentRunnerSummary[];
-  profiles: Profile[];
-  selectedRunnerId: string;
-  selectedProfileId?: string;
+  runtimeFields: RunnerConfigField[];
+  additionalInputFields: RunnerConfigField[];
+  runnerContext: ThreadComposerDiscoveredOptions | undefined;
   supportsStructuredInitialInput: boolean;
   hasInitialMessageDraft: boolean;
-  advancedOpen: boolean;
   submitError: string | null;
   canCancel: boolean;
   isCreating: boolean;
-  onToggleAdvanced: () => void;
   onCancel: () => void;
   onSubmit: () => void;
   onPromptKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement>;
 }) {
+  const runtimeValues = useWatch({
+    control: form.control,
+    name: 'initialRuntimeConfig'
+  });
+  const additionalInputValues = useWatch({
+    control: form.control,
+    name: 'initialInputConfig'
+  });
+
   return (
-    <div className="flex flex-1 flex-col px-2 py-2 sm:px-4 sm:py-4">
+    <div className="flex flex-col gap-3">
       {submitError ? (
         <MessageComposerError title="创建失败" message={submitError} />
       ) : null}
 
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col pt-4 sm:pt-6">
-        <MessageComposerShell
-          header={
-            <CreateSessionComposerHeader
-              runners={runners}
-              profiles={profiles}
-              selectedRunnerId={selectedRunnerId}
-              selectedProfileId={selectedProfileId}
-              advancedOpen={advancedOpen}
-              supportsStructuredInitialInput={supportsStructuredInitialInput}
-              onToggleAdvanced={onToggleAdvanced}
-              onRunnerChange={(runnerId) => form.setValue('runnerId', runnerId)}
-              onProfileChange={(profileId) =>
-                form.setValue('profileId', profileId)
-              }
-            />
-          }
-          footer={
-            <MessageComposerFooterActions className="pl-0">
+      <MessageComposerShell
+        footer={
+          <>
+            <MessageComposerFooterMeta>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <ThreadComposerRuntimeFields
+                  disabled={isCreating}
+                  discoveredOptions={runnerContext}
+                  fields={runtimeFields}
+                  onChange={(fieldName, value) =>
+                    form.setValue(`initialRuntimeConfig.${fieldName}`, value, {
+                      shouldDirty: true
+                    })
+                  }
+                  values={runtimeValues ?? {}}
+                />
+
+                {supportsStructuredInitialInput &&
+                additionalInputFields.length > 0 ? (
+                  <AdditionalInputFields
+                    disabled={isCreating}
+                    fields={additionalInputFields}
+                    onChange={(fieldName, value) =>
+                      form.setValue(`initialInputConfig.${fieldName}`, value, {
+                        shouldDirty: true
+                      })
+                    }
+                    values={additionalInputValues ?? {}}
+                  />
+                ) : null}
+              </div>
+            </MessageComposerFooterMeta>
+
+            <MessageComposerFooterActions>
               {canCancel ? (
                 <Button variant="ghost" size="sm" onClick={onCancel}>
                   取消
@@ -89,106 +114,24 @@ export function CreateSessionComposer({
                 发送
               </Button>
             </MessageComposerFooterActions>
-          }
-          className="border-border/40 bg-background/95 shadow-[0_28px_80px_-36px_hsl(var(--foreground)/0.18)]"
-        >
-          <div className="space-y-4 pb-1">
-            {supportsStructuredInitialInput ? (
-              <CreateSessionPromptField
-                form={form}
-                onPromptKeyDown={onPromptKeyDown}
-              />
-            ) : (
-              <CreateSessionRawInputField
-                form={form}
-                onPromptKeyDown={onPromptKeyDown}
-              />
-            )}
-          </div>
-        </MessageComposerShell>
-      </div>
-    </div>
-  );
-}
-
-function CreateSessionComposerHeader({
-  runners,
-  profiles,
-  selectedRunnerId,
-  selectedProfileId,
-  advancedOpen,
-  supportsStructuredInitialInput,
-  onToggleAdvanced,
-  onRunnerChange,
-  onProfileChange
-}: {
-  runners: AgentRunnerSummary[];
-  profiles: Profile[];
-  selectedRunnerId: string;
-  selectedProfileId?: string;
-  advancedOpen: boolean;
-  supportsStructuredInitialInput: boolean;
-  onToggleAdvanced: () => void;
-  onRunnerChange: (runnerId: string) => void;
-  onProfileChange: (profileId: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <CompactNativeSelect
-          aria-label="选择 AgentRunner"
-          containerClassName="min-w-[8.75rem]"
-          className="w-full whitespace-nowrap bg-background/70"
-          value={selectedRunnerId}
-          onChange={(event) => onRunnerChange(event.target.value)}
-        >
-          {runners.map((runner) => (
-            <option key={runner.id} value={runner.id}>
-              {runner.name}
-            </option>
-          ))}
-        </CompactNativeSelect>
-
-        <CompactNativeSelect
-          aria-label="选择 Profile"
-          containerClassName="min-w-[8.25rem]"
-          className="w-full whitespace-nowrap bg-background/70"
-          value={selectedProfileId ?? ''}
-          onChange={(event) => onProfileChange(event.target.value)}
-        >
-          <option value="">Profile</option>
-          {profiles.map((profile) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.name}
-            </option>
-          ))}
-        </CompactNativeSelect>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'h-9 rounded-full px-3 text-xs text-muted-foreground whitespace-nowrap',
-            advancedOpen && 'bg-accent text-foreground'
+          </>
+        }
+        className="border-border/40 bg-background/95 shadow-[0_22px_64px_-40px_hsl(var(--foreground)/0.16)]"
+      >
+        <div className="space-y-3 pb-1">
+          {supportsStructuredInitialInput ? (
+            <CreateSessionPromptField
+              form={form}
+              onPromptKeyDown={onPromptKeyDown}
+            />
+          ) : (
+            <CreateSessionRawInputField
+              form={form}
+              onPromptKeyDown={onPromptKeyDown}
+            />
           )}
-          onClick={onToggleAdvanced}
-        >
-          <SlidersHorizontal />
-          高级设置
-          <ChevronDown
-            className={cn(
-              'size-3 transition-transform duration-200',
-              advancedOpen && 'rotate-180'
-            )}
-          />
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {supportsStructuredInitialInput
-          ? '发送后会创建会话并提交首条消息'
-          : '请填写完整 JSON 后再发送'}
-      </p>
+        </div>
+      </MessageComposerShell>
     </div>
   );
 }
@@ -203,15 +146,16 @@ function CreateSessionPromptField({
   return (
     <MessageComposerField
       label="首条消息"
+      hideLabel
       error={form.formState.errors.initialMessageText?.message}
     >
       <MessageComposerInputArea hint="Enter 发送，Shift+Enter 换行">
         <Textarea
           aria-label="首条消息"
-          rows={9}
+          rows={7}
           autoFocus
           placeholder="输入首条消息..."
-          className="min-h-40 resize-none border-0 bg-transparent px-3 py-3 pb-8 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-44"
+          className="min-h-32 resize-none border-0 bg-transparent px-3 py-3 pb-8 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-36"
           onKeyDown={onPromptKeyDown}
           {...form.register('initialMessageText')}
         />
@@ -230,15 +174,16 @@ function CreateSessionRawInputField({
   return (
     <MessageComposerField
       label="首条消息 JSON"
+      hideLabel
       error={form.formState.errors.initialRawInput?.message}
     >
       <MessageComposerInputArea hint="使用发送按钮提交，Enter 仅换行">
         <Textarea
           aria-label="首条消息 JSON"
-          rows={10}
+          rows={8}
           autoFocus
           placeholder={'{\n  "prompt": ""\n}'}
-          className="min-h-36 resize-none border-0 bg-transparent px-3 py-3 pb-8 font-mono text-sm shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-40"
+          className="min-h-32 resize-none border-0 bg-transparent px-3 py-3 pb-8 font-mono text-sm shadow-none placeholder:text-muted-foreground/75 focus-visible:ring-0 sm:min-h-36"
           onKeyDown={onPromptKeyDown}
           {...form.register('initialRawInput')}
         />

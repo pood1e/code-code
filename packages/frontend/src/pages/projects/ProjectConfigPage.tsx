@@ -36,6 +36,14 @@ function isWorkspacePathError(message: string) {
   );
 }
 
+function isDocSourceError(message: string) {
+  return (
+    message.includes('docSource') ||
+    message.includes('文档') ||
+    message.includes('SSH Git 地址或本地绝对路径')
+  );
+}
+
 export function ProjectConfigPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -109,6 +117,12 @@ export function ProjectConfigPage() {
         return;
       }
 
+      if (apiError.code === 400 && isDocSourceError(apiError.message)) {
+        form.setError('docSource', { message: apiError.message });
+        setSubmitError(apiError.message);
+        return;
+      }
+
       setSubmitError(apiError.message);
       handleError(error);
     }
@@ -139,8 +153,8 @@ export function ProjectConfigPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
+    <div className="flex min-h-full flex-col">
+      <div className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-5xl space-y-4">
           <EditorToolbar
             title="Project 配置"
@@ -197,6 +211,19 @@ export function ProjectConfigPage() {
                     readOnly
                     disabled
                     {...form.register('gitUrl')}
+                  />
+                </FormField>
+
+                <FormField
+                  label="文档地址"
+                  htmlFor="project-config-doc-source"
+                  description="支持 SSH Git 地址或本地绝对路径目录。留空表示只创建空 docs 目录。"
+                  error={form.formState.errors.docSource?.message}
+                  className="lg:col-span-2"
+                >
+                  <Input
+                    id="project-config-doc-source"
+                    {...form.register('docSource')}
                   />
                 </FormField>
 

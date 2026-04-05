@@ -2,6 +2,7 @@ import type {
   CreateSessionInput,
   ProfileDetail,
   SendSessionMessageInput,
+  SessionWorkspaceResourceConfig,
   SessionWorkspaceResourceKind
 } from '@agent-workbench/shared';
 import {
@@ -15,6 +16,20 @@ export const createSessionFormSchema = z.object({
   runnerId: z.string().trim().min(1, '请选择 AgentRunner'),
   profileId: z.string().trim().optional(),
   workspaceResources: z.array(z.nativeEnum(SessionWorkspaceResourceKindEnum)),
+  workspaceResourceConfig: z
+    .object({
+      code: z
+        .object({
+          branch: z.string().trim().optional()
+        })
+        .optional(),
+      doc: z
+        .object({
+          branch: z.string().trim().optional()
+        })
+        .optional()
+    })
+    .optional(),
   skillIds: z.array(z.string()),
   ruleIds: z.array(z.string()),
   mcpIds: z.array(z.string()),
@@ -37,6 +52,7 @@ export function buildCreateSessionFormValues(): CreateSessionFormValues {
     runnerId: '',
     profileId: '',
     workspaceResources: [],
+    workspaceResourceConfig: {},
     skillIds: [],
     ruleIds: [],
     mcpIds: [],
@@ -59,6 +75,7 @@ export function buildCreateSessionPayload(
     runnerId: values.runnerId,
     workspaceResources:
       values.workspaceResources as SessionWorkspaceResourceKind[],
+    workspaceResourceConfig: buildWorkspaceResourceConfig(values),
     skillIds: values.skillIds,
     ruleIds: values.ruleIds,
     mcps: values.mcpIds.map((resourceId) => ({
@@ -68,6 +85,28 @@ export function buildCreateSessionPayload(
     runnerSessionConfig: values.runnerSessionConfig,
     initialMessage
   });
+}
+
+function buildWorkspaceResourceConfig(
+  values: CreateSessionFormValues
+): SessionWorkspaceResourceConfig {
+  const resourceConfig: SessionWorkspaceResourceConfig = {};
+
+  if (values.workspaceResources.includes(SessionWorkspaceResourceKindEnum.Code)) {
+    const branch = values.workspaceResourceConfig?.code?.branch?.trim();
+    if (branch) {
+      resourceConfig.code = { branch };
+    }
+  }
+
+  if (values.workspaceResources.includes(SessionWorkspaceResourceKindEnum.Doc)) {
+    const branch = values.workspaceResourceConfig?.doc?.branch?.trim();
+    if (branch) {
+      resourceConfig.doc = { branch };
+    }
+  }
+
+  return resourceConfig;
 }
 
 export function buildTextMessagePayload(
