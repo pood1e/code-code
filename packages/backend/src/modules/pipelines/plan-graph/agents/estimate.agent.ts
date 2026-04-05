@@ -1,12 +1,12 @@
-import type { PlanStateType, PlanStateUpdate } from '../plan-graph.state';
+import type { PipelineRuntimeState } from '../../pipeline-runtime-state';
 
 /**
  * Estimate Agent (mock) — generates a plan report with effort estimates.
  * Will be replaced with real LLM invocation in a future iteration.
  */
-export async function estimateAgent(
-  state: PlanStateType
-): Promise<PlanStateUpdate> {
+export function estimateAgent(
+  state: Pick<PipelineRuntimeState, 'prd' | 'acSpec'>
+): Pick<PipelineRuntimeState, 'planReport'> {
   const tasks = state.prd?.tasks ?? [];
   const totalAC = state.acSpec.reduce((sum, s) => sum + s.ac.length, 0);
 

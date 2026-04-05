@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import {
@@ -27,5 +27,4 @@ import { PipelinesService } from './pipelines.service';
   exports: [PipelinesService, PipelineQueryService, PipelineEventStore]
 })
 export class PipelinesModule {}
-
 

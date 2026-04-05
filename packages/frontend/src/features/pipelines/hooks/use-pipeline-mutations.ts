@@ -43,7 +43,7 @@ export function useStartPipelineMutation(pipelineId: string, scopeId: string) {
   });
 }
 
-export function useSubmitDecisionMutation(pipelineId: string) {
+export function useSubmitDecisionMutation(pipelineId: string, scopeId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -52,6 +52,9 @@ export function useSubmitDecisionMutation(pipelineId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: pipelineKeys.detail(pipelineId)
+      });
+      void queryClient.invalidateQueries({
+        queryKey: pipelineKeys.list(scopeId)
       });
     }
   });

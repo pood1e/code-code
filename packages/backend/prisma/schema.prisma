@@ -77,6 +77,7 @@ model AgentRunner {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   sessions     AgentSession[]
+  pipelines    Pipeline[]
 }
 
 model ProfileSkill {
@@ -271,22 +272,25 @@ model Chat {
 model Pipeline {
   id             String             @id @default(cuid())
   scopeId        String
+  runnerId       String?
   name           String
   description    String?
   featureRequest String?
   status         String             @default("draft")
+  lastEventId    Int                @default(0)
   currentStageId String?
   state          Json?
-  resumePayload  String?            // JSON-encoded HumanDecision for Worker resume
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   project        Project            @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  runner         AgentRunner?       @relation(fields: [runnerId], references: [id], onDelete: Restrict)
   stages         PipelineStage[]
   artifacts      PipelineArtifact[]
   events         PipelineEvent[]
 
   @@index([scopeId], name: "idx_pipeline_scope_id")
   @@index([status], name: "idx_pipeline_status")
+  @@index([runnerId], name: "idx_pipeline_runner_id")
 }
 
 

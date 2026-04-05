@@ -4,81 +4,48 @@ import {
   OnApplicationBootstrap,
   OnApplicationShutdown
 } from '@nestjs/common';
-import { Command } from '@langchain/langgraph';
+import type { Prisma } from '@prisma/client';
 
 import {
-  DEFAULT_PIPELINE_CONFIG,
-  HumanDecisionAction,
   PipelineStageStatus,
   PipelineStageType,
-  PipelineStatus,
-  type HumanDecision,
-  type PipelineConfig
+  PipelineStatus
 } from '@agent-workbench/shared';
 
+import { toInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PipelineEventStore } from './pipeline-event.store';
-import { buildPlanGraph, type PlanGraph } from './plan-graph/plan-graph.builder';
+import { getStageTypeForStep } from './pipeline-stage.constants';
+import {
+  parsePipelineRuntimeState,
+  type PipelineRuntimeState
+} from './pipeline-runtime-state';
 import { PipelinesService } from './pipelines.service';
-import type { PlanStateType } from './plan-graph/plan-graph.state';
+import { estimateAgent } from './plan-graph/agents/estimate.agent';
+import { breakdownAgent } from './plan-graph/agents/breakdown.agent';
+import { specAgent } from './plan-graph/agents/spec.agent';
+import { evaluationNode } from './plan-graph/nodes/evaluation.node';
 
-type PipelineRow = {
+type ClaimedPipelineRow = {
   id: string;
   featureRequest: string | null;
   state: unknown;
-  resumePayload: string | null;
 };
 
-/** Stage type to display name mapping */
-const STAGE_NAME_MAP: Record<PipelineStageType, string> = {
-  [PipelineStageType.Breakdown]: 'Breakdown',
-  [PipelineStageType.Evaluation]: 'Evaluation',
-  [PipelineStageType.Spec]: 'Spec',
-  [PipelineStageType.Estimate]: 'Estimate',
-  [PipelineStageType.HumanReview]: 'Human Review',
-  [PipelineStageType.TestDesign]: 'Test Design',
-  [PipelineStageType.TestImpl]: 'Test Impl',
-  [PipelineStageType.RedGate]: 'Red Gate',
-  [PipelineStageType.Impl]: 'Impl',
-  [PipelineStageType.GreenGate]: 'Green Gate',
-  [PipelineStageType.Refactor]: 'Refactor',
-  [PipelineStageType.QualityGate]: 'Quality Gate',
-  [PipelineStageType.Review]: 'Review',
-  [PipelineStageType.Release]: 'Release',
-  [PipelineStageType.SmokeTestGate]: 'Smoke Test Gate'
-};
+type PipelineStageRow = Prisma.PipelineStageGetPayload<object>;
 
-const PLAN_STAGE_TYPES: PipelineStageType[] = [
-  PipelineStageType.Breakdown,
-  PipelineStageType.Evaluation,
-  PipelineStageType.Spec,
-  PipelineStageType.Estimate,
-  PipelineStageType.HumanReview
-];
-
-/**
- * PipelineWorkerService — DB-backed background worker.
- * Runs in the same NestJS process, started via OnApplicationBootstrap lifecycle hook.
- * Polls for 'pending' pipelines, drives the LangGraph Plan Graph, handles interrupts and resumes.
- *
- * Architecture note: for multi-process scaling, extract this into a separate NestJS app
- * and replace the DB poll with PostgreSQL FOR UPDATE SKIP LOCKED.
- */
 @Injectable()
 export class PipelineWorkerService
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(PipelineWorkerService.name);
-  private readonly planGraph: PlanGraph;
   private isRunning = false;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly pipelineEventStore: PipelineEventStore,
     private readonly pipelinesService: PipelinesService
-  ) {
-    this.planGraph = buildPlanGraph();
-  }
+  ) {}
 
   onApplicationBootstrap(): void {
     this.isRunning = true;
@@ -94,7 +61,7 @@ export class PipelineWorkerService
     while (this.isRunning) {
       const pipeline = await this.claimPendingPipeline();
       if (pipeline) {
-        await this.processGraph(pipeline).catch((error) => {
+        await this.processClaimedPipeline(pipeline).catch((error) => {
           this.logger.error(
             `Unhandled error processing pipeline ${pipeline.id}: ${
               error instanceof Error ? error.message : String(error)
@@ -107,133 +74,317 @@ export class PipelineWorkerService
     }
   }
 
-  /**
-   * Atomically claim a pending pipeline by updating its status to 'running'.
-   * Safe for single-process; for multi-process use SELECT ... FOR UPDATE SKIP LOCKED.
-   */
-  private async claimPendingPipeline(): Promise<PipelineRow | null> {
+  private async claimPendingPipeline(): Promise<ClaimedPipelineRow | null> {
     const pending = await this.prisma.pipeline.findFirst({
       where: { status: PipelineStatus.Pending },
       orderBy: { updatedAt: 'asc' },
-      select: { id: true, featureRequest: true, state: true, resumePayload: true }
+      select: {
+        id: true,
+        featureRequest: true,
+        state: true
+      }
     });
 
-    if (!pending) return null;
+    if (!pending) {
+      return null;
+    }
 
-    await this.prisma.pipeline.update({
-      where: { id: pending.id },
+    const claimed = await this.prisma.pipeline.updateMany({
+      where: {
+        id: pending.id,
+        status: PipelineStatus.Pending
+      },
       data: { status: PipelineStatus.Running }
     });
 
-    return pending;
+    return claimed.count === 1 ? pending : null;
   }
 
-  private async processGraph(pipeline: PipelineRow): Promise<void> {
-    const { id: pipelineId, resumePayload, featureRequest, state } = pipeline;
-    const config = this.getPipelineConfig(state);
-    const graphConfig = { configurable: { thread_id: pipelineId } };
-
-    const isResume = !!resumePayload;
-
-    // Clear resumePayload before running to avoid re-resume on crash recovery
-    if (isResume) {
-      await this.prisma.pipeline.update({
-        where: { id: pipelineId },
-        data: { resumePayload: null }
+  private async processClaimedPipeline(
+    claimedPipeline: ClaimedPipelineRow
+  ): Promise<void> {
+    while (this.isRunning) {
+      const pipeline = await this.prisma.pipeline.findUnique({
+        where: { id: claimedPipeline.id },
+        select: {
+          id: true,
+          featureRequest: true,
+          state: true,
+          status: true
+        }
       });
-    }
 
-    // For resume: Command<resume> instructs LangGraph to resume from the interrupt point
-    // For fresh start: provide featureRequest as initial state
-    const input = isResume
-      ? new Command({ resume: JSON.parse(resumePayload!) as unknown })
-      : { featureRequest: featureRequest ?? '' };
+      if (!pipeline) {
+        return;
+      }
 
-    try {
-      // stream() returns an AsyncIterableReadableStream — iterate directly
-      const stream = this.planGraph.stream(
-        input as Parameters<PlanGraph['stream']>[0],
-        { ...graphConfig, streamMode: 'updates' }
-      );
+      const pipelineStatus = pipeline.status as PipelineStatus;
+      if (
+        pipelineStatus === PipelineStatus.Cancelled ||
+        pipelineStatus === PipelineStatus.Completed ||
+        pipelineStatus === PipelineStatus.Failed ||
+        pipelineStatus === PipelineStatus.Paused
+      ) {
+        return;
+      }
 
-      for await (const event of await stream) {
-        const entries = Object.entries(event as Record<string, unknown>);
-        if (entries.length === 0) continue;
+      const runtimeState = parsePipelineRuntimeState(pipeline.state);
+      if (runtimeState.currentStep === 'complete') {
+        await this.completePipeline(pipeline.id);
+        return;
+      }
 
-        const [nodeName, nodeState] = entries[0] as [string, Partial<PlanStateType>];
+      if (runtimeState.currentStep === 'human_review') {
+        await this.pauseForHumanReview(pipeline.id, runtimeState);
+        return;
+      }
 
-        if (nodeName === '__interrupt__') {
-          await this.handleInterrupt(pipelineId);
+      const stageType = getStageTypeForStep(runtimeState.currentStep);
+      if (!stageType) {
+        await this.failPipeline(
+          pipeline.id,
+          `Unsupported pipeline step: ${runtimeState.currentStep}`
+        );
+        return;
+      }
+
+      if (await this.isPipelineCancelled(pipeline.id)) {
+        return;
+      }
+
+      const stage = await this.markStageStarted(pipeline.id, stageType);
+
+      try {
+        await waitForConfiguredTestDelay();
+
+        switch (runtimeState.currentStep) {
+          case 'breakdown':
+            await this.runBreakdownStep(pipeline.id, pipeline.featureRequest, runtimeState, stage);
+            break;
+          case 'evaluation':
+            if (
+              await this.runEvaluationStep(
+                pipeline.id,
+                runtimeState,
+                stage
+              )
+            ) {
+              continue;
+            }
+            return;
+          case 'spec':
+            await this.runSpecStep(pipeline.id, runtimeState, stage);
+            break;
+          case 'estimate':
+            await this.runEstimateStep(pipeline.id, runtimeState, stage);
+            return;
+        }
+      } catch (error) {
+        if (await this.isPipelineCancelled(pipeline.id)) {
           return;
         }
 
-        await this.syncAfterNode(pipelineId, nodeName, nodeState, config);
+        await this.failStage(
+          pipeline.id,
+          stage,
+          error instanceof Error ? error.message : String(error)
+        );
+        await this.failPipeline(
+          pipeline.id,
+          error instanceof Error ? error.message : String(error)
+        );
+        return;
       }
-
-      await this.completePipeline(pipelineId);
-    } catch (error) {
-      await this.failPipeline(
-        pipelineId,
-        error instanceof Error ? error.message : String(error)
-      );
     }
   }
 
-
-  /**
-   * Sync PipelineStage records and write artifacts after a node completes.
-   */
-  private async syncAfterNode(
+  private async runBreakdownStep(
     pipelineId: string,
-    nodeName: string,
-    nodeState: Partial<PlanStateType>,
-    config: PipelineConfig
-  ): Promise<void> {
-    const stageType = this.nodeNameToStageType(nodeName);
-    if (!stageType) return;
+    featureRequest: string | null,
+    runtimeState: PipelineRuntimeState,
+    stage: PipelineStageRow
+  ) {
+    const update = breakdownAgent({
+      featureRequest: featureRequest ?? '',
+      breakdownFeedback: runtimeState.breakdownFeedback,
+      prd: runtimeState.prd,
+      acSpec: runtimeState.acSpec,
+      planReport: runtimeState.planReport
+    });
 
-    // Find stage record for this stageType
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return;
+    }
+
+    const nextState: PipelineRuntimeState = {
+      ...runtimeState,
+      ...update,
+      currentStep: 'evaluation'
+    };
+
+    await this.completeStage(pipelineId, stage, nextState, {
+      retryCount: nextState.retryCount
+    });
+    await this.writeArtifacts(
+      pipelineId,
+      stage.id,
+      stage.stageType as PipelineStageType,
+      nextState
+    );
+  }
+
+  private async runEvaluationStep(
+    pipelineId: string,
+    runtimeState: PipelineRuntimeState,
+    stage: PipelineStageRow
+  ): Promise<boolean> {
+    const update = evaluationNode({
+      prd: runtimeState.prd,
+      acSpec: runtimeState.acSpec,
+      planReport: runtimeState.planReport,
+      breakdownFeedback: runtimeState.breakdownFeedback,
+      featureRequest: '',
+      humanDecision: null,
+      retryCount: runtimeState.retryCount,
+      errors: []
+    });
+
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return false;
+    }
+
+    if (update.breakdownFeedback) {
+      const nextRetryCount = runtimeState.retryCount + 1;
+      const exceeded = nextRetryCount > runtimeState.config.maxRetry;
+
+      await this.failStage(
+        pipelineId,
+        stage,
+        update.breakdownFeedback.reason,
+        nextRetryCount
+      );
+
+      if (exceeded) {
+        await this.failPipeline(
+          pipelineId,
+          `Max retry count (${runtimeState.config.maxRetry}) exceeded`
+        );
+        return false;
+      }
+
+      await this.persistRuntimeState(pipelineId, {
+        ...runtimeState,
+        breakdownFeedback: update.breakdownFeedback,
+        retryCount: nextRetryCount,
+        currentStep: 'breakdown'
+      });
+
+      return true;
+    }
+
+    const nextState: PipelineRuntimeState = {
+      ...runtimeState,
+      breakdownFeedback: null,
+      currentStep: 'spec'
+    };
+
+    await this.completeStage(pipelineId, stage, nextState, {
+      retryCount: nextState.retryCount
+    });
+    return true;
+  }
+
+  private async runSpecStep(
+    pipelineId: string,
+    runtimeState: PipelineRuntimeState,
+    stage: PipelineStageRow
+  ) {
+    const update = specAgent({
+      prd: runtimeState.prd,
+      humanFeedback: runtimeState.humanFeedback
+    });
+
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return;
+    }
+
+    const nextState: PipelineRuntimeState = {
+      ...runtimeState,
+      ...update,
+      currentStep: 'estimate'
+    };
+
+    await this.completeStage(pipelineId, stage, nextState);
+    await this.writeArtifacts(
+      pipelineId,
+      stage.id,
+      stage.stageType as PipelineStageType,
+      nextState
+    );
+  }
+
+  private async runEstimateStep(
+    pipelineId: string,
+    runtimeState: PipelineRuntimeState,
+    stage: PipelineStageRow
+  ) {
+    const update = estimateAgent({
+      prd: runtimeState.prd,
+      acSpec: runtimeState.acSpec
+    });
+
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return;
+    }
+
+    const nextState: PipelineRuntimeState = {
+      ...runtimeState,
+      ...update,
+      currentStep: 'human_review'
+    };
+
+    await this.completeStage(pipelineId, stage, nextState);
+    await this.writeArtifacts(
+      pipelineId,
+      stage.id,
+      stage.stageType as PipelineStageType,
+      nextState
+    );
+
+    if (await this.isPipelineCancelled(pipelineId)) {
+      return;
+    }
+
+    await this.pauseForHumanReview(pipelineId, nextState);
+  }
+
+  private async markStageStarted(
+    pipelineId: string,
+    stageType: PipelineStageType
+  ): Promise<PipelineStageRow> {
     const stage = await this.prisma.pipelineStage.findFirst({
       where: { pipelineId, stageType }
     });
 
-    if (!stage) return;
-
-    if (stageType === PipelineStageType.Evaluation && nodeState.breakdownFeedback) {
-      // Evaluation failed — increment retryCount, check maxRetry
-      const currentRetryCount = (await this.prisma.pipelineStage.findFirst({
-        where: { pipelineId, stageType: PipelineStageType.Breakdown },
-        select: { retryCount: true }
-      }))?.retryCount ?? 0;
-
-      if (currentRetryCount >= config.maxRetry) {
-        await this.failPipeline(pipelineId, `Max retry count (${config.maxRetry}) exceeded`);
-        return;
-      }
-
-      await this.prisma.pipelineStage.update({
-        where: { id: stage.id },
-        data: {
-          status: PipelineStageStatus.Failed,
-          retryCount: { increment: 1 }
-        }
-      });
-    } else {
-      await this.prisma.pipelineStage.update({
-        where: { id: stage.id },
-        data: { status: PipelineStageStatus.Completed }
-      });
+    if (!stage) {
+      throw new Error(`Pipeline stage not found: ${pipelineId}/${stageType}`);
     }
+
+    const updatedStage = await this.prisma.pipelineStage.update({
+      where: { id: stage.id },
+      data: {
+        status: PipelineStageStatus.Running
+      }
+    });
 
     await this.prisma.pipeline.update({
       where: { id: pipelineId },
       data: { currentStageId: stage.id }
     });
 
-    // Emit stage_completed event
-    const eventId = this.pipelineEventStore.nextEventId(pipelineId);
+    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
     await this.pipelineEventStore.append({
-      kind: 'stage_completed',
+      kind: 'stage_started',
       pipelineId,
       eventId,
       stageId: stage.id,
@@ -241,95 +392,111 @@ export class PipelineWorkerService
       timestamp: new Date().toISOString()
     });
 
-    // Write artifacts for agent nodes
-    await this.writeArtifacts(pipelineId, stage.id, stageType, nodeState);
+    return updatedStage;
   }
 
-  private async writeArtifacts(
+  private async completeStage(
     pipelineId: string,
-    stageId: string,
-    stageType: PipelineStageType,
-    nodeState: Partial<PlanStateType>
-  ): Promise<void> {
-    if (stageType === PipelineStageType.Breakdown && nodeState.prd) {
-      await this.pipelinesService.createArtifact(pipelineId, {
-        stageId,
-        name: 'prd.json',
-        contentType: 'application/json',
-        content: JSON.stringify(nodeState.prd, null, 2)
-      });
+    stage: PipelineStageRow,
+    nextState: PipelineRuntimeState,
+    options?: {
+      retryCount?: number;
     }
-
-    if (stageType === PipelineStageType.Spec && nodeState.acSpec) {
-      await this.pipelinesService.createArtifact(pipelineId, {
-        stageId,
-        name: 'ac-spec.json',
-        contentType: 'application/json',
-        content: JSON.stringify(nodeState.acSpec, null, 2)
-      });
-    }
-
-    if (stageType === PipelineStageType.Estimate && nodeState.planReport) {
-      await this.pipelinesService.createArtifact(pipelineId, {
-        stageId,
-        name: 'plan-report.md',
-        contentType: 'text/markdown',
-        content: nodeState.planReport
-      });
-    }
-  }
-
-  private async handleInterrupt(pipelineId: string): Promise<void> {
-    // Find and update humanReview stage to awaiting_review
-    const stage = await this.prisma.pipelineStage.findFirst({
-      where: { pipelineId, stageType: PipelineStageType.HumanReview }
+  ) {
+    await this.prisma.pipelineStage.update({
+      where: { id: stage.id },
+      data: {
+        status: PipelineStageStatus.Completed,
+        ...(options?.retryCount !== undefined
+          ? { retryCount: options.retryCount }
+          : {})
+      }
     });
 
-    if (stage) {
-      await this.prisma.pipelineStage.update({
-        where: { id: stage.id },
-        data: { status: PipelineStageStatus.AwaitingReview }
-      });
-    }
+    await this.persistRuntimeState(pipelineId, nextState, stage.id);
+
+    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
+    await this.pipelineEventStore.append({
+      kind: 'stage_completed',
+      pipelineId,
+      eventId,
+      stageId: stage.id,
+      stageType: stage.stageType as PipelineStageType,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  private async failStage(
+    pipelineId: string,
+    stage: PipelineStageRow,
+    reason: string,
+    retryCount?: number
+  ) {
+    await this.prisma.pipelineStage.update({
+      where: { id: stage.id },
+      data: {
+        status: PipelineStageStatus.Failed,
+        ...(retryCount !== undefined ? { retryCount } : {})
+      }
+    });
+
+    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
+    await this.pipelineEventStore.append({
+      kind: 'stage_failed',
+      pipelineId,
+      eventId,
+      stageId: stage.id,
+      stageType: stage.stageType as PipelineStageType,
+      timestamp: new Date().toISOString(),
+      data: { reason }
+    });
+  }
+
+  private async pauseForHumanReview(
+    pipelineId: string,
+    runtimeState: PipelineRuntimeState
+  ) {
+    const stage = await this.markStageStarted(
+      pipelineId,
+      PipelineStageType.HumanReview
+    );
+
+    await this.prisma.pipelineStage.update({
+      where: { id: stage.id },
+      data: {
+        status: PipelineStageStatus.AwaitingReview
+      }
+    });
 
     await this.prisma.pipeline.update({
       where: { id: pipelineId },
       data: {
         status: PipelineStatus.Paused,
-        currentStageId: stage?.id ?? null
+        currentStageId: stage.id,
+        state: toInputJson(runtimeState as unknown as Prisma.InputJsonValue)
       }
     });
 
-    const eventId = this.pipelineEventStore.nextEventId(pipelineId);
+    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
     await this.pipelineEventStore.append({
       kind: 'pipeline_paused',
       pipelineId,
       eventId,
-      stageId: stage?.id,
+      stageId: stage.id,
       stageType: PipelineStageType.HumanReview,
       timestamp: new Date().toISOString()
     });
   }
 
-  private async completePipeline(pipelineId: string): Promise<void> {
-    // Update humanReview stage to completed
-    const stage = await this.prisma.pipelineStage.findFirst({
-      where: { pipelineId, stageType: PipelineStageType.HumanReview }
-    });
-
-    if (stage) {
-      await this.prisma.pipelineStage.update({
-        where: { id: stage.id },
-        data: { status: PipelineStageStatus.Completed }
-      });
-    }
-
+  private async completePipeline(pipelineId: string) {
     await this.prisma.pipeline.update({
       where: { id: pipelineId },
-      data: { status: PipelineStatus.Completed }
+      data: {
+        status: PipelineStatus.Completed
+      }
     });
 
-    const eventId = this.pipelineEventStore.nextEventId(pipelineId);
+    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
     await this.pipelineEventStore.append({
       kind: 'pipeline_completed',
       pipelineId,
@@ -340,15 +507,17 @@ export class PipelineWorkerService
     this.pipelineEventStore.complete(pipelineId);
   }
 
-  private async failPipeline(pipelineId: string, reason: string): Promise<void> {
+  private async failPipeline(pipelineId: string, reason: string) {
     this.logger.warn(`Pipeline ${pipelineId} failed: ${reason}`);
 
     await this.prisma.pipeline.update({
       where: { id: pipelineId },
-      data: { status: PipelineStatus.Failed }
+      data: {
+        status: PipelineStatus.Failed
+      }
     });
 
-    const eventId = this.pipelineEventStore.nextEventId(pipelineId);
+    const eventId = await this.pipelineEventStore.nextEventId(pipelineId);
     await this.pipelineEventStore.append({
       kind: 'pipeline_failed',
       pipelineId,
@@ -360,11 +529,54 @@ export class PipelineWorkerService
     this.pipelineEventStore.complete(pipelineId);
   }
 
-  /**
-   * On boot, recover any pipelines stuck in 'running' state (process crashed mid-execution).
-   * Reset them to 'pending' so the Worker picks them up again.
-   * LangGraph MemorySaver will restart from scratch; for production use SqliteSaver.
-   */
+  private async persistRuntimeState(
+    pipelineId: string,
+    runtimeState: PipelineRuntimeState,
+    currentStageId?: string | null
+  ) {
+    await this.prisma.pipeline.update({
+      where: { id: pipelineId },
+      data: {
+        state: toInputJson(runtimeState as unknown as Prisma.InputJsonValue),
+        ...(currentStageId !== undefined ? { currentStageId } : {})
+      }
+    });
+  }
+
+  private async writeArtifacts(
+    pipelineId: string,
+    stageId: string,
+    stageType: PipelineStageType,
+    runtimeState: PipelineRuntimeState
+  ) {
+    if (stageType === PipelineStageType.Breakdown && runtimeState.prd) {
+      await this.pipelinesService.createArtifact(pipelineId, {
+        stageId,
+        name: 'prd.json',
+        contentType: 'application/json',
+        content: JSON.stringify(runtimeState.prd, null, 2)
+      });
+    }
+
+    if (stageType === PipelineStageType.Spec && runtimeState.acSpec.length > 0) {
+      await this.pipelinesService.createArtifact(pipelineId, {
+        stageId,
+        name: 'ac-spec.json',
+        contentType: 'application/json',
+        content: JSON.stringify(runtimeState.acSpec, null, 2)
+      });
+    }
+
+    if (stageType === PipelineStageType.Estimate && runtimeState.planReport) {
+      await this.pipelinesService.createArtifact(pipelineId, {
+        stageId,
+        name: 'plan-report.md',
+        contentType: 'text/markdown',
+        content: runtimeState.planReport
+      });
+    }
+  }
+
   private async recoverInterruptedPipelinesOnBoot(): Promise<void> {
     const count = await this.prisma.pipeline.updateMany({
       where: { status: PipelineStatus.Running },
@@ -373,58 +585,38 @@ export class PipelineWorkerService
 
     if (count.count > 0) {
       this.logger.warn(
-        `Recovered ${count.count} interrupted pipeline(s) from 'running' → 'pending'`
+        `Recovered ${count.count} interrupted pipeline(s) from 'running' -> 'pending'`
       );
     }
   }
 
-  /**
-   * Called by PipelinesService.submitDecision() to enqueue a resume.
-   * The pipeline status is set to 'pending' and resumePayload is stored.
-   * The pollLoop will pick it up and call Command(resume=decision).
-   */
-  async enqueueResume(pipelineId: string, decision: HumanDecision): Promise<void> {
-    await this.prisma.pipeline.update({
+  private async isPipelineCancelled(pipelineId: string): Promise<boolean> {
+    const pipeline = await this.prisma.pipeline.findUnique({
       where: { id: pipelineId },
-      data: {
-        status: PipelineStatus.Pending,
-        resumePayload: JSON.stringify(decision)
-      }
+      select: { status: true }
     });
-  }
 
-  private getPipelineConfig(state: unknown): PipelineConfig {
-    const raw = state as Record<string, unknown> | null | undefined;
-    return {
-      maxRetry:
-        typeof raw?.maxRetry === 'number'
-          ? raw.maxRetry
-          : DEFAULT_PIPELINE_CONFIG.maxRetry
-    };
-  }
-
-  private nodeNameToStageType(nodeName: string): PipelineStageType | null {
-    const map: Record<string, PipelineStageType> = {
-      breakdown: PipelineStageType.Breakdown,
-      evaluation: PipelineStageType.Evaluation,
-      spec: PipelineStageType.Spec,
-      estimate: PipelineStageType.Estimate,
-      humanReview: PipelineStageType.HumanReview
-    };
-    return map[nodeName] ?? null;
-  }
-
-  /** Exposed for use by PipelinesService.start() to create PipelineStage records */
-  static get planStageTypes(): PipelineStageType[] {
-    return PLAN_STAGE_TYPES;
-  }
-
-  /** Exposed for use by PipelinesService.start() to get stage display names */
-  static stageName(stageType: PipelineStageType): string {
-    return STAGE_NAME_MAP[stageType] ?? stageType;
+    return (
+      (pipeline?.status as PipelineStatus | undefined) ===
+      PipelineStatus.Cancelled
+    );
   }
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForConfiguredTestDelay() {
+  const rawValue = process.env.PIPELINE_STEP_DELAY_MS;
+  if (!rawValue) {
+    return;
+  }
+
+  const delayMs = Number.parseInt(rawValue, 10);
+  if (!Number.isFinite(delayMs) || delayMs <= 0) {
+    return;
+  }
+
+  await sleep(delayMs);
 }

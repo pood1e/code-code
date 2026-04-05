@@ -68,6 +68,7 @@ export type ArtifactContentType =
 export type PipelineSummary = {
   id: string;
   scopeId: string;
+  runnerId: string | null;
   name: string;
   description: string | null;
   status: PipelineStatus;
@@ -190,14 +191,17 @@ export type StartPipelineInput = {
 
 // ─── Pipeline SSE Events ──────────────────────────────────────────────────────
 
-export type PipelineEventKind =
-  | 'stage_started'
-  | 'stage_completed'
-  | 'stage_failed'
-  | 'pipeline_paused'
-  | 'pipeline_completed'
-  | 'pipeline_failed'
-  | 'pipeline_cancelled';
+export const PIPELINE_EVENT_KINDS = [
+  'stage_started',
+  'stage_completed',
+  'stage_failed',
+  'pipeline_paused',
+  'pipeline_completed',
+  'pipeline_failed',
+  'pipeline_cancelled'
+] as const;
+
+export type PipelineEventKind = (typeof PIPELINE_EVENT_KINDS)[number];
 
 export type PipelineEvent = {
   kind: PipelineEventKind;

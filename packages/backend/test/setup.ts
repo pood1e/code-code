@@ -17,27 +17,40 @@ let prisma: PrismaService;
 const TEST_DB_PATH = path.join(__dirname, '..', 'prisma', 'test.db');
 const TEST_DB_URL = `file:${TEST_DB_PATH}`;
 
+type SetupTestAppOptions = {
+  resetDb?: boolean;
+};
+
+type TeardownTestAppOptions = {
+  preserveDb?: boolean;
+};
+
 /**
  * Bootstrap the NestJS application with an isolated SQLite test database.
  * Uses NestFactory.create (same as production) to ensure DiscoveryService works.
  */
-export async function setupTestApp(): Promise<INestApplication> {
-  // Remove stale test DB if it exists
-  for (const suffix of ['', '-journal', '-wal', '-shm']) {
-    const p = `${TEST_DB_PATH}${suffix}`;
-    if (fs.existsSync(p)) fs.unlinkSync(p);
+export async function setupTestApp(
+  options: SetupTestAppOptions = {}
+): Promise<INestApplication> {
+  const { resetDb = true } = options;
+
+  if (resetDb) {
+    for (const suffix of ['', '-journal', '-wal', '-shm']) {
+      const p = `${TEST_DB_PATH}${suffix}`;
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
   }
 
-  // Set DATABASE_URL before anything touches Prisma
   process.env.DATABASE_URL = TEST_DB_URL;
   process.env.NOTIFICATION_AUTO_START = 'false';
 
-  // Push schema to test DB (no migration history, fastest for tests)
-  execSync('npx prisma db push --skip-generate --accept-data-loss', {
-    cwd: path.join(__dirname, '..'),
-    env: { ...process.env, DATABASE_URL: TEST_DB_URL },
-    stdio: 'pipe'
-  });
+  if (resetDb) {
+    execSync('npx prisma db push --skip-generate --accept-data-loss', {
+      cwd: path.join(__dirname, '..'),
+      env: { ...process.env, DATABASE_URL: TEST_DB_URL },
+      stdio: 'pipe'
+    });
+  }
 
   app = await NestFactory.create(AppModule, {
     logger: false,
@@ -79,6 +92,7 @@ export function getPrisma(): PrismaService {
 export async function resetDatabase(): Promise<void> {
   const db = getPrisma();
   await db.$transaction([
+    db.pipelineEvent.deleteMany(),
     db.sessionEvent.deleteMany(),
     db.sessionMetric.deleteMany(),
     db.messageToolUse.deleteMany(),
@@ -102,13 +116,19 @@ export async function resetDatabase(): Promise<void> {
   ]);
 }
 
-export async function teardownTestApp(): Promise<void> {
+export async function teardownTestApp(
+  options: TeardownTestAppOptions = {}
+): Promise<void> {
+  const { preserveDb = false } = options;
+
   if (app) {
     await app.close();
   }
-  // Cleanup test DB
-  for (const suffix of ['', '-journal', '-wal', '-shm']) {
-    const p = `${TEST_DB_PATH}${suffix}`;
-    if (fs.existsSync(p)) fs.unlinkSync(p);
+
+  if (!preserveDb) {
+    for (const suffix of ['', '-journal', '-wal', '-shm']) {
+      const p = `${TEST_DB_PATH}${suffix}`;
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
   }
 }

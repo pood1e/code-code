@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-import type { PipelineDetail } from '@agent-workbench/shared';
+import { PipelineStatus, type PipelineDetail } from '@agent-workbench/shared';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,7 @@ export function PipelineDetail({ pipelineId, scopeId, pipeline, isLoading }: Pro
   const [selectedRunnerId, setSelectedRunnerId] = useState<string>('');
 
   // Subscribe to live events — auto-invalidates cache on state transitions
-  usePipelineEventStream(pipelineId);
+  usePipelineEventStream(pipelineId, scopeId);
 
   const runnersQuery = useQuery({
     queryKey: queryKeys.agentRunners.list(),
@@ -116,11 +116,20 @@ export function PipelineDetail({ pipelineId, scopeId, pipeline, isLoading }: Pro
 
   const status = pipeline.status;
   const statusCfg = STATUS_CONFIG[status] ?? STATUS_CONFIG['draft'];
-  const isPaused = status === 'paused';
-  const isDraft = status === 'draft';
-  const isActive = status === 'pending' || status === 'running';
-  const isTerminal = status === 'completed' || status === 'cancelled' || status === 'failed';
+  const isPaused = status === PipelineStatus.Paused;
+  const isDraft = status === PipelineStatus.Draft;
+  const isActive =
+    status === PipelineStatus.Pending || status === PipelineStatus.Running;
+  const isTerminal =
+    status === PipelineStatus.Completed ||
+    status === PipelineStatus.Cancelled ||
+    status === PipelineStatus.Failed;
   const runners = runnersQuery.data ?? [];
+  const runnerName =
+    pipeline.runnerId
+      ? runners.find((runner) => runner.id === pipeline.runnerId)?.name ??
+        pipeline.runnerId
+      : null;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -128,13 +137,17 @@ export function PipelineDetail({ pipelineId, scopeId, pipeline, isLoading }: Pro
       <div className="flex items-start justify-between gap-4 p-4 pb-3 flex-shrink-0">
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold truncate">{pipeline.name}</h2>
+          {runnerName && (
+            <p className="mt-1 text-xs text-muted-foreground">Runner: {runnerName}</p>
+          )}
           <div className="flex items-center gap-1.5 mt-1">
             <Badge
               variant={statusCfg.variant}
               className={`flex items-center gap-1 text-xs ${
-                status === 'completed'
+                status === PipelineStatus.Completed
                   ? 'bg-green-600 text-white'
-                  : status === 'running' || status === 'pending'
+                  : status === PipelineStatus.Running ||
+                      status === PipelineStatus.Pending
                     ? 'bg-blue-600 text-white'
                     : ''
               }`}
@@ -204,7 +217,7 @@ export function PipelineDetail({ pipelineId, scopeId, pipeline, isLoading }: Pro
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {/* Human review */}
-        {isPaused && <HumanReviewPanel pipelineId={pipelineId} />}
+        {isPaused && <HumanReviewPanel pipelineId={pipelineId} scopeId={scopeId} />}
 
         {/* Stage timeline */}
         {pipeline.stages.length > 0 && (
