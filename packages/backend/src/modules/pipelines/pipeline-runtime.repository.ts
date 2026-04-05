@@ -34,6 +34,7 @@ export type ManagedArtifactIntent = {
   stageId?: string | null;
   artifactKey: PipelineArtifactKey;
   attempt: number;
+  version: number;
   name: string;
   contentType: string;
   content: string;
@@ -52,7 +53,7 @@ export abstract class PipelineRuntimeRepository {
       order: number;
       status: PipelineStageStatus;
     }>;
-  }): Promise<PipelineRecord | null>;
+  }): Promise<PipelineRuntimeMutationResult<PipelineRecord> | null>;
   abstract getDecisionContext(id: string): Promise<PipelineDecisionContext | null>;
   abstract startStage(
     pipelineId: string,

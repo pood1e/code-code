@@ -3,7 +3,9 @@ import type { Prisma } from '@prisma/client';
 
 import { toOptionalInputJson } from '../../common/json.utils';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { PipelineArtifactKey } from '@agent-workbench/shared';
 import { PIPELINE_ARTIFACT_STATUS } from './pipeline-artifact.constants';
+import { PipelineArtifactVersionRepository } from './pipeline-artifact-version.repository';
 import type {
   CreatePipelineArtifactIntentInput
 } from './pipeline-artifact.repository';
@@ -13,7 +15,10 @@ import { toPipelineArtifactRecord } from './prisma-pipeline.repository';
 
 @Injectable()
 export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pipelineArtifactVersionRepository: PipelineArtifactVersionRepository
+  ) {
     super();
   }
 
@@ -28,7 +33,7 @@ export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository
         ...(input.attempt !== undefined && input.attempt !== null
           ? { attempt: input.attempt }
           : {}),
-        status: PIPELINE_ARTIFACT_STATUS.Pending,
+        status: PIPELINE_ARTIFACT_STATUS.Ready,
         name: input.name,
         contentType: input.contentType,
         content: input.content,
@@ -48,32 +53,30 @@ export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository
   async createManagedArtifactIntent(input: {
     pipelineId: string;
     stageId?: string | null;
-    artifactKey: string;
+    artifactKey: PipelineArtifactKey;
     attempt: number;
     name: string;
     contentType: string;
     content: string;
   }): Promise<PipelineArtifactRecord> {
-    const artifact = await this.prisma.$transaction(async (tx) => {
-      const version = await this.reserveManagedArtifactVersion(
-        tx,
+    const version =
+      await this.pipelineArtifactVersionRepository.reserveNextVersion(
         input.pipelineId,
         input.artifactKey
       );
 
-      return tx.pipelineArtifact.create({
-        data: {
-          pipelineId: input.pipelineId,
-          ...(input.stageId ? { stageId: input.stageId } : {}),
-          artifactKey: input.artifactKey,
-          attempt: input.attempt,
-          version,
-          status: PIPELINE_ARTIFACT_STATUS.Pending,
-          name: input.name,
-          contentType: input.contentType,
-          content: input.content
-        }
-      });
+    const artifact = await this.prisma.pipelineArtifact.create({
+      data: {
+        pipelineId: input.pipelineId,
+        ...(input.stageId ? { stageId: input.stageId } : {}),
+        artifactKey: input.artifactKey,
+        attempt: input.attempt,
+        version,
+        status: PIPELINE_ARTIFACT_STATUS.Ready,
+        name: input.name,
+        contentType: input.contentType,
+        content: input.content
+      }
     });
 
     return toPipelineArtifactRecord(artifact);
@@ -147,11 +150,9 @@ export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository
     const result = await this.prisma.pipelineArtifact.updateMany({
       where: {
         id: artifactId,
-        status: PIPELINE_ARTIFACT_STATUS.Processing,
         materializerOwnerId: ownerId
       },
       data: {
-        status: PIPELINE_ARTIFACT_STATUS.Ready,
         storageRef,
         lastError: null,
         materializerOwnerId: null,
@@ -170,11 +171,9 @@ export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository
     const result = await this.prisma.pipelineArtifact.updateMany({
       where: {
         id: artifactId,
-        status: PIPELINE_ARTIFACT_STATUS.Processing,
         materializerOwnerId: ownerId
       },
       data: {
-        status: PIPELINE_ARTIFACT_STATUS.Failed,
         lastError: reason,
         materializeAttempts: {
           increment: 1
@@ -185,43 +184,5 @@ export class PrismaPipelineArtifactRepository extends PipelineArtifactRepository
     });
 
     return result.count === 1;
-  }
-  private async reserveManagedArtifactVersion(
-    tx: Prisma.TransactionClient,
-    pipelineId: string,
-    artifactKey: string
-  ): Promise<number> {
-    const rows = await tx.$queryRaw<Array<{ version: number | bigint }>>`
-      INSERT INTO "PipelineArtifactSeries" (
-        "pipelineId",
-        "artifactKey",
-        "nextVersion",
-        "createdAt",
-        "updatedAt"
-      )
-      VALUES (
-        ${pipelineId},
-        ${artifactKey},
-        2,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-      )
-      ON CONFLICT ("pipelineId", "artifactKey")
-      DO UPDATE SET
-        "nextVersion" = "PipelineArtifactSeries"."nextVersion" + 1,
-        "updatedAt" = CURRENT_TIMESTAMP
-      RETURNING "nextVersion" - 1 AS "version"
-    `;
-
-    const rawVersion = rows.at(0)?.version;
-    const version =
-      typeof rawVersion === 'bigint' ? Number(rawVersion) : rawVersion;
-    if (!version || !Number.isSafeInteger(version) || version < 1) {
-      throw new Error(
-        `Failed to allocate artifact version for ${pipelineId}/${artifactKey}`
-      );
-    }
-
-    return version;
   }
 }

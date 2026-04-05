@@ -3,7 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { PipelineStatus } from '@agent-workbench/shared';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { PIPELINE_ARTIFACT_STATUS } from './pipeline-artifact.constants';
 import { PipelineExecutionLeaseRepository } from './pipeline-execution-lease.repository';
 import type { ClaimedPipelineRecord } from './pipeline-runtime.repository';
 import { toPipelineArtifactRecord } from './prisma-pipeline.repository';
@@ -98,15 +97,17 @@ export class PrismaPipelineExecutionLeaseRepository extends PipelineExecutionLea
     const candidate = await this.prisma.pipelineArtifact.findFirst({
       where: {
         content: { not: null },
-        OR: [
-          { status: PIPELINE_ARTIFACT_STATUS.Pending },
+        storageRef: null,
+        AND: [
           {
-            status: PIPELINE_ARTIFACT_STATUS.Failed,
-            updatedAt: { lt: input.retryBefore }
+            OR: [
+              { lastError: null },
+              { updatedAt: { lt: input.retryBefore } }
+            ]
           },
           {
-            status: PIPELINE_ARTIFACT_STATUS.Processing,
             OR: [
+              { materializerOwnerId: null },
               { materializerLeaseExpiresAt: null },
               { materializerLeaseExpiresAt: { lt: input.now } }
             ]
@@ -123,23 +124,14 @@ export class PrismaPipelineExecutionLeaseRepository extends PipelineExecutionLea
     const claimed = await this.prisma.pipelineArtifact.updateMany({
       where: {
         id: candidate.id,
+        storageRef: null,
         OR: [
-          { status: PIPELINE_ARTIFACT_STATUS.Pending },
-          {
-            status: PIPELINE_ARTIFACT_STATUS.Failed,
-            updatedAt: { lt: input.retryBefore }
-          },
-          {
-            status: PIPELINE_ARTIFACT_STATUS.Processing,
-            OR: [
-              { materializerLeaseExpiresAt: null },
-              { materializerLeaseExpiresAt: { lt: input.now } }
-            ]
-          }
+          { materializerOwnerId: null },
+          { materializerLeaseExpiresAt: null },
+          { materializerLeaseExpiresAt: { lt: input.now } }
         ]
       },
       data: {
-        status: PIPELINE_ARTIFACT_STATUS.Processing,
         materializerOwnerId: input.ownerId,
         materializerLeaseExpiresAt: input.leaseExpiresAt
       }
@@ -151,7 +143,6 @@ export class PrismaPipelineExecutionLeaseRepository extends PipelineExecutionLea
 
     return toPipelineArtifactRecord({
       ...candidate,
-      status: PIPELINE_ARTIFACT_STATUS.Processing,
       materializerOwnerId: input.ownerId,
       materializerLeaseExpiresAt: input.leaseExpiresAt
     });
@@ -167,7 +158,6 @@ export class PrismaPipelineExecutionLeaseRepository extends PipelineExecutionLea
       .updateMany({
         where: {
           id: input.artifactId,
-          status: PIPELINE_ARTIFACT_STATUS.Processing,
           materializerOwnerId: input.ownerId,
           materializerLeaseExpiresAt: { gte: input.now }
         },
