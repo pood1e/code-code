@@ -67,6 +67,12 @@ function createRunnerType(): RunnerTypeResponse {
           kind: 'string',
           required: true,
           defaultValue: 'qwen3'
+        },
+        {
+          name: 'env',
+          label: '环境变量',
+          kind: 'string_map',
+          required: false
         }
       ]
     },
@@ -391,6 +397,46 @@ describe('AgentRunnerEditorPage', () => {
       expect(screen.getByLabelText('Endpoint')).toHaveValue(
         'https://api.example.com'
       );
+    });
+  });
+
+  it('应支持添加并保存 CLI 环境变量', async () => {
+    vi.mocked(createAgentRunner).mockResolvedValue({
+      ...createAgentRunnerDetail(),
+      name: 'Qwen Runner',
+      runnerConfig: {
+        model: 'qwen3',
+        env: {
+          OPENAI_API_KEY: 'secret'
+        }
+      }
+    });
+
+    const { user } = renderAgentRunnerEditorPage('/agent-runners/new');
+
+    await user.type(await screen.findByLabelText('Name'), 'Qwen Runner');
+    await user.click(screen.getByRole('button', { name: '添加环境变量' }));
+
+    const keyInput = screen.getByPlaceholderText('KEY');
+    const valueInput = screen.getByPlaceholderText('VALUE');
+    await user.type(keyInput, 'OPENAI_API_KEY');
+    await user.type(valueInput, 'secret');
+
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(createAgentRunner).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(createAgentRunner).mock.calls[0]?.[0]).toEqual({
+        name: 'Qwen Runner',
+        description: undefined,
+        type: 'mock',
+        runnerConfig: {
+          model: 'qwen3',
+          env: {
+            OPENAI_API_KEY: 'secret'
+          }
+        }
+      });
     });
   });
 

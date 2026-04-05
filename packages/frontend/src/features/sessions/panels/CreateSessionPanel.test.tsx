@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
+  AgentRunnerDetail,
   AgentRunnerSummary,
   ChatSummary,
   Profile,
@@ -9,7 +10,7 @@ import type {
 } from '@agent-workbench/shared';
 import { SessionStatus } from '@agent-workbench/shared';
 
-import { probeAgentRunnerContext } from '@/api/agent-runners';
+import { getAgentRunner, probeAgentRunnerContext } from '@/api/agent-runners';
 import { getProfile } from '@/api/profiles';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import { renderWithProviders } from '@/test/render';
@@ -22,6 +23,7 @@ const createSessionMutationMock = vi.hoisted(() => ({
 }));
 
 vi.mock('@/api/agent-runners', async () => ({
+  getAgentRunner: vi.fn(),
   probeAgentRunnerContext: vi.fn()
 }));
 
@@ -128,6 +130,16 @@ function createRunnerWithType(
     type,
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z'
+  };
+}
+
+function createRunnerDetail(
+  overrides: Partial<AgentRunnerDetail> = {}
+): AgentRunnerDetail {
+  return {
+    ...createRunner(),
+    runnerConfig: {},
+    ...overrides
   };
 }
 
@@ -274,6 +286,7 @@ describe('CreateSessionPanel', () => {
     createSessionMutationMock.mutateAsync.mockResolvedValue(
       createChatSummary()
     );
+    vi.mocked(getAgentRunner).mockResolvedValue(createRunnerDetail());
     vi.mocked(probeAgentRunnerContext).mockResolvedValue({});
     vi.mocked(getProfile).mockResolvedValue({
       id: 'profile-1',
@@ -447,6 +460,61 @@ describe('CreateSessionPanel', () => {
 
     await user.selectOptions(approvalModeField, 'auto-edit');
     expect(approvalModeField).toHaveValue('auto-edit');
+  });
+
+  it('Claude runner 锁定 runtime 配置后，应隐藏对应字段', async () => {
+    vi.mocked(getAgentRunner).mockResolvedValue(
+      createRunnerDetail({
+        id: 'runner-claude',
+        name: 'Claude Runner',
+        type: 'claude-code',
+        runnerConfig: {
+          allowRuntimeModelOverride: false,
+          allowRuntimePermissionModeOverride: false,
+          defaultRuntimeModel: 'sonnet',
+          defaultRuntimePermissionMode: 'auto'
+        }
+      })
+    );
+
+    renderPanel({
+      runnerTypes: [
+        {
+          ...createRunnerType(),
+          id: 'claude-code',
+          name: 'Claude Code',
+          runtimeConfigSchema: {
+            fields: [
+              {
+                name: 'model',
+                label: '模型',
+                kind: 'string',
+                required: false
+              },
+              {
+                name: 'permissionMode',
+                label: '权限模式',
+                kind: 'enum',
+                required: false,
+                enumOptions: [
+                  { label: '计划', value: 'plan' },
+                  { label: '自动', value: 'auto' },
+                  { label: '绕过权限', value: 'bypassPermissions' }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      runners: [createRunnerWithType('runner-claude', 'Claude Runner', 'claude-code')]
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('模型')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('combobox', { name: '权限模式' })
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('切换 AgentRunner 时应重置旧 runner 的草稿与 schema 字段', async () => {

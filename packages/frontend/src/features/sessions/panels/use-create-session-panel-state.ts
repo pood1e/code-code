@@ -11,7 +11,7 @@ import type {
   SessionWorkspaceResourceKind
 } from '@agent-workbench/shared';
 
-import { probeAgentRunnerContext } from '@/api/agent-runners';
+import { getAgentRunner, probeAgentRunnerContext } from '@/api/agent-runners';
 import { toApiRequestError } from '@/api/client';
 import { getProfile } from '@/api/profiles';
 import { useErrorMessage } from '@/hooks/use-error-message';
@@ -26,6 +26,7 @@ import { useCreateSessionMutation } from '../hooks/use-create-session-mutation';
 
 import {
   getHasInitialMessageDraft,
+  getSelectedRunnerConfig,
   isCreateSessionValidationError,
   shouldSubmitStructuredPromptByEnter,
   useCreateSessionFieldValues,
@@ -69,7 +70,13 @@ export function useCreateSessionPanelState({
       runnerTypes.find((runnerType) => runnerType.id === selectedRunner?.type),
     [runnerTypes, selectedRunner?.type]
   );
-  const schemaState = useCreateSessionSchemaState(selectedRunnerType);
+  const selectedRunnerDetailQuery = useSelectedRunnerDetailQuery(
+    fieldValues.selectedRunnerId
+  );
+  const schemaState = useCreateSessionSchemaState(
+    selectedRunnerType,
+    getSelectedRunnerConfig(selectedRunnerDetailQuery.data)
+  );
   const profileDetailQuery = useProfileDetailQuery(fieldValues.selectedProfileId);
   const { data: runnerContext } = useRunnerContextQuery(
     fieldValues.selectedRunnerId
@@ -87,7 +94,12 @@ export function useCreateSessionPanelState({
   });
 
   useInitialRunnerSelection(form, runners, fieldValues.selectedRunnerId);
-  useRunnerFormDefaults(form, selectedRunnerType?.id, schemaState);
+  useRunnerFormDefaults(
+    form,
+    selectedRunnerType?.id,
+    getSelectedRunnerConfig(selectedRunnerDetailQuery.data),
+    schemaState
+  );
   useProfileResourceDefaults(
     form,
     fieldValues.selectedProfileId,
@@ -194,6 +206,17 @@ function useRunnerContextQuery(selectedRunnerId: string | undefined) {
       ? queryKeys.agentRunners.context(selectedRunnerId)
       : NOOP_QUERY_KEY,
     queryFn: () => probeAgentRunnerContext(selectedRunnerId!),
+    enabled: Boolean(selectedRunnerId),
+    staleTime: 60 * 1000
+  });
+}
+
+function useSelectedRunnerDetailQuery(selectedRunnerId: string | undefined) {
+  return useQuery({
+    queryKey: selectedRunnerId
+      ? queryKeys.agentRunners.detail(selectedRunnerId)
+      : NOOP_QUERY_KEY,
+    queryFn: () => getAgentRunner(selectedRunnerId!),
     enabled: Boolean(selectedRunnerId),
     staleTime: 60 * 1000
   });

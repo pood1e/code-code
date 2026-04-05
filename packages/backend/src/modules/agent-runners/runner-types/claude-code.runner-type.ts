@@ -16,6 +16,12 @@ import type {
 } from '../runner-type.interface';
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
+const claudeCodePermissionModeSchema = z.enum([
+  'plan',
+  'auto',
+  'bypassPermissions'
+]);
+
 export const claudeCodeRunnerConfigSchema = z.object({
   executorUser: z.string().optional(),
   env: z
@@ -24,6 +30,33 @@ export const claudeCodeRunnerConfigSchema = z.object({
     .meta({
       label: '环境变量',
       description: '以 KEY=VALUE 注入 Claude CLI 进程'
+    }),
+  defaultRuntimeModel: z
+    .string()
+    .optional()
+    .meta({
+      label: '默认运行模型',
+      description: '未显式传入运行时模型时，默认传给 Claude CLI 的 --model'
+    }),
+  allowRuntimeModelOverride: z
+    .boolean()
+    .default(true)
+    .meta({
+      label: '允许运行时切换模型',
+      description: '关闭后，会话与消息级运行参数不能覆盖模型'
+    }),
+  defaultRuntimePermissionMode: claudeCodePermissionModeSchema
+    .optional()
+    .meta({
+      label: '默认权限模式',
+      description: '未显式传入运行时权限模式时使用'
+    }),
+  allowRuntimePermissionModeOverride: z
+    .boolean()
+    .default(true)
+    .meta({
+      label: '允许运行时切换权限模式',
+      description: '关闭后，会话与消息级运行参数不能覆盖权限模式'
     })
 });
 
@@ -36,12 +69,76 @@ export const claudeCodeInputSchema = z.object({
 });
 
 export const claudeCodeRuntimeConfigSchema = z.object({
-  model: z.string().default('claude-sonnet-4-5').meta({ label: '模型' }),
+  model: z
+    .string()
+    .optional()
+    .meta({
+      label: '模型',
+      description:
+        '可选。显式传递给 Claude CLI 的 --model，留空时使用环境变量或 Claude Code 默认模型'
+    }),
   permissionMode: z
     .enum(['plan', 'auto', 'bypassPermissions'])
     .default('plan')
     .meta({ label: '权限模式' })
 });
+
+export function resolveClaudeCodeRuntimeConfig(
+  runnerConfig: Record<string, unknown>,
+  runtimeConfig: Record<string, unknown>
+) {
+  const parsedRunnerConfig = claudeCodeRunnerConfigSchema.parse(runnerConfig);
+  const resolvedRuntimeConfig = { ...runtimeConfig };
+
+  if (typeof resolvedRuntimeConfig.model === 'string') {
+    const trimmedModel = resolvedRuntimeConfig.model.trim();
+    if (!trimmedModel) {
+      delete resolvedRuntimeConfig.model;
+    } else {
+      resolvedRuntimeConfig.model = trimmedModel;
+    }
+  }
+
+  if (!parsedRunnerConfig.allowRuntimeModelOverride) {
+    if (resolvedRuntimeConfig.model !== undefined) {
+      const defaultModel = parsedRunnerConfig.defaultRuntimeModel?.trim();
+      if (!defaultModel || resolvedRuntimeConfig.model !== defaultModel) {
+        throw new Error(
+          'This runner does not allow overriding the runtime model'
+        );
+      }
+    }
+
+    delete resolvedRuntimeConfig.model;
+  }
+
+  if (parsedRunnerConfig.defaultRuntimeModel?.trim()) {
+    resolvedRuntimeConfig.model = parsedRunnerConfig.defaultRuntimeModel.trim();
+  }
+
+  if (!parsedRunnerConfig.allowRuntimePermissionModeOverride) {
+    if (resolvedRuntimeConfig.permissionMode !== undefined) {
+      if (
+        !parsedRunnerConfig.defaultRuntimePermissionMode ||
+        resolvedRuntimeConfig.permissionMode !==
+          parsedRunnerConfig.defaultRuntimePermissionMode
+      ) {
+        throw new Error(
+          'This runner does not allow overriding the runtime permission mode'
+        );
+      }
+    }
+
+    delete resolvedRuntimeConfig.permissionMode;
+  }
+
+  if (parsedRunnerConfig.defaultRuntimePermissionMode) {
+    resolvedRuntimeConfig.permissionMode =
+      parsedRunnerConfig.defaultRuntimePermissionMode;
+  }
+
+  return resolvedRuntimeConfig;
+}
 
 @RunnerTypeProvider()
 export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
@@ -62,6 +159,13 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = claudeCodeRunnerConfigSchema.parse(runnerConfig);
     return probeClaudeCodeHealth(config.executorUser, config.env);
+  }
+
+  resolveRuntimeConfig(
+    runnerConfig: Record<string, unknown>,
+    runtimeConfig: Record<string, unknown>
+  ) {
+    return resolveClaudeCodeRuntimeConfig(runnerConfig, runtimeConfig);
   }
 
   protected buildProfileInstallLayout(

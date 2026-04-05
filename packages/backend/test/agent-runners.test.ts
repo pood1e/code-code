@@ -135,6 +135,21 @@ describe('AgentRunners API', () => {
           (field) => field.name === 'permissionMode'
         )?.label
       ).toBe('权限模式');
+      expect(
+        claudeType!.runtimeConfigSchema.fields.find(
+          (field) => field.name === 'model'
+        )?.defaultValue
+      ).toBeUndefined();
+      expect(
+        claudeType!.runnerConfigSchema.fields.map((field) => field.name)
+      ).toEqual(
+        expect.arrayContaining([
+          'defaultRuntimeModel',
+          'allowRuntimeModelOverride',
+          'defaultRuntimePermissionMode',
+          'allowRuntimePermissionModeOverride'
+        ])
+      );
     });
 
     it('CLI runnerConfig 应支持环境变量 string_map 字段', async () => {

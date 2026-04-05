@@ -37,7 +37,7 @@ export class CreateAgentRunnerDto {
   @ApiProperty({
     type: 'object',
     additionalProperties: true,
-    example: { model: 'claude-sonnet-4-5' },
+    example: { env: { ANTHROPIC_MODEL: 'claude-sonnet-4-6' } },
     description: 'L1 runner config following RunnerType.schema'
   })
   @IsObject()

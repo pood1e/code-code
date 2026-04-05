@@ -43,7 +43,7 @@ export class SendSessionMessageDto {
     type: 'object',
     additionalProperties: true,
     example: {
-      model: 'claude-sonnet-4-5',
+      model: 'sonnet',
       permissionMode: 'auto'
     }
   })
