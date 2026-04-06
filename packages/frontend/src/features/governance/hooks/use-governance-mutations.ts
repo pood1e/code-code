@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type {
   CreateResolutionDecisionInput,
@@ -9,6 +9,8 @@ import type {
 
 import {
   refreshGovernanceRepositoryProfile,
+  retryGovernanceBaseline,
+  retryGovernanceDiscovery,
   retryGovernancePlanning,
   retryGovernanceTriage,
   runGovernanceDiscovery,
@@ -67,6 +69,9 @@ export function useGovernanceReviewDecisionMutation(
       void queryClient.invalidateQueries({
         queryKey: queryKeys.governance.findings.all
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.governance.scopes.reviewQueue(scopeId)
+      });
     }
   });
 }
@@ -77,15 +82,7 @@ export function useGovernanceRetryTriageMutation(scopeId: string) {
   return useMutation({
     mutationFn: (findingId: string) => retryGovernanceTriage(findingId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.governance.findings.all
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.governance.issues.all
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.governance.changeUnits.all
-      });
+      void invalidateGovernanceScopeQueries(queryClient, scopeId);
     }
   });
 }
@@ -102,12 +99,21 @@ export function useGovernanceRetryPlanningMutation(
       void queryClient.invalidateQueries({
         queryKey: queryKeys.governance.issues.detail(issueId)
       });
+      void invalidateGovernanceScopeQueries(queryClient, scopeId);
+    }
+  });
+}
+
+export function useGovernanceRetryPlanningQueueMutation(scopeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (issueId: string) => retryGovernancePlanning(issueId),
+    onSuccess: (_, issueId) => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.governance.issues.all
+        queryKey: queryKeys.governance.issues.detail(issueId)
       });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.governance.changeUnits.all
-      });
+      void invalidateGovernanceScopeQueries(queryClient, scopeId);
     }
   });
 }
@@ -124,6 +130,17 @@ export function useGovernanceRefreshRepositoryProfileMutation(scopeId: string) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.governance.scopes.repositoryProfile(scopeId)
       });
+    }
+  });
+}
+
+export function useGovernanceRetryBaselineMutation(scopeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => retryGovernanceBaseline(scopeId),
+    onSuccess: () => {
+      void invalidateGovernanceScopeQueries(queryClient, scopeId);
     }
   });
 }
@@ -147,6 +164,17 @@ export function useGovernanceRunDiscoveryMutation(scopeId: string) {
   });
 }
 
+export function useGovernanceRetryDiscoveryMutation(scopeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => retryGovernanceDiscovery(scopeId),
+    onSuccess: () => {
+      void invalidateGovernanceScopeQueries(queryClient, scopeId);
+    }
+  });
+}
+
 export function useGovernanceUpdatePolicyMutation(scopeId: string) {
   const queryClient = useQueryClient();
 
@@ -158,5 +186,32 @@ export function useGovernanceUpdatePolicyMutation(scopeId: string) {
         queryKey: queryKeys.governance.scopes.policy(scopeId)
       });
     }
+  });
+}
+
+function invalidateGovernanceScopeQueries(
+  queryClient: QueryClient,
+  scopeId: string
+) {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.governance.scopes.overview(scopeId)
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.governance.scopes.reviewQueue(scopeId)
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.governance.scopes.repositoryProfile(scopeId)
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.governance.findings.all
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.governance.issues.all
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.governance.changeUnits.all
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.governance.deliveryArtifacts.all
   });
 }

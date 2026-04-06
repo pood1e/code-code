@@ -4,6 +4,7 @@ import type {
   DeliveryArtifact,
   Finding,
   GovernancePolicy,
+  GovernanceReviewQueueItem,
   GovernanceScopeOverview,
   GovernanceViolationPolicy,
   GovernanceIssueDetail,
@@ -28,6 +29,7 @@ import type {
   GovernanceIssueDetailRecord,
   GovernanceIssueRecord,
   GovernancePolicyRecord,
+  GovernanceReviewQueueItemRecord,
   GovernanceScopeOverviewRecord,
   GovernanceIssueSummaryRecord,
   IssueAssessmentRecord,
@@ -95,6 +97,23 @@ export function toGovernanceScopeOverview(
       ? toGovernanceExecutionAttemptSummary(record.latestDiscoveryAttempt)
       : null,
     findingCounts: record.findingCounts
+  };
+}
+
+export function toGovernanceReviewQueueItem(
+  record: GovernanceReviewQueueItemRecord
+): GovernanceReviewQueueItem {
+  return {
+    kind: record.kind,
+    scopeId: record.scopeId,
+    subjectId: record.subjectId,
+    issueId: record.issueId,
+    title: record.title,
+    status: record.status,
+    failureCode: record.failureCode,
+    failureMessage: record.failureMessage,
+    sessionId: record.sessionId,
+    updatedAt: record.updatedAt.toISOString()
   };
 }
 

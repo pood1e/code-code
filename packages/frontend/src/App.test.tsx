@@ -28,6 +28,10 @@ vi.mock('./pages/projects/ProjectDashboardPage', () => ({
   ProjectDashboardPage: () => <p>Project Dashboard Page</p>
 }));
 
+vi.mock('./pages/projects/ProjectReviewsPage', () => ({
+  ProjectReviewsPage: () => <p>Project Reviews Page</p>
+}));
+
 vi.mock('./pages/projects/ProjectSessionsPage', () => ({
   ProjectSessionsPage: () => {
     const location = useLocation();
@@ -95,6 +99,12 @@ describe('App', () => {
 
     renderApp('/projects/project-1/config');
     expect(await screen.findByText('Project Config Page')).toBeInTheDocument();
+  });
+
+  it('Project reviews 路由应命中审核队列页面', async () => {
+    renderApp('/projects/project-1/reviews');
+
+    expect(await screen.findByText('Project Reviews Page')).toBeInTheDocument();
   });
 
   it('资源新建路由应命中对应 kind 的编辑页', async () => {

@@ -24,6 +24,7 @@ import {
   GovernancePriority,
   GovernanceResolutionType,
   GovernanceReviewDecisionType,
+  GovernanceReviewQueueItemKind,
   GovernanceReviewSubjectType,
   GovernanceSeverity,
   GovernanceVerificationCheckType,
@@ -323,6 +324,19 @@ export const governanceExecutionAttemptSummarySchema = z.object({
   activeRequestMessageId: idSchema.nullable().optional(),
   failureCode: z.string().nullable().optional(),
   failureMessage: z.string().nullable().optional(),
+  updatedAt: isoDateTimeSchema
+});
+
+export const governanceReviewQueueItemSchema = z.object({
+  kind: z.nativeEnum(GovernanceReviewQueueItemKind),
+  scopeId: idSchema,
+  subjectId: idSchema,
+  issueId: idSchema.nullable(),
+  title: nonEmptyStringSchema,
+  status: nonEmptyStringSchema,
+  failureCode: z.string().nullable().optional(),
+  failureMessage: z.string().nullable().optional(),
+  sessionId: idSchema.nullable().optional(),
   updatedAt: isoDateTimeSchema
 });
 

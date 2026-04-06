@@ -7,6 +7,7 @@ import {
   toGovernancePolicy,
   toGovernanceIssueDetail,
   toGovernanceIssueSummary,
+  toGovernanceReviewQueueItem,
   toGovernanceScopeOverview,
   toRepositoryProfile
 } from './governance.mapper';
@@ -67,6 +68,15 @@ export class GovernanceQueryService {
     }
 
     return toGovernanceScopeOverview(overview);
+  }
+
+  async getReviewQueue(scopeId: string) {
+    if (!(await this.governanceRepository.projectExists(scopeId))) {
+      throw new NotFoundException(`Project not found: ${scopeId}`);
+    }
+
+    const items = await this.governanceRepository.listReviewQueue(scopeId);
+    return items.map(toGovernanceReviewQueueItem);
   }
 
   async getLatestRepositoryProfile(scopeId: string) {

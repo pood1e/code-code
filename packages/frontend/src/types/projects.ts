@@ -10,6 +10,7 @@ export type ProjectTabKey =
   | 'chats'
   | 'pipelines'
   | 'governance'
+  | 'reviews'
   | 'channels'
   | 'send'
   | 'notifications'
@@ -24,6 +25,7 @@ export const projectRoutePatterns = {
   pipelineDetail: `${projectConfig.path}/:id/pipelines/:pipelineId`,
   governance: `${projectConfig.path}/:id/governance`,
   governanceDetail: `${projectConfig.path}/:id/governance/:issueId`,
+  reviews: `${projectConfig.path}/:id/reviews`,
   channels: `${projectConfig.path}/:id/channels`,
   send: `${projectConfig.path}/:id/send`,
   notifications: `${projectConfig.path}/:id/notifications`,
@@ -77,6 +79,10 @@ export function buildProjectGovernancePath(
     : `${projectConfig.path}/${projectId}/governance`;
 }
 
+export function buildProjectReviewsPath(projectId: string) {
+  return `${projectConfig.path}/${projectId}/reviews`;
+}
+
 export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
   switch (tab) {
     case 'dashboard':
@@ -85,6 +91,8 @@ export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
       return buildProjectConfigPath(projectId);
     case 'governance':
       return buildProjectGovernancePath(projectId);
+    case 'reviews':
+      return buildProjectReviewsPath(projectId);
     case 'channels':
       return buildProjectChannelsPath(projectId);
     case 'send':
