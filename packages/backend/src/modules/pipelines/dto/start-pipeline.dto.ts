@@ -1,4 +1,11 @@
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class StartPipelineDto {
@@ -16,4 +23,12 @@ export class StartPipelineDto {
   @Max(10)
   @IsOptional()
   maxRetry?: number;
+
+  @ApiPropertyOptional({
+    description: 'Whether successful estimate still requires manual review',
+    default: true
+  })
+  @IsBoolean()
+  @IsOptional()
+  requireHumanReviewOnSuccess?: boolean;
 }

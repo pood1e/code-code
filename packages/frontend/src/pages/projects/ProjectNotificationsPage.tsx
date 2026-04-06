@@ -260,8 +260,8 @@ export function ProjectNotificationsPage() {
   ];
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
+    <div className="flex min-h-full flex-col">
+      <div className="flex-1 px-4 py-6 sm:px-8">
         <div className="mx-auto w-full max-w-5xl space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

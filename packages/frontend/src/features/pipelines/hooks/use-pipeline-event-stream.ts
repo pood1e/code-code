@@ -1,57 +1,96 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+
+import {
+  PIPELINE_EVENT_KINDS,
+  type PipelineEventKind
+} from '@agent-workbench/shared';
 
 import { createPipelineEventSource } from '@/api/pipelines';
 import { queryKeys } from '@/query/query-keys';
 
-type PipelineEventHandler = (eventType: string, data: unknown) => void;
+type PipelineEventHandler = (eventType: PipelineEventKind, data: unknown) => void;
 
-/**
- * Subscribe to real-time pipeline events via SSE.
- * - Replays persisted events from `lastEventId` on reconnect.
- * - Auto-closes when the pipeline reaches a terminal state (completed | cancelled | failed).
- * - Invalidates TanStack Query cache on key lifecycle events.
- */
+const TERMINAL_PIPELINE_EVENT_KINDS = new Set<PipelineEventKind>([
+  'pipeline_completed',
+  'pipeline_failed',
+  'pipeline_cancelled'
+]);
+
+const INVALIDATING_PIPELINE_EVENT_KINDS = new Set<PipelineEventKind>([
+  'pipeline_started',
+  'stage_started',
+  'stage_completed',
+  'stage_failed',
+  'pipeline_paused',
+  'pipeline_resumed',
+  'pipeline_completed',
+  'pipeline_failed',
+  'pipeline_cancelled'
+]);
+
 export function usePipelineEventStream(
   pipelineId: string | null | undefined,
+  scopeId?: string,
   onEvent?: PipelineEventHandler
 ) {
   const queryClient = useQueryClient();
-  const esRef = useRef<EventSource | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
   const lastEventIdRef = useRef<number>(0);
-  const stableOnEvent = useRef(onEvent);
-  stableOnEvent.current = onEvent;
-
-  const invalidate = useCallback(() => {
-    if (!pipelineId) return;
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.pipelines.detail(pipelineId)
-    });
-  }, [pipelineId, queryClient]);
+  const handleExternalEvent = useEffectEvent(
+    (eventType: PipelineEventKind, data: unknown) => {
+      onEvent?.(eventType, data);
+    }
+  );
 
   useEffect(() => {
-    if (!pipelineId) return;
+    if (!pipelineId) {
+      return;
+    }
 
+    lastEventIdRef.current = 0;
     let closed = false;
 
-    function connect() {
-      if (closed) return;
-      const es = createPipelineEventSource(
-        pipelineId!,
+    const invalidate = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.pipelines.detail(pipelineId)
+      });
+
+      if (scopeId) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.pipelines.list(scopeId)
+        });
+      }
+    };
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    };
+
+    const connect = () => {
+      if (closed) {
+        return;
+      }
+
+      const eventSource = createPipelineEventSource(
+        pipelineId,
         lastEventIdRef.current > 0 ? lastEventIdRef.current : undefined
       );
-      esRef.current = es;
+      eventSourceRef.current = eventSource;
 
-      function handleMessage(eventType: string) {
-        return (evt: MessageEvent<string>) => {
+      const handleMessage = (eventType: PipelineEventKind) => {
+        return (event: MessageEvent<string>) => {
           let data: unknown;
           try {
-            data = JSON.parse(evt.data) as unknown;
+            data = JSON.parse(event.data) as unknown;
           } catch {
-            data = evt.data;
+            data = event.data;
           }
 
-          // Track last event ID for reconnect continuity
           if (
             data &&
             typeof data === 'object' &&
@@ -61,63 +100,44 @@ export function usePipelineEventStream(
             lastEventIdRef.current = (data as { eventId: number }).eventId;
           }
 
-          stableOnEvent.current?.(eventType, data);
+          handleExternalEvent(eventType, data);
 
-          // Invalidate cache on key state transitions
-          if (
-            eventType === 'stage_started' ||
-            eventType === 'stage_completed' ||
-            eventType === 'pipeline_paused' ||
-            eventType === 'pipeline_completed' ||
-            eventType === 'pipeline_failed' ||
-            eventType === 'pipeline_cancelled'
-          ) {
+          if (INVALIDATING_PIPELINE_EVENT_KINDS.has(eventType)) {
             invalidate();
           }
 
-          // Close stream on terminal events
-          if (
-            eventType === 'pipeline_completed' ||
-            eventType === 'pipeline_failed' ||
-            eventType === 'pipeline_cancelled'
-          ) {
+          if (TERMINAL_PIPELINE_EVENT_KINDS.has(eventType)) {
             closed = true;
-            es.close();
+            clearReconnectTimer();
+            eventSource.close();
           }
         };
-      }
-
-      const PIPELINE_EVENT_TYPES = [
-        'stage_started',
-        'stage_completed',
-        'stage_failed',
-        'pipeline_paused',
-        'pipeline_completed',
-        'pipeline_failed',
-        'pipeline_cancelled',
-        'artifact_created',
-        'done'
-      ] as const;
-
-      for (const type of PIPELINE_EVENT_TYPES) {
-        es.addEventListener(type, handleMessage(type));
-      }
-
-      es.onerror = () => {
-        es.close();
-        if (!closed) {
-          // Reconnect after brief delay
-          setTimeout(connect, 2000);
-        }
       };
-    }
+
+      for (const eventKind of PIPELINE_EVENT_KINDS) {
+        eventSource.addEventListener(eventKind, handleMessage(eventKind));
+      }
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        if (closed) {
+          return;
+        }
+
+        reconnectTimerRef.current = window.setTimeout(() => {
+          reconnectTimerRef.current = null;
+          connect();
+        }, 2000);
+      };
+    };
 
     connect();
 
     return () => {
       closed = true;
-      esRef.current?.close();
-      esRef.current = null;
+      clearReconnectTimer();
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
     };
-  }, [pipelineId, invalidate]);
+  }, [pipelineId, queryClient, scopeId]);
 }

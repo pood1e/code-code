@@ -39,6 +39,7 @@ function registerTestRunnerType(
     runtimeConfigSchema: testRuntimeConfigSchema,
     checkHealth: runnerType.checkHealth,
     probeContext: runnerType.probeContext,
+    installProfile: async () => undefined,
     createSession: async () => ({}),
     shouldReusePersistedState: () => false,
     destroySession: async () => undefined,
@@ -83,6 +84,9 @@ describe('AgentRunners API', () => {
         Array<{
           id: string;
           inputSchema: { fields: Array<{ name: string; label: string }> };
+          runnerConfigSchema: {
+            fields: Array<{ name: string; label: string }>;
+          };
           runtimeConfigSchema: {
             fields: Array<{
               name: string;
@@ -134,6 +138,47 @@ describe('AgentRunners API', () => {
           (field) => field.name === 'permissionMode'
         )?.label
       ).toBe('权限模式');
+      expect(
+        claudeType!.runtimeConfigSchema.fields.find(
+          (field) => field.name === 'model'
+        )?.defaultValue
+      ).toBeUndefined();
+      expect(
+        claudeType!.runnerConfigSchema.fields.map((field) => field.name)
+      ).toEqual(
+        expect.arrayContaining([
+          'defaultRuntimeModel',
+          'allowRuntimeModelOverride',
+          'defaultRuntimePermissionMode',
+          'allowRuntimePermissionModeOverride'
+        ])
+      );
+    });
+
+    it('CLI runnerConfig 应支持环境变量 string_map 字段', async () => {
+      const res = await api().get('/api/agent-runner-types');
+      const data = expectSuccess<
+        Array<{
+          id: string;
+          runnerConfigSchema: {
+            fields: Array<{ name: string; kind: string; label: string }>;
+          };
+        }>
+      >(res);
+
+      for (const runnerTypeId of ['claude-code', 'cursor-cli', 'qwen-cli']) {
+        const runnerType = data.find((item) => item.id === runnerTypeId);
+        expect(runnerType).toBeDefined();
+        expect(runnerType!.runnerConfigSchema.fields).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              name: 'env',
+              kind: 'string_map',
+              label: '环境变量'
+            })
+          ])
+        );
+      }
     });
   });
 

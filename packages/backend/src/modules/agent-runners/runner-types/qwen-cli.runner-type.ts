@@ -11,12 +11,20 @@ import {
 } from '../cli/parsers/qwen-cli.parser';
 import type {
   RawOutputChunk,
+  RunnerProfileInstallInput,
   RunnerSendPayload
 } from '../runner-type.interface';
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const qwenCliRunnerConfigSchema = z.object({
-  executorUser: z.string().optional()
+  executorUser: z.string().optional(),
+  env: z
+    .record(z.string(), z.string())
+    .optional()
+    .meta({
+      label: '环境变量',
+      description: '以 KEY=VALUE 注入 Qwen CLI 进程'
+    })
 });
 
 export const qwenCliRunnerSessionConfigSchema = z.object({});
@@ -36,7 +44,6 @@ export const qwenCliRuntimeConfigSchema = z.object({
 export class QwenCliRunnerType extends CliRunnerTypeBase {
   readonly id = 'qwen-cli';
   readonly name = 'Qwen CLI';
-  readonly materializerTarget = 'qwen' as const;
   readonly capabilities = { skill: true, rule: true, mcp: true };
   readonly runnerConfigSchema = qwenCliRunnerConfigSchema;
   readonly runnerSessionConfigSchema = qwenCliRunnerSessionConfigSchema;
@@ -51,7 +58,18 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
     runnerConfig: unknown
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = qwenCliRunnerConfigSchema.parse(runnerConfig);
-    return probeQwenCliHealth(config.executorUser);
+    return probeQwenCliHealth(config.executorUser, config.env);
+  }
+
+  protected buildProfileInstallLayout(
+    input: RunnerProfileInstallInput
+  ) {
+    return {
+      profileRootDir: input.platformConfig.cwd,
+      skillDir: '.qwen/skills',
+      contextFileName: 'QWEN.md',
+      mcpConfigPath: `${input.platformConfig.cwd}/.qwen/settings.json`
+    };
   }
 
   buildCommand(
@@ -90,14 +108,16 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
       return {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'qwen', ...args],
-        cwd
+        cwd,
+        env: config.env
       };
     }
 
     return {
       command: 'qwen',
       args,
-      cwd
+      cwd,
+      env: config.env
     };
   }
 

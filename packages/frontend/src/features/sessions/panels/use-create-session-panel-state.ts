@@ -7,10 +7,11 @@ import type {
   ChatSummary,
   Profile,
   ResourceByKind,
-  RunnerTypeResponse
+  RunnerTypeResponse,
+  SessionWorkspaceResourceKind
 } from '@agent-workbench/shared';
 
-import { probeAgentRunnerContext } from '@/api/agent-runners';
+import { getAgentRunner, probeAgentRunnerContext } from '@/api/agent-runners';
 import { toApiRequestError } from '@/api/client';
 import { getProfile } from '@/api/profiles';
 import { useErrorMessage } from '@/hooks/use-error-message';
@@ -25,6 +26,7 @@ import { useCreateSessionMutation } from '../hooks/use-create-session-mutation';
 
 import {
   getHasInitialMessageDraft,
+  getSelectedRunnerConfig,
   isCreateSessionValidationError,
   shouldSubmitStructuredPromptByEnter,
   useCreateSessionFieldValues,
@@ -52,7 +54,6 @@ export function useCreateSessionPanelState({
   onCreated: (chat: ChatSummary) => void;
 }) {
   const handleError = useErrorMessage();
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<CreateSessionFormValues>({
     resolver: zodResolver(createSessionFormSchema),
@@ -69,7 +70,13 @@ export function useCreateSessionPanelState({
       runnerTypes.find((runnerType) => runnerType.id === selectedRunner?.type),
     [runnerTypes, selectedRunner?.type]
   );
-  const schemaState = useCreateSessionSchemaState(selectedRunnerType);
+  const selectedRunnerDetailQuery = useSelectedRunnerDetailQuery(
+    fieldValues.selectedRunnerId
+  );
+  const schemaState = useCreateSessionSchemaState(
+    selectedRunnerType,
+    getSelectedRunnerConfig(selectedRunnerDetailQuery.data)
+  );
   const profileDetailQuery = useProfileDetailQuery(fieldValues.selectedProfileId);
   const { data: runnerContext } = useRunnerContextQuery(
     fieldValues.selectedRunnerId
@@ -87,7 +94,12 @@ export function useCreateSessionPanelState({
   });
 
   useInitialRunnerSelection(form, runners, fieldValues.selectedRunnerId);
-  useRunnerFormDefaults(form, selectedRunnerType?.id, schemaState);
+  useRunnerFormDefaults(
+    form,
+    selectedRunnerType?.id,
+    getSelectedRunnerConfig(selectedRunnerDetailQuery.data),
+    schemaState
+  );
   useProfileResourceDefaults(
     form,
     fieldValues.selectedProfileId,
@@ -130,9 +142,22 @@ export function useCreateSessionPanelState({
   };
 
   const toggleSelection = (
-    fieldName: 'skillIds' | 'ruleIds' | 'mcpIds',
+    fieldName: 'workspaceResources' | 'skillIds' | 'ruleIds' | 'mcpIds',
     resourceId: string
   ) => {
+    if (fieldName === 'workspaceResources') {
+      const typedResourceId = resourceId as SessionWorkspaceResourceKind;
+      const currentValue = form.getValues('workspaceResources');
+      const nextValue = currentValue.includes(typedResourceId)
+        ? currentValue.filter((id) => id !== typedResourceId)
+        : [...currentValue, typedResourceId];
+
+      form.setValue('workspaceResources', nextValue, {
+        shouldDirty: true
+      });
+      return;
+    }
+
     const currentValue = form.getValues(fieldName);
     const nextValue = currentValue.includes(resourceId)
       ? currentValue.filter((id) => id !== resourceId)
@@ -145,10 +170,11 @@ export function useCreateSessionPanelState({
 
   return {
     form,
-    advancedOpen,
     submitError,
     selectedRunnerId: fieldValues.selectedRunnerId,
     selectedProfileId: fieldValues.selectedProfileId,
+    useCustomRunDirectory: fieldValues.useCustomRunDirectory,
+    selectedWorkspaceResources: fieldValues.selectedWorkspaceResources,
     selectedSkillIds: fieldValues.selectedSkillIds,
     selectedRuleIds: fieldValues.selectedRuleIds,
     selectedMcpIds: fieldValues.selectedMcpIds,
@@ -159,7 +185,6 @@ export function useCreateSessionPanelState({
     hasInitialMessageDraft,
     runnerContext,
     isCreating: createMutation.isPending,
-    setAdvancedOpen,
     toggleSelection,
     submit,
     handlePromptKeyDown
@@ -182,6 +207,17 @@ function useRunnerContextQuery(selectedRunnerId: string | undefined) {
       ? queryKeys.agentRunners.context(selectedRunnerId)
       : NOOP_QUERY_KEY,
     queryFn: () => probeAgentRunnerContext(selectedRunnerId!),
+    enabled: Boolean(selectedRunnerId),
+    staleTime: 60 * 1000
+  });
+}
+
+function useSelectedRunnerDetailQuery(selectedRunnerId: string | undefined) {
+  return useQuery({
+    queryKey: selectedRunnerId
+      ? queryKeys.agentRunners.detail(selectedRunnerId)
+      : NOOP_QUERY_KEY,
+    queryFn: () => getAgentRunner(selectedRunnerId!),
     enabled: Boolean(selectedRunnerId),
     staleTime: 60 * 1000
   });

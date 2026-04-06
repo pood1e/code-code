@@ -30,8 +30,9 @@ function createProjectRecord(id: string, name: string): Project {
     id,
     name,
     description: 'Project description',
-    gitUrl: `git@github.com:acme/${id}.git`,
-    workspacePath: `/tmp/${id}`,
+    repoGitUrl: `git@github.com:acme/${id}.git`,
+    workspaceRootPath: `/tmp/${id}`,
+    docGitUrl: null,
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z'
   };

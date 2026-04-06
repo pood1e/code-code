@@ -1,7 +1,7 @@
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 
-import { getApp } from './setup';
+import { getApp, getPrisma } from './setup';
 
 type ApiResponse<T = unknown> = {
   code: number;
@@ -86,8 +86,12 @@ export function createProjectPayload(overrides: Record<string, unknown> = {}) {
   return {
     name: 'Test Project',
     description: 'A test project',
-    gitUrl: 'git@github.com:test/test.git',
-    workspacePath: '/tmp',
+    repoGitUrl: 'git@github.com:test/test.git',
+    workspaceRootPath:
+      typeof overrides.workspaceRootPath === 'string'
+        ? overrides.workspaceRootPath
+        : '/tmp',
+    docGitUrl: null,
     ...overrides
   };
 }
@@ -141,10 +145,31 @@ export async function seedProfile(
 export async function seedProject(
   overrides: Record<string, unknown> = {}
 ): Promise<{ id: string; name: string }> {
+  const projectPayloadOverrides = { ...overrides };
+  const repoGitUrlOverride =
+    typeof projectPayloadOverrides.repoGitUrl === 'string'
+      ? projectPayloadOverrides.repoGitUrl
+      : null;
+
+  if (repoGitUrlOverride !== null && !repoGitUrlOverride.startsWith('git@')) {
+    delete projectPayloadOverrides.repoGitUrl;
+  }
+
   const res = await api()
     .post('/api/projects')
-    .send(createProjectPayload(overrides));
-  return expectSuccess(res, 201);
+    .send(createProjectPayload(projectPayloadOverrides));
+  const project = expectSuccess<{ id: string; name: string }>(res, 201);
+
+  if (repoGitUrlOverride !== null && !repoGitUrlOverride.startsWith('git@')) {
+    await getPrisma().project.update({
+      where: { id: project.id },
+      data: {
+        repoGitUrl: repoGitUrlOverride
+      }
+    });
+  }
+
+  return project;
 }
 
 export async function seedAgentRunner(

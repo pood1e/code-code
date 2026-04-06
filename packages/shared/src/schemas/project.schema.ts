@@ -13,10 +13,10 @@ const projectDescriptionSchema = z.preprocess((value) => {
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
 }, z.string().trim().max(500).nullable().optional());
-const workspacePathSchema = z
+const workspaceRootPathSchema = z
   .string()
   .trim()
-  .min(1, 'workspacePath is required');
+  .min(1, 'workspaceRootPath is required');
 
 export const sshGitUrlSchema = z
   .string()
@@ -25,13 +25,26 @@ export const sshGitUrlSchema = z
     /^git@[\w.-]+:[\w./-]+\.git$/,
     '请输入合法的 SSH Git 地址，如 git@github.com:user/repo.git'
   );
+export const projectDocGitUrlSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}, sshGitUrlSchema.nullable().optional());
 
 export const projectSchema = z.object({
   id: z.string(),
   name: projectNameSchema,
   description: z.string().nullable(),
-  gitUrl: sshGitUrlSchema,
-  workspacePath: workspacePathSchema,
+  repoGitUrl: sshGitUrlSchema,
+  workspaceRootPath: workspaceRootPathSchema,
+  docGitUrl: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string()
 });
@@ -39,21 +52,26 @@ export const projectSchema = z.object({
 export const createProjectInputSchema = z.object({
   name: projectNameSchema,
   description: projectDescriptionSchema,
-  gitUrl: sshGitUrlSchema,
-  workspacePath: workspacePathSchema
+  repoGitUrl: sshGitUrlSchema,
+  workspaceRootPath: workspaceRootPathSchema,
+  docGitUrl: projectDocGitUrlSchema
 });
 
 export const updateProjectInputSchema = z
   .object({
     name: projectNameSchema.optional(),
     description: projectDescriptionSchema,
-    workspacePath: workspacePathSchema.optional()
+    repoGitUrl: sshGitUrlSchema.optional(),
+    workspaceRootPath: workspaceRootPathSchema.optional(),
+    docGitUrl: projectDocGitUrlSchema
   })
   .refine(
     (value) =>
       value.name !== undefined ||
       value.description !== undefined ||
-      value.workspacePath !== undefined,
+      value.repoGitUrl !== undefined ||
+      value.workspaceRootPath !== undefined ||
+      value.docGitUrl !== undefined,
     {
       message: 'At least one project field must be provided'
     }

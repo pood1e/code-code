@@ -38,8 +38,9 @@ function createProject(id: string, name: string): Project {
     id,
     name,
     description: `${name} description`,
-    gitUrl: `git@github.com:example/${id}.git`,
-    workspacePath: `/tmp/${id}`,
+    repoGitUrl: `git@github.com:example/${id}.git`,
+    workspaceRootPath: `/tmp/${id}`,
+    docGitUrl: null,
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z'
   };
@@ -225,5 +226,19 @@ describe('AppLayout', () => {
       );
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+  });
+
+  it('壳层应固定侧栏，并把滚动约束在主内容区域', async () => {
+    const { container } = renderAppLayout('/skills');
+
+    await screen.findByRole('button', { name: '资源库' });
+
+    const main = screen.getByRole('main');
+    const shell = main.parentElement?.parentElement;
+    const sidebar = container.querySelector('aside');
+
+    expect(shell).toHaveClass('h-screen', 'overflow-hidden');
+    expect(sidebar).toHaveClass('h-screen');
+    expect(main).toHaveClass('overflow-y-auto');
   });
 });

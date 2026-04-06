@@ -131,4 +131,26 @@ describe('DynamicConfigFieldInput', () => {
       '{"sandbox":true}'
     );
   });
+
+  it('应支持添加字符串映射配置项', async () => {
+    const { user } = renderField({
+      field: {
+        name: 'env',
+        label: '环境变量',
+        kind: 'string_map',
+        required: false,
+        description: '以 KEY=VALUE 注入进程'
+      }
+    });
+
+    await user.click(screen.getByRole('button', { name: '添加环境变量' }));
+
+    const [keyInput, valueInput] = screen.getAllByPlaceholderText(/KEY|VALUE/);
+    await user.type(keyInput, 'OPENAI_API_KEY');
+    await user.type(valueInput, 'secret');
+
+    expect(screen.getByLabelText('form-values')).toHaveTextContent(
+      '{"env":{"OPENAI_API_KEY":"secret"}}'
+    );
+  });
 });

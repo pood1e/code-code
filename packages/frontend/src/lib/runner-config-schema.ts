@@ -46,7 +46,17 @@ export function getRunnerConfigSelectOptions(
   );
 }
 
+export type StringMapEntry = {
+  key: string;
+  value: string;
+};
+
 function buildFieldSchema(field: RunnerConfigField) {
+  if (field.kind === 'string_map') {
+    const schema = z.record(z.string(), z.string());
+    return field.required ? schema : schema.optional();
+  }
+
   if (field.kind === 'enum') {
     const values = field.enumOptions?.map((option) => option.value) ?? [];
 
@@ -126,6 +136,27 @@ function normalizeRunnerConfigValue(
   field: RunnerConfigField,
   rawValue: unknown
 ) {
+  if (field.kind === 'string_map') {
+    if (!rawValue || typeof rawValue !== 'object' || Array.isArray(rawValue)) {
+      return undefined;
+    }
+
+    const normalized = Object.entries(rawValue).reduce<Record<string, string>>(
+      (acc, [key, value]) => {
+        const trimmedKey = key.trim();
+        if (!trimmedKey || typeof value !== 'string') {
+          return acc;
+        }
+
+        acc[trimmedKey] = value;
+        return acc;
+      },
+      {}
+    );
+
+    return Object.keys(normalized).length > 0 ? normalized : undefined;
+  }
+
   if (field.kind === 'boolean') {
     if (typeof rawValue === 'boolean') {
       return rawValue;
@@ -191,6 +222,10 @@ function getFieldDefaultValue(field: RunnerConfigField) {
     return field.defaultValue;
   }
 
+  if (field.kind === 'string_map') {
+    return {};
+  }
+
   if (field.kind === 'boolean') {
     return undefined;
   }
@@ -242,6 +277,10 @@ export function getRunnerConfigFieldValue(
   field: RunnerConfigField,
   value: unknown
 ) {
+  if (field.kind === 'string_map') {
+    return '';
+  }
+
   if (field.kind === 'number' || field.kind === 'integer') {
     return typeof value === 'number' ? String(value) : '';
   }
@@ -254,4 +293,27 @@ export function getRunnerConfigFieldValue(
   }
 
   return typeof value === 'string' ? value : '';
+}
+
+export function toStringMapEntries(value: unknown): StringMapEntry[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return [];
+  }
+
+  return Object.entries(value).map(([key, entryValue]) => ({
+    key,
+    value: typeof entryValue === 'string' ? entryValue : ''
+  }));
+}
+
+export function toStringMapObject(entries: readonly StringMapEntry[]) {
+  return entries.reduce<Record<string, string>>((acc, entry) => {
+    const key = entry.key.trim();
+    if (!key) {
+      return acc;
+    }
+
+    acc[key] = entry.value;
+    return acc;
+  }, {});
 }

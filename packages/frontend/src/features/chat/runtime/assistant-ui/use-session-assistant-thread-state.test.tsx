@@ -10,7 +10,8 @@ import type {
 import {
   MessageRole,
   MessageStatus,
-  SessionStatus
+  SessionStatus,
+  SessionWorkspaceMode
 } from '@agent-workbench/shared';
 
 import { probeAgentRunnerContext } from '@/api/agent-runners';
@@ -34,7 +35,10 @@ function createSession(): SessionDetail {
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z',
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp',
       cwd: '/tmp',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []

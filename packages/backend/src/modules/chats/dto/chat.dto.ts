@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -12,10 +13,15 @@ import {
   type ValidationArguments,
   type ValidatorConstraintInterface
 } from 'class-validator';
+import {
+  SessionWorkspaceResourceConfig,
+  SessionWorkspaceResourceKind
+} from '@agent-workbench/shared';
 
 import {
   SendSessionMessageDto,
-  SessionMcpItemDto
+  SessionMcpItemDto,
+  SessionWorkspaceResourceConfigDto
 } from '../../sessions/dto/session.dto';
 
 @ValidatorConstraint({ name: 'chatUpdateNotEmpty', async: false })
@@ -40,6 +46,33 @@ export class CreateChatDto {
   @IsString()
   @IsNotEmpty()
   runnerId!: string;
+
+  @ApiPropertyOptional({
+    description: 'Optional relative working directory inside the session directory',
+    example: 'code/packages/backend'
+  })
+  @IsString()
+  @IsOptional()
+  customRunDirectory?: string;
+
+  @ApiPropertyOptional({
+    description: 'Workspace resources to initialize',
+    type: [String],
+    enum: SessionWorkspaceResourceKind
+  })
+  @IsArray()
+  @IsEnum(SessionWorkspaceResourceKind, { each: true })
+  @IsOptional()
+  workspaceResources?: SessionWorkspaceResourceKind[];
+
+  @ApiPropertyOptional({
+    description: 'Optional per-resource workspace configuration',
+    type: SessionWorkspaceResourceConfigDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceConfigDto)
+  workspaceResourceConfig?: SessionWorkspaceResourceConfig;
 
   @ApiPropertyOptional({ description: 'Chat title' })
   @IsString()

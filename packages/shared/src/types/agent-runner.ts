@@ -8,6 +8,7 @@ export type RunnerTypeCapabilities = {
 
 export type SchemaFieldKind =
   | 'string'
+  | 'string_map'
   | 'url'
   | 'number'
   | 'integer'

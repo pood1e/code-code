@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { SessionStatus, type AgentRunnerDetail, type ResourceByKind, type RunnerTypeResponse, type SessionDetail } from '@agent-workbench/shared';
+import { SessionStatus, SessionWorkspaceMode, SessionWorkspaceResourceKind, type ResourceByKind, type RunnerTypeResponse, type SessionDetail } from '@agent-workbench/shared';
 
 import { SessionDetailsPanel } from './SessionDetailsPanel';
 
@@ -18,7 +18,16 @@ function createSessionDetail(): SessionDetail {
     createdAt: timestamp,
     updatedAt: timestamp,
     platformSessionConfig: {
-      cwd: '/tmp/project-1',
+      workspaceMode: SessionWorkspaceMode.Session,
+      workspaceRoot: '/tmp/project-root',
+      sessionRoot: '/tmp/project-root/session-1',
+      cwd: '/tmp/project-root/session-1/code',
+      workspaceResources: [SessionWorkspaceResourceKind.Code],
+      workspaceResourceConfig: {
+        code: {
+          branch: 'feature/panel'
+        }
+      },
       skillIds: ['skill-1'],
       ruleIds: ['rule-missing'],
       mcps: [
@@ -36,20 +45,6 @@ function createSessionDetail(): SessionDetail {
     defaultRuntimeConfig: {
       locale: 'zh-CN'
     }
-  };
-}
-
-function createRunnerDetail(): AgentRunnerDetail {
-  return {
-    id: 'runner-1',
-    name: 'Mock Runner',
-    description: 'mock runner',
-    type: 'mock',
-    runnerConfig: {
-      endpoint: 'http://localhost:3000'
-    },
-    createdAt: timestamp,
-    updatedAt: timestamp
   };
 }
 
@@ -146,7 +141,6 @@ describe('SessionDetailsPanel', () => {
         open
         onClose={() => undefined}
         session={createSessionDetail()}
-        runnerDetail={createRunnerDetail()}
         runnerType={createRunnerType()}
         runners={[
           {
@@ -169,12 +163,14 @@ describe('SessionDetailsPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('就绪')).toBeInTheDocument();
     expect(screen.getByText('Mock Runner')).toBeInTheDocument();
-    expect(screen.getByText('/tmp/project-1')).toBeInTheDocument();
-    expect(screen.getByText('Review Skill')).toBeInTheDocument();
-    expect(screen.getByText('rule-missing')).toBeInTheDocument();
-    expect(screen.getByText('Filesystem MCP · override')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/project-root/session-1')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/project-root/session-1/code')).toBeInTheDocument();
+    expect(screen.getByText('Code · feature/panel')).toBeInTheDocument();
+    expect(screen.getByText('Skill · Review Skill')).toBeInTheDocument();
+    expect(screen.getByText('Rule · rule-missing')).toBeInTheDocument();
+    expect(screen.getByText('MCP · Filesystem MCP · override')).toBeInTheDocument();
     expect(screen.getByText('Temperature')).toBeInTheDocument();
-    expect(screen.getByText('Locale')).toBeInTheDocument();
+    expect(screen.queryByText('Locale')).not.toBeInTheDocument();
     expect(screen.queryByText('Endpoint')).not.toBeInTheDocument();
     expect(screen.queryByText('Prompt')).not.toBeInTheDocument();
     expect(screen.queryByText('Type')).not.toBeInTheDocument();
@@ -192,7 +188,6 @@ describe('SessionDetailsPanel', () => {
           open
           onClose={onClose}
           session={createSessionDetail()}
-          runnerDetail={createRunnerDetail()}
           runnerType={createRunnerType()}
           runners={[
             {
@@ -223,7 +218,6 @@ describe('SessionDetailsPanel', () => {
         open
         onClose={onClose}
         session={createSessionDetail()}
-        runnerDetail={createRunnerDetail()}
         runnerType={createRunnerType()}
         runners={[
           {
@@ -250,7 +244,6 @@ describe('SessionDetailsPanel', () => {
         open={false}
         onClose={() => undefined}
         session={createSessionDetail()}
-        runnerDetail={createRunnerDetail()}
         runnerType={createRunnerType()}
         runners={[
           {
@@ -271,5 +264,37 @@ describe('SessionDetailsPanel', () => {
         name: '会话设置'
       })
     ).not.toBeInTheDocument();
+  });
+
+  it('没有附加资源和会话参数时不应展示空白区块', () => {
+    const session = createSessionDetail();
+    session.platformSessionConfig.skillIds = [];
+    session.platformSessionConfig.ruleIds = [];
+    session.platformSessionConfig.mcps = [];
+    session.runnerSessionConfig = {};
+
+    render(
+      <SessionDetailsPanel
+        open
+        onClose={() => undefined}
+        session={session}
+        runnerType={createRunnerType()}
+        runners={[
+          {
+            id: 'runner-1',
+            name: 'Mock Runner',
+            description: 'mock runner',
+            type: 'mock',
+            createdAt: timestamp,
+            updatedAt: timestamp
+          }
+        ]}
+        resources={createResources()}
+      />
+    );
+
+    expect(screen.queryByText('附加资源')).not.toBeInTheDocument();
+    expect(screen.queryByText('会话参数')).not.toBeInTheDocument();
+    expect(screen.queryByText('参数与资源')).not.toBeInTheDocument();
   });
 });

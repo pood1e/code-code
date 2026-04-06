@@ -27,13 +27,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RunnerTypeRegistry } from '../agent-runners/runner-type.registry';
 import type {
   RawOutputChunk,
+  RunnerProfileResources,
   RunnerSessionRecord,
   RunnerType
 } from '../agent-runners/runner-type.interface';
-import {
-  materializeContext,
-  type MaterializerTarget
-} from '../agent-runners/cli/context-materializer';
 import { SessionEventStore } from './session-event.store';
 import { SessionsQueryService } from './sessions-query.service';
 import type { SessionRow } from './session.types';
@@ -189,6 +186,7 @@ export class SessionRuntimeService {
     const runnerType = this.getRunnerTypeOrThrow(runtimeSession.runnerType);
     const parsedRuntimeConfig = this.parseRuntimeConfigOrThrow(
       runnerType,
+      runtimeSession.runnerConfig,
       this.buildEffectiveRuntimeConfig(
         session.defaultRuntimeConfig,
         runtimeConfigOverride
@@ -527,11 +525,18 @@ export class SessionRuntimeService {
 
   private parseRuntimeConfigOrThrow(
     runnerType: RunnerType,
+    runnerConfig: Record<string, unknown>,
     runtimeConfig: Record<string, unknown>
   ) {
-    const parseResult = runnerType.runtimeConfigSchema.safeParse(runtimeConfig);
+    const resolvedRuntimeConfig = runnerType.resolveRuntimeConfig
+      ? runnerType.resolveRuntimeConfig(runnerConfig, runtimeConfig)
+      : runtimeConfig;
+    const parseResult =
+      runnerType.runtimeConfigSchema.safeParse(resolvedRuntimeConfig);
     if (!parseResult.success) {
-      throw new Error(`Invalid runtime config: ${parseResult.error.message}`);
+      throw new BadRequestException(
+        parseResult.error.issues[0]?.message ?? 'Invalid runtime config'
+      );
     }
 
     return parseResult.data as Record<string, unknown>;
@@ -554,45 +559,28 @@ export class SessionRuntimeService {
           runtimeSession.runnerSessionConfig
         );
 
-    if (runnerType.materializerTarget) {
-      await this.materializeCliContext(
-        runnerType.materializerTarget,
-        sessionId,
-        runtimeSession.platformSessionConfig,
-        runnerState
-      );
-    }
+    await runnerType.installProfile({
+      sessionId,
+      platformConfig: runtimeSession.platformSessionConfig,
+      runnerState,
+      resources: await this.resolveProfileResources(
+        runtimeSession.platformSessionConfig
+      )
+    });
 
     return runnerState;
   }
 
-  /**
-   * Resolve resource IDs from PlatformSessionConfig to actual content
-   * and write them into the file system as CLI-recognizable files.
-   * Mutates `runnerState` in place to set contextDir and mcpConfigPath.
-   */
-  private async materializeCliContext(
-    target: MaterializerTarget,
-    sessionId: string,
-    platformConfig: PlatformSessionConfig,
-    runnerState: Record<string, unknown>
-  ): Promise<void> {
-    const skills = await this.resolveSkills(platformConfig.skillIds);
-    const rules = await this.resolveRules(platformConfig.ruleIds);
-    const mcps = await this.resolveMcps(platformConfig.mcps);
+  private async resolveProfileResources(
+    platformConfig: PlatformSessionConfig
+  ): Promise<RunnerProfileResources> {
+    const [skills, rules, mcps] = await Promise.all([
+      this.resolveSkills(platformConfig.skillIds),
+      this.resolveRules(platformConfig.ruleIds),
+      this.resolveMcps(platformConfig.mcps)
+    ]);
 
-    const result = await materializeContext({
-      target,
-      sessionId,
-      cwd: platformConfig.cwd,
-      platformConfig,
-      skills,
-      rules,
-      mcps
-    });
-
-    runnerState.contextDir = result.contextDir;
-    runnerState.mcpConfigPath = result.mcpConfigPath;
+    return { skills, rules, mcps };
   }
 
   private async resolveSkills(

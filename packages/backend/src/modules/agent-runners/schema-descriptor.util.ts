@@ -195,6 +195,27 @@ function zodFieldToDescriptor(
     };
   }
 
+  if (coreType === 'record') {
+    const valueType = coreDef.valueType as z.ZodTypeAny | undefined;
+    const valueDef = valueType?._def as
+      | Record<string, unknown>
+      | undefined;
+    const valueCoreType =
+      (valueDef?.typeName as string | undefined) ??
+      (valueDef?.type as string | undefined);
+
+    if (valueCoreType === 'string') {
+      return {
+        name,
+        label: resolvedLabel,
+        description: cleanDescription,
+        kind: 'string_map',
+        required,
+        contextKey: resolvedContextKey
+      };
+    }
+  }
+
   // Number
   if (coreType === 'number') {
     const checks = coreDef.checks as Array<Record<string, unknown>> | undefined;

@@ -17,8 +17,9 @@ function createProject(): Project {
     id: 'project-1',
     name: 'Workbench',
     description: 'Demo project',
-    gitUrl: 'https://github.com/example/workbench.git',
-    workspacePath: '/tmp/workbench',
+    repoGitUrl: 'https://github.com/example/workbench.git',
+    workspaceRootPath: '/tmp/workbench',
+    docGitUrl: null,
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z'
   };

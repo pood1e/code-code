@@ -1,4 +1,5 @@
 export * from './schemas/chat.schema';
+export * from './schemas/governance.schema';
 export * from './schemas/notification.schema';
 export * from './schemas/pipeline.schema';
 export * from './schemas/project.schema';
@@ -7,6 +8,7 @@ export * from './schemas/session.schema';
 export * from './types/agent-runner';
 export * from './types/api';
 export * from './types/chat';
+export * from './types/governance';
 export * from './types/notification';
 export * from './types/pipeline';
 export * from './types/project';

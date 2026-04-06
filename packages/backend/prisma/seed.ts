@@ -5,57 +5,6 @@ process.env.DATABASE_URL ??= 'file:./dev.db';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.project.upsert({
-    where: { id: 'project_agent_workbench' },
-    update: {
-      name: 'Agent Workbench',
-      description: 'Current monorepo workspace for the personal tool.',
-      gitUrl: 'git@github.com:pood1e/code-code.git',
-      workspacePath: '/Users/pood1e/workspace/code-code'
-    },
-    create: {
-      id: 'project_agent_workbench',
-      name: 'Agent Workbench',
-      description: 'Current monorepo workspace for the personal tool.',
-      gitUrl: 'git@github.com:pood1e/code-code.git',
-      workspacePath: '/Users/pood1e/workspace/code-code'
-    }
-  });
-
-  await prisma.project.upsert({
-    where: { id: 'project_workspace_root' },
-    update: {
-      name: 'Workspace Root',
-      description: 'Parent workspace used for local development.',
-      gitUrl: 'git@github.com:pood1e/workspace-root.git',
-      workspacePath: '/Users/pood1e/workspace'
-    },
-    create: {
-      id: 'project_workspace_root',
-      name: 'Workspace Root',
-      description: 'Parent workspace used for local development.',
-      gitUrl: 'git@github.com:pood1e/workspace-root.git',
-      workspacePath: '/Users/pood1e/workspace'
-    }
-  });
-
-  await prisma.project.upsert({
-    where: { id: 'project_home_sandbox' },
-    update: {
-      name: 'Home Sandbox',
-      description: 'General-purpose local sandbox rooted at the user home.',
-      gitUrl: 'git@github.com:pood1e/home-sandbox.git',
-      workspacePath: '/Users/pood1e'
-    },
-    create: {
-      id: 'project_home_sandbox',
-      name: 'Home Sandbox',
-      description: 'General-purpose local sandbox rooted at the user home.',
-      gitUrl: 'git@github.com:pood1e/home-sandbox.git',
-      workspacePath: '/Users/pood1e'
-    }
-  });
-
   const skillA = await prisma.skill.upsert({
     where: { id: 'skill_web_search' },
     update: {
@@ -326,7 +275,10 @@ async function main() {
       description: 'Claude Code runner for development tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-sonnet-4-5'
+        defaultRuntimeModel: 'sonnet',
+        allowRuntimeModelOverride: true,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: true
       }
     },
     create: {
@@ -335,7 +287,10 @@ async function main() {
       description: 'Claude Code runner for development tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-sonnet-4-5'
+        defaultRuntimeModel: 'sonnet',
+        allowRuntimeModelOverride: true,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: true
       }
     }
   });
@@ -347,8 +302,10 @@ async function main() {
       description: 'Claude Code runner for production tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-opus-4-5',
-        baseUrl: 'https://api.anthropic.com'
+        defaultRuntimeModel: 'opus',
+        allowRuntimeModelOverride: false,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: false
       }
     },
     create: {
@@ -357,55 +314,15 @@ async function main() {
       description: 'Claude Code runner for production tasks',
       type: 'claude-code',
       runnerConfig: {
-        model: 'claude-opus-4-5',
-        baseUrl: 'https://api.anthropic.com'
+        defaultRuntimeModel: 'opus',
+        allowRuntimeModelOverride: false,
+        defaultRuntimePermissionMode: 'plan',
+        allowRuntimePermissionModeOverride: false
       }
     }
   });
 
-  // 示例通道：结构化内部通知消息 -> 本地通知能力
-  const exampleProjectId = 'project_agent_workbench';
-
-  await prisma.notificationChannel.upsert({
-    where: {
-      uq_channel_scope_name: {
-        scopeId: exampleProjectId,
-        name: '会话完成通知'
-      }
-    },
-    update: {},
-    create: {
-      scopeId: exampleProjectId,
-      name: '会话完成通知',
-      capabilityId: 'local-notification',
-      config: {},
-      filter: { messageTypes: ['session.completed'] },
-      enabled: true
-    }
-  });
-
-  await prisma.notificationChannel.upsert({
-    where: {
-      uq_channel_scope_name: {
-        scopeId: exampleProjectId,
-        name: '会话异常告警'
-      }
-    },
-    update: {},
-    create: {
-      scopeId: exampleProjectId,
-      name: '会话异常告警',
-      capabilityId: 'local-notification',
-      config: {},
-      filter: {
-        messageTypes: ['session.failed', 'session.*'],
-        conditions: [{ field: 'severity', operator: 'In', values: ['critical', 'high'] }]
-      },
-      enabled: true
-    }
-  });
-
-  console.log('Seed completed');
+  console.log('Seed completed without default projects');
 }
 
 main()
