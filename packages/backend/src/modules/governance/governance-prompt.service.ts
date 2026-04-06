@@ -195,6 +195,8 @@ function toPolicyPromptContext(policy: GovernancePolicy) {
   return {
     priorityPolicy: policy.priorityPolicy,
     autoActionPolicy: policy.autoActionPolicy,
-    deliveryPolicy: policy.deliveryPolicy
+    deliveryPolicy: policy.deliveryPolicy,
+    sourceSelection: policy.sourceSelection,
+    agentStrategy: policy.agentStrategy
   };
 }

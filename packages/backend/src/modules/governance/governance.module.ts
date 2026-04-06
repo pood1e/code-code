@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
 import { SessionsModule } from '../sessions/sessions.module';
+import { GovernanceAgentFanoutService } from './governance-agent-fanout.service';
 import { GovernanceAutomationAttemptService } from './governance-automation-attempt.service';
 import { GovernanceAutomationService } from './governance-automation.service';
 import { GovernanceBaselineService } from './governance-baseline.service';
@@ -26,6 +27,7 @@ import { PrismaGovernanceRepository } from './prisma-governance.repository';
     GovernanceQueryService,
     GovernanceService,
     GovernanceAutomationService,
+    GovernanceAgentFanoutService,
     GovernanceAutomationAttemptService,
     GovernancePolicyEvaluatorService,
     GovernancePromptService,

@@ -235,8 +235,11 @@ export class GovernanceService {
       priorityPolicy: parsed.priorityPolicy,
       autoActionPolicy: parsed.autoActionPolicy,
       deliveryPolicy: parsed.deliveryPolicy,
-      ...(parsed.runnerSelection !== undefined
-        ? { runnerSelection: parsed.runnerSelection }
+      ...(parsed.sourceSelection !== undefined
+        ? { sourceSelection: parsed.sourceSelection }
+        : {}),
+      ...(parsed.agentStrategy !== undefined
+        ? { agentStrategy: parsed.agentStrategy }
         : {})
     });
 

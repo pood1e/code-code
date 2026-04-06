@@ -13,6 +13,7 @@ import {
   GovernanceDeliveryArtifactStatus,
   GovernanceDeliveryBodyStrategy,
   GovernanceDeliveryCommitMode,
+  GovernanceAgentMergeStrategy,
   GovernanceExecutionMode,
   GovernanceExecutionAttemptStatus,
   GovernanceFindingSource,
@@ -180,12 +181,23 @@ export const governanceDeliveryPolicySchema = z.object({
   autoCloseIssueOnApprovedDelivery: z.boolean()
 });
 
-export const governanceRunnerSelectionSchema = z.object({
-  defaultRunnerId: idSchema.nullable(),
-  discoveryRunnerId: idSchema.nullable(),
-  triageRunnerId: idSchema.nullable(),
-  planningRunnerId: idSchema.nullable(),
-  executionRunnerId: idSchema.nullable()
+export const governanceSourceSelectionSchema = z.object({
+  repoBranch: nonEmptyStringSchema.nullable(),
+  docBranch: nonEmptyStringSchema.nullable()
+});
+
+export const governanceStageAgentStrategySchema = z.object({
+  runnerIds: z.array(idSchema),
+  fanoutCount: z.number().int().min(1),
+  mergeStrategy: z.nativeEnum(GovernanceAgentMergeStrategy)
+});
+
+export const governanceAgentStrategySchema = z.object({
+  defaultRunnerIds: z.array(idSchema),
+  discovery: governanceStageAgentStrategySchema.nullable(),
+  triage: governanceStageAgentStrategySchema.nullable(),
+  planning: governanceStageAgentStrategySchema.nullable(),
+  execution: governanceStageAgentStrategySchema.nullable()
 });
 
 export const governancePolicySchema = z.object({
@@ -194,7 +206,8 @@ export const governancePolicySchema = z.object({
   priorityPolicy: governancePriorityPolicySchema,
   autoActionPolicy: governanceAutoActionPolicySchema,
   deliveryPolicy: governanceDeliveryPolicySchema,
-  runnerSelection: governanceRunnerSelectionSchema,
+  sourceSelection: governanceSourceSelectionSchema,
+  agentStrategy: governanceAgentStrategySchema,
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema
 });
@@ -600,5 +613,6 @@ export const updateGovernancePolicyInputSchema = z.object({
   priorityPolicy: governancePriorityPolicySchema,
   autoActionPolicy: governanceAutoActionPolicySchema,
   deliveryPolicy: governanceDeliveryPolicySchema,
-  runnerSelection: governanceRunnerSelectionSchema.optional()
+  sourceSelection: governanceSourceSelectionSchema.optional(),
+  agentStrategy: governanceAgentStrategySchema.optional()
 });

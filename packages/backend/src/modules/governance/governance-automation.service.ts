@@ -11,6 +11,7 @@ import {
   GovernanceAutoActionEligibility,
   GovernanceAutomationStage,
   GovernanceAutomationSubjectType,
+  GovernanceAgentMergeStrategy,
   GovernanceChangeUnitStatus,
   GovernanceExecutionAttemptStatus,
   GovernanceExecutionMode,
@@ -26,6 +27,8 @@ import {
   type VerificationPlan,
   type GovernanceIssueSummary,
   type GovernancePlanningOutput,
+  type GovernancePolicy,
+  type GovernanceStageAgentStrategy,
   type GovernanceTriageOutput,
   type RepositoryProfile
 } from '@agent-workbench/shared';
@@ -47,6 +50,10 @@ import {
   toRepositoryProfile,
   toVerificationPlan
 } from './governance-automation.support';
+import {
+  GovernanceAgentFanoutService,
+  type GovernanceFanoutSuccessCandidate
+} from './governance-agent-fanout.service';
 import { GovernanceAutomationAttemptService } from './governance-automation-attempt.service';
 import { GovernanceBaselineService } from './governance-baseline.service';
 import { GovernanceGitService } from './governance-git.service';
@@ -54,6 +61,7 @@ import { GovernancePolicyEvaluatorService } from './governance-policy-evaluator.
 import { GovernancePromptService } from './governance-prompt.service';
 import {
   GovernanceRepository,
+  type GovernanceExecutionAttemptRecord,
   type RepositoryProfileRecord
 } from './governance.repository';
 import { GovernanceRunnerBridgeService } from './governance-runner-bridge.service';
@@ -77,6 +85,7 @@ export class GovernanceAutomationService
     private readonly governanceRepository: GovernanceRepository,
     private readonly governanceRunnerResolver: GovernanceRunnerResolverService,
     private readonly governanceRunnerBridge: GovernanceRunnerBridgeService,
+    private readonly governanceAgentFanout: GovernanceAgentFanoutService,
     private readonly governanceAutomationAttempt: GovernanceAutomationAttemptService,
     private readonly governancePromptService: GovernancePromptService,
     private readonly governancePolicyEvaluator: GovernancePolicyEvaluatorService,
@@ -138,14 +147,18 @@ export class GovernanceAutomationService
     }
 
     for (const scope of scopes) {
-      const runnerId = await this.resolveConfiguredRunnerId(
+      const agentStrategy = await this.resolveConfiguredAgentStrategy(
         scope.id,
         GovernanceAutomationStage.Discovery
       );
-      if (!runnerId) {
+      if (!agentStrategy) {
         continue;
       }
-      const processed = await this.processDiscoveryScope(scope.id, runnerId, Boolean(scopeId));
+      const processed = await this.processDiscoveryScope(
+        scope.id,
+        agentStrategy,
+        Boolean(scopeId)
+      );
       if (processed) {
         return true;
       }
@@ -161,11 +174,11 @@ export class GovernanceAutomationService
     }
 
     for (const scope of scopes) {
-      const runnerId = await this.resolveConfiguredRunnerId(
+      const agentStrategy = await this.resolveConfiguredAgentStrategy(
         scope.id,
         GovernanceAutomationStage.Triage
       );
-      if (!runnerId) {
+      if (!agentStrategy) {
         continue;
       }
 
@@ -179,7 +192,7 @@ export class GovernanceAutomationService
       }
 
       try {
-        return this.processTriageFinding(finding, runnerId);
+        return this.processTriageFinding(finding, agentStrategy);
       } finally {
         await this.governanceRepository.releaseFindingLease({
           findingId: finding.id,
@@ -198,11 +211,11 @@ export class GovernanceAutomationService
     }
 
     for (const scope of scopes) {
-      const runnerId = await this.resolveConfiguredRunnerId(
+      const agentStrategy = await this.resolveConfiguredAgentStrategy(
         scope.id,
         GovernanceAutomationStage.Planning
       );
-      if (!runnerId) {
+      if (!agentStrategy) {
         continue;
       }
 
@@ -216,7 +229,7 @@ export class GovernanceAutomationService
       }
 
       try {
-        return this.processPlanningIssue(issue, runnerId);
+        return this.processPlanningIssue(issue, agentStrategy);
       } finally {
         await this.governanceRepository.releaseIssueLease({
           issueId: issue.id,
@@ -235,11 +248,11 @@ export class GovernanceAutomationService
     }
 
     for (const scope of scopes) {
-      const runnerId = await this.resolveConfiguredRunnerId(
+      const agentStrategy = await this.resolveConfiguredAgentStrategy(
         scope.id,
         GovernanceAutomationStage.Execution
       );
-      if (!runnerId) {
+      if (!agentStrategy) {
         continue;
       }
 
@@ -253,7 +266,10 @@ export class GovernanceAutomationService
       }
 
       try {
-        return this.processExecutionChangeUnit(changeUnit.id, runnerId);
+        return this.processExecutionChangeUnit(
+          changeUnit.id,
+          agentStrategy.runnerIds[0] ?? null
+        );
       } finally {
         await this.governanceRepository.releaseChangeUnitLease({
           changeUnitId: changeUnit.id,
@@ -335,6 +351,9 @@ export class GovernanceAutomationService
     scope: { id: string; repoGitUrl: string; workspaceRootPath: string },
     isTargetedRun: boolean
   ) {
+    const policy = await this.governanceRepository.getOrCreateGovernancePolicy(
+      scope.id
+    );
     const latestProfile =
       await this.governanceRepository.getLatestRepositoryProfile(scope.id);
     const latestAttempt =
@@ -388,7 +407,10 @@ export class GovernanceAutomationService
 
       const snapshot = await this.governanceBaselineService.buildRepositoryProfile(
         (
-          await this.governanceWorkspaceService.ensureCodeWorkspace(scope)
+          await this.governanceWorkspaceService.ensureCodeWorkspace(
+            scope,
+            policy.sourceSelection
+          )
         ).repositoryPath
       );
       await this.governanceRepository.createRepositoryProfileSnapshot({
@@ -430,7 +452,7 @@ export class GovernanceAutomationService
 
   private async processDiscoveryScope(
     scopeId: string,
-    runnerId: string,
+    agentStrategy: GovernanceStageAgentStrategy,
     isTargetedRun: boolean
   ) {
     let repositoryProfileRecord =
@@ -506,28 +528,28 @@ export class GovernanceAutomationService
       attemptNo: attempt.attemptNo
     });
 
-    return this.governanceAutomationAttempt.runAgentAttempt({
-      stageType: GovernanceAutomationStage.Discovery,
+    const runAttempt = this.createAgentAttemptRunner(
+      GovernanceAutomationStage.Discovery,
       scopeId,
-      runnerId,
+      agentStrategy,
       attempt,
-      prompt: prompt.prompt,
-      ownerLeaseToken: this.ownerId,
-      maxAutoRetries: GovernanceAutomationService.MAX_AUTO_RETRIES,
-      createLeaseWindow: () => this.createLeaseWindow(),
-      onSuccess: async (parsedOutput) => {
+      prompt.prompt,
+      async (parsedOutput) => {
         const discoveryOutput = parsedOutput as GovernanceDiscoveryOutput;
         for (const finding of discoveryOutput.findings) {
           await this.createDiscoveredFinding(scopeId, finding);
         }
-      }
-    });
+      },
+      (candidates) => mergeDiscoveryCandidates(scopeId, agentStrategy, candidates)
+    );
+
+    return runAttempt();
   }
 
   private async processTriageFinding(
     finding: Awaited<ReturnType<GovernanceRepository['claimNextPendingFinding']>> & {}
       & NonNullable<Awaited<ReturnType<GovernanceRepository['claimNextPendingFinding']>>>,
-    runnerId: string
+    agentStrategy: GovernanceStageAgentStrategy
   ) {
     const repositoryProfileRecord =
       await this.governanceRepository.getLatestRepositoryProfile(finding.scopeId);
@@ -571,16 +593,13 @@ export class GovernanceAutomationService
       attemptNo: attempt.attemptNo
     });
 
-    return this.governanceAutomationAttempt.runAgentAttempt({
-      stageType: GovernanceAutomationStage.Triage,
-      scopeId: finding.scopeId,
-      runnerId,
+    const runAttempt = this.createAgentAttemptRunner(
+      GovernanceAutomationStage.Triage,
+      finding.scopeId,
+      agentStrategy,
       attempt,
-      prompt: prompt.prompt,
-      ownerLeaseToken: this.ownerId,
-      maxAutoRetries: GovernanceAutomationService.MAX_AUTO_RETRIES,
-      createLeaseWindow: () => this.createLeaseWindow(),
-      onSuccess: async (parsedOutput) => {
+      prompt.prompt,
+      async (parsedOutput) => {
         const triageOutput = parsedOutput as GovernanceTriageOutput;
         if (triageOutput.action === 'create_issue') {
           const normalizedAssessment =
@@ -627,20 +646,29 @@ export class GovernanceAutomationService
               })
             : undefined
         });
-      }
-    });
+      },
+      (candidates) => mergeTriageCandidates(agentStrategy, candidates)
+    );
+
+    return runAttempt();
   }
 
   private async processPlanningIssue(
     issue: NonNullable<Awaited<ReturnType<GovernanceRepository['claimNextPlanningIssue']>>>,
-    runnerId: string
+    agentStrategy: GovernanceStageAgentStrategy
   ) {
     const project = await this.governanceRepository.getProjectSource(issue.scopeId);
     if (!project) {
       return false;
     }
+    const policy = await this.governanceRepository.getOrCreateGovernancePolicy(
+      issue.scopeId
+    );
     const workspace =
-      await this.governanceWorkspaceService.ensureCodeWorkspace(project);
+      await this.governanceWorkspaceService.ensureCodeWorkspace(
+        project,
+        policy.sourceSelection
+      );
 
     const baselineCommitSha = await this.governanceBaselineService.resolveHeadCommitSha(
       workspace.repositoryPath
@@ -650,9 +678,6 @@ export class GovernanceAutomationService
     const repositoryProfile = repositoryProfileRecord
       ? toRepositoryProfile(repositoryProfileRecord)
       : null;
-    const policy = await this.governanceRepository.getOrCreateGovernancePolicy(
-      issue.scopeId
-    );
     const issueDetailRecord = await this.governanceRepository.getIssueDetail(issue.id);
     if (!issueDetailRecord) {
       return false;
@@ -717,16 +742,13 @@ export class GovernanceAutomationService
       attemptNo: attempt.attemptNo
     });
 
-    return this.governanceAutomationAttempt.runAgentAttempt({
-      stageType: GovernanceAutomationStage.Planning,
-      scopeId: issue.scopeId,
-      runnerId,
+    const runAttempt = this.createAgentAttemptRunner(
+      GovernanceAutomationStage.Planning,
+      issue.scopeId,
+      agentStrategy,
       attempt,
-      prompt: prompt.prompt,
-      ownerLeaseToken: this.ownerId,
-      maxAutoRetries: GovernanceAutomationService.MAX_AUTO_RETRIES,
-      createLeaseWindow: () => this.createLeaseWindow(),
-      onSuccess: async (parsedOutput) => {
+      prompt.prompt,
+      async (parsedOutput) => {
         const planningOutput = this.governancePolicyEvaluator.normalizePlanningOutput(
           {
             policy: toGovernancePolicy(policy),
@@ -759,24 +781,33 @@ export class GovernanceAutomationService
           })),
           verificationPlans: planningOutput.verificationPlans
         });
-      }
-    });
+      },
+      (candidates) => mergePlanningCandidates(agentStrategy, candidates)
+    );
+
+    return runAttempt();
   }
 
   private async processExecutionChangeUnit(
     changeUnitId: string,
-    runnerId: string
+    runnerId: string | null
   ) {
     const context =
       await this.governanceRepository.getChangeUnitExecutionContext(changeUnitId);
     if (!context) {
       return false;
     }
-    const workspace =
-      await this.governanceWorkspaceService.ensureCodeWorkspace(context.project);
+    if (!runnerId) {
+      return false;
+    }
     const policy = await this.governanceRepository.getOrCreateGovernancePolicy(
       context.scopeId
     );
+    const workspace =
+      await this.governanceWorkspaceService.ensureCodeWorkspace(
+        context.project,
+        policy.sourceSelection
+      );
 
     const hasDrift = await this.governanceGitService.hasTargetedBaselineDrift({
       workspacePath: workspace.repositoryPath,
@@ -1101,8 +1132,14 @@ export class GovernanceAutomationService
     if (!project) {
       return;
     }
+    const policy = await this.governanceRepository.getOrCreateGovernancePolicy(
+      detail.scopeId
+    );
     const workspace =
-      await this.governanceWorkspaceService.ensureCodeWorkspace(project);
+      await this.governanceWorkspaceService.ensureCodeWorkspace(
+        project,
+        policy.sourceSelection
+      );
     const planVerification = await this.governanceVerificationRunner.runPlan({
       workspacePath: workspace.repositoryPath,
       plan: toVerificationPlan(planVerificationPlan)
@@ -1134,13 +1171,169 @@ export class GovernanceAutomationService
     };
   }
 
-  private resolveConfiguredRunnerId(
+  private resolveConfiguredAgentStrategy(
     scopeId: string,
     stageType: GovernanceAutomationStage
   ) {
-    return this.governanceRunnerResolver.resolveRunnerId({
+    return this.governanceRunnerResolver.resolveStageAgentStrategy({
       scopeId,
       stageType
     });
   }
+
+  private createAgentAttemptRunner(
+    stageType: GovernanceAutomationStage,
+    scopeId: string,
+    agentStrategy: GovernanceStageAgentStrategy,
+    attempt: GovernanceExecutionAttemptRecord,
+    prompt: string,
+    onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>,
+    mergeOutputs: (
+      candidates: GovernanceFanoutSuccessCandidate[]
+    ) => {
+      primary: GovernanceFanoutSuccessCandidate;
+      parsedOutput: Record<string, unknown>;
+    }
+  ) {
+    if (agentStrategy.runnerIds.length <= 1) {
+      const runnerId = agentStrategy.runnerIds[0];
+      if (!runnerId) {
+        return async () => false;
+      }
+
+      return () =>
+        this.governanceAutomationAttempt.runAgentAttempt({
+          stageType,
+          scopeId,
+          runnerId,
+          attempt,
+          prompt,
+          ownerLeaseToken: this.ownerId,
+          maxAutoRetries: GovernanceAutomationService.MAX_AUTO_RETRIES,
+          createLeaseWindow: () => this.createLeaseWindow(),
+          onSuccess
+        });
+    }
+
+    return () =>
+      this.governanceAgentFanout.runStageFanout({
+        stageType,
+        scopeId,
+        strategy: agentStrategy,
+        attempt,
+        prompt,
+        ownerLeaseToken: this.ownerId,
+        maxAutoRetries: GovernanceAutomationService.MAX_AUTO_RETRIES,
+        createLeaseWindow: () => this.createLeaseWindow(),
+        mergeOutputs,
+        onSuccess
+      });
+  }
+}
+
+function mergeDiscoveryCandidates(
+  scopeId: string,
+  agentStrategy: GovernanceStageAgentStrategy,
+  candidates: GovernanceFanoutSuccessCandidate[]
+) {
+  if (agentStrategy.mergeStrategy === GovernanceAgentMergeStrategy.UnionDedup) {
+    const dedupedFindings = Array.from(
+      new Map(
+        candidates.flatMap((candidate) => {
+          const output = candidate.parsedOutput as GovernanceDiscoveryOutput;
+          return output.findings.map((finding) => [
+            buildFindingFingerprint(scopeId, finding),
+            finding
+          ]);
+        })
+      ).values()
+    );
+
+    return {
+      primary: pickPrimaryCandidate(candidates),
+      parsedOutput: {
+        findings: dedupedFindings
+      } satisfies GovernanceDiscoveryOutput
+    };
+  }
+
+  const selectedCandidate =
+    agentStrategy.mergeStrategy === GovernanceAgentMergeStrategy.BestOfN
+      ? candidates.reduce((best, candidate) =>
+          getDiscoveryFindingCount(candidate) > getDiscoveryFindingCount(best)
+            ? candidate
+            : best
+        )
+      : pickPrimaryCandidate(candidates);
+
+  return {
+    primary: selectedCandidate,
+    parsedOutput: selectedCandidate.parsedOutput
+  };
+}
+
+function mergeTriageCandidates(
+  agentStrategy: GovernanceStageAgentStrategy,
+  candidates: GovernanceFanoutSuccessCandidate[]
+) {
+  if (agentStrategy.mergeStrategy === GovernanceAgentMergeStrategy.Single) {
+    const primary = pickPrimaryCandidate(candidates);
+    return {
+      primary,
+      parsedOutput: primary.parsedOutput
+    };
+  }
+
+  const primary = candidates.reduce((best, candidate) =>
+    getCandidateScore(candidate) > getCandidateScore(best) ? candidate : best
+  );
+  return {
+    primary,
+    parsedOutput: primary.parsedOutput
+  };
+}
+
+function mergePlanningCandidates(
+  agentStrategy: GovernanceStageAgentStrategy,
+  candidates: GovernanceFanoutSuccessCandidate[]
+) {
+  if (agentStrategy.mergeStrategy === GovernanceAgentMergeStrategy.Single) {
+    const primary = pickPrimaryCandidate(candidates);
+    return {
+      primary,
+      parsedOutput: primary.parsedOutput
+    };
+  }
+
+  const primary = candidates.reduce((best, candidate) =>
+    getPlanningCandidateScore(candidate) > getPlanningCandidateScore(best)
+      ? candidate
+      : best
+  );
+  return {
+    primary,
+    parsedOutput: primary.parsedOutput
+  };
+}
+
+function pickPrimaryCandidate(candidates: GovernanceFanoutSuccessCandidate[]) {
+  return candidates[0]!;
+}
+
+function getDiscoveryFindingCount(candidate: GovernanceFanoutSuccessCandidate) {
+  const output = candidate.parsedOutput as GovernanceDiscoveryOutput;
+  return output.findings.length;
+}
+
+function getCandidateScore(candidate: GovernanceFanoutSuccessCandidate) {
+  return JSON.stringify(candidate.parsedOutput).length;
+}
+
+function getPlanningCandidateScore(candidate: GovernanceFanoutSuccessCandidate) {
+  const output = candidate.parsedOutput as GovernancePlanningOutput;
+  return (
+    output.changeUnits.length * 100 +
+    output.verificationPlans.length * 10 +
+    output.proposedActions.length
+  );
 }
