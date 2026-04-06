@@ -32,13 +32,10 @@ type RepositoryProfileSnapshot = {
 
 @Injectable()
 export class GovernanceBaselineService {
+  private static readonly UNKNOWN_BRANCH = 'unknown';
+
   async resolveHeadCommitSha(workspacePath: string) {
-    const { stdout } = await execFileAsync('git', [
-      '-C',
-      workspacePath,
-      'rev-parse',
-      'HEAD'
-    ]);
+    const { stdout } = await execFileAsync('git', ['-C', workspacePath, 'rev-parse', 'HEAD']);
 
     const sha = stdout.trim();
     if (!sha) {
@@ -69,20 +66,24 @@ export class GovernanceBaselineService {
   }
 
   private async resolveBranchName(workspacePath: string) {
-    const { stdout } = await execFileAsync('git', [
-      '-C',
-      workspacePath,
-      'rev-parse',
-      '--abbrev-ref',
-      'HEAD'
-    ]);
+    try {
+      const { stdout } = await execFileAsync('git', [
+        '-C',
+        workspacePath,
+        'rev-parse',
+        '--abbrev-ref',
+        'HEAD'
+      ]);
 
-    const branch = stdout.trim();
-    if (!branch) {
-      throw new Error('Failed to resolve git branch');
+      const branch = stdout.trim();
+      if (!branch) {
+        throw new Error('Failed to resolve git branch');
+      }
+
+      return branch;
+    } catch {
+      return GovernanceBaselineService.UNKNOWN_BRANCH;
     }
-
-    return branch;
   }
 
   private async discoverModules(
