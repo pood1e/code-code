@@ -156,16 +156,46 @@ export function useGovernanceIssueDetailFormState(
       comment: ''
     });
   }, [
-    actionableChangeUnits,
     assessmentOverrideForm,
     changePlanReviewForm,
     changeUnitReviewForm,
     deliveryReviewForm,
     findingDismissForm,
-    pendingFindings,
     resolutionForm,
     issue?.id
   ]);
+
+  useEffect(() => {
+    const currentFindingId = findingDismissForm.getValues('findingId');
+    const nextFindingId =
+      pendingFindings.some((finding) => finding.id === currentFindingId)
+        ? currentFindingId
+        : (pendingFindings[0]?.id ?? '');
+
+    if (currentFindingId !== nextFindingId) {
+      findingDismissForm.setValue('findingId', nextFindingId, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false
+      });
+    }
+  }, [findingDismissForm, pendingFindings]);
+
+  useEffect(() => {
+    const currentChangeUnitId = changeUnitReviewForm.getValues('changeUnitId');
+    const nextChangeUnitId =
+      actionableChangeUnits.some((changeUnit) => changeUnit.id === currentChangeUnitId)
+        ? currentChangeUnitId
+        : (actionableChangeUnits[0]?.id ?? '');
+
+    if (currentChangeUnitId !== nextChangeUnitId) {
+      changeUnitReviewForm.setValue('changeUnitId', nextChangeUnitId, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false
+      });
+    }
+  }, [actionableChangeUnits, changeUnitReviewForm]);
 
   return {
     resolutionForm,
