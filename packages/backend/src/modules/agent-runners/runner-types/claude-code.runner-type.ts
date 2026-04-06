@@ -234,7 +234,8 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'claude', ...args],
         cwd,
-        env: config.env
+        env: config.env,
+        stdinMode: 'closed'
       };
     }
 
@@ -242,7 +243,8 @@ export class ClaudeCodeRunnerType extends CliRunnerTypeBase {
       command: 'claude',
       args,
       cwd,
-      env: config.env
+      env: config.env,
+      stdinMode: 'closed'
     };
   }
 

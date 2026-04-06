@@ -124,6 +124,8 @@ export class GovernanceAutomationService
   }
 
   async runBaselineCycle(scopeId?: string) {
+    await this.recoverErroredAutomationAttempts();
+
     const scopes = scopeId
       ? await this.loadSingleScope(scopeId)
       : await this.governanceRepository.listGovernanceScopes();
@@ -142,6 +144,8 @@ export class GovernanceAutomationService
   }
 
   async runDiscoveryCycle(scopeId?: string) {
+    await this.recoverErroredAutomationAttempts();
+
     const scopes = scopeId
       ? await this.loadSingleScope(scopeId)
       : await this.governanceRepository.listGovernanceScopes();
@@ -171,6 +175,8 @@ export class GovernanceAutomationService
   }
 
   async runTriageCycle() {
+    await this.recoverErroredAutomationAttempts();
+
     const scopes = await this.governanceRepository.listGovernanceScopes();
     if (scopes.length === 0) {
       return false;
@@ -208,6 +214,8 @@ export class GovernanceAutomationService
   }
 
   async runPlanningCycle() {
+    await this.recoverErroredAutomationAttempts();
+
     const scopes = await this.governanceRepository.listGovernanceScopes();
     if (scopes.length === 0) {
       return false;
@@ -245,6 +253,8 @@ export class GovernanceAutomationService
   }
 
   async runExecutionCycle() {
+    await this.recoverErroredAutomationAttempts();
+
     const scopes = await this.governanceRepository.listGovernanceScopes();
     if (scopes.length === 0) {
       return false;
@@ -1493,6 +1503,19 @@ export class GovernanceAutomationService
         onSuccess,
         onSucceeded,
         onNeedsHumanReview
+      });
+  }
+
+  private async recoverErroredAutomationAttempts() {
+    await this.governanceRepository
+      .recoverErroredAutomationAttempts(new Date())
+      .catch((error) => {
+        this.logger.error(
+          `Governance errored-session recovery failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        return 0;
       });
   }
 }

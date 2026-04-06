@@ -7,7 +7,10 @@ import {
   GovernanceDeliveryBodyStrategy,
   GovernanceAssessmentSource,
   GovernanceAutoActionEligibility,
+  GovernanceAutomationStage,
+  GovernanceAutomationSubjectType,
   GovernanceChangeUnitStatus,
+  GovernanceExecutionAttemptStatus,
   GovernanceExecutionMode,
   GovernanceFindingSource,
   GovernanceFindingStatus,
@@ -42,6 +45,16 @@ vi.mock('../hooks/use-governance-mutations', () => ({
   })
 }));
 
+vi.mock('./GovernanceSessionHistorySheet', () => ({
+  GovernanceSessionHistorySheet: ({
+    title,
+    triggerLabel = '查看日志'
+  }: {
+    title: string;
+    triggerLabel?: string;
+  }) => <button type="button">{`${triggerLabel}:${title}`}</button>
+}));
+
 function createIssue(): GovernanceIssueDetail {
   return {
     id: 'issue-1',
@@ -73,7 +86,19 @@ function createIssue(): GovernanceIssueDetail {
       createdAt: '2026-04-06T10:00:00.000Z'
     },
     latestResolutionDecision: null,
-    latestPlanningAttempt: null,
+    latestPlanningAttempt: {
+      id: 'planning-attempt-1',
+      stageType: GovernanceAutomationStage.Planning,
+      subjectType: GovernanceAutomationSubjectType.Issue,
+      subjectId: 'issue-1',
+      attemptNo: 1,
+      status: GovernanceExecutionAttemptStatus.Running,
+      sessionId: 'session-planning-1',
+      activeRequestMessageId: 'message-planning-1',
+      failureCode: null,
+      failureMessage: null,
+      updatedAt: '2026-04-06T10:00:00.000Z'
+    },
     relatedFindings: [
       {
         id: 'finding-1',
@@ -86,7 +111,19 @@ function createIssue(): GovernanceIssueDetail {
         tags: [],
         affectedTargets: [{ kind: 'file', ref: 'src/service.ts' }],
         status: GovernanceFindingStatus.Pending,
-        latestTriageAttempt: null,
+        latestTriageAttempt: {
+          id: 'triage-attempt-1',
+          stageType: GovernanceAutomationStage.Triage,
+          subjectType: GovernanceAutomationSubjectType.Finding,
+          subjectId: 'finding-1',
+          attemptNo: 1,
+          status: GovernanceExecutionAttemptStatus.Running,
+          sessionId: 'session-triage-1',
+          activeRequestMessageId: 'message-triage-1',
+          failureCode: null,
+          failureMessage: null,
+          updatedAt: '2026-04-06T10:00:00.000Z'
+        },
         createdAt: '2026-04-06T10:00:00.000Z',
         updatedAt: '2026-04-06T10:00:00.000Z'
       }
@@ -161,6 +198,19 @@ function createManualReadyIssue(): GovernanceIssueDetail {
         currentAttemptNo: 0,
         status: GovernanceChangeUnitStatus.Ready,
         producedCommitIds: [],
+        latestExecutionAttempt: {
+          id: 'execution-attempt-1',
+          stageType: GovernanceAutomationStage.Execution,
+          subjectType: GovernanceAutomationSubjectType.ChangeUnit,
+          subjectId: 'change-unit-1',
+          attemptNo: 1,
+          status: GovernanceExecutionAttemptStatus.Running,
+          sessionId: 'session-execution-1',
+          activeRequestMessageId: 'message-execution-1',
+          failureCode: null,
+          failureMessage: null,
+          updatedAt: '2026-04-06T10:00:00.000Z'
+        },
         createdAt: '2026-04-06T10:00:00.000Z',
         updatedAt: '2026-04-06T10:00:00.000Z'
       }
@@ -385,6 +435,28 @@ describe('GovernanceIssueDetail', () => {
 
     expect(
       screen.getByText(/当前 issue 已 blocked/)
+    ).toBeInTheDocument();
+  });
+
+  it('应为 planning、triage 和 execution 展示日志入口', () => {
+    renderWithProviders(
+      <GovernanceIssueDetailPanel
+        scopeId="project-1"
+        issueId="issue-manual"
+        issue={createManualReadyIssue()}
+        isLoading={false}
+        policy={createPolicy()}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: '查看 Planning 日志:重复判空逻辑 · Planning 日志' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '查看执行日志:手工修复单元 · 执行日志' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '查看 Triage 日志:误报 candidate · Triage 日志' })
     ).toBeInTheDocument();
   });
 });

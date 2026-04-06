@@ -4,20 +4,36 @@ import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   AgentRunnerSummary,
+  ChangeUnit,
+  Finding,
   GovernanceAutoActionEligibility,
+  GovernanceExecutionAttemptSummary,
   GovernanceIssueDetail,
   GovernanceDeliveryCommitMode,
   GovernanceIssueSummary,
   GovernancePolicy,
   GovernancePriority,
+  GovernanceReviewQueueItem,
   GovernanceScopeOverview,
   RepositoryProfile,
   Project
 } from '@agent-workbench/shared';
 import {
   GovernanceAutoActionEligibility as GovernanceAutoActionEligibilityEnum,
+  GovernanceAutomationStage,
+  GovernanceAutomationSubjectType,
+  GovernanceChangeUnitStatus,
+  GovernanceChangePlanStatus,
   GovernanceDeliveryCommitMode as GovernanceDeliveryCommitModeEnum,
+  GovernanceExecutionMode,
+  GovernanceExecutionAttemptStatus,
+  GovernanceFindingSource,
+  GovernanceFindingStatus,
+  GovernanceIssueKind,
+  GovernanceIssueStatus,
   GovernancePriority as GovernancePriorityEnum,
+  GovernanceReviewQueueItemKind,
+  GovernanceViolationPolicy,
   type UpdateGovernancePolicyInput
 } from '@agent-workbench/shared';
 
@@ -32,6 +48,7 @@ import {
   useGovernanceIssueDetail,
   useGovernanceIssueList,
   useGovernancePolicy,
+  useGovernanceReviewQueue,
   useGovernanceRunnerList,
   useGovernanceScopeOverview
 } from '@/features/governance/hooks/use-governance-queries';
@@ -49,6 +66,7 @@ vi.mock('./use-project-page-data', () => ({
 vi.mock('@/features/governance/hooks/use-governance-queries', () => ({
   useGovernanceScopeOverview: vi.fn(),
   useGovernancePolicy: vi.fn(),
+  useGovernanceReviewQueue: vi.fn(),
   useGovernanceRunnerList: vi.fn(),
   useGovernanceFindingList: vi.fn(),
   useGovernanceIssueList: vi.fn(),
@@ -76,6 +94,16 @@ vi.mock('@/features/governance/components/GovernanceIssueDetail', () => ({
   GovernanceIssueDetail: () => <div>Issue Detail</div>
 }));
 
+vi.mock('@/features/governance/components/GovernanceSessionHistorySheet', () => ({
+  GovernanceSessionHistorySheet: ({
+    title,
+    triggerLabel = '查看日志'
+  }: {
+    title: string;
+    triggerLabel?: string;
+  }) => <button type="button">{`${triggerLabel}:${title}`}</button>
+}));
+
 function createProject(): Project {
   return {
     id: 'project-1',
@@ -93,14 +121,62 @@ function createOverview(): GovernanceScopeOverview {
   return {
     scopeId: 'project-1',
     repositoryProfile: null,
-    latestBaselineAttempt: null,
-    latestDiscoveryAttempt: null,
+    latestBaselineAttempt: {
+      id: 'attempt-baseline-1',
+      stageType: GovernanceAutomationStage.Baseline,
+      subjectType: GovernanceAutomationSubjectType.Scope,
+      subjectId: 'project-1',
+      attemptNo: 1,
+      status: GovernanceExecutionAttemptStatus.Succeeded,
+      sessionId: 'session-baseline-1',
+      activeRequestMessageId: 'message-baseline-1',
+      failureCode: null,
+      failureMessage: null,
+      updatedAt: '2026-04-06T00:00:00.000Z'
+    },
+    latestDiscoveryAttempt: {
+      id: 'attempt-discovery-1',
+      stageType: GovernanceAutomationStage.Discovery,
+      subjectType: GovernanceAutomationSubjectType.Scope,
+      subjectId: 'project-1',
+      attemptNo: 1,
+      status: GovernanceExecutionAttemptStatus.Running,
+      sessionId: 'session-discovery-1',
+      activeRequestMessageId: 'message-discovery-1',
+      failureCode: null,
+      failureMessage: null,
+      updatedAt: '2026-04-06T00:00:00.000Z'
+    },
     findingCounts: {
       pending: 0,
       merged: 0,
       dismissed: 0,
       ignored: 0
     }
+  };
+}
+
+function createAttempt(
+  input: {
+    stageType: GovernanceAutomationStage;
+    subjectType: GovernanceAutomationSubjectType;
+    subjectId: string;
+    status: GovernanceExecutionAttemptStatus;
+    sessionId: string;
+  }
+): GovernanceExecutionAttemptSummary {
+  return {
+    id: `attempt-${input.stageType}-${input.subjectId}`,
+    stageType: input.stageType,
+    subjectType: input.subjectType,
+    subjectId: input.subjectId,
+    attemptNo: 1,
+    status: input.status,
+    sessionId: input.sessionId,
+    activeRequestMessageId: `message-${input.stageType}-${input.subjectId}`,
+    failureCode: null,
+    failureMessage: null,
+    updatedAt: '2026-04-06T00:00:00.000Z'
   };
 }
 
@@ -162,6 +238,123 @@ function createRunner(): AgentRunnerSummary {
     type: 'claude-code',
     description: null,
     createdAt: '2026-04-06T00:00:00.000Z',
+    updatedAt: '2026-04-06T00:00:00.000Z'
+  };
+}
+
+function createFinding(): Finding {
+  return {
+    id: 'finding-1',
+    scopeId: 'project-1',
+    source: GovernanceFindingSource.AgentReview,
+    title: 'duplicate null check',
+    summary: '重复空判断可以自动归并到已有 issue。',
+    evidence: [],
+    categories: ['clean_code'],
+    tags: [],
+    affectedTargets: [{ kind: 'file', ref: 'src/service.ts' }],
+    status: GovernanceFindingStatus.Pending,
+    latestTriageAttempt: createAttempt({
+      stageType: GovernanceAutomationStage.Triage,
+      subjectType: GovernanceAutomationSubjectType.Finding,
+      subjectId: 'finding-1',
+      status: GovernanceExecutionAttemptStatus.Running,
+      sessionId: 'session-triage-1'
+    }),
+    createdAt: '2026-04-06T00:00:00.000Z',
+    updatedAt: '2026-04-06T00:00:00.000Z'
+  };
+}
+
+function createIssueSummary(): GovernanceIssueSummary {
+  return {
+    id: 'issue-1',
+    scopeId: 'project-1',
+    title: 'Stabilize governance queue',
+    statement: '治理任务排队状态需要更直观。',
+    kind: GovernanceIssueKind.Improvement,
+    categories: ['governance'],
+    tags: [],
+    relatedFindingIds: ['finding-1'],
+    status: GovernanceIssueStatus.Open,
+    affectedTargets: [{ kind: 'file', ref: 'src/governance.tsx' }],
+    impactSummary: '需要提高治理台可见性',
+    createdAt: '2026-04-06T00:00:00.000Z',
+    updatedAt: '2026-04-06T00:00:00.000Z',
+    relatedFindingCount: 1,
+    latestAssessment: null,
+    latestResolutionDecision: null,
+    latestChangePlanStatus: GovernanceChangePlanStatus.Draft,
+    latestPlanningAttempt: createAttempt({
+      stageType: GovernanceAutomationStage.Planning,
+      subjectType: GovernanceAutomationSubjectType.Issue,
+      subjectId: 'issue-1',
+      status: GovernanceExecutionAttemptStatus.Running,
+      sessionId: 'session-planning-1'
+    })
+  };
+}
+
+function createChangeUnit(): ChangeUnit {
+  return {
+    id: 'change-unit-1',
+    changePlanId: 'plan-1',
+    issueId: 'issue-1',
+    sourceActionId: 'action-1',
+    dependsOnUnitIds: [],
+    title: 'Render governance pipeline board',
+    description: '让治理台可以看到阶段状态和运行中 agent。',
+    scope: {
+      targets: [
+        {
+          kind: 'file',
+          ref: 'src/pages/projects/ProjectGovernancePage.tsx'
+        }
+      ],
+      violationPolicy: GovernanceViolationPolicy.Warn
+    },
+    executionMode: GovernanceExecutionMode.SemiAuto,
+    maxRetries: 2,
+    currentAttemptNo: 1,
+    status: GovernanceChangeUnitStatus.Running,
+    producedCommitIds: [],
+    latestExecutionAttempt: createAttempt({
+      stageType: GovernanceAutomationStage.Execution,
+      subjectType: GovernanceAutomationSubjectType.ChangeUnit,
+      subjectId: 'change-unit-1',
+      status: GovernanceExecutionAttemptStatus.Running,
+      sessionId: 'session-execution-1'
+    }),
+    latestVerificationResult: null,
+    createdAt: '2026-04-06T00:00:00.000Z',
+    updatedAt: '2026-04-06T00:00:00.000Z'
+  };
+}
+
+function createIssueDetail(): GovernanceIssueDetail {
+  return {
+    ...createIssueSummary(),
+    relatedFindings: [createFinding()],
+    changePlan: null,
+    changeUnits: [createChangeUnit()],
+    verificationPlans: [],
+    verificationResults: [],
+    planLevelVerificationResult: null,
+    deliveryArtifact: null
+  };
+}
+
+function createReviewQueueItem(): GovernanceReviewQueueItem {
+  return {
+    kind: GovernanceReviewQueueItemKind.DeliveryArtifact,
+    scopeId: 'project-1',
+    subjectId: 'artifact-1',
+    issueId: 'issue-1',
+    title: 'PR review waiting',
+    status: 'needs_human_review',
+    failureCode: null,
+    failureMessage: '等待人工确认交付说明。',
+    sessionId: 'session-review-1',
     updatedAt: '2026-04-06T00:00:00.000Z'
   };
 }
@@ -239,18 +432,23 @@ function mockQueries() {
     createQueryResult(createOverview())
   );
   vi.mocked(useGovernancePolicy).mockReturnValue(createQueryResult(createPolicy()));
+  vi.mocked(useGovernanceReviewQueue).mockReturnValue(
+    createQueryResult([createReviewQueueItem()])
+  );
   vi.mocked(useGovernanceRunnerList).mockReturnValue(
     createQueryResult([createRunner()])
   );
-  vi.mocked(useGovernanceFindingList).mockReturnValue(createQueryResult([]));
+  vi.mocked(useGovernanceFindingList).mockReturnValue(
+    createQueryResult([createFinding()])
+  );
   vi.mocked(useGovernanceIssueList).mockReturnValue(
-    createQueryResult([] as GovernanceIssueSummary[])
+    createQueryResult([createIssueSummary()])
   );
   vi.mocked(useGovernanceIssueDetail).mockReturnValue(
-    createQueryResult({} as GovernanceIssueDetail)
+    createQueryResult(createIssueDetail())
   );
   vi.mocked(useGovernanceChangeUnitList).mockReturnValue(
-    createQueryResult([])
+    createQueryResult([createChangeUnit()])
   );
   vi.mocked(useGovernanceDeliveryArtifactList).mockReturnValue(
     createQueryResult([])
@@ -304,15 +502,53 @@ describe('ProjectGovernancePage', () => {
   });
 
   it('应默认展示 backlog 布局，并把策略表单收进抽屉', async () => {
+    vi.mocked(useGovernanceIssueList).mockReturnValue(
+      createQueryResult([] as GovernanceIssueSummary[])
+    );
+    vi.mocked(useGovernanceIssueDetail).mockReturnValue(
+      createQueryResult(undefined as unknown as GovernanceIssueDetail)
+    );
+
     const { user } = renderProjectGovernancePage();
 
-    expect(screen.getByText('Issue Backlog')).toBeInTheDocument();
-    expect(screen.getByText('治理概览')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Issue Backlog' })
+    ).toBeInTheDocument();
+    expect(screen.getByText('治理流水线')).toBeInTheDocument();
+    expect(screen.getByText('运行中 Agent')).toBeInTheDocument();
     expect(screen.getByText('最近 Change Unit')).toBeInTheDocument();
     expect(screen.queryByText('治理策略表单')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /策略设置/i }));
 
     expect(await screen.findByText('治理策略表单')).toBeInTheDocument();
+  });
+
+  it('应为 baseline 和 discovery 展示日志入口', () => {
+    renderProjectGovernancePage();
+
+    expect(
+      screen.getByRole('button', { name: '查看日志:code-code · Baseline 日志' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: '查看日志:code-code · Discovery 日志' })
+        .length
+    ).toBeGreaterThan(0);
+  });
+
+  it('应展示运行中 agent 和治理流水线', () => {
+    renderProjectGovernancePage();
+
+    expect(screen.getByText('运行中 Agent')).toBeInTheDocument();
+    expect(screen.getByText('治理流水线')).toBeInTheDocument();
+    expect(screen.getByText('问题发现')).toBeInTheDocument();
+    expect(screen.getAllByText('duplicate null check').length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('Stabilize governance queue').length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('Render governance pipeline board').length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText('1 items waiting review')).toBeInTheDocument();
   });
 });
