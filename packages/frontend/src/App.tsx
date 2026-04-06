@@ -51,6 +51,11 @@ const ProjectPipelinesPage = lazy(() =>
     default: module.ProjectPipelinesPage
   }))
 );
+const ProjectGovernancePage = lazy(() =>
+  import('./pages/projects/ProjectGovernancePage').then((module) => ({
+    default: module.ProjectGovernancePage
+  }))
+);
 
 const ProjectChannelsPage = lazy(() =>
   import('./pages/projects/ProjectChannelsPage').then((module) => ({
@@ -148,6 +153,22 @@ export function App() {
           element={
             <LazyRoute>
               <ProjectPipelinesPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.governance}
+          element={
+            <LazyRoute>
+              <ProjectGovernancePage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.governanceDetail}
+          element={
+            <LazyRoute>
+              <ProjectGovernancePage />
             </LazyRoute>
           }
         />

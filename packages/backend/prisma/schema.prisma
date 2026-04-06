@@ -65,8 +65,339 @@ model Project {
   sessions      AgentSession[]
   chats         Chat[]
   pipelines     Pipeline[]
+  repositoryProfiles RepositoryProfile[]
+  governanceFindings Finding[]
+  governanceIssues Issue[]
+  governanceMergeRecords FindingMergeRecord[]
+  governanceExecutionAttempts GovernanceExecutionAttempt[]
+  governanceReviewDecisions ReviewDecision[]
+  governanceDeliveryArtifacts DeliveryArtifact[]
+  governancePolicy GovernancePolicy?
   notificationChannels NotificationChannel[]
   notificationTasks NotificationTask[]
+}
+
+model GovernancePolicy {
+  id               String   @id @default(cuid())
+  scopeId          String   @unique
+  priorityPolicy   Json
+  autoActionPolicy Json
+  deliveryPolicy   Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  project          Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+
+  @@index([scopeId], name: "idx_governance_policy_scope_id")
+}
+
+model GovernanceExecutionAttempt {
+  id                    String   @id @default(cuid())
+  scopeId               String
+  stageType             String
+  subjectType           String
+  subjectId             String
+  attemptNo             Int
+  status                String   @default("pending")
+  sessionId             String?  @unique
+  activeRequestMessageId String?
+  ownerLeaseToken       String?
+  leaseExpiresAt        DateTime?
+  inputSnapshot         Json?
+  candidateOutput       Json?
+  parsedOutput          Json?
+  failureCode           String?
+  failureMessage        String?
+  resolvedByReviewDecisionId String?
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  project               Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  session               AgentSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@unique([stageType, subjectType, subjectId, attemptNo], name: "uq_governance_execution_attempt_subject_attempt")
+  @@index([scopeId], name: "idx_governance_execution_attempt_scope_id")
+  @@index([stageType, subjectType, subjectId], name: "idx_governance_execution_attempt_subject")
+  @@index([status, leaseExpiresAt], name: "idx_governance_execution_attempt_lease")
+}
+
+model RepositoryProfile {
+  id          String   @id @default(cuid())
+  scopeId      String
+  branch      String
+  snapshotAt  DateTime
+  modules     Json
+  testBaseline Json
+  buildStatus String   @default("unknown")
+  metadata    Json?
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  project     Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+
+  @@index([scopeId], name: "idx_repository_profile_scope_id")
+  @@index([scopeId, snapshotAt], name: "idx_repository_profile_scope_snapshot_at")
+}
+
+model Finding {
+  id               String   @id @default(cuid())
+  scopeId          String
+  source           String
+  sourceRef        String?
+  title            String
+  summary          String
+  evidence         Json
+  categories       Json
+  tags             Json
+  severityHint     String?
+  confidence       Float?
+  affectedTargets  Json
+  metadata         Json?
+  fingerprint      String?
+  discoveredAt     DateTime @default(now())
+  status           String   @default("pending")
+  ownerLeaseToken  String?
+  leaseExpiresAt   DateTime?
+  version          Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  project          Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+
+  @@index([scopeId], name: "idx_finding_scope_id")
+  @@index([status], name: "idx_finding_status")
+  @@index([status, leaseExpiresAt], name: "idx_finding_lease")
+  @@index([scopeId, fingerprint], name: "idx_finding_scope_fingerprint")
+}
+
+model Issue {
+  id                 String   @id @default(cuid())
+  scopeId            String
+  title              String
+  statement          String
+  kind               String
+  categories         Json
+  tags               Json
+  relatedFindingIds  Json
+  status             String   @default("open")
+  affectedTargets    Json
+  rootCause          String?
+  impactSummary      String
+  isRegression       Boolean  @default(false)
+  regressionOfIssueId String?
+  spinOffOfIssueId   String?
+  ownerLeaseToken    String?
+  leaseExpiresAt     DateTime?
+  version            Int      @default(1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  project            Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  mergeRecords       FindingMergeRecord[]
+  assessments        IssueAssessment[]
+  resolutionDecisions ResolutionDecision[]
+  changePlans        ChangePlan[]
+  changeUnits        ChangeUnit[]
+  verificationPlans  VerificationPlan[]
+  verificationResults VerificationResult[]
+  deliveryArtifacts  DeliveryArtifact[]
+
+  @@index([scopeId], name: "idx_issue_scope_id")
+  @@index([status], name: "idx_issue_status")
+  @@index([status, leaseExpiresAt], name: "idx_issue_lease")
+}
+
+model FindingMergeRecord {
+  id              String   @id @default(cuid())
+  scopeId         String
+  targetIssueId   String
+  mergedFindingIds Json
+  trigger         String
+  clusterBasis    Json?
+  mergedBy        String?
+  mergedAt        DateTime
+  createdAt       DateTime @default(now())
+  project         Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  targetIssue     Issue    @relation(fields: [targetIssueId], references: [id], onDelete: Cascade)
+
+  @@index([scopeId], name: "idx_finding_merge_scope_id")
+  @@index([targetIssueId], name: "idx_finding_merge_target_issue_id")
+}
+
+model IssueAssessment {
+  id                    String   @id @default(cuid())
+  issueId               String
+  severity              String
+  priority              String
+  userImpact            Int
+  systemRisk            Int
+  strategicValue        Int
+  fixCost               Int
+  autoActionEligibility String
+  rationale             Json
+  assessedBy            String
+  assessedAt            DateTime
+  createdAt             DateTime @default(now())
+  issue                 Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId], name: "idx_issue_assessment_issue_id")
+}
+
+model ResolutionDecision {
+  id            String   @id @default(cuid())
+  issueId       String
+  resolution    String
+  reason        String
+  deferUntil    DateTime?
+  primaryIssueId String?
+  approvedBy    String?
+  decidedAt     DateTime
+  createdAt     DateTime @default(now())
+  issue         Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId], name: "idx_resolution_decision_issue_id")
+}
+
+model ChangePlan {
+  id              String   @id @default(cuid())
+  issueId         String
+  objective       String
+  strategy        String
+  affectedTargets Json
+  proposedActions Json
+  risks           Json
+  rollbackPlan    String?
+  assumptions     Json?
+  baselineCommitSha String
+  status          String   @default("draft")
+  ownerLeaseToken String?
+  leaseExpiresAt  DateTime?
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  issue           Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  changeUnits     ChangeUnit[]
+  verificationPlans VerificationPlan[]
+  verificationResults VerificationResult[]
+  deliveryArtifacts DeliveryArtifact[]
+
+  @@index([issueId], name: "idx_change_plan_issue_id")
+  @@index([status], name: "idx_change_plan_status")
+  @@index([status, leaseExpiresAt], name: "idx_change_plan_lease")
+}
+
+model ChangeUnit {
+  id               String   @id @default(cuid())
+  changePlanId     String
+  issueId          String
+  sourceActionId   String
+  dependsOnUnitIds Json
+  title            String
+  description      String
+  scope            Json
+  executionMode    String
+  maxRetries       Int      @default(3)
+  currentAttemptNo Int      @default(0)
+  status           String   @default("pending")
+  producedCommitIds Json
+  ownerLeaseToken  String?
+  leaseExpiresAt   DateTime?
+  version          Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  changePlan       ChangePlan @relation(fields: [changePlanId], references: [id], onDelete: Cascade)
+  issue            Issue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  verificationPlans VerificationPlan[]
+  verificationResults VerificationResult[]
+
+  @@index([changePlanId], name: "idx_change_unit_change_plan_id")
+  @@index([issueId], name: "idx_change_unit_issue_id")
+  @@index([status], name: "idx_change_unit_status")
+  @@index([status, leaseExpiresAt], name: "idx_change_unit_lease")
+}
+
+model VerificationPlan {
+  id          String   @id @default(cuid())
+  subjectType String
+  changeUnitId String?
+  changePlanId String?
+  issueId     String?
+  checks      Json
+  passCriteria Json
+  createdAt   DateTime @default(now())
+  changeUnit  ChangeUnit? @relation(fields: [changeUnitId], references: [id], onDelete: Cascade)
+  changePlan  ChangePlan? @relation(fields: [changePlanId], references: [id], onDelete: Cascade)
+  issue       Issue?      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  verificationResults VerificationResult[]
+
+  @@index([subjectType], name: "idx_verification_plan_subject_type")
+  @@index([changeUnitId], name: "idx_verification_plan_change_unit_id")
+  @@index([changePlanId], name: "idx_verification_plan_change_plan_id")
+  @@index([issueId], name: "idx_verification_plan_issue_id")
+}
+
+model VerificationResult {
+  id                String   @id @default(cuid())
+  verificationPlanId String
+  subjectType       String
+  changeUnitId      String?
+  changePlanId      String?
+  issueId           String?
+  executionAttemptNo Int
+  status            String
+  checkResults      Json
+  summary           String
+  executedAt        DateTime
+  createdAt         DateTime @default(now())
+  verificationPlan  VerificationPlan @relation(fields: [verificationPlanId], references: [id], onDelete: Cascade)
+  changeUnit        ChangeUnit? @relation(fields: [changeUnitId], references: [id], onDelete: Cascade)
+  changePlan        ChangePlan? @relation(fields: [changePlanId], references: [id], onDelete: Cascade)
+  issue             Issue? @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([verificationPlanId], name: "idx_verification_result_plan_id")
+  @@index([changeUnitId], name: "idx_verification_result_change_unit_id")
+  @@index([changePlanId], name: "idx_verification_result_change_plan_id")
+  @@index([issueId], name: "idx_verification_result_issue_id")
+}
+
+model DeliveryArtifact {
+  id                        String   @id @default(cuid())
+  scopeId                   String
+  issueId                   String
+  changePlanId              String?
+  kind                      String
+  title                     String
+  body                      String
+  linkedIssueIds            Json
+  linkedChangeUnitIds       Json
+  linkedVerificationResultIds Json
+  bodyStrategy              String
+  externalRef               String?
+  status                    String   @default("submitted")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  project                   Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  issue                     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  changePlan                ChangePlan? @relation(fields: [changePlanId], references: [id], onDelete: SetNull)
+
+  @@index([scopeId], name: "idx_delivery_artifact_scope_id")
+  @@index([issueId], name: "idx_delivery_artifact_issue_id")
+  @@index([changePlanId], name: "idx_delivery_artifact_change_plan_id")
+  @@index([status], name: "idx_delivery_artifact_status")
+}
+
+model ReviewDecision {
+  id                String   @id @default(cuid())
+  scopeId           String
+  subjectType       String
+  subjectId         String
+  decision          String
+  assessmentOverride Json?
+  comment           String?
+  reviewer          String
+  createdAt         DateTime @default(now())
+  project           Project  @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+
+  @@index([scopeId], name: "idx_review_decision_scope_id")
+  @@index([subjectType, subjectId], name: "idx_review_decision_subject")
 }
 
 model AgentRunner {
@@ -141,6 +472,7 @@ model AgentSession {
   chat                   Chat?
   pipelineStage          PipelineStage?
   stageAttempts          StageExecutionAttempt[]
+  governanceAttempts     GovernanceExecutionAttempt[]
 
   @@index([scopeId])
 }
