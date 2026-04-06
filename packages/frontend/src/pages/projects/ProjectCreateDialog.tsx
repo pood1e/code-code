@@ -26,7 +26,6 @@ import {
   createProjectFormSchema,
   type CreateProjectFormValues
 } from '@/pages/projects/project-form.utils';
-import { ProjectWorkspaceTopologyNote } from '@/pages/projects/ProjectWorkspaceTopologyNote';
 import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
 import { buildProjectConfigPath } from '@/types/projects';
@@ -152,12 +151,6 @@ export function ProjectCreateDialog({
             void handleCreate();
           }}
         >
-          <ProjectWorkspaceTopologyNote
-            workspaceRootPath={form.watch('workspaceRootPath')}
-            repoGitUrl={form.watch('repoGitUrl')}
-            docGitUrl={form.watch('docGitUrl')}
-          />
-
           {createError ? (
             <Alert variant="destructive">
               <AlertTitle>创建失败</AlertTitle>
