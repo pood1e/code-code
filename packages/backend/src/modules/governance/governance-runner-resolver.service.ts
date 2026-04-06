@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
   GovernanceAutomationStage,
-  resolveGovernanceRunnerIdForStage
+  type GovernanceStageAgentStrategy,
+  resolveGovernanceAgentStrategyForStage
 } from '@agent-workbench/shared';
 
 import { GovernanceRepository } from './governance.repository';
@@ -12,22 +13,40 @@ export class GovernanceRunnerResolverService {
     private readonly governanceRepository: GovernanceRepository
   ) {}
 
-  async resolveRunnerId(input: {
+  async resolveStageAgentStrategy(input: {
     scopeId: string;
     stageType: GovernanceAutomationStage;
-  }) {
+  }): Promise<GovernanceStageAgentStrategy | null> {
     const policy =
       await this.governanceRepository.getOrCreateGovernancePolicy(input.scopeId);
-    const configuredRunnerId = resolveGovernanceRunnerIdForStage(
-      policy.runnerSelection,
+    const configuredStrategy = resolveGovernanceAgentStrategyForStage(
+      policy.agentStrategy,
       input.stageType
     );
-    if (!configuredRunnerId) {
+    if (!configuredStrategy) {
       return null;
     }
 
-    const runnerExists =
-      await this.governanceRepository.agentRunnerExists(configuredRunnerId);
-    return runnerExists ? configuredRunnerId : null;
+    const existingRunnerIds = (
+      await Promise.all(
+        configuredStrategy.runnerIds.map(async (runnerId) =>
+          (await this.governanceRepository.agentRunnerExists(runnerId))
+            ? runnerId
+            : null
+        )
+      )
+    ).filter((runnerId): runnerId is string => runnerId !== null);
+    if (existingRunnerIds.length === 0) {
+      return null;
+    }
+
+    return {
+      runnerIds: existingRunnerIds,
+      fanoutCount: Math.max(
+        1,
+        Math.min(configuredStrategy.fanoutCount, existingRunnerIds.length)
+      ),
+      mergeStrategy: configuredStrategy.mergeStrategy
+    };
   }
 }

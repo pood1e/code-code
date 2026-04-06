@@ -233,6 +233,12 @@ export enum GovernanceDeliveryCommitMode {
   Squash = 'squash'
 }
 
+export enum GovernanceAgentMergeStrategy {
+  Single = 'single',
+  BestOfN = 'best_of_n',
+  UnionDedup = 'union_dedup'
+}
+
 export enum RepositoryBuildStatus {
   Passing = 'passing',
   Failing = 'failing',
@@ -360,12 +366,23 @@ export type GovernanceDeliveryPolicy = {
   autoCloseIssueOnApprovedDelivery: boolean;
 };
 
-export type GovernanceRunnerSelection = {
-  defaultRunnerId: string | null;
-  discoveryRunnerId: string | null;
-  triageRunnerId: string | null;
-  planningRunnerId: string | null;
-  executionRunnerId: string | null;
+export type GovernanceSourceSelection = {
+  repoBranch: string | null;
+  docBranch: string | null;
+};
+
+export type GovernanceStageAgentStrategy = {
+  runnerIds: string[];
+  fanoutCount: number;
+  mergeStrategy: GovernanceAgentMergeStrategy;
+};
+
+export type GovernanceAgentStrategy = {
+  defaultRunnerIds: string[];
+  discovery: GovernanceStageAgentStrategy | null;
+  triage: GovernanceStageAgentStrategy | null;
+  planning: GovernanceStageAgentStrategy | null;
+  execution: GovernanceStageAgentStrategy | null;
 };
 
 export type GovernancePolicy = {
@@ -374,7 +391,8 @@ export type GovernancePolicy = {
   priorityPolicy: GovernancePriorityPolicy;
   autoActionPolicy: GovernanceAutoActionPolicy;
   deliveryPolicy: GovernanceDeliveryPolicy;
-  runnerSelection: GovernanceRunnerSelection;
+  sourceSelection: GovernanceSourceSelection;
+  agentStrategy: GovernanceAgentStrategy;
   createdAt: string;
   updatedAt: string;
 };
@@ -383,15 +401,21 @@ export type UpdateGovernancePolicyInput = {
   priorityPolicy: GovernancePriorityPolicy;
   autoActionPolicy: GovernanceAutoActionPolicy;
   deliveryPolicy: GovernanceDeliveryPolicy;
-  runnerSelection?: GovernanceRunnerSelection;
+  sourceSelection?: GovernanceSourceSelection;
+  agentStrategy?: GovernanceAgentStrategy;
 };
 
-export const DEFAULT_GOVERNANCE_RUNNER_SELECTION: GovernanceRunnerSelection = {
-  defaultRunnerId: null,
-  discoveryRunnerId: null,
-  triageRunnerId: null,
-  planningRunnerId: null,
-  executionRunnerId: null
+export const DEFAULT_GOVERNANCE_SOURCE_SELECTION: GovernanceSourceSelection = {
+  repoBranch: null,
+  docBranch: null
+};
+
+export const DEFAULT_GOVERNANCE_AGENT_STRATEGY: GovernanceAgentStrategy = {
+  defaultRunnerIds: [],
+  discovery: null,
+  triage: null,
+  planning: null,
+  execution: null
 };
 
 export const DEFAULT_GOVERNANCE_POLICY_INPUT: UpdateGovernancePolicyInput = {
@@ -433,37 +457,71 @@ export const DEFAULT_GOVERNANCE_POLICY_INPUT: UpdateGovernancePolicyInput = {
     commitMode: GovernanceDeliveryCommitMode.PerUnit,
     autoCloseIssueOnApprovedDelivery: true
   },
-  runnerSelection: DEFAULT_GOVERNANCE_RUNNER_SELECTION
+  sourceSelection: DEFAULT_GOVERNANCE_SOURCE_SELECTION,
+  agentStrategy: DEFAULT_GOVERNANCE_AGENT_STRATEGY
 };
 
-export function resolveGovernanceRunnerIdForStage(
-  runnerSelection: GovernanceRunnerSelection,
+export function resolveGovernanceAgentStrategyForStage(
+  agentStrategy: GovernanceAgentStrategy,
   stageType: GovernanceAutomationStage
 ) {
   switch (stageType) {
     case GovernanceAutomationStage.Baseline:
       return null;
     case GovernanceAutomationStage.Discovery:
-      return (
-        runnerSelection.discoveryRunnerId ??
-        runnerSelection.defaultRunnerId
-      );
+      return resolveStageAgentStrategy(agentStrategy.discovery, agentStrategy.defaultRunnerIds);
     case GovernanceAutomationStage.Triage:
-      return (
-        runnerSelection.triageRunnerId ??
-        runnerSelection.defaultRunnerId
-      );
+      return resolveStageAgentStrategy(agentStrategy.triage, agentStrategy.defaultRunnerIds);
     case GovernanceAutomationStage.Planning:
-      return (
-        runnerSelection.planningRunnerId ??
-        runnerSelection.defaultRunnerId
-      );
+      return resolveStageAgentStrategy(agentStrategy.planning, agentStrategy.defaultRunnerIds);
     case GovernanceAutomationStage.Execution:
-      return (
-        runnerSelection.executionRunnerId ??
-        runnerSelection.defaultRunnerId
+      return resolveExecutionStageAgentStrategy(
+        resolveStageAgentStrategy(agentStrategy.execution, agentStrategy.defaultRunnerIds)
       );
   }
+}
+
+function resolveStageAgentStrategy(
+  stageStrategy: GovernanceStageAgentStrategy | null,
+  defaultRunnerIds: string[]
+) {
+  const runnerIds = uniqueNonEmptyStrings(
+    stageStrategy?.runnerIds?.length ? stageStrategy.runnerIds : defaultRunnerIds
+  );
+  if (runnerIds.length === 0) {
+    return null;
+  }
+
+  const fanoutCount = Math.max(
+    1,
+    Math.min(stageStrategy?.fanoutCount ?? 1, runnerIds.length)
+  );
+
+  return {
+    runnerIds: runnerIds.slice(0, fanoutCount),
+    fanoutCount,
+    mergeStrategy: stageStrategy?.mergeStrategy ?? GovernanceAgentMergeStrategy.Single
+  } satisfies GovernanceStageAgentStrategy;
+}
+
+function resolveExecutionStageAgentStrategy(
+  stageStrategy: GovernanceStageAgentStrategy | null
+) {
+  if (!stageStrategy) {
+    return null;
+  }
+
+  return {
+    runnerIds: stageStrategy.runnerIds.slice(0, 1),
+    fanoutCount: 1,
+    mergeStrategy: GovernanceAgentMergeStrategy.Single
+  } satisfies GovernanceStageAgentStrategy;
+}
+
+function uniqueNonEmptyStrings(values: string[]) {
+  return Array.from(
+    new Set(values.map((value) => value.trim()).filter((value) => value.length > 0))
+  );
 }
 
 export function deriveGovernancePriority(

@@ -27,6 +27,7 @@ import {
   GovernanceDeliveryCommitMode,
   GovernanceExecutionAttemptStatus,
   GovernanceExecutionMode,
+  GovernanceAgentMergeStrategy,
   GovernanceIssueKind,
   GovernanceFindingStatus,
   GovernanceIssueStatus,
@@ -37,7 +38,8 @@ import {
   GovernanceVerificationResultStatus,
   GovernanceVerificationSubjectType,
   GovernanceViolationPolicy,
-  DEFAULT_GOVERNANCE_RUNNER_SELECTION,
+  DEFAULT_GOVERNANCE_SOURCE_SELECTION,
+  DEFAULT_GOVERNANCE_AGENT_STRATEGY,
   DEFAULT_GOVERNANCE_POLICY_INPUT
 } from '@agent-workbench/shared';
 
@@ -136,8 +138,10 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
           DEFAULT_GOVERNANCE_POLICY_INPUT.autoActionPolicy as Prisma.InputJsonValue,
         deliveryPolicy:
           DEFAULT_GOVERNANCE_POLICY_INPUT.deliveryPolicy as Prisma.InputJsonValue,
-        runnerSelection:
-          DEFAULT_GOVERNANCE_POLICY_INPUT.runnerSelection as Prisma.InputJsonValue
+        sourceSelection:
+          DEFAULT_GOVERNANCE_POLICY_INPUT.sourceSelection as Prisma.InputJsonValue,
+        agentStrategy:
+          DEFAULT_GOVERNANCE_POLICY_INPUT.agentStrategy as Prisma.InputJsonValue
       }
     });
 
@@ -149,7 +153,8 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
     priorityPolicy: GovernancePolicyRecord['priorityPolicy'];
     autoActionPolicy: GovernancePolicyRecord['autoActionPolicy'];
     deliveryPolicy: GovernancePolicyRecord['deliveryPolicy'];
-    runnerSelection?: GovernancePolicyRecord['runnerSelection'];
+    sourceSelection?: GovernancePolicyRecord['sourceSelection'];
+    agentStrategy?: GovernancePolicyRecord['agentStrategy'];
   }) {
     const policy = await this.prisma.governancePolicy.upsert({
       where: { scopeId: input.scopeId },
@@ -157,10 +162,16 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
         priorityPolicy: input.priorityPolicy as Prisma.InputJsonValue,
         autoActionPolicy: input.autoActionPolicy as Prisma.InputJsonValue,
         deliveryPolicy: input.deliveryPolicy as Prisma.InputJsonValue,
-        ...(input.runnerSelection !== undefined
+        ...(input.sourceSelection !== undefined
           ? {
-              runnerSelection:
-                input.runnerSelection as Prisma.InputJsonValue
+              sourceSelection:
+                input.sourceSelection as Prisma.InputJsonValue
+            }
+          : {}),
+        ...(input.agentStrategy !== undefined
+          ? {
+              agentStrategy:
+                input.agentStrategy as Prisma.InputJsonValue
             }
           : {})
       },
@@ -169,9 +180,12 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
         priorityPolicy: input.priorityPolicy as Prisma.InputJsonValue,
         autoActionPolicy: input.autoActionPolicy as Prisma.InputJsonValue,
         deliveryPolicy: input.deliveryPolicy as Prisma.InputJsonValue,
-        runnerSelection:
-          (input.runnerSelection ??
-            DEFAULT_GOVERNANCE_POLICY_INPUT.runnerSelection) as Prisma.InputJsonValue
+        sourceSelection:
+          (input.sourceSelection ??
+            DEFAULT_GOVERNANCE_POLICY_INPUT.sourceSelection) as Prisma.InputJsonValue,
+        agentStrategy:
+          (input.agentStrategy ??
+            DEFAULT_GOVERNANCE_POLICY_INPUT.agentStrategy) as Prisma.InputJsonValue
       }
     });
 
@@ -2574,7 +2588,8 @@ function toGovernancePolicyRecord(
     priorityPolicy: Prisma.JsonValue;
     autoActionPolicy: Prisma.JsonValue;
     deliveryPolicy: Prisma.JsonValue;
-    runnerSelection: Prisma.JsonValue;
+    sourceSelection: Prisma.JsonValue;
+    agentStrategy: Prisma.JsonValue;
     createdAt: Date;
     updatedAt: Date;
   }
@@ -2585,7 +2600,8 @@ function toGovernancePolicyRecord(
     priorityPolicy: parsePriorityPolicy(policy.priorityPolicy),
     autoActionPolicy: parseAutoActionPolicy(policy.autoActionPolicy),
     deliveryPolicy: parseDeliveryPolicy(policy.deliveryPolicy),
-    runnerSelection: parseRunnerSelection(policy.runnerSelection),
+    sourceSelection: parseSourceSelection(policy.sourceSelection),
+    agentStrategy: parseAgentStrategy(policy.agentStrategy),
     createdAt: policy.createdAt,
     updatedAt: policy.updatedAt
   };
@@ -2868,29 +2884,62 @@ function parseDeliveryPolicy(
   };
 }
 
-function parseRunnerSelection(
+function parseSourceSelection(
   value: Prisma.JsonValue
-): GovernancePolicyRecord['runnerSelection'] {
+): GovernancePolicyRecord['sourceSelection'] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return DEFAULT_GOVERNANCE_RUNNER_SELECTION;
+    return DEFAULT_GOVERNANCE_SOURCE_SELECTION;
   }
 
   return {
-    defaultRunnerId: getNullableRunnerId(
-      (value as { defaultRunnerId?: unknown }).defaultRunnerId
+    repoBranch: getNullableString(
+      (value as { repoBranch?: unknown }).repoBranch
+    ) ?? null,
+    docBranch: getNullableString(
+      (value as { docBranch?: unknown }).docBranch
+    ) ?? null
+  };
+}
+
+function parseAgentStrategy(
+  value: Prisma.JsonValue
+): GovernancePolicyRecord['agentStrategy'] {
+  if (!isRecord(value)) {
+    return DEFAULT_GOVERNANCE_AGENT_STRATEGY;
+  }
+
+  return {
+    defaultRunnerIds: getRunnerIdArray(
+      (value as { defaultRunnerIds?: unknown }).defaultRunnerIds
     ),
-    discoveryRunnerId: getNullableRunnerId(
-      (value as { discoveryRunnerId?: unknown }).discoveryRunnerId
+    discovery: parseStageAgentStrategy(
+      (value as { discovery?: unknown }).discovery
     ),
-    triageRunnerId: getNullableRunnerId(
-      (value as { triageRunnerId?: unknown }).triageRunnerId
+    triage: parseStageAgentStrategy(
+      (value as { triage?: unknown }).triage
     ),
-    planningRunnerId: getNullableRunnerId(
-      (value as { planningRunnerId?: unknown }).planningRunnerId
+    planning: parseStageAgentStrategy(
+      (value as { planning?: unknown }).planning
     ),
-    executionRunnerId: getNullableRunnerId(
-      (value as { executionRunnerId?: unknown }).executionRunnerId
+    execution: parseStageAgentStrategy(
+      (value as { execution?: unknown }).execution
     )
+  };
+}
+
+function parseStageAgentStrategy(value: unknown) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return {
+    runnerIds: getRunnerIdArray((value as { runnerIds?: unknown }).runnerIds),
+    fanoutCount: getPositiveInt((value as { fanoutCount?: unknown }).fanoutCount) ?? 1,
+    mergeStrategy: isGovernanceAgentMergeStrategy(
+      (value as { mergeStrategy?: unknown }).mergeStrategy
+    )
+      ? (value as { mergeStrategy: GovernanceAgentMergeStrategy }).mergeStrategy
+      : GovernanceAgentMergeStrategy.Single
   };
 }
 
@@ -2910,8 +2959,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function getNullableRunnerId(value: unknown) {
+function getNullableString(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function getRunnerIdArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+}
+
+function getPositiveInt(value: unknown) {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : null;
 }
 
 function isGovernanceSeverity(value: unknown): value is GovernanceSeverity {
@@ -2950,6 +3011,16 @@ function isAutoActionEligibility(
     value === GovernanceAutoActionEligibility.HumanReviewRequired ||
     value === GovernanceAutoActionEligibility.SuggestOnly ||
     value === GovernanceAutoActionEligibility.Forbidden
+  );
+}
+
+function isGovernanceAgentMergeStrategy(
+  value: unknown
+): value is GovernanceAgentMergeStrategy {
+  return (
+    value === GovernanceAgentMergeStrategy.Single ||
+    value === GovernanceAgentMergeStrategy.BestOfN ||
+    value === GovernanceAgentMergeStrategy.UnionDedup
   );
 }
 

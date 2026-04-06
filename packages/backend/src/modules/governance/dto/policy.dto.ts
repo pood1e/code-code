@@ -20,5 +20,13 @@ export class UpdateGovernancePolicyDto {
   })
   @IsOptional()
   @IsObject()
-  runnerSelection?: Record<string, unknown>;
+  sourceSelection?: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true
+  })
+  @IsOptional()
+  @IsObject()
+  agentStrategy?: Record<string, unknown>;
 }

@@ -2,6 +2,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type AgentRunnerSummary,
+  GovernanceAgentMergeStrategy,
   GovernanceAutoActionEligibility,
   GovernanceDeliveryCommitMode,
   GovernancePriority,
@@ -60,12 +61,16 @@ function createPolicy(): GovernancePolicy {
       commitMode: GovernanceDeliveryCommitMode.PerUnit,
       autoCloseIssueOnApprovedDelivery: true
     },
-    runnerSelection: {
-      defaultRunnerId: null,
-      discoveryRunnerId: null,
-      triageRunnerId: null,
-      planningRunnerId: null,
-      executionRunnerId: null
+    sourceSelection: {
+      repoBranch: null,
+      docBranch: null
+    },
+    agentStrategy: {
+      defaultRunnerIds: [],
+      discovery: null,
+      triage: null,
+      planning: null,
+      execution: null
     },
     createdAt: '2026-04-06T10:00:00.000Z',
     updatedAt: '2026-04-06T10:00:00.000Z'
@@ -93,7 +98,7 @@ describe('GovernancePolicyPanel', () => {
       '"defaultPriority": "p2"'
     );
     expect(String((textarea as HTMLTextAreaElement).value)).toContain(
-      '"runnerSelection"'
+      '"sourceSelection"'
     );
 
     fireEvent.change(textarea, {
@@ -113,12 +118,24 @@ describe('GovernancePolicyPanel', () => {
               commitMode: 'squash',
               autoCloseIssueOnApprovedDelivery: false
             },
-            runnerSelection: {
-              defaultRunnerId: 'runner-1',
-              discoveryRunnerId: 'runner-2',
-              triageRunnerId: null,
-              planningRunnerId: null,
-              executionRunnerId: 'runner-3'
+            sourceSelection: {
+              repoBranch: 'release/governance',
+              docBranch: 'docs'
+            },
+            agentStrategy: {
+              defaultRunnerIds: ['runner-1'],
+              discovery: {
+                runnerIds: ['runner-1', 'runner-2'],
+                fanoutCount: 2,
+                mergeStrategy: 'union_dedup'
+              },
+              triage: null,
+              planning: null,
+              execution: {
+                runnerIds: ['runner-2'],
+                fanoutCount: 1,
+                mergeStrategy: 'single'
+              }
             }
           },
           null,
@@ -142,17 +159,29 @@ describe('GovernancePolicyPanel', () => {
         commitMode: 'squash',
         autoCloseIssueOnApprovedDelivery: false
       },
-      runnerSelection: {
-        defaultRunnerId: 'runner-1',
-        discoveryRunnerId: 'runner-2',
-        triageRunnerId: null,
-        planningRunnerId: null,
-        executionRunnerId: 'runner-3'
+      sourceSelection: {
+        repoBranch: 'release/governance',
+        docBranch: 'docs'
+      },
+      agentStrategy: {
+        defaultRunnerIds: ['runner-1'],
+        discovery: {
+          runnerIds: ['runner-1', 'runner-2'],
+          fanoutCount: 2,
+          mergeStrategy: 'union_dedup'
+        },
+        triage: null,
+        planning: null,
+        execution: {
+          runnerIds: ['runner-2'],
+          fanoutCount: 1,
+          mergeStrategy: 'single'
+        }
       }
     });
   });
 
-  it('应支持通过下拉更新 runner selection', async () => {
+  it('应支持通过控件更新分支和 stage runner 策略', async () => {
     const { user } = renderWithProviders(
       <GovernancePolicyPanel
         policy={createPolicy()}
@@ -163,25 +192,38 @@ describe('GovernancePolicyPanel', () => {
       />
     );
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'Discovery Runner' }),
-      'runner-1'
+    await user.type(screen.getByLabelText('Repo Branch'), 'release/governance');
+    await user.click(
+      screen.getAllByRole('checkbox', {
+        name: 'MiniMax 2.7 Runner (openai-responses)'
+      })[0]!
     );
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'Execution Runner' }),
-      'runner-2'
-    );
+    await user.click(screen.getAllByRole('checkbox', { name: 'Override' })[0]!);
+    await user.click(screen.getAllByRole('checkbox', { name: 'MiniMax 2.7 Runner (openai-responses)' })[1]!);
+    await user.click(screen.getAllByRole('checkbox', { name: 'Execution Runner (mock)' })[1]!);
+    fireEvent.change(screen.getByLabelText('Discovery Merge Strategy'), {
+      target: { value: GovernanceAgentMergeStrategy.BestOfN }
+    });
+    fireEvent.change(screen.getByLabelText('Discovery Fanout'), {
+      target: { value: '2' }
+    });
+
     await user.click(screen.getByRole('button', { name: 'Save Policy' }));
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        runnerSelection: {
-          defaultRunnerId: null,
-          discoveryRunnerId: 'runner-1',
-          triageRunnerId: null,
-          planningRunnerId: null,
-          executionRunnerId: 'runner-2'
-        }
+        sourceSelection: {
+          repoBranch: 'release/governance',
+          docBranch: null
+        },
+        agentStrategy: expect.objectContaining({
+          defaultRunnerIds: ['runner-1'],
+          discovery: {
+            runnerIds: ['runner-1', 'runner-2'],
+            fanoutCount: 2,
+            mergeStrategy: GovernanceAgentMergeStrategy.BestOfN
+          }
+        })
       })
     );
   });

@@ -107,7 +107,8 @@ export function toGovernancePolicy(
     priorityPolicy: record.priorityPolicy,
     autoActionPolicy: record.autoActionPolicy,
     deliveryPolicy: record.deliveryPolicy,
-    runnerSelection: record.runnerSelection,
+    sourceSelection: record.sourceSelection,
+    agentStrategy: record.agentStrategy,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString()
   };

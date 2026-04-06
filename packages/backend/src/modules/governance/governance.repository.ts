@@ -1,5 +1,6 @@
 import type {
   GovernanceAssessmentOverrideInput,
+  GovernanceAgentStrategy,
   GovernanceAutomationStage,
   GovernanceAutomationSubjectType,
   GovernanceAutoActionEligibility,
@@ -21,8 +22,8 @@ import type {
   GovernanceResolutionType,
   GovernanceReviewDecisionType,
   GovernanceReviewSubjectType,
-  GovernanceRunnerSelection,
   GovernanceSeverity,
+  GovernanceSourceSelection,
   GovernanceVerificationCheck,
   GovernanceVerificationResultStatus,
   GovernanceVerificationSubjectType,
@@ -107,7 +108,8 @@ export type GovernancePolicyRecord = {
     commitMode: GovernanceDeliveryCommitMode;
     autoCloseIssueOnApprovedDelivery: boolean;
   };
-  runnerSelection: GovernanceRunnerSelection;
+  sourceSelection: GovernanceSourceSelection;
+  agentStrategy: GovernanceAgentStrategy;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -387,7 +389,8 @@ export abstract class GovernanceRepository {
     priorityPolicy: GovernancePolicyRecord['priorityPolicy'];
     autoActionPolicy: GovernancePolicyRecord['autoActionPolicy'];
     deliveryPolicy: GovernancePolicyRecord['deliveryPolicy'];
-    runnerSelection?: GovernancePolicyRecord['runnerSelection'];
+    sourceSelection?: GovernancePolicyRecord['sourceSelection'];
+    agentStrategy?: GovernancePolicyRecord['agentStrategy'];
   }): Promise<GovernancePolicyRecord>;
   abstract agentRunnerExists(runnerId: string): Promise<boolean>;
   abstract createRepositoryProfileSnapshot(input: {
