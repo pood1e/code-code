@@ -40,6 +40,31 @@ type RunAgentAttemptInput = {
   maxAutoRetries: number;
   createLeaseWindow: () => LeaseWindow;
   onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>;
+  onSucceeded?: (input: {
+    attempt: GovernanceExecutionAttemptRecord;
+    sessionId: string | null;
+    activeRequestMessageId: string | null;
+    parsedOutput: Record<string, unknown>;
+  }) => Promise<void>;
+  onNeedsHumanReview?: (input: {
+    attempt: GovernanceExecutionAttemptRecord;
+    sessionId: string | null;
+    failureCode: string;
+    failureMessage: string;
+  }) => Promise<void>;
+};
+
+type RepairAttemptInput = {
+  stageType: GovernanceAutomationStage;
+  attempt: GovernanceExecutionAttemptRecord;
+  sessionId: string;
+  ownerLeaseToken: string;
+  maxAutoRetries: number;
+  parseError: string;
+  candidateOutput: string;
+  onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>;
+  onSucceeded?: RunAgentAttemptInput['onSucceeded'];
+  onNeedsHumanReview?: RunAgentAttemptInput['onNeedsHumanReview'];
 };
 
 @Injectable()
@@ -52,14 +77,24 @@ export class GovernanceAutomationAttemptService {
   ) {}
 
   isAttemptBusy(attempt: GovernanceExecutionAttemptRecord | null) {
-    return Boolean(
-      attempt &&
-        [
-          GovernanceExecutionAttemptStatus.Running,
-          GovernanceExecutionAttemptStatus.WaitingRepair,
-          GovernanceExecutionAttemptStatus.NeedsHumanReview
-        ].includes(attempt.status)
-    );
+    if (!attempt) {
+      return false;
+    }
+
+    if (attempt.status === GovernanceExecutionAttemptStatus.NeedsHumanReview) {
+      return true;
+    }
+
+    if (
+      ![
+        GovernanceExecutionAttemptStatus.Running,
+        GovernanceExecutionAttemptStatus.WaitingRepair
+      ].includes(attempt.status)
+    ) {
+      return false;
+    }
+
+    return attempt.ownerLeaseToken !== null || attempt.leaseExpiresAt !== null;
   }
 
   async markAttemptRunningIfPending(input: {
@@ -182,6 +217,8 @@ export class GovernanceAutomationAttemptService {
       maxAutoRetries: input.maxAutoRetries,
       result,
       onSuccess: input.onSuccess,
+      onSucceeded: input.onSucceeded,
+      onNeedsHumanReview: input.onNeedsHumanReview,
       allowRepair: true
     });
   }
@@ -194,6 +231,8 @@ export class GovernanceAutomationAttemptService {
     maxAutoRetries: number;
     result: Awaited<ReturnType<GovernanceRunnerBridgeService['waitForResult']>>;
     onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>;
+    onSucceeded?: RunAgentAttemptInput['onSucceeded'];
+    onNeedsHumanReview?: RunAgentAttemptInput['onNeedsHumanReview'];
     allowRepair: boolean;
   }): Promise<boolean> {
     if (input.result.status !== 'completed') {
@@ -208,7 +247,8 @@ export class GovernanceAutomationAttemptService {
             ? `${input.stageType} stage timed out`
             : input.result.message,
         candidateOutput:
-          input.result.status === 'error' ? input.result.outputText : null
+          input.result.status === 'error' ? input.result.outputText : null,
+        onNeedsHumanReview: input.onNeedsHumanReview
       });
     }
 
@@ -218,13 +258,23 @@ export class GovernanceAutomationAttemptService {
         input.result.outputText
       ) as Record<string, unknown>;
       await input.onSuccess(parsedOutput);
-      return this.governanceRepository.markAutomationAttemptSucceeded({
+      const markedSucceeded =
+        await this.governanceRepository.markAutomationAttemptSucceeded({
         attemptId: input.attempt.id,
         ownerLeaseToken: input.ownerLeaseToken,
         activeRequestMessageId: input.result.messageId,
         candidateOutput: input.result.outputText,
         parsedOutput
       });
+      if (markedSucceeded && input.onSucceeded) {
+        await input.onSucceeded({
+          attempt: input.attempt,
+          sessionId: input.sessionId,
+          activeRequestMessageId: input.result.messageId,
+          parsedOutput
+        });
+      }
+      return markedSucceeded;
     } catch (error) {
       if (!input.allowRepair) {
         return this.handleAgentFailure({
@@ -233,7 +283,8 @@ export class GovernanceAutomationAttemptService {
           maxAutoRetries: input.maxAutoRetries,
           errorCode: 'PARSE_FAILED',
           errorMessage: error instanceof Error ? error.message : String(error),
-          candidateOutput: input.result.outputText
+          candidateOutput: input.result.outputText,
+          onNeedsHumanReview: input.onNeedsHumanReview
         });
       }
 
@@ -245,21 +296,14 @@ export class GovernanceAutomationAttemptService {
         maxAutoRetries: input.maxAutoRetries,
         parseError: error instanceof Error ? error.message : String(error),
         candidateOutput: input.result.outputText,
-        onSuccess: input.onSuccess
+        onSuccess: input.onSuccess,
+        onSucceeded: input.onSucceeded,
+        onNeedsHumanReview: input.onNeedsHumanReview
       });
     }
   }
 
-  private async sendRepairPromptAndHandle(input: {
-    stageType: GovernanceAutomationStage;
-    attempt: GovernanceExecutionAttemptRecord;
-    sessionId: string;
-    ownerLeaseToken: string;
-    maxAutoRetries: number;
-    parseError: string;
-    candidateOutput: string;
-    onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>;
-  }) {
+  private async sendRepairPromptAndHandle(input: RepairAttemptInput) {
     const repairMessageId = await this.governanceRunnerBridge.sendFollowUpPrompt({
       sessionId: input.sessionId,
       prompt: this.governancePromptService.buildRepairPrompt(
@@ -288,7 +332,9 @@ export class GovernanceAutomationAttemptService {
       ownerLeaseToken: input.ownerLeaseToken,
       maxAutoRetries: input.maxAutoRetries,
       repairMessageId,
-      onSuccess: input.onSuccess
+      onSuccess: input.onSuccess,
+      onSucceeded: input.onSucceeded,
+      onNeedsHumanReview: input.onNeedsHumanReview
     });
   }
 
@@ -299,6 +345,8 @@ export class GovernanceAutomationAttemptService {
     ownerLeaseToken: string;
     maxAutoRetries: number;
     onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>;
+    onSucceeded?: RunAgentAttemptInput['onSucceeded'];
+    onNeedsHumanReview?: RunAgentAttemptInput['onNeedsHumanReview'];
   }) {
     let repairMessageId = input.attempt.activeRequestMessageId;
 
@@ -360,7 +408,9 @@ export class GovernanceAutomationAttemptService {
           typeof input.attempt.candidateOutput === 'string'
             ? input.attempt.candidateOutput
             : JSON.stringify(input.attempt.candidateOutput ?? null),
-        onSuccess: input.onSuccess
+        onSuccess: input.onSuccess,
+        onSucceeded: input.onSucceeded,
+        onNeedsHumanReview: input.onNeedsHumanReview
       });
     }
 
@@ -371,7 +421,9 @@ export class GovernanceAutomationAttemptService {
       ownerLeaseToken: input.ownerLeaseToken,
       maxAutoRetries: input.maxAutoRetries,
       repairMessageId,
-      onSuccess: input.onSuccess
+      onSuccess: input.onSuccess,
+      onSucceeded: input.onSucceeded,
+      onNeedsHumanReview: input.onNeedsHumanReview
     });
   }
 
@@ -383,6 +435,8 @@ export class GovernanceAutomationAttemptService {
     maxAutoRetries: number;
     repairMessageId: string | null;
     onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>;
+    onSucceeded?: RunAgentAttemptInput['onSucceeded'];
+    onNeedsHumanReview?: RunAgentAttemptInput['onNeedsHumanReview'];
   }) {
     const result = await this.governanceRunnerBridge.waitForResult(
       input.sessionId,
@@ -397,6 +451,8 @@ export class GovernanceAutomationAttemptService {
       maxAutoRetries: input.maxAutoRetries,
       result,
       onSuccess: input.onSuccess,
+      onSucceeded: input.onSucceeded,
+      onNeedsHumanReview: input.onNeedsHumanReview,
       allowRepair: false
     });
   }
@@ -408,10 +464,11 @@ export class GovernanceAutomationAttemptService {
     errorCode: string;
     errorMessage: string;
     candidateOutput?: unknown;
+    onNeedsHumanReview?: RunAgentAttemptInput['onNeedsHumanReview'];
   }) {
     const needsHumanReview = input.attempt.attemptNo >= input.maxAutoRetries + 1;
 
-    return this.governanceRepository.markAutomationAttemptFailed({
+    const markedFailed = await this.governanceRepository.markAutomationAttemptFailed({
       attemptId: input.attempt.id,
       ownerLeaseToken: input.ownerLeaseToken,
       failureCode: input.errorCode,
@@ -419,5 +476,14 @@ export class GovernanceAutomationAttemptService {
       candidateOutput: input.candidateOutput,
       needsHumanReview
     });
+    if (markedFailed && needsHumanReview && input.onNeedsHumanReview) {
+      await input.onNeedsHumanReview({
+        attempt: input.attempt,
+        sessionId: input.attempt.sessionId,
+        failureCode: input.errorCode,
+        failureMessage: input.errorMessage
+      });
+    }
+    return markedFailed;
   }
 }

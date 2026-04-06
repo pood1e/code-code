@@ -77,6 +77,8 @@ export const queryKeys = {
       all: ['governance', 'scopes'] as const,
       overview: (scopeId: string) =>
         ['governance', 'scopes', 'overview', scopeId] as const,
+      reviewQueue: (scopeId: string) =>
+        ['governance', 'scopes', 'review-queue', scopeId] as const,
       policy: (scopeId: string) =>
         ['governance', 'scopes', 'policy', scopeId] as const,
       repositoryProfile: (scopeId: string) =>

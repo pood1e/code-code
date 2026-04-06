@@ -12,6 +12,7 @@ import type {
   GovernanceIssueStatus,
   GovernanceIssueSummary,
   GovernancePolicy,
+  GovernanceReviewQueueItem,
   GovernanceScopeOverview,
   RepositoryProfile
 } from '@agent-workbench/shared';
@@ -21,6 +22,7 @@ import {
   getGovernancePolicy,
   getGovernanceIssue,
   getGovernanceRepositoryProfile,
+  getGovernanceReviewQueue,
   getGovernanceScopeOverview,
   listGovernanceChangeUnits,
   listGovernanceDeliveryArtifacts,
@@ -39,6 +41,14 @@ export function useGovernanceScopeOverview(scopeId: string | undefined) {
   return useQuery<GovernanceScopeOverview>({
     queryKey: scopeId ? governanceScopeKeys.overview(scopeId) : NOOP_QUERY_KEY,
     queryFn: () => getGovernanceScopeOverview(scopeId!),
+    enabled: Boolean(scopeId)
+  });
+}
+
+export function useGovernanceReviewQueue(scopeId: string | undefined) {
+  return useQuery<GovernanceReviewQueueItem[]>({
+    queryKey: scopeId ? governanceScopeKeys.reviewQueue(scopeId) : NOOP_QUERY_KEY,
+    queryFn: () => getGovernanceReviewQueue(scopeId!),
     enabled: Boolean(scopeId)
   });
 }

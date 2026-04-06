@@ -30,6 +30,7 @@ import {
   type GovernancePolicy,
   type GovernanceStageAgentStrategy,
   type GovernanceTriageOutput,
+  NotificationSeverity,
   type RepositoryProfile
 } from '@agent-workbench/shared';
 
@@ -57,6 +58,7 @@ import {
 import { GovernanceAutomationAttemptService } from './governance-automation-attempt.service';
 import { GovernanceBaselineService } from './governance-baseline.service';
 import { GovernanceGitService } from './governance-git.service';
+import { GovernanceNotificationService } from './governance-notification.service';
 import { GovernancePolicyEvaluatorService } from './governance-policy-evaluator.service';
 import { GovernancePromptService } from './governance-prompt.service';
 import {
@@ -91,6 +93,7 @@ export class GovernanceAutomationService
     private readonly governancePolicyEvaluator: GovernancePolicyEvaluatorService,
     private readonly governanceBaselineService: GovernanceBaselineService,
     private readonly governanceGitService: GovernanceGitService,
+    private readonly governanceNotification: GovernanceNotificationService,
     private readonly governanceVerificationRunner: GovernanceVerificationRunnerService,
     private readonly governanceWorkspaceService: GovernanceWorkspaceService
   ) {}
@@ -422,22 +425,50 @@ export class GovernanceAutomationService
         buildStatus: snapshot.buildStatus,
         metadata: snapshot.metadata
       });
-      await this.governanceRepository.markAutomationAttemptSucceeded({
+      const markedSucceeded =
+        await this.governanceRepository.markAutomationAttemptSucceeded({
         attemptId: attempt.id,
         ownerLeaseToken: this.ownerId,
         activeRequestMessageId: null,
         parsedOutput: snapshot
       });
+      if (markedSucceeded) {
+        await this.governanceNotification.notifyBaselineSucceeded({
+          scopeId: scope.id,
+          attemptId: attempt.id,
+          attemptNo: attempt.attemptNo,
+          sessionId: attempt.sessionId,
+          branch: snapshot.branch
+        });
+      }
       return true;
     } catch (error) {
+      const needsHumanReview =
+        attempt.attemptNo >= GovernanceAutomationService.MAX_AUTO_RETRIES + 1;
       await this.governanceRepository.markAutomationAttemptFailed({
         attemptId: attempt.id,
         ownerLeaseToken: this.ownerId,
         failureCode: 'BASELINE_FAILED',
         failureMessage: error instanceof Error ? error.message : String(error),
-        needsHumanReview:
-          attempt.attemptNo >= GovernanceAutomationService.MAX_AUTO_RETRIES + 1
+        needsHumanReview
       });
+      if (needsHumanReview) {
+        await this.governanceNotification.notifyAttemptNeedsHumanReview({
+          type: 'governance.baseline.needs_human_review',
+          scopeId: scope.id,
+          title: '治理 Baseline 需要人工处理',
+          body: '仓库画像生成失败，已进入人工处理队列。',
+          severity: NotificationSeverity.Warning,
+          stageType: GovernanceAutomationStage.Baseline,
+          subjectType: GovernanceAutomationSubjectType.Scope,
+          subjectId: scope.id,
+          attemptId: attempt.id,
+          attemptNo: attempt.attemptNo,
+          sessionId: attempt.sessionId,
+          failureCode: 'BASELINE_FAILED',
+          failureMessage: error instanceof Error ? error.message : String(error)
+        });
+      }
       if (isTargetedRun) {
         throw error;
       }
@@ -540,7 +571,34 @@ export class GovernanceAutomationService
           await this.createDiscoveredFinding(scopeId, finding);
         }
       },
-      (candidates) => mergeDiscoveryCandidates(scopeId, agentStrategy, candidates)
+      (candidates) => mergeDiscoveryCandidates(scopeId, agentStrategy, candidates),
+      async ({ attempt, sessionId, parsedOutput }) => {
+        const discoveryOutput = parsedOutput as GovernanceDiscoveryOutput;
+        await this.governanceNotification.notifyDiscoverySucceeded({
+          scopeId,
+          attemptId: attempt.id,
+          attemptNo: attempt.attemptNo,
+          sessionId,
+          findingCount: discoveryOutput.findings.length
+        });
+      },
+      async ({ attempt, sessionId, failureCode, failureMessage }) => {
+        await this.governanceNotification.notifyAttemptNeedsHumanReview({
+          type: 'governance.discovery.needs_human_review',
+          scopeId,
+          title: '治理 Discovery 需要人工处理',
+          body: '问题发现失败，已进入人工处理队列。',
+          severity: NotificationSeverity.Warning,
+          stageType: GovernanceAutomationStage.Discovery,
+          subjectType: GovernanceAutomationSubjectType.Scope,
+          subjectId: scopeId,
+          attemptId: attempt.id,
+          attemptNo: attempt.attemptNo,
+          sessionId,
+          failureCode,
+          failureMessage
+        });
+      }
     );
 
     return runAttempt();
@@ -592,6 +650,13 @@ export class GovernanceAutomationService
       policy: toGovernancePolicy(policy),
       attemptNo: attempt.attemptNo
     });
+    let triageNotification:
+      | {
+          type: 'created' | 'merged';
+          issueId: string;
+          issueTitle: string;
+        }
+      | null = null;
 
     const runAttempt = this.createAgentAttemptRunner(
       GovernanceAutomationStage.Triage,
@@ -611,13 +676,18 @@ export class GovernanceAutomationService
                 assessedBy: GovernanceAssessmentSource.Agent
               }
             });
-          await this.governanceRepository.applyTriageCreateIssue({
+          const detail = await this.governanceRepository.applyTriageCreateIssue({
             findingId: finding.id,
             scopeId: finding.scopeId,
             expectedFindingVersion: finding.version,
             issue: triageOutput.issue,
             assessment: normalizedAssessment
           });
+          triageNotification = {
+            type: 'created',
+            issueId: detail.id,
+            issueTitle: detail.title
+          };
           return;
         }
 
@@ -630,7 +700,7 @@ export class GovernanceAutomationService
           throw new Error(`Issue not found: ${triageOutput.targetIssueId}`);
         }
 
-        await this.governanceRepository.applyTriageMerge({
+        const detail = await this.governanceRepository.applyTriageMerge({
           findingId: finding.id,
           expectedFindingVersion: finding.version,
           targetIssueId: triageOutput.targetIssueId,
@@ -646,8 +716,58 @@ export class GovernanceAutomationService
               })
             : undefined
         });
+        triageNotification = {
+          type: 'merged',
+          issueId: detail.id,
+          issueTitle: detail.title
+        };
       },
-      (candidates) => mergeTriageCandidates(agentStrategy, candidates)
+      (candidates) => mergeTriageCandidates(agentStrategy, candidates),
+      async ({ attempt: succeededAttempt, sessionId }) => {
+        if (!triageNotification) {
+          return;
+        }
+
+        if (triageNotification.type === 'created') {
+          await this.governanceNotification.notifyTriageIssueCreated({
+            scopeId: finding.scopeId,
+            attemptId: succeededAttempt.id,
+            attemptNo: succeededAttempt.attemptNo,
+            sessionId,
+            findingId: finding.id,
+            issueId: triageNotification.issueId,
+            issueTitle: triageNotification.issueTitle
+          });
+          return;
+        }
+
+        await this.governanceNotification.notifyTriageIssueMerged({
+          scopeId: finding.scopeId,
+          attemptId: succeededAttempt.id,
+          attemptNo: succeededAttempt.attemptNo,
+          sessionId,
+          findingId: finding.id,
+          issueId: triageNotification.issueId,
+          issueTitle: triageNotification.issueTitle
+        });
+      },
+      async ({ attempt, sessionId, failureCode, failureMessage }) => {
+        await this.governanceNotification.notifyAttemptNeedsHumanReview({
+          type: 'governance.triage.needs_human_review',
+          scopeId: finding.scopeId,
+          title: '治理 Triage 需要人工处理',
+          body: `Finding「${finding.title}」归并失败，已进入人工处理队列。`,
+          severity: NotificationSeverity.Warning,
+          stageType: GovernanceAutomationStage.Triage,
+          subjectType: GovernanceAutomationSubjectType.Finding,
+          subjectId: finding.id,
+          attemptId: attempt.id,
+          attemptNo: attempt.attemptNo,
+          sessionId,
+          failureCode,
+          failureMessage
+        });
+      }
     );
 
     return runAttempt();
@@ -713,6 +833,23 @@ export class GovernanceAutomationService
           'Planning requires an issue assessment before automation can continue.',
         needsHumanReview: true
       });
+      await this.governanceNotification.notifyAttemptNeedsHumanReview({
+        type: 'governance.planning.needs_human_review',
+        scopeId: issue.scopeId,
+        title: '治理 Planning 需要人工处理',
+        body: `Issue「${issue.title}」缺少 assessment，无法继续自动规划。`,
+        severity: NotificationSeverity.Warning,
+        stageType: GovernanceAutomationStage.Planning,
+        subjectType: GovernanceAutomationSubjectType.Issue,
+        subjectId: issue.id,
+        attemptId: attempt.id,
+        attemptNo: attempt.attemptNo,
+        sessionId: attempt.sessionId,
+        issueId: issue.id,
+        failureCode: 'PLANNING_ASSESSMENT_MISSING',
+        failureMessage:
+          'Planning requires an issue assessment before automation can continue.'
+      });
       return false;
     }
 
@@ -731,6 +868,23 @@ export class GovernanceAutomationService
           'Planning automation is blocked by the current governance policy.',
         needsHumanReview: true
       });
+      await this.governanceNotification.notifyAttemptNeedsHumanReview({
+        type: 'governance.planning.needs_human_review',
+        scopeId: issue.scopeId,
+        title: '治理 Planning 需要人工处理',
+        body: `Issue「${issue.title}」被当前策略禁止自动规划。`,
+        severity: NotificationSeverity.Warning,
+        stageType: GovernanceAutomationStage.Planning,
+        subjectType: GovernanceAutomationSubjectType.Issue,
+        subjectId: issue.id,
+        attemptId: attempt.id,
+        attemptNo: attempt.attemptNo,
+        sessionId: attempt.sessionId,
+        issueId: issue.id,
+        failureCode: 'PLANNING_BLOCKED_BY_POLICY',
+        failureMessage:
+          'Planning automation is blocked by the current governance policy.'
+      });
       return false;
     }
 
@@ -741,6 +895,13 @@ export class GovernanceAutomationService
       baselineCommitSha,
       attemptNo: attempt.attemptNo
     });
+    let planningNotification:
+      | {
+          issueId: string;
+          issueTitle: string;
+          changePlanId: string;
+        }
+      | null = null;
 
     const runAttempt = this.createAgentAttemptRunner(
       GovernanceAutomationStage.Planning,
@@ -757,7 +918,8 @@ export class GovernanceAutomationService
             output: parsedOutput as GovernancePlanningOutput
           }
         );
-        await this.governanceRepository.createPlanningBundleFromAutomation({
+        const detail =
+          await this.governanceRepository.createPlanningBundleFromAutomation({
           issueId: issue.id,
           objective: planningOutput.objective,
           strategy: planningOutput.strategy,
@@ -781,8 +943,48 @@ export class GovernanceAutomationService
           })),
           verificationPlans: planningOutput.verificationPlans
         });
+        if (detail.changePlan) {
+          planningNotification = {
+            issueId: detail.id,
+            issueTitle: detail.title,
+            changePlanId: detail.changePlan.id
+          };
+        }
       },
-      (candidates) => mergePlanningCandidates(agentStrategy, candidates)
+      (candidates) => mergePlanningCandidates(agentStrategy, candidates),
+      async ({ attempt: succeededAttempt, sessionId }) => {
+        if (!planningNotification) {
+          return;
+        }
+
+        await this.governanceNotification.notifyPlanningPlanCreated({
+          scopeId: issue.scopeId,
+          attemptId: succeededAttempt.id,
+          attemptNo: succeededAttempt.attemptNo,
+          sessionId,
+          issueId: planningNotification.issueId,
+          issueTitle: planningNotification.issueTitle,
+          changePlanId: planningNotification.changePlanId
+        });
+      },
+      async ({ attempt, sessionId, failureCode, failureMessage }) => {
+        await this.governanceNotification.notifyAttemptNeedsHumanReview({
+          type: 'governance.planning.needs_human_review',
+          scopeId: issue.scopeId,
+          title: '治理 Planning 需要人工处理',
+          body: `Issue「${issue.title}」自动规划失败，已进入人工处理队列。`,
+          severity: NotificationSeverity.Warning,
+          stageType: GovernanceAutomationStage.Planning,
+          subjectType: GovernanceAutomationSubjectType.Issue,
+          subjectId: issue.id,
+          attemptId: attempt.id,
+          attemptNo: attempt.attemptNo,
+          sessionId,
+          issueId: issue.id,
+          failureCode,
+          failureMessage
+        });
+      }
     );
 
     return runAttempt();
@@ -957,6 +1159,15 @@ export class GovernanceAutomationService
         changeUnitId: context.changeUnit.id,
         status: GovernanceChangeUnitStatus.Verified
       });
+      await this.governanceNotification.notifyExecutionUnitVerified({
+        scopeId: context.scopeId,
+        attemptId: attempt.id,
+        attemptNo: currentAttemptNo,
+        sessionId: session.sessionId,
+        issueId: context.issue.id,
+        changeUnitId: context.changeUnit.id,
+        changeUnitTitle: context.changeUnit.title
+      });
       await this.reconcileIssueAfterUnitVerification(context.issue.id);
       return true;
     }
@@ -990,8 +1201,31 @@ export class GovernanceAutomationService
     });
 
     if (nextStatus === GovernanceChangeUnitStatus.Verified) {
+      await this.governanceNotification.notifyExecutionUnitVerified({
+        scopeId: context.scopeId,
+        attemptId: attempt.id,
+        attemptNo: currentAttemptNo,
+        sessionId: session.sessionId,
+        issueId: context.issue.id,
+        changeUnitId: context.changeUnit.id,
+        changeUnitTitle: context.changeUnit.title
+      });
       await this.reconcileIssueAfterUnitVerification(context.issue.id);
       return true;
+    }
+
+    if (nextStatus === GovernanceChangeUnitStatus.Exhausted) {
+      await this.governanceNotification.notifyExecutionUnitExhausted({
+        scopeId: context.scopeId,
+        attemptId: attempt.id,
+        attemptNo: currentAttemptNo,
+        sessionId: session.sessionId,
+        issueId: context.issue.id,
+        changeUnitId: context.changeUnit.id,
+        changeUnitTitle: context.changeUnit.title,
+        failureCode: 'VERIFICATION_FAILED',
+        failureMessage: verificationResult.summary
+      });
     }
 
     await this.governanceRepository.updateIssueState({
@@ -1012,26 +1246,42 @@ export class GovernanceAutomationService
       { status: 'completed' }
     >;
   }) {
+    const failureCode =
+      input.result.status === 'timeout' ? 'EXECUTION_TIMEOUT' : input.result.code;
+    const failureMessage =
+      input.result.status === 'timeout'
+        ? 'Execution stage timed out'
+        : input.result.message;
+    const exhausted =
+      input.currentAttemptNo > input.context.changeUnit.maxRetries;
     await this.governanceRepository.markAutomationAttemptFailed({
       attemptId: input.attemptId,
       ownerLeaseToken: this.ownerId,
-      failureCode:
-        input.result.status === 'timeout' ? 'EXECUTION_TIMEOUT' : input.result.code,
-      failureMessage:
-        input.result.status === 'timeout'
-          ? 'Execution stage timed out'
-          : input.result.message,
+      failureCode,
+      failureMessage,
       candidateOutput:
         input.result.status === 'error' ? input.result.outputText : undefined,
-      needsHumanReview: input.currentAttemptNo > input.context.changeUnit.maxRetries
+      needsHumanReview: exhausted
     });
     await this.governanceRepository.updateChangeUnitExecutionState({
       changeUnitId: input.context.changeUnit.id,
-      status:
-        input.currentAttemptNo > input.context.changeUnit.maxRetries
-          ? GovernanceChangeUnitStatus.Exhausted
-          : GovernanceChangeUnitStatus.VerificationFailed
+      status: exhausted
+        ? GovernanceChangeUnitStatus.Exhausted
+        : GovernanceChangeUnitStatus.VerificationFailed
     });
+    if (exhausted) {
+      await this.governanceNotification.notifyExecutionUnitExhausted({
+        scopeId: input.context.scopeId,
+        attemptId: input.attemptId,
+        attemptNo: input.currentAttemptNo,
+        sessionId: null,
+        issueId: input.context.issue.id,
+        changeUnitId: input.context.changeUnit.id,
+        changeUnitTitle: input.context.changeUnit.title,
+        failureCode,
+        failureMessage
+      });
+    }
     await this.governanceRepository.updateIssueState({
       issueId: input.context.issue.id,
       status: GovernanceIssueStatus.Blocked
@@ -1193,7 +1443,19 @@ export class GovernanceAutomationService
     ) => {
       primary: GovernanceFanoutSuccessCandidate;
       parsedOutput: Record<string, unknown>;
-    }
+    },
+    onSucceeded?: (input: {
+      attempt: GovernanceExecutionAttemptRecord;
+      sessionId: string | null;
+      activeRequestMessageId: string | null;
+      parsedOutput: Record<string, unknown>;
+    }) => Promise<void>,
+    onNeedsHumanReview?: (input: {
+      attempt: GovernanceExecutionAttemptRecord;
+      sessionId: string | null;
+      failureCode: string;
+      failureMessage: string;
+    }) => Promise<void>
   ) {
     if (agentStrategy.runnerIds.length <= 1) {
       const runnerId = agentStrategy.runnerIds[0];
@@ -1211,7 +1473,9 @@ export class GovernanceAutomationService
           ownerLeaseToken: this.ownerId,
           maxAutoRetries: GovernanceAutomationService.MAX_AUTO_RETRIES,
           createLeaseWindow: () => this.createLeaseWindow(),
-          onSuccess
+          onSuccess,
+          onSucceeded,
+          onNeedsHumanReview
         });
     }
 
@@ -1226,7 +1490,9 @@ export class GovernanceAutomationService
         maxAutoRetries: GovernanceAutomationService.MAX_AUTO_RETRIES,
         createLeaseWindow: () => this.createLeaseWindow(),
         mergeOutputs,
-        onSuccess
+        onSuccess,
+        onSucceeded,
+        onNeedsHumanReview
       });
   }
 }
