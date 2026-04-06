@@ -287,6 +287,12 @@ export type GovernanceScopeOverviewRecord = {
   findingCounts: Record<GovernanceFindingStatus, number>;
 };
 
+export type GovernanceProjectSourceRecord = {
+  id: string;
+  repoGitUrl: string;
+  workspaceRootPath: string;
+};
+
 export type CreateIssueWithAssessmentInput = {
   scopeId: string;
   title: string;
@@ -357,10 +363,7 @@ export type CreateChangePlanBundleInput = {
 };
 
 export abstract class GovernanceRepository {
-  abstract listGovernanceScopes(): Promise<Array<{
-    id: string;
-    workspacePath: string;
-  }>>;
+  abstract listGovernanceScopes(): Promise<GovernanceProjectSourceRecord[]>;
   abstract projectExists(scopeId: string): Promise<boolean>;
   abstract issueExists(issueId: string): Promise<boolean>;
   abstract findFindingById(id: string): Promise<GovernanceFindingRecord | null>;
@@ -370,10 +373,9 @@ export abstract class GovernanceRepository {
   ): Promise<GovernanceFindingRecord | null>;
   abstract findIssueById(id: string): Promise<GovernanceIssueRecord | null>;
   abstract findChangePlanById(id: string): Promise<ChangePlanRecord | null>;
-  abstract getProjectWorkspace(scopeId: string): Promise<{
-    id: string;
-    workspacePath: string;
-  } | null>;
+  abstract getProjectSource(
+    scopeId: string
+  ): Promise<GovernanceProjectSourceRecord | null>;
   abstract getLatestRepositoryProfile(
     scopeId: string
   ): Promise<RepositoryProfileRecord | null>;
@@ -517,7 +519,7 @@ export abstract class GovernanceRepository {
   }): Promise<boolean>;
   abstract getChangeUnitExecutionContext(changeUnitId: string): Promise<{
     scopeId: string;
-    workspacePath: string;
+    project: GovernanceProjectSourceRecord;
     issue: GovernanceIssueRecord;
     changePlan: ChangePlanRecord;
     changeUnit: ChangeUnitRecord;

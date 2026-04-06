@@ -16,6 +16,7 @@ import { GovernanceRunnerBridgeService } from './governance-runner-bridge.servic
 import { GovernanceRunnerResolverService } from './governance-runner-resolver.service';
 import { GovernanceService } from './governance.service';
 import { GovernanceVerificationRunnerService } from './governance-verification-runner.service';
+import { GovernanceWorkspaceService } from './governance-workspace.service';
 import { PrismaGovernanceRepository } from './prisma-governance.repository';
 
 @Module({
@@ -33,6 +34,7 @@ import { PrismaGovernanceRepository } from './prisma-governance.repository';
     GovernanceRunnerResolverService,
     GovernanceBaselineService,
     GovernanceGitService,
+    GovernanceWorkspaceService,
     GovernanceVerificationRunnerService,
     {
       provide: GovernanceRepository,

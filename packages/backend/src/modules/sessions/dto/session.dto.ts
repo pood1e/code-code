@@ -100,6 +100,15 @@ export class CreateSessionDto {
   runnerId!: string;
 
   @ApiPropertyOptional({
+    example: 'code/packages/backend',
+    description: '可选。相对 Session 目录的运行目录，例如 code 或 code/packages/backend'
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  customRunDirectory?: string;
+
+  @ApiPropertyOptional({
     type: [String],
     enum: SessionWorkspaceResourceKind,
     example: [SessionWorkspaceResourceKind.Code, SessionWorkspaceResourceKind.Doc]

@@ -410,6 +410,8 @@ describe('project-sessions.form', () => {
     expect(buildCreateSessionFormValues()).toEqual({
       runnerId: '',
       profileId: '',
+      useCustomRunDirectory: false,
+      customRunDirectory: '',
       workspaceResources: [],
       workspaceResourceConfig: {},
       skillIds: [],
@@ -484,6 +486,8 @@ describe('project-sessions.form', () => {
         {
           ...buildCreateSessionFormValues(),
           runnerId: 'runner-1',
+          useCustomRunDirectory: true,
+          customRunDirectory: 'code/packages/backend',
           workspaceResources: [SessionWorkspaceResourceKind.Code],
           workspaceResourceConfig: {
             code: {
@@ -510,6 +514,7 @@ describe('project-sessions.form', () => {
     ).toEqual({
       scopeId: 'project-1',
       runnerId: 'runner-1',
+      customRunDirectory: 'code/packages/backend',
       workspaceResources: [SessionWorkspaceResourceKind.Code],
       workspaceResourceConfig: {
         code: {

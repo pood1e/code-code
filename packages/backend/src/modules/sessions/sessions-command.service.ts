@@ -85,8 +85,9 @@ export class SessionsCommandService {
 
     const platformSessionConfig = platformSessionConfigSchema.parse({
       workspaceMode: SessionWorkspaceMode.Project,
-      workspaceRoot: project.workspacePath,
-      cwd: project.workspacePath,
+      workspaceRoot: project.workspaceRootPath,
+      sessionRoot: project.workspaceRootPath,
+      cwd: project.workspaceRootPath,
       workspaceResources:
         parsed.workspaceResources ?? ([] satisfies SessionWorkspaceResourceKind[]),
       workspaceResourceConfig: parsed.workspaceResourceConfig ?? {},
@@ -118,6 +119,7 @@ export class SessionsCommandService {
         await this.sessionWorkspaceService.initializeWorkspace({
           sessionId: created.id,
           project,
+          customRunDirectory: parsed.customRunDirectory,
           workspaceResources: parsed.workspaceResources ?? [],
           workspaceResourceConfig: parsed.workspaceResourceConfig ?? {},
           skillIds: parsed.skillIds,

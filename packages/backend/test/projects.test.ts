@@ -25,20 +25,20 @@ describe('Projects API', () => {
   // ---- CRUD 正常路径 ----
 
   describe('POST /api/projects - 创建 Project', () => {
-    it('应成功创建 Project（workspacePath 为 /tmp）', async () => {
+    it('应成功创建 Project（workspaceRootPath 为 /tmp）', async () => {
       const payload = createProjectPayload({ name: 'My Project' });
       const res = await api().post('/api/projects').send(payload);
       const data = expectSuccess<{
         id: string;
         name: string;
-        gitUrl: string;
-        workspacePath: string;
+        repoGitUrl: string;
+        workspaceRootPath: string;
       }>(res, 201);
 
       expect(data.id).toBeDefined();
       expect(data.name).toBe('My Project');
-      expect(data.gitUrl).toBe(payload.gitUrl);
-      expect(data.workspacePath).toBe('/tmp');
+      expect(data.repoGitUrl).toBe(payload.repoGitUrl);
+      expect(data.workspaceRootPath).toBe('/tmp');
     });
 
     it('空白 description 应归一化为 null', async () => {
@@ -50,23 +50,14 @@ describe('Projects API', () => {
       expect(data.description).toBeNull();
     });
 
-    it('应支持保存本地文档目录地址', async () => {
-      const res = await api()
-        .post('/api/projects')
-        .send(createProjectPayload({ docSource: '/tmp' }));
-      const data = expectSuccess<{ docSource?: string | null }>(res, 201);
-
-      expect(data.docSource).toBe('/tmp');
-    });
-
     it('应支持保存 SSH 文档仓库地址', async () => {
-      const docSource = 'git@github.com:acme/workbench-docs.git';
+      const docGitUrl = 'git@github.com:acme/workbench-docs.git';
       const res = await api()
         .post('/api/projects')
-        .send(createProjectPayload({ docSource }));
-      const data = expectSuccess<{ docSource?: string | null }>(res, 201);
+        .send(createProjectPayload({ docGitUrl }));
+      const data = expectSuccess<{ docGitUrl?: string | null }>(res, 201);
 
-      expect(data.docSource).toBe(docSource);
+      expect(data.docGitUrl).toBe(docGitUrl);
     });
   });
 
@@ -111,8 +102,8 @@ describe('Projects API', () => {
       const data = expectSuccess<{
         id: string;
         name: string;
-        gitUrl: string;
-        workspacePath: string;
+        repoGitUrl: string;
+        workspaceRootPath: string;
         createdAt: string;
         updatedAt: string;
       }>(res);
@@ -123,24 +114,24 @@ describe('Projects API', () => {
   });
 
   describe('PATCH /api/projects/:id - 更新 Project', () => {
-    it('应成功更新 name 和 workspacePath', async () => {
+    it('应成功更新 name 和 workspaceRootPath', async () => {
       const created = await seedProject();
 
       const res = await api().patch(`/api/projects/${created.id}`).send({
         name: 'Updated Project',
-        workspacePath: '/tmp'
+        workspaceRootPath: '/tmp'
       });
-      const data = expectSuccess<{ name: string; workspacePath: string }>(res);
+      const data = expectSuccess<{ name: string; workspaceRootPath: string }>(res);
 
       expect(data.name).toBe('Updated Project');
-      expect(data.workspacePath).toBe('/tmp');
+      expect(data.workspaceRootPath).toBe('/tmp');
     });
 
     it('应支持仅更新 name，并保留其他字段', async () => {
       const created = await seedProject({
         name: 'Original Project',
         description: 'Original description',
-        workspacePath: '/tmp'
+        workspaceRootPath: '/tmp'
       });
 
       const res = await api().patch(`/api/projects/${created.id}`).send({
@@ -149,32 +140,32 @@ describe('Projects API', () => {
       const data = expectSuccess<{
         name: string;
         description: string | null;
-        workspacePath: string;
+        workspaceRootPath: string;
       }>(res);
 
       expect(data.name).toBe('Renamed Project');
       expect(data.description).toBe('Original description');
-      expect(data.workspacePath).toBe('/tmp');
+      expect(data.workspaceRootPath).toBe('/tmp');
     });
 
-    it('应支持仅更新 workspacePath', async () => {
+    it('应支持仅更新 workspaceRootPath', async () => {
       const created = await seedProject({
         name: 'Workspace Project',
         description: 'Keep description'
       });
 
       const res = await api().patch(`/api/projects/${created.id}`).send({
-        workspacePath: '/tmp'
+        workspaceRootPath: '/tmp'
       });
       const data = expectSuccess<{
         name: string;
         description: string | null;
-        workspacePath: string;
+        workspaceRootPath: string;
       }>(res);
 
       expect(data.name).toBe('Workspace Project');
       expect(data.description).toBe('Keep description');
-      expect(data.workspacePath).toBe('/tmp');
+      expect(data.workspaceRootPath).toBe('/tmp');
     });
 
     it('description 传 null 时应清空描述', async () => {
@@ -190,15 +181,26 @@ describe('Projects API', () => {
       expect(data.description).toBeNull();
     });
 
-    it('应支持仅更新文档地址', async () => {
+    it('应支持仅更新文档仓库地址', async () => {
       const created = await seedProject();
 
       const res = await api().patch(`/api/projects/${created.id}`).send({
-        docSource: '/tmp'
+        docGitUrl: 'git@github.com:acme/docs.git'
       });
-      const data = expectSuccess<{ docSource?: string | null }>(res);
+      const data = expectSuccess<{ docGitUrl?: string | null }>(res);
 
-      expect(data.docSource).toBe('/tmp');
+      expect(data.docGitUrl).toBe('git@github.com:acme/docs.git');
+    });
+
+    it('应支持更新 repoGitUrl', async () => {
+      const created = await seedProject();
+
+      const res = await api().patch(`/api/projects/${created.id}`).send({
+        repoGitUrl: 'git@github.com:acme/updated.git'
+      });
+      const data = expectSuccess<{ repoGitUrl: string }>(res);
+
+      expect(data.repoGitUrl).toBe('git@github.com:acme/updated.git');
     });
   });
 
@@ -213,11 +215,11 @@ describe('Projects API', () => {
 
   // ---- 边界 & 错误场景 ----
 
-  describe('workspacePath 验证', () => {
+  describe('workspaceRootPath 验证', () => {
     it('相对路径返回 400', async () => {
       const res = await api()
         .post('/api/projects')
-        .send(createProjectPayload({ workspacePath: './relative/path' }));
+        .send(createProjectPayload({ workspaceRootPath: './relative/path' }));
       expectError(res, 400);
     });
 
@@ -226,7 +228,7 @@ describe('Projects API', () => {
         .post('/api/projects')
         .send(
           createProjectPayload({
-            workspacePath: '/nonexistent/path/that/surely/does/not/exist'
+            workspaceRootPath: '/nonexistent/path/that/surely/does/not/exist'
           })
         );
       expectError(res, 400);
@@ -236,27 +238,16 @@ describe('Projects API', () => {
       // /etc/hosts is a file, not a directory
       const res = await api()
         .post('/api/projects')
-        .send(createProjectPayload({ workspacePath: '/etc/hosts' }));
+        .send(createProjectPayload({ workspaceRootPath: '/etc/hosts' }));
       expectError(res, 400);
     });
   });
 
-  describe('docSource 验证', () => {
-    it('相对本地路径返回 400', async () => {
+  describe('docGitUrl 验证', () => {
+    it('本地目录返回 400', async () => {
       const res = await api()
         .post('/api/projects')
-        .send(createProjectPayload({ docSource: './docs' }));
-      expectError(res, 400);
-    });
-
-    it('不存在的本地目录返回 400', async () => {
-      const res = await api()
-        .post('/api/projects')
-        .send(
-          createProjectPayload({
-            docSource: '/nonexistent/path/that/surely/does/not/exist'
-          })
-        );
+        .send(createProjectPayload({ docGitUrl: '/tmp/docs' }));
       expectError(res, 400);
     });
   });
@@ -269,10 +260,10 @@ describe('Projects API', () => {
       expectError(res, 400);
     });
 
-    it('gitUrl 为空时返回 400', async () => {
+    it('repoGitUrl 为空时返回 400', async () => {
       const res = await api()
         .post('/api/projects')
-        .send(createProjectPayload({ gitUrl: '' }));
+        .send(createProjectPayload({ repoGitUrl: '' }));
       expectError(res, 400);
     });
 
@@ -301,7 +292,7 @@ describe('Projects API', () => {
       expectError(
         await api()
           .patch('/api/projects/nonexistent')
-          .send({ name: 'X', workspacePath: '/tmp' }),
+          .send({ name: 'X', workspaceRootPath: '/tmp' }),
         404
       );
       expectError(await api().delete('/api/projects/nonexistent'), 404);

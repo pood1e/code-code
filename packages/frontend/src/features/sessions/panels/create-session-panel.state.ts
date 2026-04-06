@@ -31,6 +31,10 @@ export function useCreateSessionFieldValues(
       control,
       name: 'profileId'
     }),
+    useCustomRunDirectory: useWatch({
+      control,
+      name: 'useCustomRunDirectory'
+    }),
     selectedWorkspaceResources: useWatch({
       control,
       name: 'workspaceResources'

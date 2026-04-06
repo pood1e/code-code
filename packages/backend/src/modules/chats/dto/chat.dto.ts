@@ -48,6 +48,14 @@ export class CreateChatDto {
   runnerId!: string;
 
   @ApiPropertyOptional({
+    description: 'Optional relative working directory inside the session directory',
+    example: 'code/packages/backend'
+  })
+  @IsString()
+  @IsOptional()
+  customRunDirectory?: string;
+
+  @ApiPropertyOptional({
     description: 'Workspace resources to initialize',
     type: [String],
     enum: SessionWorkspaceResourceKind

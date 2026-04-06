@@ -76,6 +76,7 @@ function createFormValues(
 ): CreateSessionFormValues {
   return {
     runnerId: 'runner-1',
+    useCustomRunDirectory: false,
     profileId: '',
     workspaceResources: [],
     skillIds: ['skill-1'],

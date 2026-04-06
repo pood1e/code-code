@@ -73,7 +73,8 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
     return this.prisma.project.findMany({
       select: {
         id: true,
-        workspacePath: true
+        repoGitUrl: true,
+        workspaceRootPath: true
       },
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
     });
@@ -103,10 +104,10 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
     return Boolean(issue);
   }
 
-  async getProjectWorkspace(scopeId: string) {
+  async getProjectSource(scopeId: string) {
     return this.prisma.project.findUnique({
       where: { id: scopeId },
-      select: { id: true, workspacePath: true }
+      select: { id: true, repoGitUrl: true, workspaceRootPath: true }
     });
   }
 
@@ -1667,7 +1668,7 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
 
     const [project, unitVerificationPlan, planVerificationPlan, latestExecutionAttempt, latestVerificationResult] =
       await Promise.all([
-        this.getProjectWorkspace(changeUnit.issue.scopeId),
+        this.getProjectSource(changeUnit.issue.scopeId),
         this.prisma.verificationPlan.findFirst({
           where: {
             changeUnitId: changeUnit.id,
@@ -1696,7 +1697,7 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
 
     return {
       scopeId: changeUnit.issue.scopeId,
-      workspacePath: project.workspacePath,
+      project,
       issue: toGovernanceIssueRecord(changeUnit.issue),
       changePlan: toChangePlanRecord(changeUnit.changePlan),
       changeUnit: toChangeUnitRecord(

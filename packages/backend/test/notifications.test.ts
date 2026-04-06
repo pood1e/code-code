@@ -58,8 +58,9 @@ async function createProject(id: string) {
     data: {
       id,
       name: `Project ${id}`,
-      gitUrl: `git@github.com:example/${id}.git`,
-      workspacePath: `/tmp/${id}`
+      repoGitUrl: `git@github.com:example/${id}.git`,
+      workspaceRootPath: `/tmp/${id}`,
+      docGitUrl: null
     }
   });
 }

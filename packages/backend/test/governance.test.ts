@@ -39,6 +39,7 @@ import type { GovernanceSessionResult } from '../src/modules/governance/governan
 import { GovernanceRunnerBridgeService } from '../src/modules/governance/governance-runner-bridge.service';
 import { GovernanceRunnerResolverService } from '../src/modules/governance/governance-runner-resolver.service';
 import { GovernanceService } from '../src/modules/governance/governance.service';
+import { GovernanceWorkspaceService } from '../src/modules/governance/governance-workspace.service';
 import { api, expectError, expectSuccess, seedAgentRunner, seedProject } from './helpers';
 import { getApp, getPrisma, resetDatabase, setupTestApp, teardownTestApp } from './setup';
 
@@ -83,7 +84,8 @@ describe('Governance API', () => {
   it('repository profile refresh 应生成快照并更新 overview', async () => {
     const workspace = createRepositoryProfileWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: workspace.workspacePath
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
 
     const refreshResponse = await api().post(
@@ -113,22 +115,17 @@ describe('Governance API', () => {
     expect(overview.findingCounts.pending).toBe(0);
   });
 
-  it('repository profile refresh 在非 git workspace 下也应成功', async () => {
-    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'governance-non-git-'));
-    tempWorkspaces.push(workspacePath);
-    fs.writeFileSync(
-      path.join(workspacePath, 'package.json'),
-      JSON.stringify(
-        {
-          name: 'non-git-workspace',
-          private: true
-        },
-        null,
-        2
-      )
+  it('repository profile refresh 在非 git workspaceRootPath 下也应成功', async () => {
+    const repository = createRepositoryProfileWorkspace(tempWorkspaces);
+    const workspaceRootPath = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'governance-non-git-root-')
     );
+    tempWorkspaces.push(workspaceRootPath);
 
-    const project = await seedProject({ workspacePath });
+    const project = await seedProject({
+      repoGitUrl: repository.repositoryPath,
+      workspaceRootPath
+    });
 
     const refreshResponse = await api().post(
       `/api/governance/scopes/${project.id}/repository-profile/refresh`
@@ -138,8 +135,8 @@ describe('Governance API', () => {
       modules: Array<{ path: string }>;
     }>(refreshResponse, 201);
 
-    expect(profile.branch).toBe('unknown');
-    expect(profile.modules).toHaveLength(1);
+    expect(profile.branch).toBe('master');
+    expect(profile.modules.length).toBeGreaterThanOrEqual(2);
 
     const overviewResponse = await api().get(
       `/api/governance/scopes/${project.id}/overview`
@@ -302,7 +299,8 @@ describe('Governance API', () => {
   it('discovery run 应创建 pending findings 且重复执行不重复插入', async () => {
     const workspace = createRepositoryProfileWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: workspace.workspacePath
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
 
@@ -1011,8 +1009,10 @@ describe('Governance API', () => {
   });
 
   it('planning worker 应基于 resolution 生成 draft change plan', async () => {
+    const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: '/Users/pood1e/workspace/code-code'
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
@@ -1122,8 +1122,10 @@ describe('Governance API', () => {
   });
 
   it('planning policy 为 forbidden 时应直接进入 needs_human_review', async () => {
+    const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: '/Users/pood1e/workspace/code-code'
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
@@ -1178,8 +1180,10 @@ describe('Governance API', () => {
   });
 
   it('planning policy 为 suggest_only 时应将 change unit 降级为 manual', async () => {
+    const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: '/Users/pood1e/workspace/code-code'
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
@@ -1340,8 +1344,10 @@ describe('Governance API', () => {
   });
 
   it('planning needs_human_review 后应允许 retry-planning', async () => {
+    const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: '/Users/pood1e/workspace/code-code'
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
@@ -1412,7 +1418,8 @@ describe('Governance API', () => {
   it('execution worker 应验证 change unit 并推进 issue 到 in_review', async () => {
     const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: workspace.workspacePath
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
@@ -1487,11 +1494,6 @@ describe('Governance API', () => {
       reviewer: 'lead-1'
     });
 
-    fs.writeFileSync(
-      path.join(workspace.workspacePath, 'src', 'feature.ts'),
-      'export const feature = "updated";\n'
-    );
-
     try {
       await assignGovernanceRunnerSelection(project.id, {
         defaultRunnerId: runner.id,
@@ -1500,6 +1502,12 @@ describe('Governance API', () => {
         planningRunnerId: null,
         executionRunnerId: runner.id
       });
+
+      const flowRepositoryPath = await ensureGovernanceFlowRepositoryPath(project.id);
+      fs.writeFileSync(
+        path.join(flowRepositoryPath, 'src', 'feature.ts'),
+        'export const feature = "updated";\n'
+      );
 
       const processed = await automationService.runExecutionCycle();
       expect(processed).toBe(true);
@@ -1519,7 +1527,8 @@ describe('Governance API', () => {
   it('change unit approve 后应创建 commit 和 delivery artifact，artifact approve 后关闭 issue', async () => {
     const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: workspace.workspacePath
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
@@ -1594,11 +1603,6 @@ describe('Governance API', () => {
       reviewer: 'lead-1'
     });
 
-    fs.writeFileSync(
-      path.join(workspace.workspacePath, 'src', 'feature.ts'),
-      'export const feature = "updated";\n'
-    );
-
     try {
       await assignGovernanceRunnerSelection(project.id, {
         defaultRunnerId: runner.id,
@@ -1607,6 +1611,12 @@ describe('Governance API', () => {
         planningRunnerId: null,
         executionRunnerId: runner.id
       });
+
+      const flowRepositoryPath = await ensureGovernanceFlowRepositoryPath(project.id);
+      fs.writeFileSync(
+        path.join(flowRepositoryPath, 'src', 'feature.ts'),
+        'export const feature = "updated";\n'
+      );
 
       await automationService.runExecutionCycle();
 
@@ -1694,7 +1704,8 @@ describe('Governance API', () => {
   it('verified change unit 在没有 scoped diff 时 approve 应返回 409', async () => {
     const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: workspace.workspacePath
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -1796,7 +1807,8 @@ describe('Governance API', () => {
   it('squash commit mode 应在 delivery approve 时统一提交且不自动关闭 issue', async () => {
     const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: workspace.workspacePath
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const governanceService = getApp().get(GovernanceService);
     const governanceRepository = getApp().get(GovernanceRepository);
@@ -1856,8 +1868,9 @@ describe('Governance API', () => {
       reviewer: 'lead-1'
     });
 
+    const flowRepositoryPath = await ensureGovernanceFlowRepositoryPath(project.id);
     fs.writeFileSync(
-      path.join(workspace.workspacePath, 'src', 'feature.ts'),
+      path.join(flowRepositoryPath, 'src', 'feature.ts'),
       'export const feature = "squash";\n'
     );
 
@@ -1892,7 +1905,7 @@ describe('Governance API', () => {
     expect(detail.status).toBe('resolved');
 
     const gitHead = execSync('git rev-parse HEAD', {
-      cwd: workspace.workspacePath,
+      cwd: flowRepositoryPath,
       stdio: 'pipe'
     })
       .toString()
@@ -1903,7 +1916,8 @@ describe('Governance API', () => {
   it('partially_resolved issue 在 delivery approve 后应创建 spin-off issue', async () => {
     const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
-      workspacePath: workspace.workspacePath
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
     });
     const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
@@ -2000,11 +2014,6 @@ describe('Governance API', () => {
       reviewer: 'reviewer-1'
     });
 
-    fs.writeFileSync(
-      path.join(workspace.workspacePath, 'src', 'feature.ts'),
-      'export const feature = "partial";\n'
-    );
-
     try {
       await assignGovernanceRunnerSelection(project.id, {
         defaultRunnerId: runner.id,
@@ -2013,6 +2022,12 @@ describe('Governance API', () => {
         planningRunnerId: null,
         executionRunnerId: runner.id
       });
+
+      const flowRepositoryPath = await ensureGovernanceFlowRepositoryPath(project.id);
+      fs.writeFileSync(
+        path.join(flowRepositoryPath, 'src', 'feature.ts'),
+        'export const feature = "partial";\n'
+      );
 
       await automationService.runExecutionCycle();
 
@@ -2089,6 +2104,25 @@ async function assignGovernanceRunnerSelection(
   );
 }
 
+async function ensureGovernanceFlowRepositoryPath(scopeId: string) {
+  const governanceWorkspaceService = getApp().get(GovernanceWorkspaceService);
+  const project = await getPrisma().project.findUnique({
+    where: { id: scopeId },
+    select: {
+      id: true,
+      repoGitUrl: true,
+      workspaceRootPath: true
+    }
+  });
+
+  if (!project) {
+    throw new Error(`Project not found: ${scopeId}`);
+  }
+
+  const workspace = await governanceWorkspaceService.ensureCodeWorkspace(project);
+  return workspace.repositoryPath;
+}
+
 function createGovernancePolicyInput(
   overrides: Partial<UpdateGovernancePolicyInput> = {}
 ): UpdateGovernancePolicyInput {
@@ -2109,43 +2143,47 @@ function createGovernancePolicyInput(
 }
 
 function createTempGitWorkspace(tempWorkspaces: string[]) {
-  const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'governance-'));
-  tempWorkspaces.push(workspacePath);
-  execSync('git init -b master', { cwd: workspacePath, stdio: 'pipe' });
+  const repositoryPath = fs.mkdtempSync(path.join(os.tmpdir(), 'governance-repo-'));
+  const workspaceRootPath = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'governance-flow-root-')
+  );
+  tempWorkspaces.push(repositoryPath, workspaceRootPath);
+  execSync('git init -b master', { cwd: repositoryPath, stdio: 'pipe' });
   execSync('git config user.email "test@example.com"', {
-    cwd: workspacePath,
+    cwd: repositoryPath,
     stdio: 'pipe'
   });
   execSync('git config user.name "Governance Test"', {
-    cwd: workspacePath,
+    cwd: repositoryPath,
     stdio: 'pipe'
   });
-  fs.mkdirSync(path.join(workspacePath, 'src'), { recursive: true });
+  fs.mkdirSync(path.join(repositoryPath, 'src'), { recursive: true });
   fs.writeFileSync(
-    path.join(workspacePath, 'src', 'feature.ts'),
+    path.join(repositoryPath, 'src', 'feature.ts'),
     'export const feature = "initial";\n'
   );
-  execSync('git add .', { cwd: workspacePath, stdio: 'pipe' });
-  execSync('git commit -m "init"', { cwd: workspacePath, stdio: 'pipe' });
+  execSync('git add .', { cwd: repositoryPath, stdio: 'pipe' });
+  execSync('git commit -m "init"', { cwd: repositoryPath, stdio: 'pipe' });
   const baselineCommitSha = execSync('git rev-parse HEAD', {
-    cwd: workspacePath,
+    cwd: repositoryPath,
     stdio: 'pipe'
   })
     .toString()
     .trim();
 
   return {
-    workspacePath,
+    repositoryPath,
+    workspaceRootPath,
     baselineCommitSha
   };
 }
 
 function createRepositoryProfileWorkspace(tempWorkspaces: string[]) {
   const workspace = createTempGitWorkspace(tempWorkspaces);
-  const workspacePath = workspace.workspacePath;
+  const repositoryPath = workspace.repositoryPath;
 
   fs.writeFileSync(
-    path.join(workspacePath, 'package.json'),
+    path.join(repositoryPath, 'package.json'),
     JSON.stringify(
       {
         name: 'governance-workspace',
@@ -2157,14 +2195,14 @@ function createRepositoryProfileWorkspace(tempWorkspaces: string[]) {
     )
   );
   fs.writeFileSync(
-    path.join(workspacePath, 'pnpm-workspace.yaml'),
+    path.join(repositoryPath, 'pnpm-workspace.yaml'),
     'packages:\n  - packages/*\n'
   );
-  fs.mkdirSync(path.join(workspacePath, 'packages', 'sample', 'src'), {
+  fs.mkdirSync(path.join(repositoryPath, 'packages', 'sample', 'src'), {
     recursive: true
   });
   fs.writeFileSync(
-    path.join(workspacePath, 'packages', 'sample', 'package.json'),
+    path.join(repositoryPath, 'packages', 'sample', 'package.json'),
     JSON.stringify(
       {
         name: '@repo/sample',
@@ -2178,7 +2216,7 @@ function createRepositoryProfileWorkspace(tempWorkspaces: string[]) {
     )
   );
   fs.writeFileSync(
-    path.join(workspacePath, 'packages', 'sample', 'tsconfig.json'),
+    path.join(repositoryPath, 'packages', 'sample', 'tsconfig.json'),
     JSON.stringify(
       {
         compilerOptions: {
@@ -2190,12 +2228,12 @@ function createRepositoryProfileWorkspace(tempWorkspaces: string[]) {
     )
   );
   fs.writeFileSync(
-    path.join(workspacePath, 'packages', 'sample', 'src', 'index.ts'),
+    path.join(repositoryPath, 'packages', 'sample', 'src', 'index.ts'),
     'export const sample = true;\n'
   );
-  fs.mkdirSync(path.join(workspacePath, 'coverage'), { recursive: true });
+  fs.mkdirSync(path.join(repositoryPath, 'coverage'), { recursive: true });
   fs.writeFileSync(
-    path.join(workspacePath, 'coverage', 'coverage-summary.json'),
+    path.join(repositoryPath, 'coverage', 'coverage-summary.json'),
     JSON.stringify(
       {
         total: {
@@ -2208,9 +2246,9 @@ function createRepositoryProfileWorkspace(tempWorkspaces: string[]) {
       2
     )
   );
-  execSync('git add .', { cwd: workspacePath, stdio: 'pipe' });
+  execSync('git add .', { cwd: repositoryPath, stdio: 'pipe' });
   execSync('git commit -m "add workspace structure"', {
-    cwd: workspacePath,
+    cwd: repositoryPath,
     stdio: 'pipe'
   });
 

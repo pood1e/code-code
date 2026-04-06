@@ -20,6 +20,7 @@ export class ChatsService {
     const session = await this.sessionsCommandService.create({
       scopeId: dto.scopeId,
       runnerId: dto.runnerId,
+      customRunDirectory: dto.customRunDirectory,
       workspaceResources: dto.workspaceResources ?? [],
       workspaceResourceConfig: dto.workspaceResourceConfig ?? {},
       skillIds: dto.skillIds ?? [],

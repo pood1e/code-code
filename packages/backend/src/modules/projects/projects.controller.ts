@@ -61,7 +61,7 @@ export class ProjectsController {
   @ApiWrappedErrorResponse({
     status: 400,
     description: 'Invalid project payload.',
-    messageExample: 'workspacePath must be an absolute path'
+    messageExample: 'workspaceRootPath must be an absolute path'
   })
   @ResponseMessage('Project created')
   create(@Body() dto: CreateProjectDto) {

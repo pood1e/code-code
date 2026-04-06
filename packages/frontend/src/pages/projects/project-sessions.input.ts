@@ -15,6 +15,8 @@ import { z } from 'zod';
 export const createSessionFormSchema = z.object({
   runnerId: z.string().trim().min(1, '请选择 AgentRunner'),
   profileId: z.string().trim().optional(),
+  useCustomRunDirectory: z.boolean(),
+  customRunDirectory: z.string().trim().optional(),
   workspaceResources: z.array(z.nativeEnum(SessionWorkspaceResourceKindEnum)),
   workspaceResourceConfig: z
     .object({
@@ -38,6 +40,36 @@ export const createSessionFormSchema = z.object({
   initialInputConfig: z.record(z.string(), z.unknown()),
   initialRuntimeConfig: z.record(z.string(), z.unknown()),
   initialRawInput: z.string().optional()
+}).superRefine((value, context) => {
+  if (!value.useCustomRunDirectory) {
+    return;
+  }
+
+  const customRunDirectory = value.customRunDirectory?.trim() ?? '';
+  if (customRunDirectory.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['customRunDirectory'],
+      message: '请输入运行目录'
+    });
+    return;
+  }
+
+  if (customRunDirectory.startsWith('/')) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['customRunDirectory'],
+      message: '运行目录必须是相对路径'
+    });
+  }
+
+  if (customRunDirectory.split('/').some((segment) => segment === '..')) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['customRunDirectory'],
+      message: '运行目录必须位于 Session 目录内'
+    });
+  }
 });
 
 export const sessionTextInputSchema = z.object({
@@ -51,6 +83,8 @@ export function buildCreateSessionFormValues(): CreateSessionFormValues {
   return {
     runnerId: '',
     profileId: '',
+    useCustomRunDirectory: false,
+    customRunDirectory: '',
     workspaceResources: [],
     workspaceResourceConfig: {},
     skillIds: [],
@@ -73,6 +107,10 @@ export function buildCreateSessionPayload(
   return createSessionInputSchema.parse({
     scopeId,
     runnerId: values.runnerId,
+    customRunDirectory:
+      values.useCustomRunDirectory && values.customRunDirectory?.trim()
+        ? values.customRunDirectory.trim()
+        : undefined,
     workspaceResources:
       values.workspaceResources as SessionWorkspaceResourceKind[],
     workspaceResourceConfig: buildWorkspaceResourceConfig(values),

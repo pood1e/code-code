@@ -1,5 +1,7 @@
 import {
+  BadRequestException,
   BadGatewayException,
+  HttpException,
   Injectable,
   Logger
 } from '@nestjs/common';
@@ -9,7 +11,6 @@ import * as path from 'node:path';
 
 import {
   platformSessionConfigSchema,
-  sshGitUrlSchema,
   SessionWorkspaceMode,
   SessionWorkspaceResourceConfig,
   SessionWorkspaceResourceKind,
@@ -19,9 +20,9 @@ import {
 
 type SessionWorkspaceProject = {
   id: string;
-  gitUrl: string;
-  docSource?: string | null;
-  workspacePath: string;
+  repoGitUrl: string;
+  docGitUrl?: string | null;
+  workspaceRootPath: string;
 };
 
 @Injectable()
@@ -31,6 +32,7 @@ export class SessionWorkspaceService {
   async initializeWorkspace(input: {
     sessionId: string;
     project: SessionWorkspaceProject;
+    customRunDirectory?: string;
     workspaceResources: readonly SessionWorkspaceResourceKind[];
     workspaceResourceConfig: SessionWorkspaceResourceConfig;
     skillIds: string[];
@@ -38,7 +40,7 @@ export class SessionWorkspaceService {
     mcps: PlatformSessionMcp[];
   }): Promise<PlatformSessionConfig> {
     const sessionDir = this.getSessionDirectory(
-      input.project.workspacePath,
+      input.project.workspaceRootPath,
       input.sessionId
     );
     const codeDir = path.join(sessionDir, 'code');
@@ -48,7 +50,7 @@ export class SessionWorkspaceService {
 
       if (input.workspaceResources.includes(SessionWorkspaceResourceKind.Code)) {
         await this.cloneRepository(
-          input.project.gitUrl,
+          input.project.repoGitUrl,
           codeDir,
           input.workspaceResourceConfig.code?.branch
         );
@@ -63,6 +65,9 @@ export class SessionWorkspaceService {
       }
     } catch (error) {
       await fs.rm(sessionDir, { recursive: true, force: true });
+      if (error instanceof HttpException) {
+        throw error;
+      }
       const reason = error instanceof Error ? error.message : String(error);
       this.logger.warn(
         `Failed to initialize session workspace ${sessionDir}: ${reason}`
@@ -72,10 +77,16 @@ export class SessionWorkspaceService {
       );
     }
 
+    const cwd = await this.resolveRunDirectory(
+      sessionDir,
+      input.customRunDirectory
+    );
+
     return platformSessionConfigSchema.parse({
       workspaceMode: SessionWorkspaceMode.Session,
-      workspaceRoot: input.project.workspacePath,
-      cwd: sessionDir,
+      workspaceRoot: input.project.workspaceRootPath,
+      sessionRoot: sessionDir,
+      cwd,
       workspaceResources: [...input.workspaceResources],
       workspaceResourceConfig: input.workspaceResourceConfig,
       skillIds: input.skillIds,
@@ -121,26 +132,16 @@ export class SessionWorkspaceService {
     targetDir: string;
     branch?: string;
   }) {
-    if (!input.project.docSource) {
+    if (!input.project.docGitUrl) {
       await fs.mkdir(input.targetDir, { recursive: true });
       return;
     }
 
-    if (
-      input.branch?.trim() ||
-      sshGitUrlSchema.safeParse(input.project.docSource).success
-    ) {
-      await this.cloneRepository(
-        input.project.docSource,
-        input.targetDir,
-        input.branch
-      );
-      return;
-    }
-
-    await fs.cp(input.project.docSource, input.targetDir, {
-      recursive: true
-    });
+    await this.cloneRepository(
+      input.project.docGitUrl,
+      input.targetDir,
+      input.branch
+    );
   }
 
   private async cloneRepository(
@@ -156,6 +157,45 @@ export class SessionWorkspaceService {
 
     args.push(repositoryUrl, targetDir);
     await execFileAsync('git', args);
+  }
+
+  private async resolveRunDirectory(
+    sessionDir: string,
+    customRunDirectory?: string
+  ) {
+    if (!customRunDirectory) {
+      return sessionDir;
+    }
+
+    const resolvedDirectory = path.resolve(sessionDir, customRunDirectory);
+    const relative = path.relative(sessionDir, resolvedDirectory);
+    if (
+      relative.startsWith('..') ||
+      path.isAbsolute(relative)
+    ) {
+      throw new BadRequestException(
+        'customRunDirectory must stay within the session directory'
+      );
+    }
+
+    try {
+      const stats = await fs.stat(resolvedDirectory);
+      if (!stats.isDirectory()) {
+        throw new BadRequestException(
+          `customRunDirectory is not a directory: ${customRunDirectory}`
+        );
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        `customRunDirectory does not exist: ${customRunDirectory}`
+      );
+    }
+
+    return resolvedDirectory;
   }
 }
 

@@ -5,6 +5,8 @@ import { promisify } from 'node:util';
 import type { GovernanceTargetRef } from '@agent-workbench/shared';
 
 const execFileAsync = promisify(execFile);
+const GOVERNANCE_GIT_USER_NAME = 'Agent Workbench Governance';
+const GOVERNANCE_GIT_USER_EMAIL = 'governance@agent-workbench.local';
 
 export type GovernanceScopedDiff = {
   changedFiles: string[];
@@ -115,7 +117,18 @@ export class GovernanceGitService {
     );
     await execFileAsync(
       'git',
-      ['-C', input.workspacePath, 'commit', '--no-verify', '-m', input.message],
+      [
+        '-C',
+        input.workspacePath,
+        '-c',
+        `user.name=${GOVERNANCE_GIT_USER_NAME}`,
+        '-c',
+        `user.email=${GOVERNANCE_GIT_USER_EMAIL}`,
+        'commit',
+        '--no-verify',
+        '-m',
+        input.message
+      ],
       { maxBuffer: 1024 * 1024 }
     );
     const { stdout } = await execFileAsync(

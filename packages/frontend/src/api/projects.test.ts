@@ -49,14 +49,15 @@ describe('projects api', () => {
     await expect(
       createProject({
         name: 'Demo',
-        gitUrl: 'git@github.com:demo/repo.git',
-        workspacePath: '/tmp/demo'
+        repoGitUrl: 'git@github.com:demo/repo.git',
+        workspaceRootPath: '/tmp/demo'
       })
     ).resolves.toEqual({ id: 'project-2' });
     await expect(
       updateProject('project-1', {
         name: 'Demo 2',
-        workspacePath: '/tmp/demo'
+        repoGitUrl: 'git@github.com:demo/repo-2.git',
+        workspaceRootPath: '/tmp/demo'
       })
     ).resolves.toEqual({ id: 'project-1' });
     await expect(deleteProject('project-1')).resolves.toBeNull();
@@ -64,12 +65,13 @@ describe('projects api', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/projects/project-1');
     expect(apiClient.post).toHaveBeenCalledWith('/projects', {
       name: 'Demo',
-      gitUrl: 'git@github.com:demo/repo.git',
-      workspacePath: '/tmp/demo'
+      repoGitUrl: 'git@github.com:demo/repo.git',
+      workspaceRootPath: '/tmp/demo'
     });
     expect(apiClient.patch).toHaveBeenCalledWith('/projects/project-1', {
       name: 'Demo 2',
-      workspacePath: '/tmp/demo'
+      repoGitUrl: 'git@github.com:demo/repo-2.git',
+      workspaceRootPath: '/tmp/demo'
     });
     expect(apiClient.delete).toHaveBeenCalledWith('/projects/project-1');
   });
