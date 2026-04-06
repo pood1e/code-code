@@ -154,7 +154,7 @@ async function restartServer() {
   try {
     // 1. Kill old server
     if (serverChild && serverChild.exitCode === null) {
-      await killAndWait(serverChild, 'SIGTERM');
+      await terminateChildProcess(serverChild, 'SIGTERM');
     }
 
     // 2. Wait until the port is actually free
@@ -207,6 +207,9 @@ async function main() {
       '--accept-data-loss',
       '--skip-generate'
     ]);
+
+    console.info('backend dev: generating prisma client');
+    await run('pnpm', ['prisma', 'generate']);
 
     if (shouldSeed) {
       console.info('backend dev: seeding local sqlite');
