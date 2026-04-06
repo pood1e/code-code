@@ -67,18 +67,47 @@ export class SessionRuntimeService {
   ) {}
 
   async recoverInterruptedSessionsOnBoot() {
-    const staleStatuses = [
-      SessionStatus.Creating,
-      SessionStatus.Running,
-      SessionStatus.Disposing
-    ];
+    const recoverableStatuses = [SessionStatus.Running];
+    const terminalStatuses = [SessionStatus.Creating, SessionStatus.Disposing];
+    const staleStatuses = [...recoverableStatuses, ...terminalStatuses];
+    const staleSessions = await this.prisma.agentSession.findMany({
+      where: {
+        status: {
+          in: staleStatuses
+        }
+      },
+      select: { id: true }
+    });
+
+    for (const session of staleSessions) {
+      this.resetRuntimeTracking(session.id);
+    }
 
     await this.prisma.sessionMessage.updateMany({
       where: {
         status: MessageStatus.Streaming,
         session: {
           status: {
-            in: staleStatuses
+            in: recoverableStatuses
+          }
+        }
+      },
+      data: {
+        status: MessageStatus.Error,
+        errorPayload: toInputJson({
+          message: 'Session was interrupted during service restart',
+          code: 'SESSION_RECOVERED_ON_BOOT',
+          recoverable: true
+        })
+      }
+    });
+
+    await this.prisma.sessionMessage.updateMany({
+      where: {
+        status: MessageStatus.Streaming,
+        session: {
+          status: {
+            in: terminalStatuses
           }
         }
       },
@@ -95,12 +124,26 @@ export class SessionRuntimeService {
     await this.prisma.agentSession.updateMany({
       where: {
         status: {
-          in: staleStatuses
+          in: recoverableStatuses
+        }
+      },
+      data: {
+        status: SessionStatus.Ready,
+        activeAssistantMessageId: null,
+        runnerState: toInputJson({} as Prisma.InputJsonValue)
+      }
+    });
+
+    await this.prisma.agentSession.updateMany({
+      where: {
+        status: {
+          in: terminalStatuses
         }
       },
       data: {
         status: SessionStatus.Error,
-        activeAssistantMessageId: null
+        activeAssistantMessageId: null,
+        runnerState: toInputJson({} as Prisma.InputJsonValue)
       }
     });
   }

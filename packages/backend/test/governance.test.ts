@@ -28,6 +28,9 @@ import {
   GovernanceReviewDecisionType,
   GovernanceReviewSubjectType,
   GovernanceAgentMergeStrategy,
+  MessageRole,
+  MessageStatus,
+  SessionStatus,
   type GovernanceAgentStrategy,
   GovernanceVerificationResultStatus,
   GovernanceSeverity,
@@ -404,6 +407,101 @@ describe('Governance API', () => {
       refreshSpy.mockRestore();
       discoverySpy.mockRestore();
     }
+  });
+
+  it('governance bridge 应在 session 进入 error 时立即返回失败', async () => {
+    const project = await seedProject();
+    const runner = await seedAgentRunner();
+    const bridge = getApp().get(GovernanceRunnerBridgeService);
+
+    const session = await getPrisma().agentSession.create({
+      data: {
+        runnerId: runner.id,
+        runnerType: runner.type,
+        scopeId: project.id,
+        status: SessionStatus.Error,
+        activeAssistantMessageId: null,
+        platformSessionConfig: {},
+        runnerSessionConfig: {},
+        runnerState: {}
+      }
+    });
+    const message = await getPrisma().sessionMessage.create({
+      data: {
+        sessionId: session.id,
+        role: MessageRole.Assistant,
+        status: MessageStatus.Streaming,
+        outputText: 'partial output'
+      }
+    });
+
+    const result = await bridge.waitForResult(session.id, message.id, 250);
+
+    expect(result).toEqual({
+      status: 'error',
+      sessionId: session.id,
+      messageId: message.id,
+      code: 'SESSION_ERROR',
+      message: 'Session entered error state',
+      outputText: 'partial output'
+    });
+  });
+
+  it('runDiscovery 应回收 session 已 error 的 discovery running attempt', async () => {
+    const project = await seedProject();
+    const runner = await seedAgentRunner();
+    const automationService = getApp().get(GovernanceAutomationService);
+
+    const session = await getPrisma().agentSession.create({
+      data: {
+        runnerId: runner.id,
+        runnerType: runner.type,
+        scopeId: project.id,
+        status: SessionStatus.Error,
+        activeAssistantMessageId: null,
+        platformSessionConfig: {},
+        runnerSessionConfig: {},
+        runnerState: {}
+      }
+    });
+    const message = await getPrisma().sessionMessage.create({
+      data: {
+        sessionId: session.id,
+        role: MessageRole.Assistant,
+        status: MessageStatus.Streaming
+      }
+    });
+    const attempt = await getPrisma().governanceExecutionAttempt.create({
+      data: {
+        scopeId: project.id,
+        stageType: GovernanceAutomationStage.Discovery,
+        subjectType: GovernanceAutomationSubjectType.Scope,
+        subjectId: project.id,
+        attemptNo: 1,
+        status: GovernanceExecutionAttemptStatus.Running,
+        sessionId: session.id,
+        activeRequestMessageId: message.id,
+        ownerLeaseToken: 'governance-worker:test',
+        leaseExpiresAt: new Date(Date.now() + 60_000),
+        inputSnapshot: {}
+      }
+    });
+
+    await automationService.runDiscovery(project.id);
+
+    const refreshedAttempt =
+      await getPrisma().governanceExecutionAttempt.findUnique({
+        where: { id: attempt.id }
+      });
+
+    expect(refreshedAttempt?.status).toBe(GovernanceExecutionAttemptStatus.Failed);
+    expect(refreshedAttempt?.failureCode).toBe('SESSION_ERROR');
+    expect(refreshedAttempt?.failureMessage).toBe(
+      'Attached session entered error state.'
+    );
+    expect(refreshedAttempt?.ownerLeaseToken).toBeNull();
+    expect(refreshedAttempt?.leaseExpiresAt).toBeNull();
+    expect(refreshedAttempt?.finishedAt).toBeTruthy();
   });
 
   it('governance 成功事件应创建通知任务', async () => {

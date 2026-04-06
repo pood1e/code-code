@@ -36,6 +36,7 @@ import {
   GovernanceReviewDecisionType,
   GovernanceReviewQueueItemKind,
   GovernanceSeverity,
+  SessionStatus,
   GovernanceVerificationResultStatus,
   GovernanceVerificationSubjectType,
   GovernanceViolationPolicy,
@@ -919,6 +920,42 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
       attempts.count +
       orphanAttempts.count
     );
+  }
+
+  async recoverErroredAutomationAttempts(now: Date) {
+    const result = await this.prisma.governanceExecutionAttempt.updateMany({
+      where: {
+        stageType: {
+          in: [
+            GovernanceAutomationStage.Baseline,
+            GovernanceAutomationStage.Discovery,
+            GovernanceAutomationStage.Triage,
+            GovernanceAutomationStage.Planning
+          ]
+        },
+        status: {
+          in: [
+            GovernanceExecutionAttemptStatus.Running,
+            GovernanceExecutionAttemptStatus.WaitingRepair
+          ]
+        },
+        session: {
+          is: {
+            status: SessionStatus.Error
+          }
+        }
+      },
+      data: {
+        status: GovernanceExecutionAttemptStatus.Failed,
+        failureCode: 'SESSION_ERROR',
+        failureMessage: 'Attached session entered error state.',
+        finishedAt: now,
+        ownerLeaseToken: null,
+        leaseExpiresAt: null
+      }
+    });
+
+    return result.count;
   }
 
   async wakeDeferredIssues(now: Date) {

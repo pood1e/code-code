@@ -109,7 +109,8 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'qwen', ...args],
         cwd,
-        env: config.env
+        env: config.env,
+        stdinMode: 'closed'
       };
     }
 
@@ -117,7 +118,8 @@ export class QwenCliRunnerType extends CliRunnerTypeBase {
       command: 'qwen',
       args,
       cwd,
-      env: config.env
+      env: config.env,
+      stdinMode: 'closed'
     };
   }
 
