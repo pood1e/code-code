@@ -26,6 +26,7 @@ import {
   useGovernanceIssueDetail,
   useGovernanceIssueList,
   useGovernancePolicy,
+  useGovernanceRunnerList,
   useGovernanceScopeOverview
 } from '@/features/governance/hooks/use-governance-queries';
 import { useErrorMessage } from '@/hooks/use-error-message';
@@ -63,6 +64,7 @@ export function ProjectGovernancePage() {
   );
   const overviewQuery = useGovernanceScopeOverview(projectId);
   const policyQuery = useGovernancePolicy(projectId);
+  const runnerListQuery = useGovernanceRunnerList();
   const changeUnitsQuery = useGovernanceChangeUnitList(projectId);
   const deliveryArtifactsQuery = useGovernanceDeliveryArtifactList(projectId);
   const listQuery = useGovernanceIssueList(
@@ -129,6 +131,12 @@ export function ProjectGovernancePage() {
       });
     }
   }, [deliveryArtifactsQuery.error, handleError]);
+
+  useEffect(() => {
+    if (runnerListQuery.error) {
+      handleError(runnerListQuery.error, { context: '加载 Agent Runners 失败' });
+    }
+  }, [handleError, runnerListQuery.error]);
 
   useEffect(() => {
     if (!projectId) {
@@ -274,6 +282,7 @@ export function ProjectGovernancePage() {
           </div>
           <GovernancePolicyPanel
             policy={policyQuery.data}
+            runners={runnerListQuery.data ?? []}
             isLoading={policyQuery.isLoading}
             isPending={updatePolicyMutation.isPending}
             onSubmit={async (payload) => {

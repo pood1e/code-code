@@ -37,6 +37,7 @@ import {
   GovernanceVerificationResultStatus,
   GovernanceVerificationSubjectType,
   GovernanceViolationPolicy,
+  DEFAULT_GOVERNANCE_RUNNER_SELECTION,
   DEFAULT_GOVERNANCE_POLICY_INPUT
 } from '@agent-workbench/shared';
 
@@ -86,6 +87,14 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
     return Boolean(project);
   }
 
+  async agentRunnerExists(runnerId: string) {
+    const runner = await this.prisma.agentRunner.findUnique({
+      where: { id: runnerId },
+      select: { id: true }
+    });
+    return Boolean(runner);
+  }
+
   async issueExists(issueId: string) {
     const issue = await this.prisma.issue.findUnique({
       where: { id: issueId },
@@ -125,7 +134,9 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
         autoActionPolicy:
           DEFAULT_GOVERNANCE_POLICY_INPUT.autoActionPolicy as Prisma.InputJsonValue,
         deliveryPolicy:
-          DEFAULT_GOVERNANCE_POLICY_INPUT.deliveryPolicy as Prisma.InputJsonValue
+          DEFAULT_GOVERNANCE_POLICY_INPUT.deliveryPolicy as Prisma.InputJsonValue,
+        runnerSelection:
+          DEFAULT_GOVERNANCE_POLICY_INPUT.runnerSelection as Prisma.InputJsonValue
       }
     });
 
@@ -137,19 +148,29 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
     priorityPolicy: GovernancePolicyRecord['priorityPolicy'];
     autoActionPolicy: GovernancePolicyRecord['autoActionPolicy'];
     deliveryPolicy: GovernancePolicyRecord['deliveryPolicy'];
+    runnerSelection?: GovernancePolicyRecord['runnerSelection'];
   }) {
     const policy = await this.prisma.governancePolicy.upsert({
       where: { scopeId: input.scopeId },
       update: {
         priorityPolicy: input.priorityPolicy as Prisma.InputJsonValue,
         autoActionPolicy: input.autoActionPolicy as Prisma.InputJsonValue,
-        deliveryPolicy: input.deliveryPolicy as Prisma.InputJsonValue
+        deliveryPolicy: input.deliveryPolicy as Prisma.InputJsonValue,
+        ...(input.runnerSelection !== undefined
+          ? {
+              runnerSelection:
+                input.runnerSelection as Prisma.InputJsonValue
+            }
+          : {})
       },
       create: {
         scopeId: input.scopeId,
         priorityPolicy: input.priorityPolicy as Prisma.InputJsonValue,
         autoActionPolicy: input.autoActionPolicy as Prisma.InputJsonValue,
-        deliveryPolicy: input.deliveryPolicy as Prisma.InputJsonValue
+        deliveryPolicy: input.deliveryPolicy as Prisma.InputJsonValue,
+        runnerSelection:
+          (input.runnerSelection ??
+            DEFAULT_GOVERNANCE_POLICY_INPUT.runnerSelection) as Prisma.InputJsonValue
       }
     });
 
@@ -664,12 +685,14 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
   }
 
   async claimNextPendingFinding(input: {
+    scopeId?: string;
     ownerLeaseToken: string;
     now: Date;
     leaseExpiresAt: Date;
   }) {
     const candidates = await this.prisma.finding.findMany({
       where: {
+        ...(input.scopeId ? { scopeId: input.scopeId } : {}),
         status: GovernanceFindingStatus.Pending,
         OR: [
           { ownerLeaseToken: null },
@@ -742,12 +765,14 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
   }
 
   async claimNextPlanningIssue(input: {
+    scopeId?: string;
     ownerLeaseToken: string;
     now: Date;
     leaseExpiresAt: Date;
   }) {
     const candidates = await this.prisma.issue.findMany({
       where: {
+        ...(input.scopeId ? { scopeId: input.scopeId } : {}),
         status: GovernanceIssueStatus.Open,
         OR: [
           { ownerLeaseToken: null },
@@ -826,6 +851,7 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
   }
 
   async claimNextExecutableChangeUnit(input: {
+    scopeId?: string;
     ownerLeaseToken: string;
     now: Date;
     leaseExpiresAt: Date;
@@ -851,6 +877,7 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
           status: GovernanceChangePlanStatus.Approved
         },
         issue: {
+          ...(input.scopeId ? { scopeId: input.scopeId } : {}),
           status: {
             in: [
               GovernanceIssueStatus.Planned,
@@ -2546,6 +2573,7 @@ function toGovernancePolicyRecord(
     priorityPolicy: Prisma.JsonValue;
     autoActionPolicy: Prisma.JsonValue;
     deliveryPolicy: Prisma.JsonValue;
+    runnerSelection: Prisma.JsonValue;
     createdAt: Date;
     updatedAt: Date;
   }
@@ -2556,6 +2584,7 @@ function toGovernancePolicyRecord(
     priorityPolicy: parsePriorityPolicy(policy.priorityPolicy),
     autoActionPolicy: parseAutoActionPolicy(policy.autoActionPolicy),
     deliveryPolicy: parseDeliveryPolicy(policy.deliveryPolicy),
+    runnerSelection: parseRunnerSelection(policy.runnerSelection),
     createdAt: policy.createdAt,
     updatedAt: policy.updatedAt
   };
@@ -2838,6 +2867,32 @@ function parseDeliveryPolicy(
   };
 }
 
+function parseRunnerSelection(
+  value: Prisma.JsonValue
+): GovernancePolicyRecord['runnerSelection'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return DEFAULT_GOVERNANCE_RUNNER_SELECTION;
+  }
+
+  return {
+    defaultRunnerId: getNullableRunnerId(
+      (value as { defaultRunnerId?: unknown }).defaultRunnerId
+    ),
+    discoveryRunnerId: getNullableRunnerId(
+      (value as { discoveryRunnerId?: unknown }).discoveryRunnerId
+    ),
+    triageRunnerId: getNullableRunnerId(
+      (value as { triageRunnerId?: unknown }).triageRunnerId
+    ),
+    planningRunnerId: getNullableRunnerId(
+      (value as { planningRunnerId?: unknown }).planningRunnerId
+    ),
+    executionRunnerId: getNullableRunnerId(
+      (value as { executionRunnerId?: unknown }).executionRunnerId
+    )
+  };
+}
+
 function filterRecord<TKey extends string, TValue extends string>(
   value: Record<string, unknown>,
   isKey: (value: unknown) => value is TKey,
@@ -2852,6 +2907,10 @@ function filterRecord<TKey extends string, TValue extends string>(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getNullableRunnerId(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
 function isGovernanceSeverity(value: unknown): value is GovernanceSeverity {

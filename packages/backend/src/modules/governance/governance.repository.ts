@@ -21,6 +21,7 @@ import type {
   GovernanceResolutionType,
   GovernanceReviewDecisionType,
   GovernanceReviewSubjectType,
+  GovernanceRunnerSelection,
   GovernanceSeverity,
   GovernanceVerificationCheck,
   GovernanceVerificationResultStatus,
@@ -106,6 +107,7 @@ export type GovernancePolicyRecord = {
     commitMode: GovernanceDeliveryCommitMode;
     autoCloseIssueOnApprovedDelivery: boolean;
   };
+  runnerSelection: GovernanceRunnerSelection;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -383,7 +385,9 @@ export abstract class GovernanceRepository {
     priorityPolicy: GovernancePolicyRecord['priorityPolicy'];
     autoActionPolicy: GovernancePolicyRecord['autoActionPolicy'];
     deliveryPolicy: GovernancePolicyRecord['deliveryPolicy'];
+    runnerSelection?: GovernancePolicyRecord['runnerSelection'];
   }): Promise<GovernancePolicyRecord>;
+  abstract agentRunnerExists(runnerId: string): Promise<boolean>;
   abstract createRepositoryProfileSnapshot(input: {
     scopeId: string;
     branch: string;
@@ -482,16 +486,19 @@ export abstract class GovernanceRepository {
   abstract recoverInterruptedAutomation(now: Date): Promise<number>;
   abstract wakeDeferredIssues(now: Date): Promise<number>;
   abstract claimNextPendingFinding(input: {
+    scopeId?: string;
     ownerLeaseToken: string;
     now: Date;
     leaseExpiresAt: Date;
   }): Promise<GovernanceFindingRecord | null>;
   abstract claimNextPlanningIssue(input: {
+    scopeId?: string;
     ownerLeaseToken: string;
     now: Date;
     leaseExpiresAt: Date;
   }): Promise<GovernanceIssueRecord | null>;
   abstract claimNextExecutableChangeUnit(input: {
+    scopeId?: string;
     ownerLeaseToken: string;
     now: Date;
     leaseExpiresAt: Date;

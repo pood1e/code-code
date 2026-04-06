@@ -232,7 +232,10 @@ export class GovernanceService {
       scopeId,
       priorityPolicy: parsed.priorityPolicy,
       autoActionPolicy: parsed.autoActionPolicy,
-      deliveryPolicy: parsed.deliveryPolicy
+      deliveryPolicy: parsed.deliveryPolicy,
+      ...(parsed.runnerSelection !== undefined
+        ? { runnerSelection: parsed.runnerSelection }
+        : {})
     });
 
     return toGovernancePolicy(policy);

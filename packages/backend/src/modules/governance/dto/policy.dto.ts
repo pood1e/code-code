@@ -1,5 +1,5 @@
-import { IsObject } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsObject, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateGovernancePolicyDto {
   @ApiProperty({ type: 'object', additionalProperties: true })
@@ -13,4 +13,12 @@ export class UpdateGovernancePolicyDto {
   @ApiProperty({ type: 'object', additionalProperties: true })
   @IsObject()
   deliveryPolicy!: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true
+  })
+  @IsOptional()
+  @IsObject()
+  runnerSelection?: Record<string, unknown>;
 }

@@ -360,12 +360,21 @@ export type GovernanceDeliveryPolicy = {
   autoCloseIssueOnApprovedDelivery: boolean;
 };
 
+export type GovernanceRunnerSelection = {
+  defaultRunnerId: string | null;
+  discoveryRunnerId: string | null;
+  triageRunnerId: string | null;
+  planningRunnerId: string | null;
+  executionRunnerId: string | null;
+};
+
 export type GovernancePolicy = {
   id: string;
   scopeId: string;
   priorityPolicy: GovernancePriorityPolicy;
   autoActionPolicy: GovernanceAutoActionPolicy;
   deliveryPolicy: GovernanceDeliveryPolicy;
+  runnerSelection: GovernanceRunnerSelection;
   createdAt: string;
   updatedAt: string;
 };
@@ -374,6 +383,15 @@ export type UpdateGovernancePolicyInput = {
   priorityPolicy: GovernancePriorityPolicy;
   autoActionPolicy: GovernanceAutoActionPolicy;
   deliveryPolicy: GovernanceDeliveryPolicy;
+  runnerSelection?: GovernanceRunnerSelection;
+};
+
+export const DEFAULT_GOVERNANCE_RUNNER_SELECTION: GovernanceRunnerSelection = {
+  defaultRunnerId: null,
+  discoveryRunnerId: null,
+  triageRunnerId: null,
+  planningRunnerId: null,
+  executionRunnerId: null
 };
 
 export const DEFAULT_GOVERNANCE_POLICY_INPUT: UpdateGovernancePolicyInput = {
@@ -414,8 +432,39 @@ export const DEFAULT_GOVERNANCE_POLICY_INPUT: UpdateGovernancePolicyInput = {
   deliveryPolicy: {
     commitMode: GovernanceDeliveryCommitMode.PerUnit,
     autoCloseIssueOnApprovedDelivery: true
-  }
+  },
+  runnerSelection: DEFAULT_GOVERNANCE_RUNNER_SELECTION
 };
+
+export function resolveGovernanceRunnerIdForStage(
+  runnerSelection: GovernanceRunnerSelection,
+  stageType: GovernanceAutomationStage
+) {
+  switch (stageType) {
+    case GovernanceAutomationStage.Baseline:
+      return null;
+    case GovernanceAutomationStage.Discovery:
+      return (
+        runnerSelection.discoveryRunnerId ??
+        runnerSelection.defaultRunnerId
+      );
+    case GovernanceAutomationStage.Triage:
+      return (
+        runnerSelection.triageRunnerId ??
+        runnerSelection.defaultRunnerId
+      );
+    case GovernanceAutomationStage.Planning:
+      return (
+        runnerSelection.planningRunnerId ??
+        runnerSelection.defaultRunnerId
+      );
+    case GovernanceAutomationStage.Execution:
+      return (
+        runnerSelection.executionRunnerId ??
+        runnerSelection.defaultRunnerId
+      );
+  }
+}
 
 export function deriveGovernancePriority(
   policy: Pick<GovernancePolicy, 'priorityPolicy'>,

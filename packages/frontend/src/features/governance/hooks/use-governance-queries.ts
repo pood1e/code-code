@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type {
+  AgentRunnerSummary,
   ChangeUnit,
   DeliveryArtifact,
   Finding,
@@ -15,6 +16,7 @@ import type {
   RepositoryProfile
 } from '@agent-workbench/shared';
 
+import { listAgentRunners } from '@/api/agent-runners';
 import {
   getGovernancePolicy,
   getGovernanceIssue,
@@ -56,6 +58,13 @@ export function useGovernancePolicy(scopeId: string | undefined) {
     queryKey: scopeId ? governanceScopeKeys.policy(scopeId) : NOOP_QUERY_KEY,
     queryFn: () => getGovernancePolicy(scopeId!),
     enabled: Boolean(scopeId)
+  });
+}
+
+export function useGovernanceRunnerList() {
+  return useQuery<AgentRunnerSummary[]>({
+    queryKey: queryKeys.agentRunners.list(),
+    queryFn: () => listAgentRunners()
   });
 }
 
