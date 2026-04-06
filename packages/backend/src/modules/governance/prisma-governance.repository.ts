@@ -34,6 +34,7 @@ import {
   GovernancePriority,
   GovernanceResolutionType,
   GovernanceReviewDecisionType,
+  GovernanceReviewQueueItemKind,
   GovernanceSeverity,
   GovernanceVerificationResultStatus,
   GovernanceVerificationSubjectType,
@@ -55,6 +56,7 @@ import {
   type GovernanceIssueDetailRecord,
   type GovernanceIssueRecord,
   type GovernancePolicyRecord,
+  type GovernanceReviewQueueItemRecord,
   type GovernanceScopeOverviewRecord,
   type GovernanceIssueSummaryRecord,
   GovernanceRepository,
@@ -283,6 +285,221 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
         [GovernanceFindingStatus.Ignored]: ignoredCount
       }
     } satisfies GovernanceScopeOverviewRecord;
+  }
+
+  async listReviewQueue(scopeId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: scopeId },
+      select: { id: true }
+    });
+    if (!project) {
+      return [];
+    }
+
+    const [
+      latestBaselineAttempt,
+      latestDiscoveryAttempt,
+      findings,
+      issues,
+      changeUnits,
+      deliveryArtifacts
+    ] = await Promise.all([
+      this.findLatestAutomationAttempt({
+        stageType: GovernanceAutomationStage.Baseline,
+        subjectType: GovernanceAutomationSubjectType.Scope,
+        subjectId: scopeId
+      }),
+      this.findLatestAutomationAttempt({
+        stageType: GovernanceAutomationStage.Discovery,
+        subjectType: GovernanceAutomationSubjectType.Scope,
+        subjectId: scopeId
+      }),
+      this.prisma.finding.findMany({
+        where: {
+          scopeId,
+          status: GovernanceFindingStatus.Pending
+        },
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
+      }),
+      this.prisma.issue.findMany({
+        where: { scopeId },
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
+      }),
+      this.prisma.changeUnit.findMany({
+        where: {
+          issue: { scopeId },
+          OR: [
+            {
+              status: GovernanceChangeUnitStatus.Ready,
+              executionMode: GovernanceExecutionMode.Manual
+            },
+            {
+              status: {
+                in: [
+                  GovernanceChangeUnitStatus.VerificationFailed,
+                  GovernanceChangeUnitStatus.Exhausted
+                ]
+              }
+            }
+          ]
+        },
+        include: {
+          issue: {
+            select: {
+              title: true
+            }
+          }
+        },
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
+      }),
+      this.prisma.deliveryArtifact.findMany({
+        where: {
+          scopeId,
+          status: GovernanceDeliveryArtifactStatus.Submitted
+        },
+        include: {
+          issue: {
+            select: {
+              title: true
+            }
+          }
+        },
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }]
+      })
+    ]);
+
+    const triageAttempts = await this.loadLatestAttemptsBySubject({
+      stageType: GovernanceAutomationStage.Triage,
+      subjectType: GovernanceAutomationSubjectType.Finding,
+      subjectIds: findings.map((finding) => finding.id)
+    });
+    const planningAttempts = await this.loadLatestAttemptsBySubject({
+      stageType: GovernanceAutomationStage.Planning,
+      subjectType: GovernanceAutomationSubjectType.Issue,
+      subjectIds: issues.map((issue) => issue.id)
+    });
+    const executionAttempts = await this.loadLatestAttemptsBySubject({
+      stageType: GovernanceAutomationStage.Execution,
+      subjectType: GovernanceAutomationSubjectType.ChangeUnit,
+      subjectIds: changeUnits.map((changeUnit) => changeUnit.id)
+    });
+
+    const items: GovernanceReviewQueueItemRecord[] = [];
+
+    if (
+      latestBaselineAttempt?.status ===
+      GovernanceExecutionAttemptStatus.NeedsHumanReview
+    ) {
+      items.push({
+        kind: GovernanceReviewQueueItemKind.Baseline,
+        scopeId,
+        subjectId: scopeId,
+        issueId: null,
+        title: '仓库画像生成',
+        status: latestBaselineAttempt.status,
+        failureCode: latestBaselineAttempt.failureCode,
+        failureMessage: latestBaselineAttempt.failureMessage,
+        sessionId: latestBaselineAttempt.sessionId,
+        updatedAt: latestBaselineAttempt.updatedAt
+      });
+    }
+
+    if (
+      latestDiscoveryAttempt?.status ===
+      GovernanceExecutionAttemptStatus.NeedsHumanReview
+    ) {
+      items.push({
+        kind: GovernanceReviewQueueItemKind.Discovery,
+        scopeId,
+        subjectId: scopeId,
+        issueId: null,
+        title: '问题发现',
+        status: latestDiscoveryAttempt.status,
+        failureCode: latestDiscoveryAttempt.failureCode,
+        failureMessage: latestDiscoveryAttempt.failureMessage,
+        sessionId: latestDiscoveryAttempt.sessionId,
+        updatedAt: latestDiscoveryAttempt.updatedAt
+      });
+    }
+
+    for (const finding of findings) {
+      const latestAttempt = triageAttempts.get(finding.id) ?? null;
+      if (
+        latestAttempt?.status !== GovernanceExecutionAttemptStatus.NeedsHumanReview
+      ) {
+        continue;
+      }
+
+      items.push({
+        kind: GovernanceReviewQueueItemKind.Triage,
+        scopeId,
+        subjectId: finding.id,
+        issueId: null,
+        title: finding.title,
+        status: latestAttempt.status,
+        failureCode: latestAttempt.failureCode,
+        failureMessage: latestAttempt.failureMessage,
+        sessionId: latestAttempt.sessionId,
+        updatedAt: latestAttempt.updatedAt
+      });
+    }
+
+    for (const issue of issues) {
+      const latestAttempt = planningAttempts.get(issue.id) ?? null;
+      if (
+        latestAttempt?.status !== GovernanceExecutionAttemptStatus.NeedsHumanReview
+      ) {
+        continue;
+      }
+
+      items.push({
+        kind: GovernanceReviewQueueItemKind.Planning,
+        scopeId,
+        subjectId: issue.id,
+        issueId: issue.id,
+        title: issue.title,
+        status: latestAttempt.status,
+        failureCode: latestAttempt.failureCode,
+        failureMessage: latestAttempt.failureMessage,
+        sessionId: latestAttempt.sessionId,
+        updatedAt: latestAttempt.updatedAt
+      });
+    }
+
+    for (const changeUnit of changeUnits) {
+      const latestAttempt = executionAttempts.get(changeUnit.id) ?? null;
+      items.push({
+        kind: GovernanceReviewQueueItemKind.ChangeUnit,
+        scopeId,
+        subjectId: changeUnit.id,
+        issueId: changeUnit.issueId,
+        title: `${changeUnit.issue.title} / ${changeUnit.title}`,
+        status: changeUnit.status,
+        failureCode: latestAttempt?.failureCode ?? null,
+        failureMessage: latestAttempt?.failureMessage ?? null,
+        sessionId: latestAttempt?.sessionId ?? null,
+        updatedAt: changeUnit.updatedAt
+      });
+    }
+
+    for (const artifact of deliveryArtifacts) {
+      items.push({
+        kind: GovernanceReviewQueueItemKind.DeliveryArtifact,
+        scopeId,
+        subjectId: artifact.id,
+        issueId: artifact.issueId,
+        title: `${artifact.issue.title} / ${artifact.title}`,
+        status: artifact.status,
+        failureCode: null,
+        failureMessage: null,
+        sessionId: null,
+        updatedAt: artifact.updatedAt
+      });
+    }
+
+    return items.sort(
+      (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime()
+    );
   }
 
   async findFindingById(id: string) {
@@ -626,7 +843,7 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
   }
 
   async recoverInterruptedAutomation(now: Date) {
-    const [findings, issues, changeUnits, attempts] = await this.prisma.$transaction([
+    const [findings, issues, changeUnits, attempts, orphanAttempts] = await this.prisma.$transaction([
       this.prisma.finding.updateMany({
         where: {
           ownerLeaseToken: { not: null },
@@ -673,10 +890,35 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
           ownerLeaseToken: null,
           leaseExpiresAt: null
         }
+      }),
+      this.prisma.governanceExecutionAttempt.updateMany({
+        where: {
+          ownerLeaseToken: null,
+          leaseExpiresAt: null,
+          status: {
+            in: [
+              GovernanceExecutionAttemptStatus.Running,
+              GovernanceExecutionAttemptStatus.WaitingRepair
+            ]
+          }
+        },
+        data: {
+          status: GovernanceExecutionAttemptStatus.Failed,
+          failureCode: 'AUTOMATION_RECOVERED_ON_BOOT',
+          failureMessage:
+            'Automation attempt was interrupted during service restart.',
+          finishedAt: now
+        }
       })
     ]);
 
-    return findings.count + issues.count + changeUnits.count + attempts.count;
+    return (
+      findings.count +
+      issues.count +
+      changeUnits.count +
+      attempts.count +
+      orphanAttempts.count
+    );
   }
 
   async wakeDeferredIssues(now: Date) {
@@ -1302,6 +1544,62 @@ export class PrismaGovernanceRepository extends GovernanceRepository {
         }
       })
     ]);
+  }
+
+  async retryBaseline(scopeId: string) {
+    const attempt = await this.findLatestAutomationAttempt({
+      stageType: GovernanceAutomationStage.Baseline,
+      subjectType: GovernanceAutomationSubjectType.Scope,
+      subjectId: scopeId
+    });
+    if (!attempt) {
+      throw new NotFoundException(
+        `Baseline attempt not found for scope: ${scopeId}`
+      );
+    }
+    if (attempt.status !== GovernanceExecutionAttemptStatus.NeedsHumanReview) {
+      throw new ConflictException(
+        'Baseline attempt is not waiting for human review'
+      );
+    }
+
+    await this.prisma.governanceExecutionAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        status: GovernanceExecutionAttemptStatus.ResolvedByHuman,
+        finishedAt: new Date(),
+        ownerLeaseToken: null,
+        leaseExpiresAt: null
+      }
+    });
+  }
+
+  async retryDiscovery(scopeId: string) {
+    const attempt = await this.findLatestAutomationAttempt({
+      stageType: GovernanceAutomationStage.Discovery,
+      subjectType: GovernanceAutomationSubjectType.Scope,
+      subjectId: scopeId
+    });
+    if (!attempt) {
+      throw new NotFoundException(
+        `Discovery attempt not found for scope: ${scopeId}`
+      );
+    }
+    if (attempt.status !== GovernanceExecutionAttemptStatus.NeedsHumanReview) {
+      throw new ConflictException(
+        'Discovery attempt is not waiting for human review'
+      );
+    }
+
+    await this.prisma.governanceExecutionAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        status: GovernanceExecutionAttemptStatus.ResolvedByHuman,
+        finishedAt: new Date(),
+        ownerLeaseToken: null,
+        leaseExpiresAt: null
+      }
+    });
   }
 
   async retryPlanning(issueId: string) {

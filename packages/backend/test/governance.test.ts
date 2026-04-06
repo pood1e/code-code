@@ -8,6 +8,7 @@ import {
   DEFAULT_GOVERNANCE_POLICY_INPUT,
   GovernanceAssessmentSource,
   GovernanceAutomationStage,
+  GovernanceAutomationSubjectType,
   GovernanceAutoActionEligibility,
   GovernanceChangeActionType,
   GovernanceChangePlanStatus,
@@ -17,11 +18,13 @@ import {
   GovernanceDeliveryBodyStrategy,
   GovernanceDeliveryCommitMode,
   GovernanceExecutionMode,
+  GovernanceExecutionAttemptStatus,
   GovernanceFindingSource,
   GovernanceIssueDetail,
   GovernanceIssueKind,
   GovernanceIssueStatus,
   GovernancePriority,
+  GovernanceReviewQueueItemKind,
   GovernanceReviewDecisionType,
   GovernanceReviewSubjectType,
   GovernanceAgentMergeStrategy,
@@ -191,6 +194,242 @@ describe('Governance API', () => {
     const profile = expectSuccess<{ branch: string }>(refreshResponse, 201);
 
     expect(profile.branch).toBe('feature/governance');
+  });
+
+  it('应返回 project 独立 review queue', async () => {
+    const project = await seedProject();
+    const governanceService = getApp().get(GovernanceService);
+    const governanceRepository = getApp().get(GovernanceRepository);
+    const issue = await seedIssue(governanceService, project.id);
+    const finding = await governanceService.createFinding({
+      scopeId: project.id,
+      source: GovernanceFindingSource.AgentReview,
+      title: 'Triage needs review',
+      summary: '需要人工接管 triage',
+      evidence: [{ kind: 'file', ref: 'src/a.ts' }],
+      categories: ['governance'],
+      affectedTargets: [{ kind: 'file', ref: 'src/a.ts' }]
+    });
+    const planDetail = await governanceService.createChangePlanBundle({
+      issueId: issue.id,
+      objective: '人工处理变更单元',
+      strategy: '保留手工执行入口',
+      affectedTargets: [{ kind: 'file', ref: 'src/manual.ts' }],
+      proposedActions: [
+        {
+          id: 'action-1',
+          type: GovernanceChangeActionType.CodeChange,
+          description: '手工修改',
+          targets: [{ kind: 'file', ref: 'src/manual.ts' }]
+        }
+      ],
+      risks: [],
+      baselineCommitSha: 'baseline-sha',
+      changeUnits: [
+        {
+          sourceActionId: 'action-1',
+          title: '人工修正',
+          description: '等待人工处理',
+          scope: {
+            targets: [{ kind: 'file', ref: 'src/manual.ts' }],
+            violationPolicy: GovernanceViolationPolicy.Warn
+          },
+          executionMode: GovernanceExecutionMode.Manual,
+          status: GovernanceChangeUnitStatus.Ready
+        }
+      ],
+      verificationPlans: []
+    });
+    const artifact = await governanceRepository.createOrUpdateDeliveryArtifact({
+      scopeId: project.id,
+      issueId: issue.id,
+      changePlanId: planDetail.changePlan!.id,
+      kind: GovernanceDeliveryArtifactKind.ReviewRequest,
+      title: '待审批交付',
+      body: '需要审批',
+      linkedIssueIds: [issue.id],
+      linkedChangeUnitIds: [planDetail.changeUnits[0]!.id],
+      linkedVerificationResultIds: [],
+      bodyStrategy: GovernanceDeliveryBodyStrategy.AutoAggregate,
+      status: GovernanceDeliveryArtifactStatus.Submitted
+    });
+
+    await getPrisma().governanceExecutionAttempt.createMany({
+      data: [
+        createAutomationAttempt({
+          scopeId: project.id,
+          stageType: GovernanceAutomationStage.Baseline,
+          subjectType: GovernanceAutomationSubjectType.Scope,
+          subjectId: project.id,
+          status: GovernanceExecutionAttemptStatus.NeedsHumanReview,
+          sessionId: null,
+          failureCode: 'BASELINE_FAILED',
+          failureMessage: 'baseline failed'
+        }),
+        createAutomationAttempt({
+          scopeId: project.id,
+          stageType: GovernanceAutomationStage.Discovery,
+          subjectType: GovernanceAutomationSubjectType.Scope,
+          subjectId: project.id,
+          status: GovernanceExecutionAttemptStatus.NeedsHumanReview,
+          sessionId: null,
+          failureCode: 'DISCOVERY_TIMEOUT',
+          failureMessage: 'discovery stage timed out',
+          attemptNo: 2
+        }),
+        createAutomationAttempt({
+          scopeId: project.id,
+          stageType: GovernanceAutomationStage.Triage,
+          subjectType: GovernanceAutomationSubjectType.Finding,
+          subjectId: finding.id,
+          status: GovernanceExecutionAttemptStatus.NeedsHumanReview,
+          sessionId: null,
+          failureCode: 'TRIAGE_TIMEOUT',
+          failureMessage: 'triage stage timed out'
+        }),
+        createAutomationAttempt({
+          scopeId: project.id,
+          stageType: GovernanceAutomationStage.Planning,
+          subjectType: GovernanceAutomationSubjectType.Issue,
+          subjectId: issue.id,
+          status: GovernanceExecutionAttemptStatus.NeedsHumanReview,
+          sessionId: null,
+          failureCode: 'PLANNING_TIMEOUT',
+          failureMessage: 'planning stage timed out'
+        }),
+        createAutomationAttempt({
+          scopeId: project.id,
+          stageType: GovernanceAutomationStage.Execution,
+          subjectType: GovernanceAutomationSubjectType.ChangeUnit,
+          subjectId: planDetail.changeUnits[0]!.id,
+          status: GovernanceExecutionAttemptStatus.Failed,
+          sessionId: null,
+          failureCode: 'EXECUTION_FAILED',
+          failureMessage: 'execution failed'
+        })
+      ]
+    });
+
+    const response = await api().get(
+      `/api/governance/scopes/${project.id}/review-queue`
+    );
+    const queue = expectSuccess<
+      Array<{
+        kind: GovernanceReviewQueueItemKind;
+        subjectId: string;
+        issueId: string | null;
+        title: string;
+        sessionId: string | null;
+      }>
+    >(response);
+
+    expect(queue.map((item) => item.kind)).toEqual(
+      expect.arrayContaining([
+        GovernanceReviewQueueItemKind.Baseline,
+        GovernanceReviewQueueItemKind.Discovery,
+        GovernanceReviewQueueItemKind.Triage,
+        GovernanceReviewQueueItemKind.Planning,
+        GovernanceReviewQueueItemKind.ChangeUnit,
+        GovernanceReviewQueueItemKind.DeliveryArtifact
+      ])
+    );
+    expect(
+      queue.find(
+        (item) => item.kind === GovernanceReviewQueueItemKind.DeliveryArtifact
+      )?.subjectId
+    ).toBe(artifact.id);
+  });
+
+  it('baseline/discovery needs_human_review 应通过独立 retry 入口恢复', async () => {
+    const workspace = createRepositoryProfileWorkspace(tempWorkspaces);
+    const project = await seedProject({
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
+    });
+    const automationService = getApp().get(GovernanceAutomationService);
+
+    await getPrisma().governanceExecutionAttempt.createMany({
+      data: [
+        createAutomationAttempt({
+          scopeId: project.id,
+          stageType: GovernanceAutomationStage.Baseline,
+          subjectType: GovernanceAutomationSubjectType.Scope,
+          subjectId: project.id,
+          status: GovernanceExecutionAttemptStatus.NeedsHumanReview,
+          sessionId: null,
+          failureCode: 'BASELINE_FAILED',
+          failureMessage: 'baseline failed'
+        }),
+        createAutomationAttempt({
+          scopeId: project.id,
+          stageType: GovernanceAutomationStage.Discovery,
+          subjectType: GovernanceAutomationSubjectType.Scope,
+          subjectId: project.id,
+          status: GovernanceExecutionAttemptStatus.NeedsHumanReview,
+          sessionId: null,
+          failureCode: 'DISCOVERY_TIMEOUT',
+          failureMessage: 'discovery timed out'
+        })
+      ]
+    });
+
+    const refreshSpy = vi
+      .spyOn(automationService, 'refreshRepositoryProfile')
+      .mockResolvedValue(false);
+    const discoverySpy = vi
+      .spyOn(automationService, 'runDiscovery')
+      .mockResolvedValue(false);
+
+    try {
+      await api()
+        .post(`/api/governance/scopes/${project.id}/retry-baseline`)
+        .expect(200);
+      await api()
+        .post(`/api/governance/scopes/${project.id}/retry-discovery`)
+        .expect(200);
+
+      const attempts = await getPrisma().governanceExecutionAttempt.findMany({
+        where: { scopeId: project.id },
+        orderBy: [{ stageType: 'asc' }]
+      });
+      expect(
+        attempts.every(
+          (attempt) =>
+            attempt.status === GovernanceExecutionAttemptStatus.ResolvedByHuman
+        )
+      ).toBe(true);
+      expect(refreshSpy).toHaveBeenCalledWith(project.id);
+      expect(discoverySpy).toHaveBeenCalledWith(project.id);
+    } finally {
+      refreshSpy.mockRestore();
+      discoverySpy.mockRestore();
+    }
+  });
+
+  it('governance 成功事件应创建通知任务', async () => {
+    const workspace = createRepositoryProfileWorkspace(tempWorkspaces);
+    const project = await seedProject({
+      repoGitUrl: workspace.repositoryPath,
+      workspaceRootPath: workspace.workspaceRootPath
+    });
+    await createGovernanceNotificationChannel(project.id);
+
+    await api()
+      .post(`/api/governance/scopes/${project.id}/repository-profile/refresh`)
+      .expect(201);
+
+    const tasks = expectSuccess<
+      Array<{ messageType: string; messageTitle: string }>
+    >(
+      await api()
+        .get('/api/notifications/tasks')
+        .query({ scopeId: project.id })
+        .expect(200)
+    );
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.messageType).toBe('governance.baseline.succeeded');
+    expect(tasks[0]?.messageTitle).toContain('治理 Baseline');
   });
 
   it('governance runner resolver 在未配置 runner 时应返回 null', async () => {
@@ -1594,6 +1833,43 @@ describe('Governance API', () => {
     }
   });
 
+  it('orphan running attempt 在恢复后应收口为 failed', async () => {
+    const project = await seedProject();
+    const governanceRepository = getApp().get(GovernanceRepository);
+    const automationService = getApp().get(GovernanceAutomationService);
+
+    const attempt = await governanceRepository.createAutomationAttempt({
+      scopeId: project.id,
+      stageType: GovernanceAutomationStage.Discovery,
+      subjectType: GovernanceAutomationSubjectType.Scope,
+      subjectId: project.id,
+      inputSnapshot: { scopeId: project.id },
+      ownerLeaseToken: 'orphan-owner',
+      leaseExpiresAt: new Date(Date.now() + 60_000)
+    });
+
+    await getPrisma().governanceExecutionAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        status: 'running',
+        ownerLeaseToken: null,
+        leaseExpiresAt: null
+      }
+    });
+
+    const recovered = await automationService.recoverInterruptedAutomationOnBoot();
+    expect(recovered).toBeGreaterThanOrEqual(1);
+
+    const latestAttempt = await governanceRepository.findLatestAutomationAttempt({
+      stageType: GovernanceAutomationStage.Discovery,
+      subjectType: GovernanceAutomationSubjectType.Scope,
+      subjectId: project.id
+    });
+
+    expect(latestAttempt?.status).toBe('failed');
+    expect(latestAttempt?.failureCode).toBe('AUTOMATION_RECOVERED_ON_BOOT');
+  });
+
   it('execution worker 应验证 change unit 并推进 issue 到 in_review', async () => {
     const workspace = createTempGitWorkspace(tempWorkspaces);
     const project = await seedProject({
@@ -2334,6 +2610,54 @@ function createGovernancePolicyInput(
       ? { agentStrategy: overrides.agentStrategy }
       : {})
   };
+}
+
+function createAutomationAttempt(input: {
+  scopeId: string;
+  stageType: GovernanceAutomationStage;
+  subjectType: GovernanceAutomationSubjectType;
+  subjectId: string;
+  status: GovernanceExecutionAttemptStatus;
+  sessionId: string | null;
+  failureCode: string | null;
+  failureMessage: string | null;
+  attemptNo?: number;
+}) {
+  return {
+    scopeId: input.scopeId,
+    stageType: input.stageType,
+    subjectType: input.subjectType,
+    subjectId: input.subjectId,
+    attemptNo: input.attemptNo ?? 1,
+    status: input.status,
+    sessionId: input.sessionId,
+    activeRequestMessageId: null,
+    ownerLeaseToken: null,
+    leaseExpiresAt: null,
+    inputSnapshot: {},
+    candidateOutput: null,
+    parsedOutput: null,
+    failureCode: input.failureCode,
+    failureMessage: input.failureMessage,
+    resolvedByReviewDecisionId: null,
+    startedAt: new Date('2026-04-06T12:00:00.000Z'),
+    finishedAt: new Date('2026-04-06T12:05:00.000Z')
+  };
+}
+
+async function createGovernanceNotificationChannel(scopeId: string) {
+  await api()
+    .post('/api/notifications/channels')
+    .send({
+      scopeId,
+      name: '治理通知',
+      capabilityId: 'local-notification',
+      filter: {
+        messageTypes: ['governance.*']
+      },
+      enabled: true
+    })
+    .expect(201);
 }
 
 function createTempGitWorkspace(tempWorkspaces: string[]) {

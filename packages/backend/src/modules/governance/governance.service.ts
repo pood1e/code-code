@@ -18,6 +18,7 @@ import {
   GovernanceDeliveryArtifactKind,
   GovernanceDeliveryArtifactStatus,
   GovernanceDeliveryBodyStrategy,
+  GovernanceExecutionAttemptStatus,
   GovernanceExecutionMode,
   GovernanceIssueStatus,
   GovernanceResolutionType,
@@ -34,10 +35,12 @@ import {
   toFinding,
   toGovernancePolicy,
   toGovernanceIssueDetail,
+  toGovernanceScopeOverview,
   toRepositoryProfile
 } from './governance.mapper';
 import { GovernanceAutomationService } from './governance-automation.service';
 import { GovernanceGitService } from './governance-git.service';
+import { GovernanceNotificationService } from './governance-notification.service';
 import type {
   CreateChangePlanBundleInput,
   CreateIssueWithAssessmentInput
@@ -58,6 +61,7 @@ export class GovernanceService {
     private readonly governanceRepository: GovernanceRepository,
     private readonly governanceAutomationService: GovernanceAutomationService,
     private readonly governanceGitService: GovernanceGitService,
+    private readonly governanceNotification: GovernanceNotificationService,
     private readonly governanceVerificationRunner: GovernanceVerificationRunnerService,
     private readonly governanceWorkspaceService: GovernanceWorkspaceService
   ) {}
@@ -205,6 +209,12 @@ export class GovernanceService {
       throw new NotFoundException(`Project not found: ${scopeId}`);
     }
 
+    await this.assertScopeAttemptNotWaitingForReview(
+      scopeId,
+      GovernanceAutomationStage.Baseline,
+      'Baseline'
+    );
+
     await this.governanceAutomationService.refreshRepositoryProfile(scopeId);
     const profile = await this.governanceRepository.getLatestRepositoryProfile(scopeId);
     return profile ? toRepositoryProfile(profile) : null;
@@ -251,7 +261,42 @@ export class GovernanceService {
       throw new NotFoundException(`Project not found: ${scopeId}`);
     }
 
+    await this.assertScopeAttemptNotWaitingForReview(
+      scopeId,
+      GovernanceAutomationStage.Discovery,
+      'Discovery'
+    );
+    const latestProfile =
+      await this.governanceRepository.getLatestRepositoryProfile(scopeId);
+    if (!latestProfile) {
+      await this.assertScopeAttemptNotWaitingForReview(
+        scopeId,
+        GovernanceAutomationStage.Baseline,
+        'Baseline'
+      );
+    }
+
     await this.governanceAutomationService.runDiscovery(scopeId);
+  }
+
+  async retryBaseline(scopeId: string) {
+    if (!(await this.governanceRepository.projectExists(scopeId))) {
+      throw new NotFoundException(`Project not found: ${scopeId}`);
+    }
+
+    await this.governanceRepository.retryBaseline(scopeId);
+    await this.governanceAutomationService.refreshRepositoryProfile(scopeId);
+    return this.getScopeOverview(scopeId);
+  }
+
+  async retryDiscovery(scopeId: string) {
+    if (!(await this.governanceRepository.projectExists(scopeId))) {
+      throw new NotFoundException(`Project not found: ${scopeId}`);
+    }
+
+    await this.governanceRepository.retryDiscovery(scopeId);
+    await this.governanceAutomationService.runDiscovery(scopeId);
+    return this.getScopeOverview(scopeId);
   }
 
   async retryTriage(findingId: string) {
@@ -272,6 +317,36 @@ export class GovernanceService {
 
     await this.governanceRepository.retryPlanning(issueId);
     return this.getIssueDetail(issueId);
+  }
+
+  private async getScopeOverview(scopeId: string) {
+    const overview = await this.governanceRepository.getScopeOverview(scopeId);
+    if (!overview) {
+      throw new NotFoundException(`Project not found: ${scopeId}`);
+    }
+
+    return toGovernanceScopeOverview(overview);
+  }
+
+  private async assertScopeAttemptNotWaitingForReview(
+    scopeId: string,
+    stageType: GovernanceAutomationStage,
+    label: string
+  ) {
+    const latestAttempt =
+      await this.governanceRepository.findLatestAutomationAttempt({
+        stageType,
+        subjectType: GovernanceAutomationSubjectType.Scope,
+        subjectId: scopeId
+      });
+
+    if (
+      latestAttempt?.status === GovernanceExecutionAttemptStatus.NeedsHumanReview
+    ) {
+      throw new ConflictException(
+        `${label} attempt is waiting for human review`
+      );
+    }
   }
 
   private async handleChangeUnitReview(
@@ -511,6 +586,13 @@ export class GovernanceService {
         : resolveDeliveryApprovedIssueStatus(detail)
     });
 
+    await this.governanceNotification.notifyDeliveryApproved({
+      scopeId: artifact.scopeId,
+      issueId: artifact.issueId,
+      deliveryArtifactId: artifact.id,
+      title: detail.deliveryArtifact?.title ?? `Delivery ${artifact.id}`
+    });
+
     return this.getIssueDetail(artifact.issueId);
   }
 
@@ -526,7 +608,14 @@ export class GovernanceService {
       issueId,
       status: GovernanceIssueStatus.InReview
     });
-    return this.getIssueDetail(issueId);
+    const detail = await this.getIssueDetail(issueId);
+    await this.governanceNotification.notifyDeliveryRejected({
+      scopeId: detail.scopeId,
+      issueId,
+      deliveryArtifactId,
+      title: detail.deliveryArtifact?.title ?? `Delivery ${deliveryArtifactId}`
+    });
+    return detail;
   }
 
   private async rerunChangeUnitVerification(issueId: string, changeUnitId: string) {
@@ -655,7 +744,7 @@ export class GovernanceService {
           ? GovernanceIssueStatus.PartiallyResolved
           : GovernanceIssueStatus.Resolved
     });
-    await this.governanceRepository.createOrUpdateDeliveryArtifact({
+    const artifact = await this.governanceRepository.createOrUpdateDeliveryArtifact({
       scopeId: detail.scopeId,
       issueId: detail.id,
       changePlanId: detail.changePlan?.id ?? null,
@@ -667,6 +756,12 @@ export class GovernanceService {
       linkedVerificationResultIds,
       bodyStrategy: GovernanceDeliveryBodyStrategy.AutoAggregate,
       status: GovernanceDeliveryArtifactStatus.Submitted
+    });
+    await this.governanceNotification.notifyDeliveryReviewRequestSubmitted({
+      scopeId: detail.scopeId,
+      issueId: detail.id,
+      deliveryArtifactId: artifact.id,
+      title: artifact.title
     });
   }
 

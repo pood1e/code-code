@@ -208,6 +208,15 @@ export enum GovernanceReviewDecisionType {
   Dismissed = 'dismissed'
 }
 
+export enum GovernanceReviewQueueItemKind {
+  Baseline = 'baseline',
+  Discovery = 'discovery',
+  Triage = 'triage',
+  Planning = 'planning',
+  ChangeUnit = 'change_unit',
+  DeliveryArtifact = 'delivery_artifact'
+}
+
 export enum GovernanceDeliveryArtifactKind {
   PullRequest = 'pull_request',
   MergeRequest = 'merge_request',
@@ -669,6 +678,19 @@ export type GovernanceExecutionAttemptSummary = {
   activeRequestMessageId?: string | null;
   failureCode?: string | null;
   failureMessage?: string | null;
+  updatedAt: string;
+};
+
+export type GovernanceReviewQueueItem = {
+  kind: GovernanceReviewQueueItemKind;
+  scopeId: string;
+  subjectId: string;
+  issueId: string | null;
+  title: string;
+  status: string;
+  failureCode?: string | null;
+  failureMessage?: string | null;
+  sessionId?: string | null;
   updatedAt: string;
 };
 

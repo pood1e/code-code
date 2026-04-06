@@ -21,6 +21,7 @@ import type {
   GovernancePriority,
   GovernanceResolutionType,
   GovernanceReviewDecisionType,
+  GovernanceReviewQueueItemKind,
   GovernanceReviewSubjectType,
   GovernanceSeverity,
   GovernanceSourceSelection,
@@ -289,6 +290,19 @@ export type GovernanceScopeOverviewRecord = {
   findingCounts: Record<GovernanceFindingStatus, number>;
 };
 
+export type GovernanceReviewQueueItemRecord = {
+  kind: GovernanceReviewQueueItemKind;
+  scopeId: string;
+  subjectId: string;
+  issueId: string | null;
+  title: string;
+  status: string;
+  failureCode: string | null;
+  failureMessage: string | null;
+  sessionId: string | null;
+  updatedAt: Date;
+};
+
 export type GovernanceProjectSourceRecord = {
   id: string;
   repoGitUrl: string;
@@ -415,6 +429,9 @@ export abstract class GovernanceRepository {
   abstract getScopeOverview(
     scopeId: string
   ): Promise<GovernanceScopeOverviewRecord | null>;
+  abstract listReviewQueue(
+    scopeId: string
+  ): Promise<GovernanceReviewQueueItemRecord[]>;
   abstract findLatestAutomationAttempt(input: {
     stageType: GovernanceAutomationStage;
     subjectType: GovernanceAutomationSubjectType;
@@ -637,6 +654,8 @@ export abstract class GovernanceRepository {
   ): Promise<GovernanceIssueRecord | null>;
   abstract retryTriage(findingId: string): Promise<void>;
   abstract retryPlanning(issueId: string): Promise<void>;
+  abstract retryBaseline(scopeId: string): Promise<void>;
+  abstract retryDiscovery(scopeId: string): Promise<void>;
   abstract createFinding(input: {
     scopeId: string;
     source: GovernanceFindingSource;
