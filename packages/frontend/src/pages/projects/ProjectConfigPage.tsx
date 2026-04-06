@@ -27,7 +27,6 @@ import { queryKeys } from '@/query/query-keys';
 import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
-import { ProjectWorkspaceTopologyNote } from './ProjectWorkspaceTopologyNote';
 
 function isWorkspaceRootPathError(message: string) {
   return (
@@ -182,12 +181,6 @@ export function ProjectConfigPage() {
               <AlertDescription>{submitError}</AlertDescription>
             </Alert>
           ) : null}
-
-          <ProjectWorkspaceTopologyNote
-            workspaceRootPath={project.workspaceRootPath}
-            repoGitUrl={project.repoGitUrl}
-            docGitUrl={project.docGitUrl}
-          />
 
           <form
             className="space-y-4"

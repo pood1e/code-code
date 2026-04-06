@@ -78,20 +78,39 @@ async function waitForPortFree(port, { timeout = 5000, interval = 150 } = {}) {
   throw new Error(`Port ${port} was not released within ${timeout}ms`);
 }
 
-/**
- * Kill a child process and return a promise that resolves when the
- * process has fully exited.
- */
-function killAndWait(child, signal = 'SIGTERM') {
+async function waitForChildExit(child, timeoutMs) {
   return new Promise((resolve) => {
-    if (child.exitCode !== null) {
-      resolve();
+    if (!child || child.exitCode !== null) {
+      resolve(true);
       return;
     }
 
-    child.once('exit', () => resolve());
-    child.kill(signal);
+    const timeout = setTimeout(() => {
+      child.removeListener('exit', onExit);
+      resolve(false);
+    }, timeoutMs);
+
+    const onExit = () => {
+      clearTimeout(timeout);
+      resolve(true);
+    };
+
+    child.once('exit', onExit);
   });
+}
+
+async function terminateChildProcess(child, signal = 'SIGTERM') {
+  if (!child || child.exitCode !== null) {
+    return;
+  }
+
+  child.kill(signal);
+  const exited = await waitForChildExit(child, 1500);
+
+  if (!exited && child.exitCode === null) {
+    child.kill('SIGKILL');
+    await waitForChildExit(child, 1500);
+  }
 }
 
 // ─── Managed server process ──────────────────────────────────────────────
@@ -100,6 +119,7 @@ let serverChild = null;
 let restarting = false;
 let pendingRestart = false;
 let stopping = false;
+let shuttingDown = false;
 const port = Number(process.env.PORT ?? 3000);
 
 function startServer() {
@@ -223,7 +243,7 @@ async function main() {
   let debounceTimer = null;
   const distDir = path.resolve(packageDir, 'dist');
 
-  watch(distDir, { recursive: true }, (_event, filename) => {
+  const distWatcher = watch(distDir, { recursive: true }, (_event, filename) => {
     if (!filename) return;
     // Only restart on .js file changes (skip .d.ts, source maps, etc.)
     if (!filename.endsWith('.js')) return;
@@ -238,6 +258,10 @@ async function main() {
 
   // ── Process lifecycle ────────────────────────────────────────────────
   compiler.on('exit', (code, signal) => {
+    if (shuttingDown) {
+      return;
+    }
+
     if (signal) {
       process.kill(process.pid, signal);
       return;
@@ -250,16 +274,35 @@ async function main() {
     }
   });
 
-  const cleanup = (signal) => {
-    stopping = true;
-    compiler.kill(signal);
-    if (serverChild && serverChild.exitCode === null) {
-      serverChild.kill(signal);
+  const cleanup = async (signal) => {
+    if (shuttingDown) {
+      return;
     }
+
+    shuttingDown = true;
+    stopping = true;
+
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+
+    distWatcher.close();
+
+    await Promise.allSettled([
+      terminateChildProcess(compiler, signal),
+      terminateChildProcess(serverChild, signal)
+    ]);
+
+    process.exit(0);
   };
 
-  process.on('SIGINT', () => cleanup('SIGINT'));
-  process.on('SIGTERM', () => cleanup('SIGTERM'));
+  process.on('SIGINT', () => {
+    void cleanup('SIGINT');
+  });
+  process.on('SIGTERM', () => {
+    void cleanup('SIGTERM');
+  });
 }
 
 void main().catch((error) => {
