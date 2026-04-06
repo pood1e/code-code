@@ -8,6 +8,9 @@ export const apiRouteConfig = {
   chats: {
     path: 'chats'
   },
+  governance: {
+    path: 'governance'
+  },
   mcps: {
     path: 'mcps'
   },

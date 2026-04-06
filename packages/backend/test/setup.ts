@@ -3,18 +3,23 @@ import 'reflect-metadata';
 import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { execSync } from 'node:child_process';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
 
 import { AppModule } from '../src/app.module';
 import { ApiResponseInterceptor } from '../src/common/api-response.interceptor';
 import { HttpExceptionFilter } from '../src/common/http-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
 
-let app: INestApplication;
-let prisma: PrismaService;
+let app: INestApplication | null = null;
+let prisma: PrismaService | null = null;
 
-const TEST_DB_PATH = path.join(__dirname, '..', 'prisma', 'test.db');
+const TEST_DB_PATH = path.join(
+  __dirname,
+  '..',
+  'prisma',
+  `test-${process.pid}.db`
+);
 const TEST_DB_URL = `file:${TEST_DB_PATH}`;
 
 type SetupTestAppOptions = {
@@ -35,14 +40,12 @@ export async function setupTestApp(
   const { resetDb = true } = options;
 
   if (resetDb) {
-    for (const suffix of ['', '-journal', '-wal', '-shm']) {
-      const p = `${TEST_DB_PATH}${suffix}`;
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-    }
+    deleteDatabaseFiles(TEST_DB_PATH);
   }
 
   process.env.DATABASE_URL = TEST_DB_URL;
   process.env.NOTIFICATION_AUTO_START = 'false';
+  process.env.GOVERNANCE_AUTO_START = 'false';
 
   if (resetDb) {
     execSync('npx prisma db push --skip-generate --accept-data-loss', {
@@ -78,10 +81,18 @@ export async function setupTestApp(
 }
 
 export function getApp(): INestApplication {
+  if (app === null) {
+    throw new Error('Test app has not been initialized');
+  }
+
   return app;
 }
 
 export function getPrisma(): PrismaService {
+  if (prisma === null) {
+    throw new Error('Test Prisma client has not been initialized');
+  }
+
   return prisma;
 }
 
@@ -92,6 +103,19 @@ export function getPrisma(): PrismaService {
 export async function resetDatabase(): Promise<void> {
   const db = getPrisma();
   await db.$transaction([
+    db.governanceExecutionAttempt.deleteMany(),
+    db.deliveryArtifact.deleteMany(),
+    db.reviewDecision.deleteMany(),
+    db.verificationResult.deleteMany(),
+    db.verificationPlan.deleteMany(),
+    db.changeUnit.deleteMany(),
+    db.changePlan.deleteMany(),
+    db.resolutionDecision.deleteMany(),
+    db.issueAssessment.deleteMany(),
+    db.findingMergeRecord.deleteMany(),
+    db.issue.deleteMany(),
+    db.finding.deleteMany(),
+    db.repositoryProfile.deleteMany(),
     db.pipelineEvent.deleteMany(),
     db.sessionEvent.deleteMany(),
     db.sessionMetric.deleteMany(),
@@ -123,14 +147,27 @@ export async function teardownTestApp(
 ): Promise<void> {
   const { preserveDb = false } = options;
 
-  if (app) {
+  if (app !== null) {
     await app.close();
   }
 
+  if (prisma !== null) {
+    await prisma.$disconnect();
+  }
+
   if (!preserveDb) {
-    for (const suffix of ['', '-journal', '-wal', '-shm']) {
-      const p = `${TEST_DB_PATH}${suffix}`;
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+    deleteDatabaseFiles(TEST_DB_PATH);
+  }
+
+  prisma = null;
+  app = null;
+}
+
+function deleteDatabaseFiles(databasePath: string): void {
+  for (const suffix of ['', '-journal', '-wal', '-shm']) {
+    const filePath = `${databasePath}${suffix}`;
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath, { force: true });
     }
   }
 }

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from './prisma/prisma.module';
 import { ChatsModule } from './modules/chats/chats.module';
+import { GovernanceModule } from './modules/governance/governance.module';
 import { McpsModule } from './modules/mcps/mcps.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
@@ -23,6 +24,7 @@ import { SessionsModule } from './modules/sessions/sessions.module';
     AgentRunnersModule,
     SessionsModule,
     ChatsModule,
+    GovernanceModule,
     PipelinesModule,
     NotificationsModule
   ]
