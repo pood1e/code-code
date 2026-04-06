@@ -108,6 +108,43 @@ describe('Governance API', () => {
     expect(overview.findingCounts.pending).toBe(0);
   });
 
+  it('repository profile refresh 在非 git workspace 下也应成功', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'governance-non-git-'));
+    tempWorkspaces.push(workspacePath);
+    fs.writeFileSync(
+      path.join(workspacePath, 'package.json'),
+      JSON.stringify(
+        {
+          name: 'non-git-workspace',
+          private: true
+        },
+        null,
+        2
+      )
+    );
+
+    const project = await seedProject({ workspacePath });
+
+    const refreshResponse = await api().post(
+      `/api/governance/scopes/${project.id}/repository-profile/refresh`
+    );
+    const profile = expectSuccess<{
+      branch: string;
+      modules: Array<{ path: string }>;
+    }>(refreshResponse, 201);
+
+    expect(profile.branch).toBe('unknown');
+    expect(profile.modules).toHaveLength(1);
+
+    const overviewResponse = await api().get(
+      `/api/governance/scopes/${project.id}/overview`
+    );
+    const overview = expectSuccess<{
+      latestBaselineAttempt: { status: string } | null;
+    }>(overviewResponse);
+    expect(overview.latestBaselineAttempt?.status).toBe('succeeded');
+  });
+
   it('应返回默认 governance policy 并支持更新', async () => {
     const project = await seedProject();
 
