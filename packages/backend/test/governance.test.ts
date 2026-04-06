@@ -2635,8 +2635,6 @@ function createAutomationAttempt(input: {
     ownerLeaseToken: null,
     leaseExpiresAt: null,
     inputSnapshot: {},
-    candidateOutput: null,
-    parsedOutput: null,
     failureCode: input.failureCode,
     failureMessage: input.failureMessage,
     resolvedByReviewDecisionId: null,
