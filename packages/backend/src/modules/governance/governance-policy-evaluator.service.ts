@@ -3,6 +3,9 @@ import { Injectable } from '@nestjs/common';
 import {
   type GovernanceAssessmentSource,
   type GovernanceAutoActionEligibility,
+  deriveGovernanceAutoActionEligibility,
+  deriveGovernanceExecutionMode,
+  deriveGovernancePriority,
   GovernanceExecutionMode,
   type GovernancePolicy,
   type GovernancePlanningOutput,
@@ -10,12 +13,6 @@ import {
   type GovernanceIssueKind,
   type GovernanceSeverity
 } from '@agent-workbench/shared';
-
-import {
-  deriveGovernanceAutoActionEligibility,
-  deriveGovernanceExecutionMode,
-  deriveGovernancePriority
-} from './governance-policy.utils';
 
 @Injectable()
 export class GovernancePolicyEvaluatorService {
@@ -35,15 +32,15 @@ export class GovernancePolicyEvaluatorService {
       assessedAt?: Date;
     };
   }) {
-    const priority = deriveGovernancePriority({
-      policy: input.policy,
-      severity: input.assessment.severity
-    });
-    const autoActionEligibility = deriveGovernanceAutoActionEligibility({
-      policy: input.policy,
-      issueKind: input.issueKind,
-      severity: input.assessment.severity
-    });
+    const priority = deriveGovernancePriority(
+      input.policy,
+      input.assessment.severity
+    );
+    const autoActionEligibility = deriveGovernanceAutoActionEligibility(
+      input.policy,
+      input.issueKind,
+      input.assessment.severity
+    );
 
     return {
       ...input.assessment,
@@ -57,11 +54,11 @@ export class GovernancePolicyEvaluatorService {
     issueKind: GovernanceIssueKind;
     severity: GovernanceSeverity;
   }) {
-    return deriveGovernanceAutoActionEligibility({
-      policy: input.policy,
-      issueKind: input.issueKind,
-      severity: input.severity
-    });
+    return deriveGovernanceAutoActionEligibility(
+      input.policy,
+      input.issueKind,
+      input.severity
+    );
   }
 
   normalizePlanningOutput(input: {
@@ -80,10 +77,10 @@ export class GovernancePolicyEvaluatorService {
       ...input.output,
       changeUnits: input.output.changeUnits.map((unit) => ({
         ...unit,
-        executionMode: deriveGovernanceExecutionMode({
+        executionMode: deriveGovernanceExecutionMode(
           eligibility,
-          suggestedMode: unit.executionMode
-        })
+          unit.executionMode ?? GovernanceExecutionMode.SemiAuto
+        )
       }))
     };
   }

@@ -122,6 +122,22 @@ function createIssueTwo(): GovernanceIssueDetail {
   };
 }
 
+function createIssueRefetch(): GovernanceIssueDetail {
+  return {
+    ...createIssue(),
+    updatedAt: '2026-04-06T10:05:00.000Z',
+    relatedFindings: [
+      ...createIssue().relatedFindings,
+      {
+        ...createIssue().relatedFindings[0]!,
+        id: 'finding-3',
+        title: '新增 finding',
+        summary: '同一 issue 刷新后的新增 finding'
+      }
+    ]
+  };
+}
+
 function createManualReadyIssue(): GovernanceIssueDetail {
   return {
     ...createIssue(),
@@ -252,6 +268,39 @@ describe('GovernanceIssueDetail', () => {
       screen.getByLabelText('Reviewer', { selector: '#governance-finding-reviewer' })
     ).toHaveValue('');
     expect(screen.getByText('测试缺口')).toBeInTheDocument();
+  });
+
+  it('同一 issue 刷新时应保留未提交表单输入', async () => {
+    const { user, rerender } = renderWithProviders(
+      <GovernanceIssueDetailPanel
+        scopeId="project-1"
+        issueId="issue-1"
+        issue={createIssue()}
+        isLoading={false}
+        policy={createPolicy()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Reason'), '保留内容');
+    await user.type(
+      screen.getByLabelText('Reviewer', { selector: '#governance-finding-reviewer' }),
+      'reviewer-stay'
+    );
+
+    rerender(
+      <GovernanceIssueDetailPanel
+        scopeId="project-1"
+        issueId="issue-1"
+        issue={createIssueRefetch()}
+        isLoading={false}
+        policy={createPolicy()}
+      />
+    );
+
+    expect(screen.getByLabelText('Reason')).toHaveValue('保留内容');
+    expect(
+      screen.getByLabelText('Reviewer', { selector: '#governance-finding-reviewer' })
+    ).toHaveValue('reviewer-stay');
   });
 
   it('应展示 spin-off 来源 issue', () => {

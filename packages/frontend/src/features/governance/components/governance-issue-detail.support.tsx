@@ -1,11 +1,13 @@
 import {
   GovernanceAutoActionEligibility,
   GovernanceExecutionMode,
+  deriveGovernanceAutoActionEligibility,
+  deriveGovernanceExecutionMode,
+  deriveGovernancePriority,
   type GovernanceIssueDetail,
   GovernanceIssueStatus,
   type GovernancePolicy,
-  type GovernancePriority,
-  type GovernanceSeverity
+  type GovernancePriority
 } from '@agent-workbench/shared';
 
 import { Badge } from '@/components/ui/badge';
@@ -19,15 +21,15 @@ export function getGovernancePolicyAssessment(input: {
   }
 
   return {
-    priority: deriveGovernancePriority({
-      policy: input.policy,
-      severity: input.issue.latestAssessment.severity
-    }),
-    autoActionEligibility: deriveGovernanceAutoActionEligibility({
-      policy: input.policy,
-      issueKind: input.issue.kind,
-      severity: input.issue.latestAssessment.severity
-    })
+    priority: deriveGovernancePriority(
+      input.policy,
+      input.issue.latestAssessment.severity
+    ),
+    autoActionEligibility: deriveGovernanceAutoActionEligibility(
+      input.policy,
+      input.issue.kind,
+      input.issue.latestAssessment.severity
+    )
   };
 }
 
@@ -53,14 +55,14 @@ export function GovernanceChangeUnitExecutionCard(input: {
 }) {
   const effectiveExecutionMode =
     input.policy && input.issue.latestAssessment
-      ? deriveGovernanceExecutionMode({
-          eligibility: deriveGovernanceAutoActionEligibility({
-            policy: input.policy,
-            issueKind: input.issue.kind,
-            severity: input.issue.latestAssessment.severity
-          }),
-          suggestedMode: input.changeUnit.executionMode
-        })
+      ? deriveGovernanceExecutionMode(
+          deriveGovernanceAutoActionEligibility(
+            input.policy,
+            input.issue.kind,
+            input.issue.latestAssessment.severity
+          ),
+          input.changeUnit.executionMode
+        )
       : input.changeUnit.executionMode;
 
   return (
@@ -108,45 +110,6 @@ export function GovernanceChangeUnitExecutionCard(input: {
       ) : null}
     </div>
   );
-}
-
-function deriveGovernancePriority(input: {
-  policy: Pick<GovernancePolicy, 'priorityPolicy'>;
-  severity: GovernanceSeverity;
-}): GovernancePriority {
-  return (
-    input.policy.priorityPolicy.severityOverrides?.[input.severity] ??
-    input.policy.priorityPolicy.defaultPriority
-  );
-}
-
-function deriveGovernanceAutoActionEligibility(input: {
-  policy: Pick<GovernancePolicy, 'autoActionPolicy'>;
-  issueKind: GovernanceIssueDetail['kind'];
-  severity: GovernanceSeverity;
-}): GovernanceAutoActionEligibility {
-  return (
-    input.policy.autoActionPolicy.issueKindOverrides?.[input.issueKind] ??
-    input.policy.autoActionPolicy.severityOverrides?.[input.severity] ??
-    input.policy.autoActionPolicy.defaultEligibility
-  );
-}
-
-function deriveGovernanceExecutionMode(input: {
-  eligibility: GovernanceAutoActionEligibility;
-  suggestedMode: GovernanceExecutionMode;
-}): GovernanceExecutionMode {
-  switch (input.eligibility) {
-    case GovernanceAutoActionEligibility.Forbidden:
-    case GovernanceAutoActionEligibility.SuggestOnly:
-      return GovernanceExecutionMode.Manual;
-    case GovernanceAutoActionEligibility.HumanReviewRequired:
-      return input.suggestedMode === GovernanceExecutionMode.Auto
-        ? GovernanceExecutionMode.SemiAuto
-        : input.suggestedMode;
-    case GovernanceAutoActionEligibility.AutoAllowed:
-      return input.suggestedMode;
-  }
 }
 
 function getIssueStatusNotice(issue: GovernanceIssueDetail) {

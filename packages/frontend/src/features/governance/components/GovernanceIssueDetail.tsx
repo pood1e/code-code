@@ -15,14 +15,16 @@ import {
   GovernanceIssueStatusNotice
 } from '@/features/governance/components/governance-issue-detail.support';
 import {
-  GovernanceAssessmentOverrideSection,
   GovernanceAutomationSection,
   GovernanceExecutionDeliverySection,
   GovernanceIssueInfoBlock,
-  GovernanceRelatedFindingsSection,
+  GovernanceRelatedFindingsSection
+} from '@/features/governance/components/governance-issue-detail.runtime-sections';
+import {
+  GovernanceAssessmentOverrideSection,
   GovernanceResolutionSection,
   GovernanceReviewActionsSection
-} from '@/features/governance/components/governance-issue-detail.sections';
+} from '@/features/governance/components/governance-issue-detail.review-sections';
 import { useGovernanceIssueDetailFormState } from '@/features/governance/components/use-governance-issue-detail-form-state';
 import {
   useGovernanceResolutionDecisionMutation,
