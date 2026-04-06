@@ -20,7 +20,8 @@ function createSessionDetail(): SessionDetail {
     platformSessionConfig: {
       workspaceMode: SessionWorkspaceMode.Session,
       workspaceRoot: '/tmp/project-root',
-      cwd: '/tmp/project-1',
+      sessionRoot: '/tmp/project-root/session-1',
+      cwd: '/tmp/project-root/session-1/code',
       workspaceResources: [SessionWorkspaceResourceKind.Code],
       workspaceResourceConfig: {
         code: {
@@ -162,7 +163,8 @@ describe('SessionDetailsPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('就绪')).toBeInTheDocument();
     expect(screen.getByText('Mock Runner')).toBeInTheDocument();
-    expect(screen.getByText('/tmp/project-1')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/project-root/session-1')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/project-root/session-1/code')).toBeInTheDocument();
     expect(screen.getByText('Code · feature/panel')).toBeInTheDocument();
     expect(screen.getByText('Skill · Review Skill')).toBeInTheDocument();
     expect(screen.getByText('Rule · rule-missing')).toBeInTheDocument();

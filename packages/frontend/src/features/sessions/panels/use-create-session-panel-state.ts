@@ -173,6 +173,7 @@ export function useCreateSessionPanelState({
     submitError,
     selectedRunnerId: fieldValues.selectedRunnerId,
     selectedProfileId: fieldValues.selectedProfileId,
+    useCustomRunDirectory: fieldValues.useCustomRunDirectory,
     selectedWorkspaceResources: fieldValues.selectedWorkspaceResources,
     selectedSkillIds: fieldValues.selectedSkillIds,
     selectedRuleIds: fieldValues.selectedRuleIds,

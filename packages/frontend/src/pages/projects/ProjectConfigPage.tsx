@@ -27,20 +27,27 @@ import { queryKeys } from '@/query/query-keys';
 import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { useProjectStore } from '@/store/project-store';
 import { projectConfig } from '@/types/projects';
+import { ProjectWorkspaceTopologyNote } from './ProjectWorkspaceTopologyNote';
 
-function isWorkspacePathError(message: string) {
+function isWorkspaceRootPathError(message: string) {
   return (
-    message.includes('workspacePath') ||
+    message.includes('workspaceRootPath') ||
     message.includes('目录') ||
     message.includes('absolute path')
   );
 }
 
-function isDocSourceError(message: string) {
+function isRepoGitUrlError(message: string) {
   return (
-    message.includes('docSource') ||
+    message.includes('repoGitUrl') || message.includes('如 git@github.com')
+  );
+}
+
+function isDocGitUrlError(message: string) {
+  return (
+    message.includes('docGitUrl') ||
     message.includes('文档') ||
-    message.includes('SSH Git 地址或本地绝对路径')
+    message.includes('SSH Git 地址')
   );
 }
 
@@ -111,14 +118,20 @@ export function ProjectConfigPage() {
     } catch (error) {
       const apiError = toApiRequestError(error);
 
-      if (apiError.code === 400 && isWorkspacePathError(apiError.message)) {
-        form.setError('workspacePath', { message: apiError.message });
+      if (apiError.code === 400 && isWorkspaceRootPathError(apiError.message)) {
+        form.setError('workspaceRootPath', { message: apiError.message });
         setSubmitError(apiError.message);
         return;
       }
 
-      if (apiError.code === 400 && isDocSourceError(apiError.message)) {
-        form.setError('docSource', { message: apiError.message });
+      if (apiError.code === 400 && isRepoGitUrlError(apiError.message)) {
+        form.setError('repoGitUrl', { message: apiError.message });
+        setSubmitError(apiError.message);
+        return;
+      }
+
+      if (apiError.code === 400 && isDocGitUrlError(apiError.message)) {
+        form.setError('docGitUrl', { message: apiError.message });
         setSubmitError(apiError.message);
         return;
       }
@@ -170,6 +183,12 @@ export function ProjectConfigPage() {
             </Alert>
           ) : null}
 
+          <ProjectWorkspaceTopologyNote
+            workspaceRootPath={project.workspaceRootPath}
+            repoGitUrl={project.repoGitUrl}
+            docGitUrl={project.docGitUrl}
+          />
+
           <form
             className="space-y-4"
             onSubmit={(event) => {
@@ -188,42 +207,39 @@ export function ProjectConfigPage() {
                 </FormField>
 
                 <FormField
-                  label="Workspace Path"
-                  htmlFor="project-config-workspace-path"
-                  description="更新时同样必须是已存在的绝对目录。"
-                  error={form.formState.errors.workspacePath?.message}
+                  label="Workspace Root"
+                  htmlFor="project-config-workspace-root-path"
+                  description="会话与流程共享的工作根目录，不是仓库代码目录。"
+                  error={form.formState.errors.workspaceRootPath?.message}
                 >
                   <Input
-                    id="project-config-workspace-path"
-                    {...form.register('workspacePath')}
+                    id="project-config-workspace-root-path"
+                    {...form.register('workspaceRootPath')}
                   />
                 </FormField>
 
                 <FormField
-                  label="Git URL"
+                  label="Repo (Git)"
                   htmlFor="project-config-git-url"
-                  description="创建后不可修改。"
-                  error={form.formState.errors.gitUrl?.message}
-                  className="lg:col-span-2"
+                  description="Repo (Git)。流程会按需把它拉到工作根目录下的独立代码目录。"
+                  error={form.formState.errors.repoGitUrl?.message}
                 >
                   <Input
                     id="project-config-git-url"
-                    readOnly
-                    disabled
-                    {...form.register('gitUrl')}
+                    {...form.register('repoGitUrl')}
                   />
                 </FormField>
 
                 <FormField
-                  label="文档地址"
+                  label="Doc (Git)"
                   htmlFor="project-config-doc-source"
-                  description="支持 SSH Git 地址或本地绝对路径目录。留空表示只创建空 docs 目录。"
-                  error={form.formState.errors.docSource?.message}
+                  description="可选，仅支持 SSH Git 地址。留空表示只创建空 docs 目录。"
+                  error={form.formState.errors.docGitUrl?.message}
                   className="lg:col-span-2"
                 >
                   <Input
                     id="project-config-doc-source"
-                    {...form.register('docSource')}
+                    {...form.register('docGitUrl')}
                   />
                 </FormField>
 

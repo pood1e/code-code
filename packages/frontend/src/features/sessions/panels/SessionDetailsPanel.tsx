@@ -239,8 +239,15 @@ export function SessionDetailsPanel({
           <SetupSection title="工作区">
             <div className="space-y-4">
               <div className="space-y-3 border-b border-border/40 pb-4">
+                {session.platformSessionConfig.sessionRoot ? (
+                  <SessionTextRow
+                    label="Session 目录"
+                    value={session.platformSessionConfig.sessionRoot}
+                    valueClassName="break-all"
+                  />
+                ) : null}
                 <SessionTextRow
-                  label="当前目录"
+                  label="运行目录"
                   value={session.platformSessionConfig.cwd}
                   valueClassName="break-all"
                 />

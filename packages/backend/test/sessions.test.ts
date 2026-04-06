@@ -297,7 +297,7 @@ describe('Sessions API', () => {
         'agent-workbench-workspace-'
       );
       const project = await seedProject({
-        workspacePath: workspaceRoot
+        workspaceRootPath: workspaceRoot
       });
       const runner = await seedAgentRunner();
 
@@ -343,12 +343,12 @@ describe('Sessions API', () => {
       );
       const repositoryPath = await createLocalGitRepository();
       const project = await seedProject({
-        workspacePath: workspaceRoot
+        workspaceRootPath: workspaceRoot
       });
       await getPrisma().project.update({
         where: { id: project.id },
         data: {
-          gitUrl: repositoryPath
+          repoGitUrl: repositoryPath
         }
       });
       const runner = await seedAgentRunner();
@@ -373,6 +373,78 @@ describe('Sessions API', () => {
       await expect(fs.stat(path.join(sessionDir, 'docs'))).resolves.toBeDefined();
     });
 
+    it('应支持把运行目录改到 Session 目录下的 code 子目录', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const repositoryPath = await createLocalGitRepository();
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      await getPrisma().project.update({
+        where: { id: project.id },
+        data: {
+          repoGitUrl: repositoryPath
+        }
+      });
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          customRunDirectory: 'code',
+          workspaceResources: ['code'],
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        201
+      );
+
+      const detail = expectSuccess<{
+        platformSessionConfig: {
+          workspaceRoot: string;
+          sessionRoot?: string;
+          cwd: string;
+        };
+      }>(await api().get(`/api/sessions/${session.id}`));
+
+      expect(detail.platformSessionConfig.workspaceRoot).toBe(workspaceRoot);
+      expect(detail.platformSessionConfig.sessionRoot).toBe(
+        path.join(workspaceRoot, session.id)
+      );
+      expect(detail.platformSessionConfig.cwd).toBe(
+        path.join(workspaceRoot, session.id, 'code')
+      );
+    });
+
+    it('customRunDirectory 指向不存在目录时应返回 400', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      const runner = await seedAgentRunner();
+
+      const error = expectError(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          customRunDirectory: 'code',
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        400
+      );
+
+      expect(error.message).toContain('customRunDirectory does not exist');
+    });
+
     it('应支持为 code 和 doc 分别指定 branch', async () => {
       const workspaceRoot = await createTempDirectory(
         'agent-workbench-workspace-'
@@ -388,13 +460,13 @@ describe('Sessions API', () => {
         fileContent: 'docs branch\n'
       });
       const project = await seedProject({
-        workspacePath: workspaceRoot,
-        docSource: docsRepositoryPath
+        workspaceRootPath: workspaceRoot
       });
       await getPrisma().project.update({
         where: { id: project.id },
         data: {
-          gitUrl: codeRepositoryPath
+          repoGitUrl: codeRepositoryPath,
+          docGitUrl: docsRepositoryPath
         }
       });
       const runner = await seedAgentRunner();
@@ -425,47 +497,17 @@ describe('Sessions API', () => {
       ).resolves.toContain('docs branch');
     });
 
-    it('文档地址是本地目录时应复制到 docs 子目录', async () => {
-      const workspaceRoot = await createTempDirectory(
-        'agent-workbench-workspace-'
-      );
-      const docsSource = await createTempDirectory('agent-workbench-docs-');
-      await fs.writeFile(path.join(docsSource, 'guide.md'), '# guide\n', 'utf8');
-      const project = await seedProject({
-        workspacePath: workspaceRoot,
-        docSource: docsSource
-      });
-      const runner = await seedAgentRunner();
-
-      const session = expectSuccess<{ id: string }>(
-        await api().post('/api/sessions').send({
-          scopeId: project.id,
-          runnerId: runner.id,
-          workspaceResources: ['doc'],
-          skillIds: [],
-          ruleIds: [],
-          mcps: [],
-          runnerSessionConfig: {}
-        }),
-        201
-      );
-
-      await expect(
-        fs.readFile(path.join(workspaceRoot, session.id, 'docs', 'guide.md'), 'utf8')
-      ).resolves.toContain('# guide');
-    });
-
     it('工作目录初始化失败时应回滚 session 和目录', async () => {
       const workspaceRoot = await createTempDirectory(
         'agent-workbench-workspace-'
       );
       const project = await seedProject({
-        workspacePath: workspaceRoot
+        workspaceRootPath: workspaceRoot
       });
       await getPrisma().project.update({
         where: { id: project.id },
         data: {
-          gitUrl: path.join(workspaceRoot, 'missing-repo')
+          repoGitUrl: path.join(workspaceRoot, 'missing-repo')
         }
       });
       const runner = await seedAgentRunner();
@@ -527,7 +569,7 @@ describe('Sessions API', () => {
           'agent-workbench-workspace-'
         );
         const project = await seedProject({
-          workspacePath: workspaceRoot
+          workspaceRootPath: workspaceRoot
         });
         const runner = await seedAgentRunner({
           type: runnerType,
@@ -1129,7 +1171,7 @@ describe('Sessions API', () => {
         'agent-workbench-workspace-'
       );
       const project = await seedProject({
-        workspacePath: workspaceRoot
+        workspaceRootPath: workspaceRoot
       });
       const runner = await seedAgentRunner();
 

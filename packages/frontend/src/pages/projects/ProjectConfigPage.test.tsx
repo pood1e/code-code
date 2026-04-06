@@ -30,9 +30,9 @@ function createProject(): Project {
     id: 'project-1',
     name: 'Old Name',
     description: '旧描述',
-    gitUrl: 'git@github.com:example/workbench.git',
-    workspacePath: '/tmp/workbench',
-    docSource: '/tmp/docs',
+    repoGitUrl: 'git@github.com:example/workbench.git',
+    workspaceRootPath: '/tmp/workbench',
+    docGitUrl: 'git@github.com:example/workbench-docs.git',
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z'
   };
@@ -88,7 +88,7 @@ describe('ProjectConfigPage', () => {
     vi.mocked(updateProject).mockResolvedValue({
       ...createProject(),
       name: 'New Name',
-      workspacePath: '/tmp/new-workbench'
+      workspaceRootPath: '/tmp/new-workbench'
     });
 
     const { user } = renderProjectConfigPage();
@@ -97,7 +97,7 @@ describe('ProjectConfigPage', () => {
     await user.clear(nameInput);
     await user.type(nameInput, 'New Name');
 
-    const workspaceInput = screen.getByLabelText('Workspace Path');
+    const workspaceInput = screen.getByLabelText('Workspace Root');
     await user.clear(workspaceInput);
     await user.type(workspaceInput, '/tmp/new-workbench');
 
@@ -113,18 +113,19 @@ describe('ProjectConfigPage', () => {
       expect(vi.mocked(updateProject).mock.calls[0]?.[1]).toEqual({
         name: 'New Name',
         description: '旧描述',
-        workspacePath: '/tmp/new-workbench',
-        docSource: '/tmp/docs'
+        repoGitUrl: 'git@github.com:example/workbench.git',
+        workspaceRootPath: '/tmp/new-workbench',
+        docGitUrl: 'git@github.com:example/workbench-docs.git'
       });
       expect(useProjectStore.getState().currentProjectId).toBe('project-1');
     });
   });
 
-  it('保存遇到 workspacePath 400 错误时，应就地展示字段错误和失败提示', async () => {
+  it('保存遇到 workspaceRootPath 400 错误时，应就地展示字段错误和失败提示', async () => {
     vi.mocked(updateProject).mockRejectedValue(
       new ApiRequestError({
         code: 400,
-        message: 'workspacePath 必须是已存在的绝对目录',
+        message: 'workspaceRootPath 必须是已存在的绝对目录',
         data: null
       })
     );
@@ -140,18 +141,18 @@ describe('ProjectConfigPage', () => {
     );
 
     const errorMessages = await screen.findAllByText(
-      'workspacePath 必须是已存在的绝对目录'
+      'workspaceRootPath 必须是已存在的绝对目录'
     );
 
     expect(errorMessages).toHaveLength(2);
     expect(screen.getByRole('alert')).toHaveTextContent('保存失败');
   });
 
-  it('保存遇到 docSource 400 错误时，应就地展示字段错误', async () => {
+  it('保存遇到 docGitUrl 400 错误时，应就地展示字段错误', async () => {
     vi.mocked(updateProject).mockRejectedValue(
       new ApiRequestError({
         code: 400,
-        message: 'docSource does not exist or is not a directory',
+        message: 'docGitUrl 必须是合法的 SSH Git 地址',
         data: null
       })
     );
@@ -159,14 +160,15 @@ describe('ProjectConfigPage', () => {
     const { user } = renderProjectConfigPage();
 
     await screen.findByDisplayValue('Old Name');
-    await user.clear(screen.getByLabelText('文档地址'));
-    await user.type(screen.getByLabelText('文档地址'), '/bad/docs');
+    await user.clear(screen.getByLabelText('Doc (Git)'));
+    await user.type(
+      screen.getByLabelText('Doc (Git)'),
+      'git@github.com:example/bad-docs.git'
+    );
     await user.click(screen.getByRole('button', { name: '保存' }));
 
     expect(
-      await screen.findAllByText(
-        'docSource does not exist or is not a directory'
-      )
+      await screen.findAllByText('docGitUrl 必须是合法的 SSH Git 地址')
     ).toHaveLength(2);
   });
 

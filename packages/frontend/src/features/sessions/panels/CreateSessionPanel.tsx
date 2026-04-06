@@ -39,6 +39,7 @@ export function CreateSessionPanel({
     submitError,
     selectedRunnerId,
     selectedProfileId,
+    useCustomRunDirectory,
     selectedWorkspaceResources,
     selectedSkillIds,
     selectedRuleIds,
@@ -77,6 +78,7 @@ export function CreateSessionPanel({
 
         <CreateSessionAdvancedSettings
           control={form.control}
+          useCustomRunDirectory={useCustomRunDirectory}
           resources={resources}
           selectedWorkspaceResources={selectedWorkspaceResources}
           selectedSkillIds={selectedSkillIds}

@@ -66,6 +66,7 @@ export type PlatformSessionMcp = {
 export type PlatformSessionConfig = {
   workspaceMode: SessionWorkspaceMode;
   workspaceRoot: string;
+  sessionRoot?: string;
   cwd: string;
   workspaceResources: SessionWorkspaceResourceKind[];
   workspaceResourceConfig?: SessionWorkspaceResourceConfig;
@@ -272,6 +273,7 @@ export type SendSessionMessageInput = {
 export type CreateSessionInput = {
   scopeId: string;
   runnerId: string;
+  customRunDirectory?: string;
   workspaceResources: SessionWorkspaceResourceKind[];
   workspaceResourceConfig?: SessionWorkspaceResourceConfig;
   skillIds: string[];

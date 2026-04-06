@@ -59,6 +59,7 @@ import {
 import { GovernanceRunnerBridgeService } from './governance-runner-bridge.service';
 import { GovernanceRunnerResolverService } from './governance-runner-resolver.service';
 import { GovernanceVerificationRunnerService } from './governance-verification-runner.service';
+import { GovernanceWorkspaceService } from './governance-workspace.service';
 
 @Injectable()
 export class GovernanceAutomationService
@@ -81,7 +82,8 @@ export class GovernanceAutomationService
     private readonly governancePolicyEvaluator: GovernancePolicyEvaluatorService,
     private readonly governanceBaselineService: GovernanceBaselineService,
     private readonly governanceGitService: GovernanceGitService,
-    private readonly governanceVerificationRunner: GovernanceVerificationRunnerService
+    private readonly governanceVerificationRunner: GovernanceVerificationRunnerService,
+    private readonly governanceWorkspaceService: GovernanceWorkspaceService
   ) {}
 
   onApplicationBootstrap() {
@@ -330,7 +332,7 @@ export class GovernanceAutomationService
   }
 
   private async processBaselineScope(
-    scope: { id: string; workspacePath: string },
+    scope: { id: string; repoGitUrl: string; workspaceRootPath: string },
     isTargetedRun: boolean
   ) {
     const latestProfile =
@@ -364,7 +366,8 @@ export class GovernanceAutomationService
       createLeaseWindow: () => this.createLeaseWindow(),
       inputSnapshotBuilder: (attemptNo) => ({
         scopeId: scope.id,
-        workspacePath: scope.workspacePath,
+        repoGitUrl: scope.repoGitUrl,
+        workspaceRootPath: scope.workspaceRootPath,
         attemptNo
       })
     });
@@ -384,7 +387,9 @@ export class GovernanceAutomationService
       }
 
       const snapshot = await this.governanceBaselineService.buildRepositoryProfile(
-        scope.workspacePath
+        (
+          await this.governanceWorkspaceService.ensureCodeWorkspace(scope)
+        ).repositoryPath
       );
       await this.governanceRepository.createRepositoryProfileSnapshot({
         scopeId: scope.id,
@@ -630,13 +635,15 @@ export class GovernanceAutomationService
     issue: NonNullable<Awaited<ReturnType<GovernanceRepository['claimNextPlanningIssue']>>>,
     runnerId: string
   ) {
-    const workspace = await this.governanceRepository.getProjectWorkspace(issue.scopeId);
-    if (!workspace) {
+    const project = await this.governanceRepository.getProjectSource(issue.scopeId);
+    if (!project) {
       return false;
     }
+    const workspace =
+      await this.governanceWorkspaceService.ensureCodeWorkspace(project);
 
     const baselineCommitSha = await this.governanceBaselineService.resolveHeadCommitSha(
-      workspace.workspacePath
+      workspace.repositoryPath
     );
     const repositoryProfileRecord =
       await this.governanceRepository.getLatestRepositoryProfile(issue.scopeId);
@@ -765,12 +772,14 @@ export class GovernanceAutomationService
     if (!context) {
       return false;
     }
+    const workspace =
+      await this.governanceWorkspaceService.ensureCodeWorkspace(context.project);
     const policy = await this.governanceRepository.getOrCreateGovernancePolicy(
       context.scopeId
     );
 
     const hasDrift = await this.governanceGitService.hasTargetedBaselineDrift({
-      workspacePath: context.workspacePath,
+      workspacePath: workspace.repositoryPath,
       baselineCommitSha: context.changePlan.baselineCommitSha,
       targets: getChangeUnitScopeTargets(context.changeUnit.scope)
     });
@@ -893,7 +902,7 @@ export class GovernanceAutomationService
     }
 
     const scopedDiff = await this.governanceGitService.collectScopedDiff({
-      workspacePath: context.workspacePath,
+      workspacePath: workspace.repositoryPath,
       targets: getChangeUnitScopeTargets(context.changeUnit.scope)
     });
     if (!this.isDiffWithinScope(context.changeUnit, scopedDiff)) {
@@ -922,7 +931,7 @@ export class GovernanceAutomationService
     }
 
     const verificationResult = await this.governanceVerificationRunner.runPlan({
-      workspacePath: context.workspacePath,
+      workspacePath: workspace.repositoryPath,
       plan: toVerificationPlan(context.unitVerificationPlan)
     });
 
@@ -1031,7 +1040,7 @@ export class GovernanceAutomationService
   }
 
   private async loadSingleScope(scopeId: string) {
-    const scope = await this.governanceRepository.getProjectWorkspace(scopeId);
+    const scope = await this.governanceRepository.getProjectSource(scopeId);
     return scope ? [scope] : [];
   }
 
@@ -1088,12 +1097,14 @@ export class GovernanceAutomationService
       return;
     }
 
-    const workspace = await this.governanceRepository.getProjectWorkspace(detail.scopeId);
-    if (!workspace) {
+    const project = await this.governanceRepository.getProjectSource(detail.scopeId);
+    if (!project) {
       return;
     }
+    const workspace =
+      await this.governanceWorkspaceService.ensureCodeWorkspace(project);
     const planVerification = await this.governanceVerificationRunner.runPlan({
-      workspacePath: workspace.workspacePath,
+      workspacePath: workspace.repositoryPath,
       plan: toVerificationPlan(planVerificationPlan)
     });
     await this.governanceRepository.createVerificationResult({

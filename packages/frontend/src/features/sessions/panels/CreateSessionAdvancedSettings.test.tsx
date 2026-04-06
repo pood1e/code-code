@@ -42,22 +42,30 @@ function createMcp(id: string, name: string): ResourceByKind['mcps'] {
 
 function renderAdvancedSettings({
   onToggleSelection = vi.fn(),
-  selectedWorkspaceResources = []
+  selectedWorkspaceResources = [],
+  defaultValues
 }: {
   onToggleSelection?: (
     fieldName: 'workspaceResources' | 'skillIds' | 'ruleIds' | 'mcpIds',
     resourceId: string
   ) => void;
   selectedWorkspaceResources?: SessionWorkspaceResourceKind[];
+  defaultValues?: Partial<CreateSessionFormValues>;
 } = {}) {
   function Harness() {
     const form = useForm<CreateSessionFormValues>({
-      defaultValues: buildCreateSessionFormValues()
+      defaultValues: {
+        ...buildCreateSessionFormValues(),
+        ...defaultValues
+      }
     });
 
     return (
       <CreateSessionAdvancedSettings
         control={form.control}
+        useCustomRunDirectory={Boolean(
+          form.watch('useCustomRunDirectory')
+        )}
         resources={{
           skills: [createSkill('skill-1', 'Skill One')],
           rules: [],
@@ -105,6 +113,7 @@ describe('CreateSessionAdvancedSettings', () => {
       return (
         <CreateSessionAdvancedSettings
           control={form.control}
+          useCustomRunDirectory={false}
           resources={{
             skills: [],
             rules: [],
@@ -129,8 +138,8 @@ describe('CreateSessionAdvancedSettings', () => {
   it('勾选工作目录初始化项时应触发 workspaceResources 切换', async () => {
     const { user, onToggleSelection } = renderAdvancedSettings();
 
-    await user.click(screen.getByRole('checkbox', { name: /Code/i }));
-    await user.click(screen.getByRole('checkbox', { name: /Doc/i }));
+    await user.click(screen.getByRole('checkbox', { name: '挂载 Code' }));
+    await user.click(screen.getByRole('checkbox', { name: '挂载 Doc' }));
 
     expect(onToggleSelection).toHaveBeenCalledWith(
       'workspaceResources',
@@ -152,5 +161,28 @@ describe('CreateSessionAdvancedSettings', () => {
 
     expect(screen.getByLabelText('Code Branch')).toBeInTheDocument();
     expect(screen.getByLabelText('Doc Branch')).toBeInTheDocument();
+  });
+
+  it('勾选手动指定运行目录后应展示 Run Directory 输入框', async () => {
+    const { user } = renderAdvancedSettings();
+
+    expect(screen.queryByLabelText('Run Directory')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: '手动指定运行目录' }));
+
+    expect(screen.getByLabelText('Run Directory')).toBeInTheDocument();
+  });
+
+  it('默认开启手动运行目录时应回显输入值', () => {
+    renderAdvancedSettings({
+      defaultValues: {
+        useCustomRunDirectory: true,
+        customRunDirectory: 'code/packages/backend'
+      }
+    });
+
+    expect(screen.getByLabelText('Run Directory')).toHaveValue(
+      'code/packages/backend'
+    );
   });
 });

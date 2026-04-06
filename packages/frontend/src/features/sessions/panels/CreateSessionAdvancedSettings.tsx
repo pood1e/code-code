@@ -12,6 +12,7 @@ import type { CreateSessionResources } from './use-create-session-panel-state';
 
 export function CreateSessionAdvancedSettings({
   control,
+  useCustomRunDirectory,
   resources,
   selectedWorkspaceResources,
   selectedSkillIds,
@@ -20,6 +21,7 @@ export function CreateSessionAdvancedSettings({
   onToggleSelection
 }: {
   control: Control<CreateSessionFormValues>;
+  useCustomRunDirectory: boolean;
   resources: CreateSessionResources;
   selectedWorkspaceResources: SessionWorkspaceResourceKind[];
   selectedSkillIds: string[];
@@ -37,12 +39,74 @@ export function CreateSessionAdvancedSettings({
       <div className="space-y-4">
         <SetupSection title="工作目录">
           <p className="text-sm text-muted-foreground">
-            会话固定运行在项目 Workspace 根目录下的独立目录：
+            Session 会运行在项目 Workspace Root 下的独立目录：
             <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-xs">
-              {'{workspacePath}/{sessionId}'}
+              {'{workspaceRootPath}/{sessionId}'}
             </code>
             。
           </p>
+          <div className="mt-3 rounded-xl border border-border/40 bg-background/80 px-3 py-3">
+            <Controller
+              control={control}
+              name="useCustomRunDirectory"
+              render={({ field }) => (
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 size-4"
+                    aria-label="手动指定运行目录"
+                    checked={Boolean(field.value)}
+                    onChange={(event) => {
+                      field.onChange(event.target.checked);
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      手动指定运行目录
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      默认直接运行在 Session 目录。勾选后可改成其下的相对目录，例如
+                      <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-[11px]">
+                        code
+                      </code>
+                      或
+                      <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-[11px]">
+                        code/packages/backend
+                      </code>
+                      。
+                    </p>
+                  </div>
+                </label>
+              )}
+            />
+
+            {useCustomRunDirectory ? (
+              <div className="mt-3 border-t border-border/40 pt-3">
+                <Controller
+                  control={control}
+                  name="customRunDirectory"
+                  render={({ field, fieldState }) => (
+                    <FormField
+                      label="Run Directory"
+                      htmlFor="custom-run-directory"
+                      description="相对 Session 目录的路径。目录必须已存在于当前 Session 工作区内。"
+                      error={fieldState.error?.message}
+                    >
+                      <Input
+                        id="custom-run-directory"
+                        placeholder="例如：code 或 code/packages/backend"
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormField>
+                  )}
+                />
+              </div>
+            ) : null}
+          </div>
           <div className="mt-3 grid gap-2.5">
             <WorkspaceResourceOption
               control={control}
@@ -120,6 +184,7 @@ function WorkspaceResourceOption({
         <input
           type="checkbox"
           className="mt-0.5 size-4"
+          aria-label={`挂载 ${title}`}
           checked={checked}
           onChange={onToggle}
         />

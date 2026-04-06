@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import {
   createProjectInputSchema,
-  sshGitUrlSchema,
   updateProjectInputSchema
 } from '@agent-workbench/shared';
 import { stat } from 'node:fs/promises';
@@ -46,16 +45,15 @@ export class ProjectsService {
       'Invalid project payload'
     );
 
-    await this.assertWorkspacePath(parsed.workspacePath);
-    await this.assertDocSource(parsed.docSource);
+    await this.assertWorkspaceRootPath(parsed.workspaceRootPath);
 
     return this.prisma.project.create({
       data: {
         name: parsed.name,
         description: parsed.description ?? null,
-        gitUrl: parsed.gitUrl,
-        workspacePath: parsed.workspacePath,
-        docSource: parsed.docSource ?? null
+        repoGitUrl: parsed.repoGitUrl,
+        workspaceRootPath: parsed.workspaceRootPath,
+        docGitUrl: parsed.docGitUrl ?? null
       }
     });
   }
@@ -69,19 +67,16 @@ export class ProjectsService {
       'Invalid project payload'
     );
 
-    if (parsed.workspacePath !== undefined) {
-      await this.assertWorkspacePath(parsed.workspacePath);
-    }
-
-    if (parsed.docSource !== undefined) {
-      await this.assertDocSource(parsed.docSource);
+    if (parsed.workspaceRootPath !== undefined) {
+      await this.assertWorkspaceRootPath(parsed.workspaceRootPath);
     }
 
     const updateData: {
       name?: string;
       description?: string | null;
-      workspacePath?: string;
-      docSource?: string | null;
+      repoGitUrl?: string;
+      workspaceRootPath?: string;
+      docGitUrl?: string | null;
     } = {};
 
     if (parsed.name !== undefined) {
@@ -92,12 +87,16 @@ export class ProjectsService {
       updateData.description = parsed.description ?? null;
     }
 
-    if (parsed.workspacePath !== undefined) {
-      updateData.workspacePath = parsed.workspacePath;
+    if (parsed.repoGitUrl !== undefined) {
+      updateData.repoGitUrl = parsed.repoGitUrl;
     }
 
-    if (parsed.docSource !== undefined) {
-      updateData.docSource = parsed.docSource ?? null;
+    if (parsed.workspaceRootPath !== undefined) {
+      updateData.workspaceRootPath = parsed.workspaceRootPath;
+    }
+
+    if (parsed.docGitUrl !== undefined) {
+      updateData.docGitUrl = parsed.docGitUrl ?? null;
     }
 
     return this.prisma.project.update({
@@ -112,27 +111,11 @@ export class ProjectsService {
     return null;
   }
 
-  private async assertWorkspacePath(workspacePath: string) {
+  private async assertWorkspaceRootPath(workspaceRootPath: string) {
     await this.assertLocalDirectoryPath(
-      workspacePath,
-      'workspacePath must be an absolute path',
-      'workspacePath does not exist or is not a directory'
-    );
-  }
-
-  private async assertDocSource(docSource: string | null | undefined) {
-    if (docSource === undefined || docSource === null) {
-      return;
-    }
-
-    if (sshGitUrlSchema.safeParse(docSource).success) {
-      return;
-    }
-
-    await this.assertLocalDirectoryPath(
-      docSource,
-      'docSource must be an absolute path when using a local directory',
-      'docSource does not exist or is not a directory'
+      workspaceRootPath,
+      'workspaceRootPath must be an absolute path',
+      'workspaceRootPath does not exist or is not a directory'
     );
   }
 

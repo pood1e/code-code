@@ -44,6 +44,7 @@ import type {
 } from './governance.repository';
 import { GovernanceVerificationRunnerService } from './governance-verification-runner.service';
 import { GovernanceRepository } from './governance.repository';
+import { GovernanceWorkspaceService } from './governance-workspace.service';
 
 const DEFAULT_DEFER_DAYS = 30;
 
@@ -57,7 +58,8 @@ export class GovernanceService {
     private readonly governanceRepository: GovernanceRepository,
     private readonly governanceAutomationService: GovernanceAutomationService,
     private readonly governanceGitService: GovernanceGitService,
-    private readonly governanceVerificationRunner: GovernanceVerificationRunnerService
+    private readonly governanceVerificationRunner: GovernanceVerificationRunnerService,
+    private readonly governanceWorkspaceService: GovernanceWorkspaceService
   ) {}
 
   async createFinding(input: unknown) {
@@ -350,7 +352,11 @@ export class GovernanceService {
 
   private async approveChangeUnitReview(context: {
     scopeId: string;
-    workspacePath: string;
+    project: {
+      id: string;
+      repoGitUrl: string;
+      workspaceRootPath: string;
+    };
     issue: { id: string };
     changeUnit: {
       id: string;
@@ -370,9 +376,11 @@ export class GovernanceService {
     );
 
     try {
+      const workspace =
+        await this.governanceWorkspaceService.ensureCodeWorkspace(context.project);
       if (policy.deliveryPolicy.commitMode === GovernanceDeliveryCommitMode.PerUnit) {
         const scopedDiff = await this.governanceGitService.collectScopedDiff({
-          workspacePath: context.workspacePath,
+          workspacePath: workspace.repositoryPath,
           targets: getChangeUnitScopeTargets(context.changeUnit.scope)
         });
         if (scopedDiff.changedFiles.length === 0) {
@@ -381,7 +389,7 @@ export class GovernanceService {
           );
         }
         const commitSha = await this.governanceGitService.createScopedCommit({
-          workspacePath: context.workspacePath,
+          workspacePath: workspace.repositoryPath,
           files: scopedDiff.changedFiles,
           message: `governance(${context.changeUnit.title}): apply approved change unit`
         });
@@ -531,7 +539,9 @@ export class GovernanceService {
     }
 
     const verification = await this.governanceVerificationRunner.runPlan({
-      workspacePath: context.workspacePath,
+      workspacePath: (
+        await this.governanceWorkspaceService.ensureCodeWorkspace(context.project)
+      ).repositoryPath,
       plan: {
         id: context.unitVerificationPlan.id,
         subjectType: context.unitVerificationPlan.subjectType,
@@ -729,13 +739,15 @@ export class GovernanceService {
       return detail;
     }
 
-    const workspace = await this.governanceRepository.getProjectWorkspace(detail.scopeId);
-    if (!workspace) {
+    const project = await this.governanceRepository.getProjectSource(detail.scopeId);
+    if (!project) {
       throw new NotFoundException(`Project not found: ${detail.scopeId}`);
     }
+    const workspace =
+      await this.governanceWorkspaceService.ensureCodeWorkspace(project);
 
     const scopedDiff = await this.governanceGitService.collectScopedDiff({
-      workspacePath: workspace.workspacePath,
+      workspacePath: workspace.repositoryPath,
       targets: uniqueTargets(
         committedUnits.flatMap((changeUnit) =>
           getChangeUnitScopeTargets(changeUnit.scope)
@@ -752,7 +764,7 @@ export class GovernanceService {
 
     try {
       const commitSha = await this.governanceGitService.createScopedCommit({
-        workspacePath: workspace.workspacePath,
+        workspacePath: workspace.repositoryPath,
         files: scopedDiff.changedFiles,
         message: `governance(${detail.title}): deliver approved change plan`
       });
