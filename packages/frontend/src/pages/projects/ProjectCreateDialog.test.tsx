@@ -26,8 +26,9 @@ function createProjectRecord(): Project {
     id: 'project-1',
     name: 'Workbench',
     description: 'Agent workbench project',
-    gitUrl: 'git@github.com:acme/workbench.git',
-    workspacePath: '/tmp/workbench',
+    repoGitUrl: 'git@github.com:acme/workbench.git',
+    workspaceRootPath: '/tmp/workbench',
+    docGitUrl: 'git@github.com:acme/workbench-docs.git',
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z'
   };
@@ -90,12 +91,16 @@ describe('ProjectCreateDialog', () => {
       'Agent workbench project'
     );
     await user.type(
-      screen.getByLabelText('Git URL'),
+      screen.getByLabelText('Repo (Git)'),
       'git@github.com:acme/workbench.git'
     );
     await user.type(
-      screen.getByLabelText('Workspace Path'),
+      screen.getByLabelText('Workspace Root'),
       '/tmp/workbench'
+    );
+    await user.type(
+      screen.getByLabelText('Doc (Git)'),
+      'git@github.com:acme/workbench-docs.git'
     );
     await user.click(screen.getByRole('button', { name: '创建' }));
 
@@ -104,11 +109,12 @@ describe('ProjectCreateDialog', () => {
     });
 
     expect(vi.mocked(createProject).mock.calls[0]?.[0]).toEqual({
-        name: 'Workbench',
-        description: 'Agent workbench project',
-        gitUrl: 'git@github.com:acme/workbench.git',
-        workspacePath: '/tmp/workbench'
-      });
+      name: 'Workbench',
+      description: 'Agent workbench project',
+      repoGitUrl: 'git@github.com:acme/workbench.git',
+      workspaceRootPath: '/tmp/workbench',
+      docGitUrl: 'git@github.com:acme/workbench-docs.git'
+    });
 
     expect(queryClient.getQueryData(queryKeys.projects.detail('project-1'))).toEqual(
       createProjectRecord()
@@ -117,7 +123,7 @@ describe('ProjectCreateDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('后端返回 gitUrl 400 错误时应展示字段错误和顶部错误提示', async () => {
+  it('后端返回 repoGitUrl 400 错误时应展示字段错误和顶部错误提示', async () => {
     vi.mocked(createProject).mockRejectedValue(
       new ApiRequestError({
         code: 400,
@@ -131,9 +137,12 @@ describe('ProjectCreateDialog', () => {
     );
 
     await user.type(screen.getByLabelText('Name'), 'Workbench');
-    await user.type(screen.getByLabelText('Git URL'), 'https://github.com/acme/repo');
     await user.type(
-      screen.getByLabelText('Workspace Path'),
+      screen.getByLabelText('Repo (Git)'),
+      'https://github.com/acme/repo'
+    );
+    await user.type(
+      screen.getByLabelText('Workspace Root'),
       '/tmp/workbench'
     );
     await user.click(screen.getByRole('button', { name: '创建' }));
@@ -147,11 +156,11 @@ describe('ProjectCreateDialog', () => {
     expect(handleErrorMock).not.toHaveBeenCalled();
   });
 
-  it('后端返回 workspacePath 400 错误时应展示表单错误和顶部错误提示', async () => {
+  it('后端返回 workspaceRootPath 400 错误时应展示表单错误和顶部错误提示', async () => {
     vi.mocked(createProject).mockRejectedValue(
       new ApiRequestError({
         code: 400,
-        message: 'workspacePath 目录不存在',
+        message: 'workspaceRootPath 目录不存在',
         data: null
       })
     );
@@ -162,16 +171,47 @@ describe('ProjectCreateDialog', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Workbench');
     await user.type(
-      screen.getByLabelText('Git URL'),
+      screen.getByLabelText('Repo (Git)'),
       'git@github.com:acme/workbench.git'
     );
-    await user.type(screen.getByLabelText('Workspace Path'), '/bad/path');
+    await user.type(screen.getByLabelText('Workspace Root'), '/bad/path');
     await user.click(screen.getByRole('button', { name: '创建' }));
 
     expect(
-      await screen.findAllByText('workspacePath 目录不存在')
+      await screen.findAllByText('workspaceRootPath 目录不存在')
     ).toHaveLength(2);
     expect(screen.getByText('创建失败')).toBeInTheDocument();
+    expect(handleErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('后端返回 docGitUrl 400 错误时应展示文档地址字段错误', async () => {
+    vi.mocked(createProject).mockRejectedValue(
+      new ApiRequestError({
+        code: 400,
+        message: 'docGitUrl 必须是合法的 SSH Git 地址',
+        data: null
+      })
+    );
+
+    const { user } = renderWithProviders(
+      <ProjectCreateDialog open onOpenChange={vi.fn()} />
+    );
+
+    await user.type(screen.getByLabelText('Name'), 'Workbench');
+    await user.type(
+      screen.getByLabelText('Repo (Git)'),
+      'git@github.com:acme/workbench.git'
+    );
+    await user.type(screen.getByLabelText('Workspace Root'), '/tmp/workbench');
+    await user.type(
+      screen.getByLabelText('Doc (Git)'),
+      'git@github.com:acme/bad-docs.git'
+    );
+    await user.click(screen.getByRole('button', { name: '创建' }));
+
+    expect(
+      await screen.findAllByText('docGitUrl 必须是合法的 SSH Git 地址')
+    ).toHaveLength(2);
     expect(handleErrorMock).not.toHaveBeenCalled();
   });
 
@@ -190,11 +230,11 @@ describe('ProjectCreateDialog', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Workbench');
     await user.type(
-      screen.getByLabelText('Git URL'),
+      screen.getByLabelText('Repo (Git)'),
       'git@github.com:acme/workbench.git'
     );
     await user.type(
-      screen.getByLabelText('Workspace Path'),
+      screen.getByLabelText('Workspace Root'),
       '/tmp/workbench'
     );
     await user.click(screen.getByRole('button', { name: '创建' }));
@@ -207,7 +247,7 @@ describe('ProjectCreateDialog', () => {
     vi.mocked(createProject).mockRejectedValue(
       new ApiRequestError({
         code: 400,
-        message: 'workspacePath 目录不存在',
+        message: 'workspaceRootPath 目录不存在',
         data: null
       })
     );
@@ -217,10 +257,10 @@ describe('ProjectCreateDialog', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Workbench');
     await user.type(
-      screen.getByLabelText('Git URL'),
+      screen.getByLabelText('Repo (Git)'),
       'git@github.com:acme/workbench.git'
     );
-    await user.type(screen.getByLabelText('Workspace Path'), '/bad/path');
+    await user.type(screen.getByLabelText('Workspace Root'), '/bad/path');
     await user.click(screen.getByRole('button', { name: '创建' }));
 
     expect(await screen.findByText('创建失败')).toBeInTheDocument();
@@ -230,8 +270,8 @@ describe('ProjectCreateDialog', () => {
 
     expect(screen.queryByText('创建失败')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Name')).toHaveValue('');
-    expect(screen.getByLabelText('Git URL')).toHaveValue('');
-    expect(screen.getByLabelText('Workspace Path')).toHaveValue('');
+    expect(screen.getByLabelText('Repo (Git)')).toHaveValue('');
+    expect(screen.getByLabelText('Workspace Root')).toHaveValue('');
   });
 
   it('点击取消应关闭弹窗并立即清空本地表单状态', async () => {
@@ -241,7 +281,7 @@ describe('ProjectCreateDialog', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Workbench');
     await user.type(
-      screen.getByLabelText('Workspace Path'),
+      screen.getByLabelText('Workspace Root'),
       '/tmp/workbench'
     );
     await user.click(screen.getByRole('button', { name: '取消' }));
@@ -250,7 +290,7 @@ describe('ProjectCreateDialog', () => {
     await user.click(screen.getByRole('button', { name: '重新打开' }));
 
     expect(screen.getByLabelText('Name')).toHaveValue('');
-    expect(screen.getByLabelText('Workspace Path')).toHaveValue('');
+    expect(screen.getByLabelText('Workspace Root')).toHaveValue('');
   });
 
   it('创建进行中应禁用取消和创建按钮', async () => {
@@ -268,11 +308,11 @@ describe('ProjectCreateDialog', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Workbench');
     await user.type(
-      screen.getByLabelText('Git URL'),
+      screen.getByLabelText('Repo (Git)'),
       'git@github.com:acme/workbench.git'
     );
     await user.type(
-      screen.getByLabelText('Workspace Path'),
+      screen.getByLabelText('Workspace Root'),
       '/tmp/workbench'
     );
     await user.click(screen.getByRole('button', { name: '创建' }));

@@ -182,8 +182,8 @@ export function ProjectNotificationSendPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+    <div className="flex min-h-full flex-col">
+      <div className="flex-1 px-4 py-6 sm:px-8 sm:py-8">
         <div className="mx-auto w-full max-w-4xl space-y-4">
           <div className="flex flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">

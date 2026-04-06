@@ -87,19 +87,24 @@ export function MessageComposerFooterActions({
 export function MessageComposerField({
   label,
   htmlFor,
+  hideLabel = false,
   error,
   children,
   className
 }: {
   label: string;
   htmlFor?: string;
+  hideLabel?: boolean;
   error?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn('flex flex-col gap-2.5', className)}>
-      <Label htmlFor={htmlFor} className="text-sm font-semibold">
+      <Label
+        htmlFor={htmlFor}
+        className={cn('text-sm font-semibold', hideLabel && 'sr-only')}
+      >
         {label}
       </Label>
       {children}

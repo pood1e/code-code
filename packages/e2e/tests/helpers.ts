@@ -59,9 +59,15 @@ async function apiGet(path: string): Promise<ApiRecord | ApiRecord[]> {
 }
 
 /** DELETE — 忽略响应 body（backend 可能返回 data: null） */
-async function apiDelete(path: string): Promise<void> {
+async function apiDelete(
+  path: string,
+  options?: { ignoreNotFound?: boolean }
+): Promise<void> {
   const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE' });
   if (!res.ok) {
+    if (res.status === 404 && options?.ignoreNotFound) {
+      return;
+    }
     throw new Error(`API error: ${res.status} ${await res.text()}`);
   }
 }

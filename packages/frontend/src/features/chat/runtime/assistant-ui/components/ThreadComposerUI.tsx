@@ -98,7 +98,7 @@ export function ThreadComposerUI({
   const footerRecoveryAction = showRecoveryAction ? recoveryAction : null;
 
   return (
-    <div className="w-full bg-gradient-to-t from-background via-background to-transparent pb-4 pt-3">
+    <div className="w-full shrink-0 bg-gradient-to-t from-background via-background to-transparent pb-4 pt-3">
       <div className="mx-auto flex w-full max-w-4xl flex-col px-4 sm:px-0">
         {composerError ? (
           <Alert variant="destructive" className="mb-3">

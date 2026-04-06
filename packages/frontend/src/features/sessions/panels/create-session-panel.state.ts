@@ -1,6 +1,7 @@
 import { useEffect, useMemo, type KeyboardEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import type {
+  AgentRunnerDetail,
   AgentRunnerSummary,
   RunnerTypeResponse
 } from '@agent-workbench/shared';
@@ -13,7 +14,8 @@ import {
 } from '@/features/chat/runtime/assistant-ui/input-schema';
 import {
   buildRunnerConfigInitialValues,
-  parseRunnerConfigSchema
+  parseRunnerConfigSchema,
+  type RunnerConfigField
 } from '@/lib/runner-config-schema';
 import type { CreateSessionFormValues } from '@/pages/projects/project-sessions.form';
 
@@ -28,6 +30,14 @@ export function useCreateSessionFieldValues(
     selectedProfileId: useWatch({
       control,
       name: 'profileId'
+    }),
+    useCustomRunDirectory: useWatch({
+      control,
+      name: 'useCustomRunDirectory'
+    }),
+    selectedWorkspaceResources: useWatch({
+      control,
+      name: 'workspaceResources'
     }),
     selectedSkillIds: useWatch({
       control,
@@ -53,7 +63,8 @@ export function useCreateSessionFieldValues(
 }
 
 export function useCreateSessionSchemaState(
-  selectedRunnerType: RunnerTypeResponse | undefined
+  selectedRunnerType: RunnerTypeResponse | undefined,
+  selectedRunnerConfig?: Record<string, unknown>
 ) {
   const sessionConfigSchema = useMemo(
     () =>
@@ -75,8 +86,13 @@ export function useCreateSessionSchemaState(
     ? runtimeConfigSchema
     : undefined;
   const runtimeFields = useMemo(
-    () => structuredRuntimeSchema?.fields ?? [],
-    [structuredRuntimeSchema]
+    () =>
+      getRuntimeFieldsForRunner(
+        selectedRunnerType?.id,
+        selectedRunnerConfig,
+        structuredRuntimeSchema?.fields ?? []
+      ),
+    [selectedRunnerConfig, selectedRunnerType?.id, structuredRuntimeSchema]
   );
   const primaryInputField = useMemo(() => {
     if (!structuredInputSchema) {
@@ -123,6 +139,7 @@ export function useInitialRunnerSelection(
 export function useRunnerFormDefaults(
   form: ReturnType<typeof useForm<CreateSessionFormValues>>,
   selectedRunnerTypeId: string | undefined,
+  selectedRunnerConfig: Record<string, unknown> | undefined,
   schemaState: ReturnType<typeof useCreateSessionSchemaState>
 ) {
   useEffect(() => {
@@ -145,7 +162,11 @@ export function useRunnerFormDefaults(
     );
     form.setValue(
       'initialRuntimeConfig',
-      buildAdditionalInputInitialValues(schemaState.runtimeFields)
+      buildRuntimeInitialValuesForRunner(
+        schemaState.runtimeFields,
+        selectedRunnerTypeId,
+        selectedRunnerConfig
+      )
     );
     form.setValue('initialMessageText', '');
     form.setValue('initialRawInput', '');
@@ -154,8 +175,71 @@ export function useRunnerFormDefaults(
     schemaState.additionalInputFields,
     schemaState.runtimeFields,
     schemaState.structuredInputSchema,
+    selectedRunnerConfig,
     selectedRunnerTypeId
   ]);
+}
+
+function getRuntimeFieldsForRunner(
+  runnerTypeId: string | undefined,
+  runnerConfig: Record<string, unknown> | undefined,
+  fields: RunnerConfigField[]
+) {
+  if (runnerTypeId !== 'claude-code' || !runnerConfig) {
+    return fields;
+  }
+
+  return fields.filter((field) => {
+    if (
+      field.name === 'model' &&
+      runnerConfig.allowRuntimeModelOverride === false
+    ) {
+      return false;
+    }
+
+    if (
+      field.name === 'permissionMode' &&
+      runnerConfig.allowRuntimePermissionModeOverride === false
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function buildRuntimeInitialValuesForRunner(
+  fields: RunnerConfigField[],
+  runnerTypeId: string | undefined,
+  runnerConfig: Record<string, unknown> | undefined
+) {
+  const initialValues = buildAdditionalInputInitialValues(fields);
+
+  if (runnerTypeId !== 'claude-code' || !runnerConfig) {
+    return initialValues;
+  }
+
+  if (
+    fields.some((field) => field.name === 'model') &&
+    typeof runnerConfig.defaultRuntimeModel === 'string'
+  ) {
+    initialValues.model = runnerConfig.defaultRuntimeModel;
+  }
+
+  if (
+    fields.some((field) => field.name === 'permissionMode') &&
+    typeof runnerConfig.defaultRuntimePermissionMode === 'string'
+  ) {
+    initialValues.permissionMode = runnerConfig.defaultRuntimePermissionMode;
+  }
+
+  return initialValues;
+}
+
+export function getSelectedRunnerConfig(
+  selectedRunnerDetail: AgentRunnerDetail | undefined
+) {
+  return selectedRunnerDetail?.runnerConfig;
 }
 
 export function useProfileResourceDefaults(

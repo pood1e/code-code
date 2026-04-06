@@ -70,5 +70,45 @@ export const queryKeys = {
     detail: (id: string) => ['pipelines', 'detail', id] as const,
     stages: (pipelineId: string) => ['pipelines', 'stages', pipelineId] as const,
     artifacts: (pipelineId: string) => ['pipelines', 'artifacts', pipelineId] as const
+  },
+  governance: {
+    all: ['governance'] as const,
+    scopes: {
+      all: ['governance', 'scopes'] as const,
+      overview: (scopeId: string) =>
+        ['governance', 'scopes', 'overview', scopeId] as const,
+      policy: (scopeId: string) =>
+        ['governance', 'scopes', 'policy', scopeId] as const,
+      repositoryProfile: (scopeId: string) =>
+        ['governance', 'scopes', 'repository-profile', scopeId] as const
+    },
+    findings: {
+      all: ['governance', 'findings'] as const,
+      list: (scopeId?: string, status?: string) =>
+        ['governance', 'findings', 'list', scopeId ?? '', status ?? ''] as const
+    },
+    issues: {
+      all: ['governance', 'issues'] as const,
+      list: (scopeId?: string, status?: string) =>
+        ['governance', 'issues', 'list', scopeId ?? '', status ?? ''] as const,
+      detail: (id: string) => ['governance', 'issues', 'detail', id] as const
+    },
+    changeUnits: {
+      all: ['governance', 'change-units'] as const,
+      list: (scopeId?: string, issueId?: string, status?: string) =>
+        [
+          'governance',
+          'change-units',
+          'list',
+          scopeId ?? '',
+          issueId ?? '',
+          status ?? ''
+        ] as const
+    },
+    deliveryArtifacts: {
+      all: ['governance', 'delivery-artifacts'] as const,
+      list: (scopeId?: string, status?: string) =>
+        ['governance', 'delivery-artifacts', 'list', scopeId ?? '', status ?? ''] as const
+    }
   }
 };

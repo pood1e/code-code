@@ -1,6 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { describe, it, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import http from 'node:http';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { execSync } from 'node:child_process';
 
 import {
   setupTestApp,
@@ -23,12 +27,18 @@ import { SessionRuntimeService } from '../src/modules/sessions/session-runtime.s
 
 describe('Sessions API', () => {
   let sessionSeedCounter = 0;
+  const tempDirectories: string[] = [];
 
   beforeAll(async () => {
     await setupTestApp();
   });
 
   afterAll(async () => {
+    await Promise.all(
+      tempDirectories.map((dir) =>
+        fs.rm(dir, { recursive: true, force: true })
+      )
+    );
     await teardownTestApp();
   });
 
@@ -134,6 +144,55 @@ describe('Sessions API', () => {
     return { project, runner, session };
   }
 
+  async function createTempDirectory(prefix: string) {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+    tempDirectories.push(dir);
+    return dir;
+  }
+
+  async function createLocalGitRepository() {
+    const repoDir = await createTempDirectory('agent-workbench-repo-');
+    await fs.writeFile(path.join(repoDir, 'README.md'), '# demo repo\n', 'utf8');
+    execSync('git init', { cwd: repoDir, stdio: 'pipe' });
+    execSync('git config user.name "Agent Workbench Test"', {
+      cwd: repoDir,
+      stdio: 'pipe'
+    });
+    execSync('git config user.email "test@example.com"', {
+      cwd: repoDir,
+      stdio: 'pipe'
+    });
+    execSync('git add README.md', { cwd: repoDir, stdio: 'pipe' });
+    execSync('git commit -m "init"', { cwd: repoDir, stdio: 'pipe' });
+    return repoDir;
+  }
+
+  async function createLocalGitRepositoryBranch(input: {
+    branchName: string;
+    filePath: string;
+    fileContent: string;
+  }) {
+    const repoDir = await createLocalGitRepository();
+    execSync(`git checkout -b ${input.branchName}`, {
+      cwd: repoDir,
+      stdio: 'pipe'
+    });
+    await fs.mkdir(path.dirname(path.join(repoDir, input.filePath)), {
+      recursive: true
+    });
+    await fs.writeFile(
+      path.join(repoDir, input.filePath),
+      input.fileContent,
+      'utf8'
+    );
+    execSync(`git add ${input.filePath}`, { cwd: repoDir, stdio: 'pipe' });
+    execSync(`git commit -m "add ${input.branchName}"`, {
+      cwd: repoDir,
+      stdio: 'pipe'
+    });
+    return repoDir;
+  }
+
   // ---- 生命周期正常路径 ----
 
   describe('POST /api/sessions - 创建 Session', () => {
@@ -232,6 +291,347 @@ describe('Sessions API', () => {
       expect(detail.platformSessionConfig.skillIds).toContain(skill.id);
       expect(detail.platformSessionConfig.ruleIds).toContain(rule.id);
     });
+
+    it('创建 session 时应初始化独立工作目录和 docs 目录', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          workspaceResources: ['doc'],
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        201
+      );
+
+      const detail = expectSuccess<{
+        id: string;
+        platformSessionConfig: {
+          workspaceMode: string;
+          workspaceRoot: string;
+          cwd: string;
+          workspaceResources: string[];
+          workspaceResourceConfig?: Record<string, unknown>;
+        };
+      }>(await api().get(`/api/sessions/${session.id}`));
+
+      expect(detail.platformSessionConfig.workspaceMode).toBe('session');
+      expect(detail.platformSessionConfig.workspaceRoot).toBe(workspaceRoot);
+      expect(detail.platformSessionConfig.cwd).toBe(
+        path.join(workspaceRoot, session.id)
+      );
+      expect(detail.platformSessionConfig.workspaceResources).toEqual(['doc']);
+      expect(detail.platformSessionConfig.workspaceResourceConfig).toEqual({});
+      await expect(
+        fs.stat(path.join(detail.platformSessionConfig.cwd, 'docs'))
+      ).resolves.toBeDefined();
+    });
+
+    it('勾选 code 和 doc 时应 clone 项目代码并初始化 docs', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const repositoryPath = await createLocalGitRepository();
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      await getPrisma().project.update({
+        where: { id: project.id },
+        data: {
+          repoGitUrl: repositoryPath
+        }
+      });
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          workspaceResources: ['code', 'doc'],
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        201
+      );
+
+      const sessionDir = path.join(workspaceRoot, session.id);
+      await expect(
+        fs.stat(path.join(sessionDir, 'code', 'README.md'))
+      ).resolves.toBeDefined();
+      await expect(fs.stat(path.join(sessionDir, 'docs'))).resolves.toBeDefined();
+    });
+
+    it('应支持把运行目录改到 Session 目录下的 code 子目录', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const repositoryPath = await createLocalGitRepository();
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      await getPrisma().project.update({
+        where: { id: project.id },
+        data: {
+          repoGitUrl: repositoryPath
+        }
+      });
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          customRunDirectory: 'code',
+          workspaceResources: ['code'],
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        201
+      );
+
+      const detail = expectSuccess<{
+        platformSessionConfig: {
+          workspaceRoot: string;
+          sessionRoot?: string;
+          cwd: string;
+        };
+      }>(await api().get(`/api/sessions/${session.id}`));
+
+      expect(detail.platformSessionConfig.workspaceRoot).toBe(workspaceRoot);
+      expect(detail.platformSessionConfig.sessionRoot).toBe(
+        path.join(workspaceRoot, session.id)
+      );
+      expect(detail.platformSessionConfig.cwd).toBe(
+        path.join(workspaceRoot, session.id, 'code')
+      );
+    });
+
+    it('customRunDirectory 指向不存在目录时应返回 400', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      const runner = await seedAgentRunner();
+
+      const error = expectError(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          customRunDirectory: 'code',
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        400
+      );
+
+      expect(error.message).toContain('customRunDirectory does not exist');
+    });
+
+    it('应支持为 code 和 doc 分别指定 branch', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const codeRepositoryPath = await createLocalGitRepositoryBranch({
+        branchName: 'feature/session-code',
+        filePath: 'FEATURE_BRANCH.txt',
+        fileContent: 'code branch\n'
+      });
+      const docsRepositoryPath = await createLocalGitRepositoryBranch({
+        branchName: 'feature/session-docs',
+        filePath: 'DOC_BRANCH.txt',
+        fileContent: 'docs branch\n'
+      });
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      await getPrisma().project.update({
+        where: { id: project.id },
+        data: {
+          repoGitUrl: codeRepositoryPath,
+          docGitUrl: docsRepositoryPath
+        }
+      });
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          workspaceResources: ['code', 'doc'],
+          workspaceResourceConfig: {
+            code: { branch: 'feature/session-code' },
+            doc: { branch: 'feature/session-docs' }
+          },
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        201
+      );
+
+      const sessionDir = path.join(workspaceRoot, session.id);
+      await expect(
+        fs.readFile(path.join(sessionDir, 'code', 'FEATURE_BRANCH.txt'), 'utf8')
+      ).resolves.toContain('code branch');
+      await expect(
+        fs.readFile(path.join(sessionDir, 'docs', 'DOC_BRANCH.txt'), 'utf8')
+      ).resolves.toContain('docs branch');
+    });
+
+    it('工作目录初始化失败时应回滚 session 和目录', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      await getPrisma().project.update({
+        where: { id: project.id },
+        data: {
+          repoGitUrl: path.join(workspaceRoot, 'missing-repo')
+        }
+      });
+      const runner = await seedAgentRunner();
+
+      const error = expectError(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          workspaceResources: ['code'],
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        502
+      );
+
+      expect(error.message).toContain('Failed to initialize session workspace');
+      expect(
+        await getPrisma().agentSession.count({
+          where: { scopeId: project.id }
+        })
+      ).toBe(0);
+      expect(await fs.readdir(workspaceRoot)).toEqual([]);
+    });
+
+    it.each([
+      {
+        runnerType: 'claude-code',
+        expectedFiles: [
+          '.claude/rules/test-rule.md',
+          '.claude/skills/test-skill/SKILL.md',
+          '.mcp.json'
+        ],
+        unexpectedFiles: ['.claude/mcp.json', '.claude/rules/test-rule.mdc']
+      },
+      {
+        runnerType: 'cursor-cli',
+        expectedFiles: [
+          '.cursor/rules/test-rule.mdc',
+          '.cursor/skills/test-skill/SKILL.md',
+          'mcp.json'
+        ],
+        unexpectedFiles: []
+      },
+      {
+        runnerType: 'qwen-cli',
+        expectedFiles: [
+          '.qwen/skills/test-skill/SKILL.md',
+          '.qwen/settings.json',
+          'QWEN.md'
+        ],
+        unexpectedFiles: ['.qwen/rules/test-rule.md']
+      }
+    ])(
+      'CLI runner $runnerType 创建 session 时应把 profile 安装到 session workspace',
+      async ({ runnerType, expectedFiles, unexpectedFiles }) => {
+        const workspaceRoot = await createTempDirectory(
+          'agent-workbench-workspace-'
+        );
+        const project = await seedProject({
+          workspaceRootPath: workspaceRoot
+        });
+        const runner = await seedAgentRunner({
+          type: runnerType,
+          name: `${runnerType} runner`,
+          runnerConfig: {}
+        });
+        const skill = await seedSkill();
+        const rule = await seedRule();
+        const mcp = await seedMcp();
+
+        const session = expectSuccess<{ id: string }>(
+          await api().post('/api/sessions').send({
+            scopeId: project.id,
+            runnerId: runner.id,
+            workspaceResources: [],
+            skillIds: [skill.id],
+            ruleIds: [rule.id],
+            mcps: [{ resourceId: mcp.id }],
+            runnerSessionConfig: {}
+          }),
+          201
+        );
+
+        const sessionDir = path.join(workspaceRoot, session.id);
+        await Promise.all(
+          expectedFiles.map((relativePath) =>
+            expect(
+              fs.stat(path.join(sessionDir, relativePath))
+            ).resolves.toBeDefined()
+          )
+        );
+        await Promise.all(
+          unexpectedFiles.map((relativePath) =>
+            expect(
+              fs.stat(path.join(sessionDir, relativePath))
+            ).rejects.toThrow()
+          )
+        );
+
+        if (runnerType === 'qwen-cli') {
+          await expect(
+            fs.readFile(path.join(sessionDir, 'QWEN.md'), 'utf8')
+          ).resolves.toContain('## Test Rule');
+          await expect(
+            fs.readFile(path.join(sessionDir, 'QWEN.md'), 'utf8')
+          ).resolves.toContain('## Rule');
+        }
+
+        const storedSession = await getPrisma().agentSession.findUniqueOrThrow({
+          where: { id: session.id },
+          select: { runnerState: true, platformSessionConfig: true }
+        });
+
+        expect(storedSession.runnerState).toMatchObject({
+          contextDir: sessionDir,
+          profileInstallVersion: 1
+        });
+        expect(storedSession.platformSessionConfig).toMatchObject({
+          cwd: sessionDir
+        });
+      }
+    );
   });
 
   describe('GET /api/sessions - 列表查询', () => {
@@ -764,6 +1164,36 @@ describe('Sessions API', () => {
 
       const detailRes = await api().get(`/api/sessions/${session.id}`);
       expectError(detailRes, 404);
+    });
+
+    it('销毁 Session 时应同步删除托管工作目录', async () => {
+      const workspaceRoot = await createTempDirectory(
+        'agent-workbench-workspace-'
+      );
+      const project = await seedProject({
+        workspaceRootPath: workspaceRoot
+      });
+      const runner = await seedAgentRunner();
+
+      const session = expectSuccess<{ id: string }>(
+        await api().post('/api/sessions').send({
+          scopeId: project.id,
+          runnerId: runner.id,
+          workspaceResources: ['doc'],
+          skillIds: [],
+          ruleIds: [],
+          mcps: [],
+          runnerSessionConfig: {}
+        }),
+        201
+      );
+
+      const sessionDir = path.join(workspaceRoot, session.id);
+      await expect(fs.stat(sessionDir)).resolves.toBeDefined();
+
+      expectSuccess(await api().delete(`/api/sessions/${session.id}`));
+
+      await expect(fs.stat(sessionDir)).rejects.toThrow();
     });
 
     it('销毁运行中的 Session 后，不应再由后台 output consumer 向已删除会话追加事件', async () => {

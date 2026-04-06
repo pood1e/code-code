@@ -5,7 +5,10 @@ import {
   MessageRole,
   MessageStatus,
   MetricKind,
-  SessionStatus
+  SessionStatus,
+  SessionWorkspaceResourceConfig,
+  SessionWorkspaceMode,
+  SessionWorkspaceResourceKind
 } from '../types/session';
 
 const idSchema = z.string().trim().min(1);
@@ -25,12 +28,71 @@ export const platformSessionMcpSchema = z.object({
   configOverride: mcpConfigOverrideSchema.optional()
 });
 
+const workspaceBranchSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}, z.string().trim().min(1).max(255).optional());
+
+const customRunDirectorySchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}, z
+  .string()
+  .trim()
+  .min(1, 'customRunDirectory is required')
+  .refine((value) => !value.startsWith('/'), 'customRunDirectory must be relative')
+  .refine((value) => !value.split('/').some((segment) => segment === '..'), 'customRunDirectory must stay within the session directory')
+  .optional());
+
+export const sessionWorkspaceResourceConfigSchema = z
+  .object({
+    code: z
+      .object({
+        branch: workspaceBranchSchema
+      })
+      .optional(),
+    doc: z
+      .object({
+        branch: workspaceBranchSchema
+      })
+      .optional()
+  })
+  .default({} satisfies SessionWorkspaceResourceConfig);
+
 export const platformSessionConfigSchema = z.object({
+  workspaceMode: z
+    .nativeEnum(SessionWorkspaceMode)
+    .default(SessionWorkspaceMode.Project),
+  workspaceRoot: z.string().trim().min(1).optional(),
+  sessionRoot: z.string().trim().min(1).optional(),
   cwd: z.string().trim().min(1),
+  workspaceResources: z
+    .array(z.nativeEnum(SessionWorkspaceResourceKind))
+    .default([]),
+  workspaceResourceConfig: sessionWorkspaceResourceConfigSchema,
   skillIds: z.array(idSchema),
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema)
-});
+}).transform((value) => ({
+  ...value,
+  workspaceRoot: value.workspaceRoot ?? value.cwd
+}));
 
 export const sendSessionMessageInputSchema = z.object({
   input: jsonObjectSchema,
@@ -40,6 +102,11 @@ export const sendSessionMessageInputSchema = z.object({
 export const createSessionInputSchema = z.object({
   scopeId: idSchema,
   runnerId: idSchema,
+  customRunDirectory: customRunDirectorySchema,
+  workspaceResources: z
+    .array(z.nativeEnum(SessionWorkspaceResourceKind))
+    .default([]),
+  workspaceResourceConfig: sessionWorkspaceResourceConfigSchema,
   skillIds: z.array(idSchema),
   ruleIds: z.array(idSchema),
   mcps: z.array(platformSessionMcpSchema),

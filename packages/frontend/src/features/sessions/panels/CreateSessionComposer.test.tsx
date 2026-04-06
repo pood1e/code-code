@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
-import type { AgentRunnerSummary, Profile } from '@agent-workbench/shared';
 
 import {
   buildCreateSessionFormValues,
@@ -11,56 +10,41 @@ import {
 
 import { CreateSessionComposer } from './CreateSessionComposer';
 
-function createRunner(id: string, name: string): AgentRunnerSummary {
-  return {
-    id,
-    name,
-    description: null,
-    type: 'mock',
-    createdAt: '2026-04-03T10:00:00.000Z',
-    updatedAt: '2026-04-03T10:00:00.000Z'
-  };
-}
-
-function createProfile(id: string, name: string): Profile {
-  return {
-    id,
-    name,
-    description: null,
-    createdAt: '2026-04-03T10:00:00.000Z',
-    updatedAt: '2026-04-03T10:00:00.000Z'
-  };
-}
-
 function renderComposer({
   supportsStructuredInitialInput = true,
   canCancel = true,
   isCreating = false,
   hasInitialMessageDraft = true,
-  advancedOpen = false,
   submitError = null,
-  onToggleAdvanced = vi.fn(),
   onCancel = vi.fn(),
   onSubmit = vi.fn(),
-  onPromptKeyDown = vi.fn()
+  onPromptKeyDown = vi.fn(),
+  runtimeFields = [],
+  additionalInputFields = []
 }: {
   supportsStructuredInitialInput?: boolean;
   canCancel?: boolean;
   isCreating?: boolean;
   hasInitialMessageDraft?: boolean;
-  advancedOpen?: boolean;
   submitError?: string | null;
-  onToggleAdvanced?: () => void;
   onCancel?: () => void;
   onSubmit?: () => void;
   onPromptKeyDown?: React.KeyboardEventHandler<HTMLTextAreaElement>;
+  runtimeFields?: Array<{
+    name: string;
+    label: string;
+    kind: 'string' | 'boolean' | 'enum';
+    required: boolean;
+    enumOptions?: Array<{ label: string; value: string }>;
+  }>;
+  additionalInputFields?: Array<{
+    name: string;
+    label: string;
+    kind: 'string' | 'boolean' | 'enum';
+    required: boolean;
+    enumOptions?: Array<{ label: string; value: string }>;
+  }>;
 } = {}) {
-  const runners = [
-    createRunner('runner-1', 'Mock Runner'),
-    createRunner('runner-2', 'Raw Runner')
-  ];
-  const profiles = [createProfile('profile-1', 'Default Profile')];
-
   function Harness() {
     const form = useForm<CreateSessionFormValues>({
       defaultValues: {
@@ -72,17 +56,14 @@ function renderComposer({
     return (
       <CreateSessionComposer
         form={form}
-        runners={runners}
-        profiles={profiles}
-        selectedRunnerId="runner-1"
-        selectedProfileId=""
+        runtimeFields={runtimeFields}
+        additionalInputFields={additionalInputFields}
+        runnerContext={undefined}
         supportsStructuredInitialInput={supportsStructuredInitialInput}
         hasInitialMessageDraft={hasInitialMessageDraft}
-        advancedOpen={advancedOpen}
         submitError={submitError}
         canCancel={canCancel}
         isCreating={isCreating}
-        onToggleAdvanced={onToggleAdvanced}
         onCancel={onCancel}
         onSubmit={onSubmit}
         onPromptKeyDown={onPromptKeyDown}
@@ -96,7 +77,6 @@ function renderComposer({
 
   return {
     user,
-    onToggleAdvanced,
     onCancel,
     onSubmit,
     onPromptKeyDown
@@ -126,16 +106,29 @@ describe('CreateSessionComposer', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('点击高级设置和取消时应触发对应动作；创建中应禁用发送', async () => {
-    const { user, onToggleAdvanced, onCancel } = renderComposer({
+  it('应展示固定的工作区与资源区块入口文案，取消仍可触发；创建中应禁用发送', async () => {
+    const { user, onCancel } = renderComposer({
       isCreating: true
     });
-
-    await user.click(screen.getByRole('button', { name: '高级设置' }));
-    expect(onToggleAdvanced).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: '取消' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: '发送' })).toBeDisabled();
+  });
+
+  it('运行参数应位于输入框下方', () => {
+    renderComposer({
+      runtimeFields: [
+        {
+          name: 'model',
+          label: '模型',
+          kind: 'enum',
+          required: false,
+          enumOptions: [{ label: 'gpt-5', value: 'gpt-5' }]
+        }
+      ]
+    });
+
+    expect(screen.getByRole('combobox', { name: '模型' })).toBeInTheDocument();
   });
 });

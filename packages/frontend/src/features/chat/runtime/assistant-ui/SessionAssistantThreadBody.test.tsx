@@ -4,7 +4,8 @@ import type { SessionDetail, SessionMessageDetail } from '@agent-workbench/share
 import {
   MessageRole,
   MessageStatus,
-  SessionStatus
+  SessionStatus,
+  SessionWorkspaceMode
 } from '@agent-workbench/shared';
 
 import { SessionAssistantThreadBody } from './SessionAssistantThreadBody';
@@ -12,7 +13,13 @@ import type { SessionAssistantMessageRecord } from './thread-adapter';
 
 vi.mock('@assistant-ui/react', () => ({
   ThreadPrimitive: {
-    Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+    Root: ({
+      children,
+      className
+    }: {
+      children: React.ReactNode;
+      className?: string;
+    }) => <div data-testid="thread-root" className={className}>{children}</div>
   }
 }));
 
@@ -60,7 +67,10 @@ function createSession(): SessionDetail {
     createdAt: '2026-04-03T10:00:00.000Z',
     updatedAt: '2026-04-03T10:00:00.000Z',
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp',
       cwd: '/tmp',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []
@@ -156,5 +166,12 @@ describe('SessionAssistantThreadBody', () => {
     expect(await screen.findByText('history:42')).toBeInTheDocument();
     expect(screen.getByText('reload-disabled')).toBeInTheDocument();
     expect(screen.getByText('load-more-enabled')).toBeInTheDocument();
+  });
+
+  it('线程根节点应裁剪整体滚动，保持消息区与输入区分层布局', () => {
+    renderBody();
+
+    expect(screen.getByTestId('thread-root')).toHaveClass('overflow-hidden');
+    expect(screen.getByTestId('thread-root')).toHaveClass('flex-1');
   });
 });

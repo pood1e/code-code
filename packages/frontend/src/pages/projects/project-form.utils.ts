@@ -8,7 +8,7 @@ import {
 } from '@agent-workbench/shared';
 import { z } from 'zod';
 
-import { normalizeDescription } from '@/utils/format-display';
+import { normalizeDescription, normalizeOptionalText } from '@/utils/format-display';
 
 const projectNameSchema = z
   .string()
@@ -20,20 +20,30 @@ const projectDescriptionSchema = z
   .trim()
   .max(500, 'Project 描述不能超过 500 个字符')
   .optional();
-const workspacePathSchema = z.string().trim().min(1, 'Workspace 路径不能为空');
+const workspaceRootPathSchema = z.string().trim().min(1, '工作根目录不能为空');
+const projectDocGitUrlFormSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value.length === 0 || sshGitUrlSchema.safeParse(value).success,
+    '请输入合法的 SSH Git 地址'
+  )
+  .optional();
 
 export const createProjectFormSchema = z.object({
   name: projectNameSchema,
   description: projectDescriptionSchema,
-  gitUrl: sshGitUrlSchema,
-  workspacePath: workspacePathSchema
+  repoGitUrl: sshGitUrlSchema,
+  workspaceRootPath: workspaceRootPathSchema,
+  docGitUrl: projectDocGitUrlFormSchema
 });
 
 export const projectConfigFormSchema = z.object({
   name: projectNameSchema,
   description: projectDescriptionSchema,
-  gitUrl: sshGitUrlSchema,
-  workspacePath: workspacePathSchema
+  repoGitUrl: sshGitUrlSchema,
+  workspaceRootPath: workspaceRootPathSchema,
+  docGitUrl: projectDocGitUrlFormSchema
 });
 
 export type CreateProjectFormValues = z.infer<typeof createProjectFormSchema>;
@@ -45,8 +55,9 @@ export function buildProjectFormValues(
   return {
     name: project?.name ?? '',
     description: project?.description ?? '',
-    gitUrl: project?.gitUrl ?? '',
-    workspacePath: project?.workspacePath ?? ''
+    repoGitUrl: project?.repoGitUrl ?? '',
+    workspaceRootPath: project?.workspaceRootPath ?? '',
+    docGitUrl: project?.docGitUrl ?? ''
   };
 }
 
@@ -56,8 +67,9 @@ export function buildCreateProjectInput(
   return createProjectInputSchema.parse({
     name: values.name,
     description: normalizeDescription(values.description),
-    gitUrl: values.gitUrl,
-    workspacePath: values.workspacePath
+    repoGitUrl: values.repoGitUrl,
+    workspaceRootPath: values.workspaceRootPath,
+    docGitUrl: normalizeOptionalText(values.docGitUrl)
   });
 }
 
@@ -67,6 +79,8 @@ export function buildUpdateProjectInput(
   return updateProjectInputSchema.parse({
     name: values.name,
     description: normalizeDescription(values.description),
-    workspacePath: values.workspacePath
+    repoGitUrl: values.repoGitUrl,
+    workspaceRootPath: values.workspaceRootPath,
+    docGitUrl: normalizeOptionalText(values.docGitUrl)
   });
 }

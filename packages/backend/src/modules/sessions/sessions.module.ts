@@ -5,6 +5,7 @@ import { SessionEventStore } from './session-event.store';
 import { SessionEventsGuard } from './session-events.guard';
 import { SessionMapper } from './session-mapper';
 import { SessionRuntimeService } from './session-runtime.service';
+import { SessionWorkspaceService } from './session-workspace.service';
 import { SessionsCommandService } from './sessions-command.service';
 import { SessionsController } from './sessions.controller';
 import { SessionsQueryService } from './sessions-query.service';
@@ -20,9 +21,9 @@ import { SessionsService } from './sessions.service';
     SessionRuntimeService,
     SessionEventStore,
     SessionMapper,
+    SessionWorkspaceService,
     SessionEventsGuard
   ],
   exports: [SessionsCommandService]
 })
 export class SessionsModule {}
-

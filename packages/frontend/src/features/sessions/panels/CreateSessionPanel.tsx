@@ -8,6 +8,7 @@ import type {
 
 import { CreateSessionAdvancedSettings } from './CreateSessionAdvancedSettings';
 import { CreateSessionComposer } from './CreateSessionComposer';
+import { CreateSessionSetupBar } from './CreateSessionSetupBar';
 import { useCreateSessionPanelState } from './use-create-session-panel-state';
 
 export function CreateSessionPanel({
@@ -35,10 +36,11 @@ export function CreateSessionPanel({
 }) {
   const {
     form,
-    advancedOpen,
     submitError,
     selectedRunnerId,
     selectedProfileId,
+    useCustomRunDirectory,
+    selectedWorkspaceResources,
     selectedSkillIds,
     selectedRuleIds,
     selectedMcpIds,
@@ -49,7 +51,6 @@ export function CreateSessionPanel({
     hasInitialMessageDraft,
     runnerContext,
     isCreating,
-    setAdvancedOpen,
     toggleSelection,
     submit,
     handlePromptKeyDown
@@ -61,40 +62,46 @@ export function CreateSessionPanel({
   });
 
   return (
-    <div className="flex min-h-[36rem] flex-col xl:min-h-[calc(100vh-14rem)]">
-      <CreateSessionComposer
-        form={form}
-        runners={runners}
-        profiles={profiles}
-        selectedRunnerId={selectedRunnerId}
-        selectedProfileId={selectedProfileId}
-        supportsStructuredInitialInput={supportsStructuredInitialInput}
-        hasInitialMessageDraft={hasInitialMessageDraft}
-        advancedOpen={advancedOpen}
-        submitError={submitError}
-        canCancel={canCancel}
-        isCreating={isCreating}
-        onToggleAdvanced={() => setAdvancedOpen(!advancedOpen)}
-        onCancel={onCancel}
-        onSubmit={() => void submit()}
-        onPromptKeyDown={handlePromptKeyDown}
-      />
+    <div className="flex min-h-0 flex-col">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-2 py-2 sm:px-4 sm:py-4">
+        <CreateSessionSetupBar
+          form={form}
+          runners={runners}
+          profiles={profiles}
+          selectedRunnerId={selectedRunnerId}
+          selectedProfileId={selectedProfileId}
+          sessionConfigFields={
+            sessionConfigSchema.supported ? sessionConfigSchema.fields : []
+          }
+          runnerContext={runnerContext}
+        />
 
-      <CreateSessionAdvancedSettings
-        open={advancedOpen}
-        control={form.control}
-        additionalInputFields={additionalInputFields}
-        sessionConfigFields={
-          sessionConfigSchema.supported ? sessionConfigSchema.fields : []
-        }
-        runtimeFields={runtimeFields}
-        runnerContext={runnerContext}
-        resources={resources}
-        selectedSkillIds={selectedSkillIds}
-        selectedRuleIds={selectedRuleIds}
-        selectedMcpIds={selectedMcpIds}
-        onToggleSelection={toggleSelection}
-      />
+        <CreateSessionAdvancedSettings
+          control={form.control}
+          useCustomRunDirectory={useCustomRunDirectory}
+          resources={resources}
+          selectedWorkspaceResources={selectedWorkspaceResources}
+          selectedSkillIds={selectedSkillIds}
+          selectedRuleIds={selectedRuleIds}
+          selectedMcpIds={selectedMcpIds}
+          onToggleSelection={toggleSelection}
+        />
+
+        <CreateSessionComposer
+          form={form}
+          runtimeFields={runtimeFields}
+          additionalInputFields={additionalInputFields}
+          runnerContext={runnerContext}
+          supportsStructuredInitialInput={supportsStructuredInitialInput}
+          hasInitialMessageDraft={hasInitialMessageDraft}
+          submitError={submitError}
+          canCancel={canCancel}
+          isCreating={isCreating}
+          onCancel={onCancel}
+          onSubmit={() => void submit()}
+          onPromptKeyDown={handlePromptKeyDown}
+        />
+      </div>
     </div>
   );
 }

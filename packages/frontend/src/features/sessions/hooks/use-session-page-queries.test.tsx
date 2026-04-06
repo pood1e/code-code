@@ -7,6 +7,7 @@ import {
   MessageRole,
   MessageStatus,
   SessionStatus,
+  SessionWorkspaceMode,
   type AgentRunnerSummary,
   type RunnerTypeResponse,
   type SessionDetail,
@@ -83,7 +84,10 @@ function createSessionDetail(id: string): SessionDetail {
   return {
     ...createSessionSummary(id),
     platformSessionConfig: {
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: '/tmp',
       cwd: '/tmp',
+      workspaceResources: [],
       skillIds: [],
       ruleIds: [],
       mcps: []

@@ -41,6 +41,11 @@ export function ArtifactList({ pipelineId, artifacts }: Props) {
             <span className="flex-1 min-w-0 truncate font-mono text-xs">
               {artifact.name}
             </span>
+            {artifact.metadata && (
+              <span className="text-[11px] text-muted-foreground shrink-0">
+                A{artifact.metadata.attempt} · v{artifact.metadata.version}
+              </span>
+            )}
             <span className="text-xs text-muted-foreground shrink-0">
               {artifact.contentType.split('/')[1]}
             </span>

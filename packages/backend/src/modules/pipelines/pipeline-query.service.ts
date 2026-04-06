@@ -2,39 +2,25 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import type { PipelineStatus } from '@agent-workbench/shared';
 
-import { PrismaService } from '../../prisma/prisma.service';
 import {
   toPipelineArtifactSummary,
   toPipelineDetail,
   toPipelineStageSummary,
   toPipelineSummary
 } from './pipeline-mapper';
+import { PipelineRepository } from './pipeline.repository';
 
 @Injectable()
 export class PipelineQueryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly pipelineRepository: PipelineRepository) {}
 
   async list(scopeId?: string, status?: PipelineStatus) {
-    const pipelines = await this.prisma.pipeline.findMany({
-      where: {
-        ...(scopeId ? { scopeId } : {}),
-        ...(status ? { status } : {})
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
+    const pipelines = await this.pipelineRepository.listPipelines(scopeId, status);
     return pipelines.map(toPipelineSummary);
   }
 
   async getById(id: string) {
-    const pipeline = await this.prisma.pipeline.findUnique({
-      where: { id },
-      include: {
-        stages: true,
-        artifacts: true
-      }
-    });
-
+    const pipeline = await this.pipelineRepository.getPipelineDetail(id);
     if (!pipeline) {
       throw new NotFoundException(`Pipeline not found: ${id}`);
     }
@@ -43,36 +29,23 @@ export class PipelineQueryService {
   }
 
   async getStagesByPipelineId(pipelineId: string) {
-    const pipeline = await this.prisma.pipeline.findUnique({
-      where: { id: pipelineId }
-    });
-
+    const pipeline = await this.pipelineRepository.findPipelineById(pipelineId);
     if (!pipeline) {
       throw new NotFoundException(`Pipeline not found: ${pipelineId}`);
     }
 
-    const stages = await this.prisma.pipelineStage.findMany({
-      where: { pipelineId },
-      orderBy: { order: 'asc' }
-    });
-
+    const stages = await this.pipelineRepository.getPipelineStages(pipelineId);
     return stages.map(toPipelineStageSummary);
   }
 
   async getArtifactsByPipelineId(pipelineId: string) {
-    const pipeline = await this.prisma.pipeline.findUnique({
-      where: { id: pipelineId }
-    });
-
+    const pipeline = await this.pipelineRepository.findPipelineById(pipelineId);
     if (!pipeline) {
       throw new NotFoundException(`Pipeline not found: ${pipelineId}`);
     }
 
-    const artifacts = await this.prisma.pipelineArtifact.findMany({
-      where: { pipelineId },
-      orderBy: { createdAt: 'asc' }
-    });
-
+    const artifacts =
+      await this.pipelineRepository.getReadyArtifactsByPipelineId(pipelineId);
     return artifacts.map(toPipelineArtifactSummary);
   }
 }

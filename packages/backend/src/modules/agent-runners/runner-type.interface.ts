@@ -5,7 +5,6 @@ import type {
   RunnerContext,
   ToolCallKind
 } from '@agent-workbench/shared';
-import type { MaterializerTarget } from './cli/context-materializer';
 
 export type RunnerSessionRecord = {
   id: string;
@@ -21,6 +20,23 @@ export type RunnerSendPayload = {
   messageId: string;
   input: Record<string, unknown>;
   runtimeConfig: Record<string, unknown>;
+};
+
+export type RunnerProfileResources = {
+  skills: Array<{ name: string; content: string }>;
+  rules: Array<{ name: string; content: string }>;
+  mcps: Array<{
+    name: string;
+    content: import('@agent-workbench/shared').McpStdioContent;
+    configOverride?: import('@agent-workbench/shared').McpConfigOverride;
+  }>;
+};
+
+export type RunnerProfileInstallInput = {
+  sessionId: string;
+  platformConfig: PlatformSessionConfig;
+  runnerState: Record<string, unknown>;
+  resources: RunnerProfileResources;
 };
 
 export type RunnerOutputChunkKind =
@@ -110,14 +126,13 @@ export interface RunnerType extends RunnerTypeMeta {
   inputSchema: ZodTypeAny;
   runtimeConfigSchema: ZodTypeAny;
 
-  /**
-   * If set, this runner is backed by an external CLI and requires
-   * context materialization (MCP/Rule/Skill file writing) during session creation.
-   */
-  materializerTarget?: MaterializerTarget;
-
   checkHealth(runnerConfig: unknown): Promise<'online' | 'offline' | 'unknown'>;
   probeContext?(runnerConfig: unknown): Promise<RunnerContext>;
+  resolveRuntimeConfig?(
+    runnerConfig: Record<string, unknown>,
+    runtimeConfig: Record<string, unknown>
+  ): Record<string, unknown>;
+  installProfile(input: RunnerProfileInstallInput): Promise<void>;
   createSession(
     sessionId: string,
     runnerConfig: unknown,

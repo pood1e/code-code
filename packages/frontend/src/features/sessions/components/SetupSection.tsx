@@ -13,12 +13,12 @@ export function SetupSection({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-border/40 bg-muted/15 p-4 ${className ?? ''}`}
+      className={`rounded-xl border border-border/40 bg-background/70 p-3 sm:p-4 ${className ?? ''}`}
     >
-      <div className="mb-4">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
+      <div className="mb-3">
+        <p className="text-sm font-medium text-foreground">{title}</p>
         {description ? (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
         ) : null}
       </div>
       {children}

@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 
 import { PipelineStatus } from '@agent-workbench/shared';
+import type { PipelineHumanReviewDecision } from '@agent-workbench/shared';
 
 import { ApiWrappedErrorResponse } from '../../common/api-error-response.decorator';
 import { ResponseMessage } from '../../common/response-message.decorator';
@@ -36,7 +37,7 @@ import {
 } from './dto/pipeline.dto';
 import { StartPipelineDto } from './dto/start-pipeline.dto';
 import { SubmitHumanDecisionDto } from './dto/human-decision.dto';
-import { PipelineEventStore } from './pipeline-event.store';
+import { PipelineEventStreamService } from './pipeline-event-stream.service';
 import { PipelineQueryService } from './pipeline-query.service';
 import { PipelinesService } from './pipelines.service';
 
@@ -47,7 +48,7 @@ export class PipelinesController {
   constructor(
     private readonly pipelinesService: PipelinesService,
     private readonly pipelineQueryService: PipelineQueryService,
-    private readonly pipelineEventStore: PipelineEventStore
+    private readonly pipelineEventStreamService: PipelineEventStreamService
   ) {}
 
 
@@ -187,13 +188,12 @@ export class PipelinesController {
     messageExample: 'Artifact not found: artifact_123'
   })
   async getArtifactContent(
-    @Param('id') _pipelineId: string,
+    @Param('id') pipelineId: string,
     @Param('artifactId') artifactId: string,
     @Res() res: Response
   ) {
-    const detail = await this.pipelineQueryService.getById(_pipelineId);
-    const artifact = detail.artifacts.find((a) => a.id === artifactId);
-    if (!artifact) {
+    const artifact = await this.pipelinesService.getArtifactById(artifactId);
+    if (!artifact || artifact.pipelineId !== pipelineId) {
       throw new NotFoundException(`Artifact not found: ${artifactId}`);
     }
     const content = await this.pipelinesService.readArtifactContent(artifactId);
@@ -225,7 +225,19 @@ export class PipelinesController {
   ) {
     return this.pipelinesService.start(id, {
       runnerId: dto.runnerId,
-      config: dto.maxRetry !== undefined ? { maxRetry: dto.maxRetry } : undefined
+      config:
+        dto.maxRetry !== undefined ||
+        dto.requireHumanReviewOnSuccess !== undefined
+          ? {
+              ...(dto.maxRetry !== undefined ? { maxRetry: dto.maxRetry } : {}),
+              ...(dto.requireHumanReviewOnSuccess !== undefined
+                ? {
+                    requireHumanReviewOnSuccess:
+                      dto.requireHumanReviewOnSuccess
+                  }
+                : {})
+            }
+          : undefined
     });
   }
 
@@ -249,7 +261,18 @@ export class PipelinesController {
     @Param('id') id: string,
     @Body() dto: SubmitHumanDecisionDto
   ) {
-    await this.pipelinesService.submitDecision(id, dto.decision);
+    await this.pipelinesService.submitDecision(
+      id,
+      {
+        action: dto.decision.action,
+        ...(dto.decision.comment !== undefined
+          ? { comment: dto.decision.comment }
+          : {}),
+        ...(dto.decision.editedOutput !== undefined
+          ? { editedOutput: dto.decision.editedOutput }
+          : {})
+      } as PipelineHumanReviewDecision
+    );
   }
 
   @Sse(':id/events')
@@ -263,7 +286,6 @@ export class PipelinesController {
     @Query('lastEventId') lastEventId?: string
   ): Promise<Observable<MessageEvent>> {
     const afterEventId = lastEventId ? parseInt(lastEventId, 10) : 0;
-    return this.pipelineEventStore.createStream(id, afterEventId);
+    return this.pipelineEventStreamService.createStream(id, afterEventId);
   }
 }
-
