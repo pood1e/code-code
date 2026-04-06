@@ -5,7 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
+  DEFAULT_GOVERNANCE_POLICY_INPUT,
   GovernanceAssessmentSource,
+  GovernanceAutomationStage,
   GovernanceAutoActionEligibility,
   GovernanceChangeActionType,
   GovernanceChangePlanStatus,
@@ -22,17 +24,20 @@ import {
   GovernancePriority,
   GovernanceReviewDecisionType,
   GovernanceReviewSubjectType,
+  type GovernanceRunnerSelection,
   GovernanceVerificationResultStatus,
   GovernanceSeverity,
   GovernanceVerificationCheckType,
   GovernanceVerificationSubjectType,
-  GovernanceViolationPolicy
+  GovernanceViolationPolicy,
+  type UpdateGovernancePolicyInput
 } from '@agent-workbench/shared';
 
 import { GovernanceAutomationService } from '../src/modules/governance/governance-automation.service';
 import { GovernanceRepository } from '../src/modules/governance/governance.repository';
 import type { GovernanceSessionResult } from '../src/modules/governance/governance-runner-bridge.service';
 import { GovernanceRunnerBridgeService } from '../src/modules/governance/governance-runner-bridge.service';
+import { GovernanceRunnerResolverService } from '../src/modules/governance/governance-runner-resolver.service';
 import { GovernanceService } from '../src/modules/governance/governance.service';
 import { api, expectError, expectSuccess, seedAgentRunner, seedProject } from './helpers';
 import { getApp, getPrisma, resetDatabase, setupTestApp, teardownTestApp } from './setup';
@@ -145,8 +150,91 @@ describe('Governance API', () => {
     expect(overview.latestBaselineAttempt?.status).toBe('succeeded');
   });
 
+  it('governance runner resolver 在未配置 runner 时应返回 null', async () => {
+    const resolver = getApp().get(GovernanceRunnerResolverService);
+    const project = await seedProject();
+
+    await seedAgentRunner({ name: 'MiniMax 2.7 Runner' });
+
+    await expect(
+      resolver.resolveRunnerId({
+        scopeId: project.id,
+        stageType: GovernanceAutomationStage.Discovery
+      })
+    ).resolves.toBeNull();
+  });
+
+  it('governance runner resolver 应优先使用 stage override，其次使用 scope 默认 runner', async () => {
+    const resolver = getApp().get(GovernanceRunnerResolverService);
+    const project = await seedProject();
+    const defaultRunner = await seedAgentRunner({
+      name: 'Governance Default Runner'
+    });
+    const executionRunner = await seedAgentRunner({
+      name: 'Governance Execution Runner'
+    });
+
+    await api()
+      .put(`/api/governance/scopes/${project.id}/policy`)
+      .send(
+        createGovernancePolicyInput({
+          runnerSelection: {
+            defaultRunnerId: defaultRunner.id,
+            discoveryRunnerId: null,
+            triageRunnerId: null,
+            planningRunnerId: null,
+            executionRunnerId: executionRunner.id
+          }
+        })
+      )
+      .expect(200);
+
+    await expect(
+      resolver.resolveRunnerId({
+        scopeId: project.id,
+        stageType: GovernanceAutomationStage.Discovery
+      })
+    ).resolves.toBe(defaultRunner.id);
+    await expect(
+      resolver.resolveRunnerId({
+        scopeId: project.id,
+        stageType: GovernanceAutomationStage.Execution
+      })
+    ).resolves.toBe(executionRunner.id);
+  });
+
+  it('governance runner resolver 在配置 runner 不存在时应返回 null', async () => {
+    const resolver = getApp().get(GovernanceRunnerResolverService);
+    const project = await seedProject();
+
+    await api()
+      .put(`/api/governance/scopes/${project.id}/policy`)
+      .send(
+        createGovernancePolicyInput({
+          runnerSelection: {
+            defaultRunnerId: 'missing-runner-id',
+            discoveryRunnerId: null,
+            triageRunnerId: null,
+            planningRunnerId: null,
+            executionRunnerId: null
+          }
+        })
+      )
+      .expect(200);
+
+    await expect(
+      resolver.resolveRunnerId({
+        scopeId: project.id,
+        stageType: GovernanceAutomationStage.Triage
+      })
+    ).resolves.toBeNull();
+  });
+
   it('应返回默认 governance policy 并支持更新', async () => {
     const project = await seedProject();
+    const defaultRunner = await seedAgentRunner({
+      name: 'Governance Default Runner'
+    });
 
     const initialResponse = await api().get(
       `/api/governance/scopes/${project.id}/policy`
@@ -155,10 +243,12 @@ describe('Governance API', () => {
       scopeId: string;
       priorityPolicy: { defaultPriority: string };
       deliveryPolicy: { commitMode: string };
+      runnerSelection: { defaultRunnerId: string | null };
     }>(initialResponse);
     expect(initialPolicy.scopeId).toBe(project.id);
     expect(initialPolicy.priorityPolicy.defaultPriority).toBe('p2');
     expect(initialPolicy.deliveryPolicy.commitMode).toBe('per_unit');
+    expect(initialPolicy.runnerSelection.defaultRunnerId).toBeNull();
 
     const updateResponse = await api()
       .put(`/api/governance/scopes/${project.id}/policy`)
@@ -186,6 +276,13 @@ describe('Governance API', () => {
         deliveryPolicy: {
           commitMode: GovernanceDeliveryCommitMode.Squash,
           autoCloseIssueOnApprovedDelivery: false
+        },
+        runnerSelection: {
+          defaultRunnerId: defaultRunner.id,
+          discoveryRunnerId: null,
+          triageRunnerId: null,
+          planningRunnerId: null,
+          executionRunnerId: null
         }
       })
       .expect(200);
@@ -193,11 +290,13 @@ describe('Governance API', () => {
       priorityPolicy: { defaultPriority: string };
       autoActionPolicy: { defaultEligibility: string };
       deliveryPolicy: { commitMode: string; autoCloseIssueOnApprovedDelivery: boolean };
+      runnerSelection: { defaultRunnerId: string | null };
     }>(updateResponse);
     expect(updatedPolicy.priorityPolicy.defaultPriority).toBe('p1');
     expect(updatedPolicy.autoActionPolicy.defaultEligibility).toBe('suggest_only');
     expect(updatedPolicy.deliveryPolicy.commitMode).toBe('squash');
     expect(updatedPolicy.deliveryPolicy.autoCloseIssueOnApprovedDelivery).toBe(false);
+    expect(updatedPolicy.runnerSelection.defaultRunnerId).toBe(defaultRunner.id);
   });
 
   it('discovery run 应创建 pending findings 且重复执行不重复插入', async () => {
@@ -205,7 +304,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: workspace.workspacePath
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
 
     const automationBridge = mockGovernanceAutomationBridge([
       createCompletedGovernanceResult({
@@ -243,7 +342,8 @@ describe('Governance API', () => {
     try {
       await api()
         .put(`/api/governance/scopes/${project.id}/policy`)
-        .send({
+        .send(
+          createGovernancePolicyInput({
           priorityPolicy: {
             defaultPriority: GovernancePriority.P1
           },
@@ -253,8 +353,16 @@ describe('Governance API', () => {
           deliveryPolicy: {
             commitMode: GovernanceDeliveryCommitMode.Squash,
             autoCloseIssueOnApprovedDelivery: false
+          },
+          runnerSelection: {
+            defaultRunnerId: runner.id,
+            discoveryRunnerId: runner.id,
+            triageRunnerId: null,
+            planningRunnerId: null,
+            executionRunnerId: null
           }
-        })
+          })
+        )
         .expect(200);
 
       await api()
@@ -540,7 +648,7 @@ describe('Governance API', () => {
 
   it('triage worker 应消费 pending finding 并创建 issue', async () => {
     const project = await seedProject();
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const automationBridge = mockGovernanceAutomationBridge([
       createCompletedGovernanceResult({
@@ -571,7 +679,8 @@ describe('Governance API', () => {
     try {
       await api()
         .put(`/api/governance/scopes/${project.id}/policy`)
-        .send({
+        .send(
+          createGovernancePolicyInput({
           priorityPolicy: {
             defaultPriority: GovernancePriority.P1,
             severityOverrides: {
@@ -587,8 +696,16 @@ describe('Governance API', () => {
           deliveryPolicy: {
             commitMode: GovernanceDeliveryCommitMode.PerUnit,
             autoCloseIssueOnApprovedDelivery: true
+          },
+          runnerSelection: {
+            defaultRunnerId: runner.id,
+            discoveryRunnerId: null,
+            triageRunnerId: runner.id,
+            planningRunnerId: null,
+            executionRunnerId: null
           }
-        })
+          })
+        )
         .expect(200);
 
       const findingResponse = await api().post('/api/governance/findings').send({
@@ -640,7 +757,7 @@ describe('Governance API', () => {
 
   it('triage merge 到 closed issue 时应 reopen', async () => {
     const project = await seedProject();
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -654,6 +771,14 @@ describe('Governance API', () => {
     ]);
 
     try {
+      await assignGovernanceRunnerSelection(project.id, {
+        defaultRunnerId: runner.id,
+        discoveryRunnerId: null,
+        triageRunnerId: runner.id,
+        planningRunnerId: null,
+        executionRunnerId: null
+      });
+
       await getPrisma().issue.update({
         where: { id: issue.id },
         data: {
@@ -686,7 +811,7 @@ describe('Governance API', () => {
 
   it('triage merge 到 deferred issue 时应静默归并并 dismiss finding', async () => {
     const project = await seedProject();
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -700,6 +825,14 @@ describe('Governance API', () => {
     ]);
 
     try {
+      await assignGovernanceRunnerSelection(project.id, {
+        defaultRunnerId: runner.id,
+        discoveryRunnerId: null,
+        triageRunnerId: runner.id,
+        planningRunnerId: null,
+        executionRunnerId: null
+      });
+
       await api()
         .post(`/api/governance/issues/${issue.id}/resolution-decisions`)
         .send({
@@ -881,7 +1014,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: '/Users/pood1e/workspace/code-code'
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -930,7 +1063,8 @@ describe('Governance API', () => {
     try {
       await api()
         .put(`/api/governance/scopes/${project.id}/policy`)
-        .send({
+        .send(
+          createGovernancePolicyInput({
           priorityPolicy: {
             defaultPriority: GovernancePriority.P2
           },
@@ -941,8 +1075,16 @@ describe('Governance API', () => {
           deliveryPolicy: {
             commitMode: GovernanceDeliveryCommitMode.Squash,
             autoCloseIssueOnApprovedDelivery: false
+          },
+          runnerSelection: {
+            defaultRunnerId: runner.id,
+            discoveryRunnerId: null,
+            triageRunnerId: null,
+            planningRunnerId: runner.id,
+            executionRunnerId: null
           }
-        })
+          })
+        )
         .expect(200);
 
       await api()
@@ -983,7 +1125,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: '/Users/pood1e/workspace/code-code'
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -992,7 +1134,8 @@ describe('Governance API', () => {
     try {
       await api()
         .put(`/api/governance/scopes/${project.id}/policy`)
-        .send({
+        .send(
+          createGovernancePolicyInput({
           priorityPolicy: {
             defaultPriority: GovernancePriority.P1
           },
@@ -1002,8 +1145,16 @@ describe('Governance API', () => {
           deliveryPolicy: {
             commitMode: GovernanceDeliveryCommitMode.PerUnit,
             autoCloseIssueOnApprovedDelivery: true
+          },
+          runnerSelection: {
+            defaultRunnerId: runner.id,
+            discoveryRunnerId: null,
+            triageRunnerId: null,
+            planningRunnerId: runner.id,
+            executionRunnerId: null
           }
-        })
+          })
+        )
         .expect(200);
 
       await api()
@@ -1030,7 +1181,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: '/Users/pood1e/workspace/code-code'
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -1075,7 +1226,8 @@ describe('Governance API', () => {
     try {
       await api()
         .put(`/api/governance/scopes/${project.id}/policy`)
-        .send({
+        .send(
+          createGovernancePolicyInput({
           priorityPolicy: {
             defaultPriority: GovernancePriority.P2
           },
@@ -1085,8 +1237,16 @@ describe('Governance API', () => {
           deliveryPolicy: {
             commitMode: GovernanceDeliveryCommitMode.PerUnit,
             autoCloseIssueOnApprovedDelivery: true
+          },
+          runnerSelection: {
+            defaultRunnerId: runner.id,
+            discoveryRunnerId: null,
+            triageRunnerId: null,
+            planningRunnerId: runner.id,
+            executionRunnerId: null
           }
-        })
+          })
+        )
         .expect(200);
 
       await api()
@@ -1183,7 +1343,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: '/Users/pood1e/workspace/code-code'
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await governanceService.createIssueWithAssessment({
@@ -1222,6 +1382,14 @@ describe('Governance API', () => {
     );
 
     try {
+      await assignGovernanceRunnerSelection(project.id, {
+        defaultRunnerId: runner.id,
+        discoveryRunnerId: null,
+        triageRunnerId: null,
+        planningRunnerId: runner.id,
+        executionRunnerId: null
+      });
+
       await automationService.runPlanningCycle();
       await automationService.runPlanningCycle();
       await automationService.runPlanningCycle();
@@ -1246,7 +1414,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: workspace.workspacePath
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -1325,6 +1493,14 @@ describe('Governance API', () => {
     );
 
     try {
+      await assignGovernanceRunnerSelection(project.id, {
+        defaultRunnerId: runner.id,
+        discoveryRunnerId: null,
+        triageRunnerId: null,
+        planningRunnerId: null,
+        executionRunnerId: runner.id
+      });
+
       const processed = await automationService.runExecutionCycle();
       expect(processed).toBe(true);
 
@@ -1345,7 +1521,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: workspace.workspacePath
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -1424,6 +1600,14 @@ describe('Governance API', () => {
     );
 
     try {
+      await assignGovernanceRunnerSelection(project.id, {
+        defaultRunnerId: runner.id,
+        discoveryRunnerId: null,
+        triageRunnerId: null,
+        planningRunnerId: null,
+        executionRunnerId: runner.id
+      });
+
       await automationService.runExecutionCycle();
 
       let detail = expectSuccess<GovernanceIssueDetail>(
@@ -1721,7 +1905,7 @@ describe('Governance API', () => {
     const project = await seedProject({
       workspacePath: workspace.workspacePath
     });
-    await seedAgentRunner();
+    const runner = await seedAgentRunner();
     const automationService = getApp().get(GovernanceAutomationService);
     const governanceService = getApp().get(GovernanceService);
     const issue = await seedIssue(governanceService, project.id);
@@ -1822,6 +2006,14 @@ describe('Governance API', () => {
     );
 
     try {
+      await assignGovernanceRunnerSelection(project.id, {
+        defaultRunnerId: runner.id,
+        discoveryRunnerId: null,
+        triageRunnerId: null,
+        planningRunnerId: null,
+        executionRunnerId: runner.id
+      });
+
       await automationService.runExecutionCycle();
 
       let detail = expectSuccess<GovernanceIssueDetail>(
@@ -1883,6 +2075,37 @@ async function seedIssue(governanceService: GovernanceService, scopeId: string) 
       assessedBy: GovernanceAssessmentSource.Agent
     }
   });
+}
+
+async function assignGovernanceRunnerSelection(
+  scopeId: string,
+  runnerSelection: GovernanceRunnerSelection
+) {
+  const governanceService = getApp().get(GovernanceService);
+
+  await governanceService.updateGovernancePolicy(
+    scopeId,
+    createGovernancePolicyInput({ runnerSelection })
+  );
+}
+
+function createGovernancePolicyInput(
+  overrides: Partial<UpdateGovernancePolicyInput> = {}
+): UpdateGovernancePolicyInput {
+  return {
+    priorityPolicy:
+      overrides.priorityPolicy ??
+      DEFAULT_GOVERNANCE_POLICY_INPUT.priorityPolicy,
+    autoActionPolicy:
+      overrides.autoActionPolicy ??
+      DEFAULT_GOVERNANCE_POLICY_INPUT.autoActionPolicy,
+    deliveryPolicy:
+      overrides.deliveryPolicy ??
+      DEFAULT_GOVERNANCE_POLICY_INPUT.deliveryPolicy,
+    ...(overrides.runnerSelection !== undefined
+      ? { runnerSelection: overrides.runnerSelection }
+      : {})
+  };
 }
 
 function createTempGitWorkspace(tempWorkspaces: string[]) {

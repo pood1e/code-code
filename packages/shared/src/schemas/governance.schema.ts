@@ -180,12 +180,21 @@ export const governanceDeliveryPolicySchema = z.object({
   autoCloseIssueOnApprovedDelivery: z.boolean()
 });
 
+export const governanceRunnerSelectionSchema = z.object({
+  defaultRunnerId: idSchema.nullable(),
+  discoveryRunnerId: idSchema.nullable(),
+  triageRunnerId: idSchema.nullable(),
+  planningRunnerId: idSchema.nullable(),
+  executionRunnerId: idSchema.nullable()
+});
+
 export const governancePolicySchema = z.object({
   id: idSchema,
   scopeId: idSchema,
   priorityPolicy: governancePriorityPolicySchema,
   autoActionPolicy: governanceAutoActionPolicySchema,
   deliveryPolicy: governanceDeliveryPolicySchema,
+  runnerSelection: governanceRunnerSelectionSchema,
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema
 });
@@ -590,5 +599,6 @@ export const createReviewDecisionInputSchema = z.discriminatedUnion(
 export const updateGovernancePolicyInputSchema = z.object({
   priorityPolicy: governancePriorityPolicySchema,
   autoActionPolicy: governanceAutoActionPolicySchema,
-  deliveryPolicy: governanceDeliveryPolicySchema
+  deliveryPolicy: governanceDeliveryPolicySchema,
+  runnerSelection: governanceRunnerSelectionSchema.optional()
 });

@@ -1,17 +1,33 @@
 import { Injectable } from '@nestjs/common';
+import {
+  GovernanceAutomationStage,
+  resolveGovernanceRunnerIdForStage
+} from '@agent-workbench/shared';
 
-import { PrismaService } from '../../prisma/prisma.service';
+import { GovernanceRepository } from './governance.repository';
 
 @Injectable()
 export class GovernanceRunnerResolverService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly governanceRepository: GovernanceRepository
+  ) {}
 
-  async resolveRunnerId() {
-    const runner = await this.prisma.agentRunner.findFirst({
-      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
-      select: { id: true }
-    });
+  async resolveRunnerId(input: {
+    scopeId: string;
+    stageType: GovernanceAutomationStage;
+  }) {
+    const policy =
+      await this.governanceRepository.getOrCreateGovernancePolicy(input.scopeId);
+    const configuredRunnerId = resolveGovernanceRunnerIdForStage(
+      policy.runnerSelection,
+      input.stageType
+    );
+    if (!configuredRunnerId) {
+      return null;
+    }
 
-    return runner?.id ?? null;
+    const runnerExists =
+      await this.governanceRepository.agentRunnerExists(configuredRunnerId);
+    return runnerExists ? configuredRunnerId : null;
   }
 }

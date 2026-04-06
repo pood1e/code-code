@@ -128,11 +128,6 @@ export class GovernanceAutomationService
   }
 
   async runDiscoveryCycle(scopeId?: string) {
-    const runnerId = await this.governanceRunnerResolver.resolveRunnerId();
-    if (!runnerId) {
-      return false;
-    }
-
     const scopes = scopeId
       ? await this.loadSingleScope(scopeId)
       : await this.governanceRepository.listGovernanceScopes();
@@ -141,6 +136,13 @@ export class GovernanceAutomationService
     }
 
     for (const scope of scopes) {
+      const runnerId = await this.resolveConfiguredRunnerId(
+        scope.id,
+        GovernanceAutomationStage.Discovery
+      );
+      if (!runnerId) {
+        continue;
+      }
       const processed = await this.processDiscoveryScope(scope.id, runnerId, Boolean(scopeId));
       if (processed) {
         return true;
@@ -151,75 +153,114 @@ export class GovernanceAutomationService
   }
 
   async runTriageCycle() {
-    const runnerId = await this.governanceRunnerResolver.resolveRunnerId();
-    if (!runnerId) {
+    const scopes = await this.governanceRepository.listGovernanceScopes();
+    if (scopes.length === 0) {
       return false;
     }
 
-    const finding = await this.governanceRepository.claimNextPendingFinding({
-      ownerLeaseToken: this.ownerId,
-      ...this.createLeaseWindow()
-    });
-    if (!finding) {
-      return false;
-    }
+    for (const scope of scopes) {
+      const runnerId = await this.resolveConfiguredRunnerId(
+        scope.id,
+        GovernanceAutomationStage.Triage
+      );
+      if (!runnerId) {
+        continue;
+      }
 
-    try {
-      return this.processTriageFinding(finding, runnerId);
-    } finally {
-      await this.governanceRepository.releaseFindingLease({
-        findingId: finding.id,
-        ownerLeaseToken: this.ownerId
+      const finding = await this.governanceRepository.claimNextPendingFinding({
+        scopeId: scope.id,
+        ownerLeaseToken: this.ownerId,
+        ...this.createLeaseWindow()
       });
+      if (!finding) {
+        continue;
+      }
+
+      try {
+        return this.processTriageFinding(finding, runnerId);
+      } finally {
+        await this.governanceRepository.releaseFindingLease({
+          findingId: finding.id,
+          ownerLeaseToken: this.ownerId
+        });
+      }
     }
+
+    return false;
   }
 
   async runPlanningCycle() {
-    const runnerId = await this.governanceRunnerResolver.resolveRunnerId();
-    if (!runnerId) {
+    const scopes = await this.governanceRepository.listGovernanceScopes();
+    if (scopes.length === 0) {
       return false;
     }
 
-    const issue = await this.governanceRepository.claimNextPlanningIssue({
-      ownerLeaseToken: this.ownerId,
-      ...this.createLeaseWindow()
-    });
-    if (!issue) {
-      return false;
-    }
+    for (const scope of scopes) {
+      const runnerId = await this.resolveConfiguredRunnerId(
+        scope.id,
+        GovernanceAutomationStage.Planning
+      );
+      if (!runnerId) {
+        continue;
+      }
 
-    try {
-      return this.processPlanningIssue(issue, runnerId);
-    } finally {
-      await this.governanceRepository.releaseIssueLease({
-        issueId: issue.id,
-        ownerLeaseToken: this.ownerId
+      const issue = await this.governanceRepository.claimNextPlanningIssue({
+        scopeId: scope.id,
+        ownerLeaseToken: this.ownerId,
+        ...this.createLeaseWindow()
       });
+      if (!issue) {
+        continue;
+      }
+
+      try {
+        return this.processPlanningIssue(issue, runnerId);
+      } finally {
+        await this.governanceRepository.releaseIssueLease({
+          issueId: issue.id,
+          ownerLeaseToken: this.ownerId
+        });
+      }
     }
+
+    return false;
   }
 
   async runExecutionCycle() {
-    const runnerId = await this.governanceRunnerResolver.resolveRunnerId();
-    if (!runnerId) {
+    const scopes = await this.governanceRepository.listGovernanceScopes();
+    if (scopes.length === 0) {
       return false;
     }
 
-    const changeUnit = await this.governanceRepository.claimNextExecutableChangeUnit({
-      ownerLeaseToken: this.ownerId,
-      ...this.createLeaseWindow()
-    });
-    if (!changeUnit) {
-      return false;
-    }
+    for (const scope of scopes) {
+      const runnerId = await this.resolveConfiguredRunnerId(
+        scope.id,
+        GovernanceAutomationStage.Execution
+      );
+      if (!runnerId) {
+        continue;
+      }
 
-    try {
-      return this.processExecutionChangeUnit(changeUnit.id, runnerId);
-    } finally {
-      await this.governanceRepository.releaseChangeUnitLease({
-        changeUnitId: changeUnit.id,
-        ownerLeaseToken: this.ownerId
+      const changeUnit = await this.governanceRepository.claimNextExecutableChangeUnit({
+        scopeId: scope.id,
+        ownerLeaseToken: this.ownerId,
+        ...this.createLeaseWindow()
       });
+      if (!changeUnit) {
+        continue;
+      }
+
+      try {
+        return this.processExecutionChangeUnit(changeUnit.id, runnerId);
+      } finally {
+        await this.governanceRepository.releaseChangeUnitLease({
+          changeUnitId: changeUnit.id,
+          ownerLeaseToken: this.ownerId
+        });
+      }
     }
+
+    return false;
   }
 
   private async bootstrapAndPoll() {
@@ -1080,5 +1121,15 @@ export class GovernanceAutomationService
       now,
       leaseExpiresAt: new Date(now.getTime() + GovernanceAutomationService.LEASE_MS)
     };
+  }
+
+  private resolveConfiguredRunnerId(
+    scopeId: string,
+    stageType: GovernanceAutomationStage
+  ) {
+    return this.governanceRunnerResolver.resolveRunnerId({
+      scopeId,
+      stageType
+    });
   }
 }
