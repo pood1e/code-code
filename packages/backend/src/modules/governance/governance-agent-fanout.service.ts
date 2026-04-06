@@ -55,6 +55,18 @@ export class GovernanceAgentFanoutService {
       candidates: GovernanceFanoutSuccessCandidate[]
     ) => GovernanceFanoutMergedOutput;
     onSuccess: (parsedOutput: Record<string, unknown>) => Promise<void>;
+    onSucceeded?: (input: {
+      attempt: GovernanceExecutionAttemptRecord;
+      sessionId: string | null;
+      activeRequestMessageId: string | null;
+      parsedOutput: Record<string, unknown>;
+    }) => Promise<void>;
+    onNeedsHumanReview?: (input: {
+      attempt: GovernanceExecutionAttemptRecord;
+      sessionId: string | null;
+      failureCode: string;
+      failureMessage: string;
+    }) => Promise<void>;
   }) {
     if (
       !(await this.markAttemptRunningIfPending({
@@ -111,30 +123,54 @@ export class GovernanceAgentFanoutService {
         attempt: input.attempt,
         ownerLeaseToken: input.ownerLeaseToken,
         maxAutoRetries: input.maxAutoRetries,
-        sessionResults
+        sessionResults,
+        onNeedsHumanReview: input.onNeedsHumanReview
       });
     }
 
     try {
       const mergedOutput = input.mergeOutputs(parsedCandidates);
       await input.onSuccess(mergedOutput.parsedOutput);
-      return this.governanceRepository.markAutomationAttemptSucceeded({
+      const markedSucceeded =
+        await this.governanceRepository.markAutomationAttemptSucceeded({
         attemptId: input.attempt.id,
         ownerLeaseToken: input.ownerLeaseToken,
         activeRequestMessageId: mergedOutput.primary.messageId,
         candidateOutput: mergedOutput.primary.outputText,
         parsedOutput: mergedOutput.parsedOutput
       });
+      if (markedSucceeded && input.onSucceeded) {
+        await input.onSucceeded({
+          attempt: input.attempt,
+          sessionId: mergedOutput.primary.sessionId,
+          activeRequestMessageId: mergedOutput.primary.messageId,
+          parsedOutput: mergedOutput.parsedOutput
+        });
+      }
+      return markedSucceeded;
     } catch (error) {
-      return this.governanceRepository.markAutomationAttemptFailed({
+      const failureCode = 'FANOUT_FAILED';
+      const failureMessage =
+        error instanceof Error ? error.message : String(error);
+      const needsHumanReview =
+        input.attempt.attemptNo >= input.maxAutoRetries + 1;
+      const markedFailed = await this.governanceRepository.markAutomationAttemptFailed({
         attemptId: input.attempt.id,
         ownerLeaseToken: input.ownerLeaseToken,
-        failureCode: 'FANOUT_FAILED',
-        failureMessage: error instanceof Error ? error.message : String(error),
+        failureCode,
+        failureMessage,
         candidateOutput: parsedCandidates[0]?.outputText,
-        needsHumanReview:
-          input.attempt.attemptNo >= input.maxAutoRetries + 1
+        needsHumanReview
       });
+      if (markedFailed && needsHumanReview && input.onNeedsHumanReview) {
+        await input.onNeedsHumanReview({
+          attempt: input.attempt,
+          sessionId: input.attempt.sessionId,
+          failureCode,
+          failureMessage
+        });
+      }
+      return markedFailed;
     }
   }
 
@@ -188,7 +224,7 @@ export class GovernanceAgentFanoutService {
     return parsedCandidates;
   }
 
-  private handleFailure(input: {
+  private async handleFailure(input: {
     attempt: GovernanceExecutionAttemptRecord;
     ownerLeaseToken: string;
     maxAutoRetries: number;
@@ -197,21 +233,40 @@ export class GovernanceAgentFanoutService {
       sessionId: string;
       result: GovernanceSessionResult;
     }>;
+    onNeedsHumanReview?: (input: {
+      attempt: GovernanceExecutionAttemptRecord;
+      sessionId: string | null;
+      failureCode: string;
+      failureMessage: string;
+    }) => Promise<void>;
   }) {
     const firstFailure = input.sessionResults[0]?.result;
-    return this.governanceRepository.markAutomationAttemptFailed({
+    const failureCode = resolveFailureCode(firstFailure);
+    const failureMessage = resolveFailureMessage(firstFailure);
+    const needsHumanReview = input.attempt.attemptNo >= input.maxAutoRetries + 1;
+    const markedFailed =
+      await this.governanceRepository.markAutomationAttemptFailed({
       attemptId: input.attempt.id,
       ownerLeaseToken: input.ownerLeaseToken,
-      failureCode: resolveFailureCode(firstFailure),
-      failureMessage: resolveFailureMessage(firstFailure),
+      failureCode,
+      failureMessage,
       candidateOutput:
         firstFailure?.status === 'completed'
           ? firstFailure.outputText
           : firstFailure?.status === 'error'
             ? firstFailure.outputText
             : null,
-      needsHumanReview: input.attempt.attemptNo >= input.maxAutoRetries + 1
+      needsHumanReview
     });
+    if (markedFailed && needsHumanReview && input.onNeedsHumanReview) {
+      await input.onNeedsHumanReview({
+        attempt: input.attempt,
+        sessionId: input.attempt.sessionId,
+        failureCode,
+        failureMessage
+      });
+    }
+    return markedFailed;
   }
 }
 

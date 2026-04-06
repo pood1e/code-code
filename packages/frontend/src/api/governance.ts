@@ -11,6 +11,7 @@ import type {
   GovernanceScopeOverview,
   GovernanceIssueDetail,
   GovernanceIssueSummary,
+  GovernanceReviewQueueItem,
   GovernanceFindingStatus,
   GovernanceIssueStatus,
   RepositoryProfile,
@@ -40,6 +41,13 @@ export async function createGovernanceFinding(payload: CreateFindingInput) {
 export async function getGovernanceScopeOverview(scopeId: string) {
   const response = await apiClient.get<GovernanceScopeOverview>(
     `/governance/scopes/${scopeId}/overview`
+  );
+  return response.data;
+}
+
+export async function getGovernanceReviewQueue(scopeId: string) {
+  const response = await apiClient.get<GovernanceReviewQueueItem[]>(
+    `/governance/scopes/${scopeId}/review-queue`
   );
   return response.data;
 }
@@ -76,9 +84,23 @@ export async function refreshGovernanceRepositoryProfile(scopeId: string) {
   return response.data;
 }
 
+export async function retryGovernanceBaseline(scopeId: string) {
+  const response = await apiClient.post<GovernanceScopeOverview>(
+    `/governance/scopes/${scopeId}/retry-baseline`
+  );
+  return response.data;
+}
+
 export async function runGovernanceDiscovery(scopeId: string) {
   const response = await apiClient.post<GovernanceScopeOverview>(
     `/governance/scopes/${scopeId}/discovery/run`
+  );
+  return response.data;
+}
+
+export async function retryGovernanceDiscovery(scopeId: string) {
+  const response = await apiClient.post<GovernanceScopeOverview>(
+    `/governance/scopes/${scopeId}/retry-discovery`
   );
   return response.data;
 }

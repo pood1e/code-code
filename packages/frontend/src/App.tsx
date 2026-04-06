@@ -56,6 +56,11 @@ const ProjectGovernancePage = lazy(() =>
     default: module.ProjectGovernancePage
   }))
 );
+const ProjectReviewsPage = lazy(() =>
+  import('./pages/projects/ProjectReviewsPage').then((module) => ({
+    default: module.ProjectReviewsPage
+  }))
+);
 
 const ProjectChannelsPage = lazy(() =>
   import('./pages/projects/ProjectChannelsPage').then((module) => ({
@@ -169,6 +174,14 @@ export function App() {
           element={
             <LazyRoute>
               <ProjectGovernancePage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path={projectRoutePatterns.reviews}
+          element={
+            <LazyRoute>
+              <ProjectReviewsPage />
             </LazyRoute>
           }
         />

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { GovernanceAgentFanoutService } from './governance-agent-fanout.service';
 import { GovernanceAutomationAttemptService } from './governance-automation-attempt.service';
@@ -8,6 +9,7 @@ import { GovernanceAutomationService } from './governance-automation.service';
 import { GovernanceBaselineService } from './governance-baseline.service';
 import { GovernanceController } from './governance.controller';
 import { GovernanceGitService } from './governance-git.service';
+import { GovernanceNotificationService } from './governance-notification.service';
 import { GovernanceOutputParserService } from './governance-output-parser.service';
 import { GovernancePolicyEvaluatorService } from './governance-policy-evaluator.service';
 import { GovernancePromptService } from './governance-prompt.service';
@@ -21,7 +23,7 @@ import { GovernanceWorkspaceService } from './governance-workspace.service';
 import { PrismaGovernanceRepository } from './prisma-governance.repository';
 
 @Module({
-  imports: [PrismaModule, SessionsModule],
+  imports: [PrismaModule, SessionsModule, NotificationsModule],
   controllers: [GovernanceController],
   providers: [
     GovernanceQueryService,
@@ -36,6 +38,7 @@ import { PrismaGovernanceRepository } from './prisma-governance.repository';
     GovernanceRunnerResolverService,
     GovernanceBaselineService,
     GovernanceGitService,
+    GovernanceNotificationService,
     GovernanceWorkspaceService,
     GovernanceVerificationRunnerService,
     {

@@ -78,6 +78,20 @@ export class GovernanceController {
     return this.governanceQueryService.getScopeOverview(scopeId);
   }
 
+  @Get('scopes/:scopeId/review-queue')
+  @ApiOperation({ summary: 'Get governance review queue for a scope' })
+  @ApiParam({ name: 'scopeId', type: String })
+  @ApiResponse({ status: 200, description: 'Review queue fetched.' })
+  @ApiWrappedErrorResponse({
+    status: 404,
+    description: 'Project not found.',
+    messageExample: 'Project not found: project_123'
+  })
+  @ResponseMessage('Governance review queue fetched')
+  getReviewQueue(@Param('scopeId') scopeId: string) {
+    return this.governanceQueryService.getReviewQueue(scopeId);
+  }
+
   @Get('scopes/:scopeId/repository-profile')
   @ApiOperation({ summary: 'Get latest governance repository profile' })
   @ApiParam({ name: 'scopeId', type: String })
@@ -120,6 +134,26 @@ export class GovernanceController {
     return this.governanceService.refreshRepositoryProfile(scopeId);
   }
 
+  @Post('scopes/:scopeId/retry-baseline')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Retry governance baseline for a scope' })
+  @ApiParam({ name: 'scopeId', type: String })
+  @ApiResponse({ status: 200, description: 'Governance baseline retry scheduled.' })
+  @ApiWrappedErrorResponse({
+    status: 404,
+    description: 'Project not found.',
+    messageExample: 'Project not found: project_123'
+  })
+  @ApiWrappedErrorResponse({
+    status: 409,
+    description: 'Baseline is not waiting for human review.',
+    messageExample: 'Baseline attempt is not waiting for human review'
+  })
+  @ResponseMessage('Governance baseline retry scheduled')
+  retryBaseline(@Param('scopeId') scopeId: string) {
+    return this.governanceService.retryBaseline(scopeId);
+  }
+
   @Put('scopes/:scopeId/policy')
   @ApiOperation({ summary: 'Update governance policy for a scope' })
   @ApiParam({ name: 'scopeId', type: String })
@@ -156,6 +190,26 @@ export class GovernanceController {
   async runDiscovery(@Param('scopeId') scopeId: string) {
     await this.governanceService.runDiscovery(scopeId);
     return this.governanceQueryService.getScopeOverview(scopeId);
+  }
+
+  @Post('scopes/:scopeId/retry-discovery')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Retry governance discovery for a scope' })
+  @ApiParam({ name: 'scopeId', type: String })
+  @ApiResponse({ status: 200, description: 'Governance discovery retry scheduled.' })
+  @ApiWrappedErrorResponse({
+    status: 404,
+    description: 'Project not found.',
+    messageExample: 'Project not found: project_123'
+  })
+  @ApiWrappedErrorResponse({
+    status: 409,
+    description: 'Discovery is not waiting for human review.',
+    messageExample: 'Discovery attempt is not waiting for human review'
+  })
+  @ResponseMessage('Governance discovery retry scheduled')
+  retryDiscovery(@Param('scopeId') scopeId: string) {
+    return this.governanceService.retryDiscovery(scopeId);
   }
 
   @Get('issues')
