@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Loader2, SlidersHorizontal } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GovernanceFindingStatus, GovernanceIssueStatus } from '@agent-workbench/shared';
@@ -20,6 +20,7 @@ import { GovernanceDeliveryArtifactSummaryList } from '@/features/governance/com
 import { GovernanceFindingList } from '@/features/governance/components/GovernanceFindingList';
 import { GovernanceIssueDetail } from '@/features/governance/components/GovernanceIssueDetail';
 import { GovernanceIssueList } from '@/features/governance/components/GovernanceIssueList';
+import { GovernanceOrchestrationBoard } from '@/features/governance/components/GovernanceOrchestrationBoard';
 import { GovernancePolicyPanel } from '@/features/governance/components/GovernancePolicyPanel';
 import {
   useGovernanceRefreshRepositoryProfileMutation,
@@ -34,6 +35,7 @@ import {
   useGovernanceIssueDetail,
   useGovernanceIssueList,
   useGovernancePolicy,
+  useGovernanceReviewQueue,
   useGovernanceRunnerList,
   useGovernanceScopeOverview
 } from '@/features/governance/hooks/use-governance-queries';
@@ -73,6 +75,7 @@ export function ProjectGovernancePage() {
     GovernanceFindingStatus.Pending
   );
   const overviewQuery = useGovernanceScopeOverview(projectId);
+  const reviewQueueQuery = useGovernanceReviewQueue(projectId);
   const policyQuery = useGovernancePolicy(projectId);
   const runnerListQuery = useGovernanceRunnerList();
   const changeUnitsQuery = useGovernanceChangeUnitList(projectId);
@@ -115,6 +118,12 @@ export function ProjectGovernancePage() {
       handleError(policyQuery.error, { context: '加载治理策略失败' });
     }
   }, [handleError, policyQuery.error]);
+
+  useEffect(() => {
+    if (reviewQueueQuery.error) {
+      handleError(reviewQueueQuery.error, { context: '加载治理审核队列失败' });
+    }
+  }, [handleError, reviewQueueQuery.error]);
 
   useEffect(() => {
     if (findingsQuery.error) {
@@ -297,20 +306,36 @@ export function ProjectGovernancePage() {
               hint={pendingFindings.length > 0 ? '左侧可直接处理 triage' : '当前没有待处理 finding'}
             />
             <OverviewStatCard
-              label="Baseline"
-              value={overview?.latestBaselineAttempt?.status ?? 'idle'}
+              label="Issue Backlog"
+              value={String(issues.length)}
               hint={
-                overview?.latestBaselineAttempt?.failureMessage ??
-                '仓库画像生成状态'
+                issues.length > 0
+                  ? '左侧 backlog 可直接进入 issue 详情和自动化分支'
+                  : '当前还没有进入 backlog 的 issue'
               }
             />
             <OverviewStatCard
-              label="Discovery"
-              value={overview?.latestDiscoveryAttempt?.status ?? 'idle'}
+              label="Review Queue"
+              value={String(reviewQueueQuery.data?.length ?? 0)}
               hint={
-                overview?.latestDiscoveryAttempt?.failureMessage ??
-                '问题发现状态'
+                (reviewQueueQuery.data?.length ?? 0) > 0
+                  ? '需要人工处理的治理项会集中显示在审核队列'
+                  : '当前没有待审核项'
               }
+            />
+          </div>
+
+          <div className="mt-4">
+            <GovernanceOrchestrationBoard
+              scopeId={projectId}
+              projectName={project.name}
+              overview={overview}
+              reviewQueue={reviewQueueQuery.data ?? []}
+              findings={pendingFindings}
+              issues={issues}
+              selectedIssue={detailQuery.data}
+              changeUnits={changeUnitsQuery.data ?? []}
+              deliveryArtifacts={deliveryArtifactsQuery.data ?? []}
             />
           </div>
         </header>
@@ -458,15 +483,20 @@ export function ProjectGovernancePage() {
 function OverviewStatCard({
   label,
   value,
-  hint
+  hint,
+  action
 }: {
   label: string;
   value: string;
   hint: string;
+  action?: ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        {action}
+      </div>
       <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{hint}</p>
     </div>

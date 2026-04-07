@@ -195,6 +195,7 @@ export function GovernanceIssueDetail({
         </SurfaceCard>
 
         <GovernanceExecutionDeliverySection
+          scopeId={scopeId}
           issue={issue}
           policy={policy}
           deliveryCommitMode={deliveryCommitMode}
@@ -211,6 +212,7 @@ export function GovernanceIssueDetail({
         />
 
         <GovernanceAutomationSection
+          scopeId={scopeId}
           issue={issue}
           retryPlanningMutation={retryPlanningMutation}
           planningError={planningError}
@@ -245,7 +247,7 @@ export function GovernanceIssueDetail({
           setChangePlanError={setChangePlanError}
         />
 
-        <GovernanceRelatedFindingsSection issue={issue} />
+        <GovernanceRelatedFindingsSection scopeId={scopeId} issue={issue} />
       </div>
     </div>
   );

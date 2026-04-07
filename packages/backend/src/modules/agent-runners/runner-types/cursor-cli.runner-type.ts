@@ -182,7 +182,8 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'agent', ...args],
         cwd,
-        env: config.env
+        env: config.env,
+        stdinMode: 'closed'
       };
     }
 
@@ -190,7 +191,8 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
       command: 'agent',
       args,
       cwd,
-      env: config.env
+      env: config.env,
+      stdinMode: 'closed'
     };
   }
 

@@ -13,6 +13,11 @@ export type CliProcessOptions = {
   cwd: string;
   /** Extra environment variables to set. Merged on top of the inherited base set. */
   env?: Record<string, string>;
+  /**
+   * How child stdin should be exposed.
+   * Use `closed` when the CLI receives all input via args/env and should not wait on stdin.
+   */
+  stdinMode?: 'pipe' | 'closed';
   /** Timeout in ms before escalating SIGTERM to SIGKILL. Default: 5000. */
   killTimeoutMs?: number;
 };
@@ -67,7 +72,7 @@ export class CliProcess {
     this.process = spawn(this.options.command, this.options.args, {
       cwd: this.options.cwd,
       env: mergedEnv,
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: [this.options.stdinMode === 'closed' ? 'ignore' : 'pipe', 'pipe', 'pipe']
     });
 
     this.process.stdout?.setEncoding('utf-8');

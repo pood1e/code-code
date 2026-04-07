@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,6 +18,7 @@ import { PageLoadingSkeleton } from '@/components/app/PageLoadingSkeleton';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { GovernanceSessionHistorySheet } from '@/features/governance/components/GovernanceSessionHistorySheet';
 import { useErrorMessage } from '@/hooks/use-error-message';
 import {
   useGovernanceRetryBaselineMutation,
@@ -169,6 +170,14 @@ export function ProjectReviewsPage() {
                     }
                     void navigate(buildProjectGovernancePath(projectId, item.issueId));
                   }}
+                  sessionLogAction={
+                    <GovernanceSessionHistorySheet
+                      scopeId={projectId}
+                      sessionId={item.sessionId}
+                      title={`${item.title} · Agent 日志`}
+                      description="直接复用会话历史组件查看当前治理项的执行记录。"
+                    />
+                  }
                 />
               ))}
             </div>
@@ -183,12 +192,14 @@ function ReviewQueueItemCard({
   item,
   isPending,
   onRetry,
-  onOpenIssue
+  onOpenIssue,
+  sessionLogAction
 }: {
   item: GovernanceReviewQueueItem;
   isPending: boolean;
   onRetry: () => void;
   onOpenIssue: () => void;
+  sessionLogAction?: ReactNode;
 }) {
   return (
     <SurfaceCard className="space-y-4">
@@ -209,6 +220,7 @@ function ReviewQueueItemCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {sessionLogAction}
           {REVIEWABLE_KINDS.has(item.kind) ? (
             <Button type="button" size="sm" disabled={isPending} onClick={onRetry}>
               {isPending ? (

@@ -40,6 +40,16 @@ vi.mock('@/hooks/use-error-message', () => ({
   useErrorMessage: () => vi.fn()
 }));
 
+vi.mock('@/features/governance/components/GovernanceSessionHistorySheet', () => ({
+  GovernanceSessionHistorySheet: ({
+    title,
+    triggerLabel = '查看日志'
+  }: {
+    title: string;
+    triggerLabel?: string;
+  }) => <button type="button">{`${triggerLabel}:${title}`}</button>
+}));
+
 function createProject(): Project {
   return {
     id: 'project-1',
@@ -214,5 +224,15 @@ describe('ProjectReviewsPage', () => {
     await user.click(screen.getByRole('button', { name: '打开 Issue' }));
 
     expect(await screen.findByText('Governance Issue Page')).toBeInTheDocument();
+  });
+
+  it('应为带 sessionId 的审核项展示日志入口', () => {
+    renderProjectReviewsPage();
+
+    expect(
+      screen.getByRole('button', {
+        name: '查看日志:Discovery 需要人工处理 · Agent 日志'
+      })
+    ).toBeInTheDocument();
   });
 });

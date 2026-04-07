@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
+import { GovernanceSessionHistorySheet } from './GovernanceSessionHistorySheet';
 
 import {
   submitChangeUnitReview,
@@ -38,6 +39,7 @@ type GovernanceRetryPlanningMutation = {
 };
 
 type GovernanceAutomationSectionProps = {
+  scopeId: string;
   issue: GovernanceIssueDetail;
   retryPlanningMutation: GovernanceRetryPlanningMutation;
   planningError: string | null;
@@ -55,6 +57,18 @@ export function GovernanceAutomationSection(
           查看 planning worker 的最近执行状态，并在需要时重试。
         </p>
       </div>
+
+      {props.issue.latestPlanningAttempt?.sessionId ? (
+        <div className="flex justify-end">
+          <GovernanceSessionHistorySheet
+            scopeId={props.scopeId}
+            sessionId={props.issue.latestPlanningAttempt.sessionId}
+            title={`${props.issue.title} · Planning 日志`}
+            description="查看 planning worker 的对话历史和工具调用。"
+            triggerLabel="查看 Planning 日志"
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <GovernanceIssueInfoBlock
@@ -103,6 +117,7 @@ export function GovernanceAutomationSection(
 }
 
 type GovernanceExecutionDeliverySectionProps = {
+  scopeId: string;
   issue: GovernanceIssueDetail;
   policy?: GovernancePolicy;
   deliveryCommitMode: string | null;
@@ -140,6 +155,7 @@ export function GovernanceExecutionDeliverySection(
           props.issue.changeUnits.map((changeUnit) => (
             <GovernanceChangeUnitExecutionCard
               key={changeUnit.id}
+              scopeId={props.scopeId}
               changeUnit={changeUnit}
               issue={props.issue}
               policy={props.policy}
@@ -400,6 +416,7 @@ export function GovernanceExecutionDeliverySection(
 }
 
 type GovernanceRelatedFindingsSectionProps = {
+  scopeId: string;
   issue: GovernanceIssueDetail;
 };
 
@@ -436,6 +453,13 @@ export function GovernanceRelatedFindingsSection(
                       triage:{finding.latestTriageAttempt.status}
                     </Badge>
                   ) : null}
+                  <GovernanceSessionHistorySheet
+                    scopeId={props.scopeId}
+                    sessionId={finding.latestTriageAttempt?.sessionId}
+                    title={`${finding.title} · Triage 日志`}
+                    description="查看这个 finding 在 triage 阶段的会话历史。"
+                    triggerLabel="查看 Triage 日志"
+                  />
                 </div>
               </div>
               {finding.latestTriageAttempt?.failureMessage ? (
