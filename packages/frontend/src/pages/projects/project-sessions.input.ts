@@ -1,17 +1,37 @@
 import type {
   CreateSessionInput,
   ProfileDetail,
-  SendSessionMessageInput
+  SendSessionMessageInput,
+  SessionWorkspaceResourceConfig,
+  SessionWorkspaceResourceKind
 } from '@agent-workbench/shared';
 import {
   createSessionInputSchema,
-  sendSessionMessageInputSchema
+  sendSessionMessageInputSchema,
+  SessionWorkspaceResourceKind as SessionWorkspaceResourceKindEnum
 } from '@agent-workbench/shared';
 import { z } from 'zod';
 
 export const createSessionFormSchema = z.object({
   runnerId: z.string().trim().min(1, '请选择 AgentRunner'),
   profileId: z.string().trim().optional(),
+  useCustomRunDirectory: z.boolean(),
+  customRunDirectory: z.string().trim().optional(),
+  workspaceResources: z.array(z.nativeEnum(SessionWorkspaceResourceKindEnum)),
+  workspaceResourceConfig: z
+    .object({
+      code: z
+        .object({
+          branch: z.string().trim().optional()
+        })
+        .optional(),
+      doc: z
+        .object({
+          branch: z.string().trim().optional()
+        })
+        .optional()
+    })
+    .optional(),
   skillIds: z.array(z.string()),
   ruleIds: z.array(z.string()),
   mcpIds: z.array(z.string()),
@@ -20,6 +40,36 @@ export const createSessionFormSchema = z.object({
   initialInputConfig: z.record(z.string(), z.unknown()),
   initialRuntimeConfig: z.record(z.string(), z.unknown()),
   initialRawInput: z.string().optional()
+}).superRefine((value, context) => {
+  if (!value.useCustomRunDirectory) {
+    return;
+  }
+
+  const customRunDirectory = value.customRunDirectory?.trim() ?? '';
+  if (customRunDirectory.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['customRunDirectory'],
+      message: '请输入运行目录'
+    });
+    return;
+  }
+
+  if (customRunDirectory.startsWith('/')) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['customRunDirectory'],
+      message: '运行目录必须是相对路径'
+    });
+  }
+
+  if (customRunDirectory.split('/').some((segment) => segment === '..')) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['customRunDirectory'],
+      message: '运行目录必须位于 Session 目录内'
+    });
+  }
 });
 
 export const sessionTextInputSchema = z.object({
@@ -33,6 +83,10 @@ export function buildCreateSessionFormValues(): CreateSessionFormValues {
   return {
     runnerId: '',
     profileId: '',
+    useCustomRunDirectory: false,
+    customRunDirectory: '',
+    workspaceResources: [],
+    workspaceResourceConfig: {},
     skillIds: [],
     ruleIds: [],
     mcpIds: [],
@@ -53,6 +107,13 @@ export function buildCreateSessionPayload(
   return createSessionInputSchema.parse({
     scopeId,
     runnerId: values.runnerId,
+    customRunDirectory:
+      values.useCustomRunDirectory && values.customRunDirectory?.trim()
+        ? values.customRunDirectory.trim()
+        : undefined,
+    workspaceResources:
+      values.workspaceResources as SessionWorkspaceResourceKind[],
+    workspaceResourceConfig: buildWorkspaceResourceConfig(values),
     skillIds: values.skillIds,
     ruleIds: values.ruleIds,
     mcps: values.mcpIds.map((resourceId) => ({
@@ -62,6 +123,28 @@ export function buildCreateSessionPayload(
     runnerSessionConfig: values.runnerSessionConfig,
     initialMessage
   });
+}
+
+function buildWorkspaceResourceConfig(
+  values: CreateSessionFormValues
+): SessionWorkspaceResourceConfig {
+  const resourceConfig: SessionWorkspaceResourceConfig = {};
+
+  if (values.workspaceResources.includes(SessionWorkspaceResourceKindEnum.Code)) {
+    const branch = values.workspaceResourceConfig?.code?.branch?.trim();
+    if (branch) {
+      resourceConfig.code = { branch };
+    }
+  }
+
+  if (values.workspaceResources.includes(SessionWorkspaceResourceKindEnum.Doc)) {
+    const branch = values.workspaceResourceConfig?.doc?.branch?.trim();
+    if (branch) {
+      resourceConfig.doc = { branch };
+    }
+  }
+
+  return resourceConfig;
 }
 
 export function buildTextMessagePayload(

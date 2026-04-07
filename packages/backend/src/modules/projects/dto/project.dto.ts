@@ -24,12 +24,24 @@ export class CreateProjectDto {
   @ApiProperty({ example: 'git@github.com:pood1e/code-code.git' })
   @IsString()
   @IsNotEmpty()
-  gitUrl!: string;
+  repoGitUrl!: string;
 
-  @ApiProperty({ example: '/Users/pood1e/workspace/code-code' })
+  @ApiProperty({
+    example: '/Users/pood1e/workspace/agent-workbench',
+    description: '会话与流程工作目录的根路径，不是仓库代码目录'
+  })
   @IsString()
   @IsNotEmpty()
-  workspacePath!: string;
+  workspaceRootPath!: string;
+
+  @ApiPropertyOptional({
+    example: 'git@github.com:pood1e/code-code-docs.git',
+    description: '可选，仅支持 SSH Git 地址'
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  docGitUrl?: string | null;
 }
 
 export class UpdateProjectDto {
@@ -46,9 +58,27 @@ export class UpdateProjectDto {
   @MaxLength(500)
   description?: string | null;
 
-  @ApiPropertyOptional({ example: '/Users/pood1e/workspace/code-code' })
+  @ApiPropertyOptional({ example: 'git@github.com:pood1e/code-code.git' })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  workspacePath?: string;
+  repoGitUrl?: string;
+
+  @ApiPropertyOptional({
+    example: '/Users/pood1e/workspace/agent-workbench',
+    description: '会话与流程工作目录的根路径，不是仓库代码目录'
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  workspaceRootPath?: string;
+
+  @ApiPropertyOptional({
+    example: 'git@github.com:pood1e/code-code-docs.git',
+    description: '可选，仅支持 SSH Git 地址'
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  docGitUrl?: string | null;
 }

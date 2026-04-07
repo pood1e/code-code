@@ -3,6 +3,7 @@ import { Controller } from 'react-hook-form';
 import type { RunnerTypeResponse } from '@agent-workbench/shared';
 
 import { FormField } from '@/components/app/FormField';
+import { StringMapFieldEditor } from '@/components/app/StringMapFieldEditor';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { JsonEditor } from '@/components/JsonEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -227,6 +228,19 @@ function RunnerConfigFieldControl({
   fieldId: string;
   onChange: (nextValue: unknown) => void;
 }) {
+  if (field.kind === 'string_map') {
+    return (
+      <StringMapFieldEditor
+        label={field.label}
+        description={field.description}
+        fieldId={fieldId}
+        error={error}
+        value={controllerValue}
+        onChange={(nextValue) => onChange(nextValue)}
+      />
+    );
+  }
+
   if (field.kind === 'boolean') {
     return (
       <FormField

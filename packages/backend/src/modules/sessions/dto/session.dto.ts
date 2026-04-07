@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  SessionWorkspaceResourceConfig,
+  SessionWorkspaceResourceKind
+} from '@agent-workbench/shared';
+import {
   IsArray,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -38,7 +43,7 @@ export class SendSessionMessageDto {
     type: 'object',
     additionalProperties: true,
     example: {
-      model: 'claude-sonnet-4-5',
+      model: 'sonnet',
       permissionMode: 'auto'
     }
   })
@@ -59,6 +64,30 @@ export class SendSessionMessageDto {
 
 export class EditSessionMessageDto extends SendSessionMessageDto {}
 
+export class SessionWorkspaceResourceBranchDto {
+  @ApiPropertyOptional({ example: 'main' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  branch?: string;
+}
+
+export class SessionWorkspaceResourceConfigDto
+  implements SessionWorkspaceResourceConfig
+{
+  @ApiPropertyOptional({ type: SessionWorkspaceResourceBranchDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceBranchDto)
+  code?: SessionWorkspaceResourceBranchDto;
+
+  @ApiPropertyOptional({ type: SessionWorkspaceResourceBranchDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceBranchDto)
+  doc?: SessionWorkspaceResourceBranchDto;
+}
+
 export class CreateSessionDto {
   @ApiProperty({ example: 'project_agent_workbench' })
   @IsString()
@@ -69,6 +98,33 @@ export class CreateSessionDto {
   @IsString()
   @IsNotEmpty()
   runnerId!: string;
+
+  @ApiPropertyOptional({
+    example: 'code/packages/backend',
+    description: '可选。相对 Session 目录的运行目录，例如 code 或 code/packages/backend'
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  customRunDirectory?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    enum: SessionWorkspaceResourceKind,
+    example: [SessionWorkspaceResourceKind.Code, SessionWorkspaceResourceKind.Doc]
+  })
+  @IsArray()
+  @IsEnum(SessionWorkspaceResourceKind, { each: true })
+  @IsOptional()
+  workspaceResources?: SessionWorkspaceResourceKind[];
+
+  @ApiPropertyOptional({
+    type: SessionWorkspaceResourceConfigDto
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SessionWorkspaceResourceConfigDto)
+  workspaceResourceConfig?: SessionWorkspaceResourceConfigDto;
 
   @ApiProperty({ type: [String], example: ['skill_web_search'] })
   @IsArray()

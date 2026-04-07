@@ -41,7 +41,7 @@ export function SessionAssistantThreadBody({
   onReload: () => Promise<void>;
 }) {
   return (
-    <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
+    <ThreadPrimitive.Root className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <style>{'.scrollbar-hide::-webkit-scrollbar { display: none; }'}</style>
       {runtimeMessages.length === 0 ? (
         <SessionThreadEmptyState messagesReady={messagesReady} />

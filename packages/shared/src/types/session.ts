@@ -1,5 +1,24 @@
 import type { McpConfigOverride } from './resources';
 
+export enum SessionWorkspaceMode {
+  Project = 'project',
+  Session = 'session'
+}
+
+export enum SessionWorkspaceResourceKind {
+  Code = 'code',
+  Doc = 'doc'
+}
+
+export type SessionWorkspaceResourceBranchConfig = {
+  branch?: string;
+};
+
+export type SessionWorkspaceResourceConfig = {
+  code?: SessionWorkspaceResourceBranchConfig;
+  doc?: SessionWorkspaceResourceBranchConfig;
+};
+
 export enum SessionStatus {
   Creating = 'creating',
   Ready = 'ready',
@@ -45,7 +64,12 @@ export type PlatformSessionMcp = {
 };
 
 export type PlatformSessionConfig = {
+  workspaceMode: SessionWorkspaceMode;
+  workspaceRoot: string;
+  sessionRoot?: string;
   cwd: string;
+  workspaceResources: SessionWorkspaceResourceKind[];
+  workspaceResourceConfig?: SessionWorkspaceResourceConfig;
   skillIds: string[];
   ruleIds: string[];
   mcps: PlatformSessionMcp[];
@@ -249,6 +273,9 @@ export type SendSessionMessageInput = {
 export type CreateSessionInput = {
   scopeId: string;
   runnerId: string;
+  customRunDirectory?: string;
+  workspaceResources: SessionWorkspaceResourceKind[];
+  workspaceResourceConfig?: SessionWorkspaceResourceConfig;
   skillIds: string[];
   ruleIds: string[];
   mcps: PlatformSessionMcp[];

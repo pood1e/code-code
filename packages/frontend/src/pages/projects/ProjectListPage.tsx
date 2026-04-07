@@ -138,11 +138,23 @@ export function ProjectListPage() {
                   </div>
 
                   <div className="min-w-0 space-y-1 text-sm text-muted-foreground sm:max-w-[24rem] sm:text-right">
-                    <p className="truncate font-mono text-xs">
-                      {project.workspacePath}
+                    <p className="truncate text-xs">
+                      <span className="mr-1 text-muted-foreground/80">
+                        Workspace Root:
+                      </span>
+                      <span className="font-mono">{project.workspaceRootPath}</span>
                     </p>
-                    <p className="truncate font-mono text-xs">
-                      {project.gitUrl}
+                    <p className="truncate text-xs">
+                      <span className="mr-1 text-muted-foreground/80">
+                        Repo (Git):
+                      </span>
+                      <span className="font-mono">{project.repoGitUrl}</span>
+                    </p>
+                    <p className="truncate text-xs">
+                      <span className="mr-1 text-muted-foreground/80">
+                        Doc (Git):
+                      </span>
+                      <span className="font-mono">{project.docGitUrl || '-'}</span>
                     </p>
                   </div>
                 </button>

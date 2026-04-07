@@ -1,5 +1,6 @@
 import { Controller, type Control, type FieldValues } from 'react-hook-form';
 import { FormField } from '@/components/app/FormField';
+import { StringMapFieldEditor } from '@/components/app/StringMapFieldEditor';
 import { Input } from '@/components/ui/input';
 import { CompactNativeSelect } from '@/components/ui/native-select';
 import {
@@ -32,6 +33,19 @@ export function DynamicConfigFieldInput<TFieldValues extends FieldValues>({
         `${namePrefix}.${field.name}` as import('react-hook-form').Path<TFieldValues>
       }
       render={({ field: controllerField, fieldState }) => {
+        if (field.kind === 'string_map') {
+          return (
+            <StringMapFieldEditor
+              label={field.label}
+              description={field.description}
+              fieldId={fieldId}
+              error={fieldState.error?.message}
+              value={controllerField.value}
+              onChange={controllerField.onChange}
+            />
+          );
+        }
+
         if (field.kind === 'boolean') {
           return (
             <FormField

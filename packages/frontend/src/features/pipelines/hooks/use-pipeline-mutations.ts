@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import type { HumanDecision } from '@agent-workbench/shared';
+import type { PipelineHumanReviewDecision } from '@agent-workbench/shared';
 
 import {
   cancelPipeline,
@@ -43,15 +43,18 @@ export function useStartPipelineMutation(pipelineId: string, scopeId: string) {
   });
 }
 
-export function useSubmitDecisionMutation(pipelineId: string) {
+export function useSubmitDecisionMutation(pipelineId: string, scopeId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (decision: HumanDecision) =>
+    mutationFn: (decision: PipelineHumanReviewDecision) =>
       submitPipelineDecision(pipelineId, decision),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: pipelineKeys.detail(pipelineId)
+      });
+      void queryClient.invalidateQueries({
+        queryKey: pipelineKeys.list(scopeId)
       });
     }
   });

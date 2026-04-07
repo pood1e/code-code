@@ -30,16 +30,26 @@ import { queryKeys } from '@/query/query-keys';
 import { useProjectStore } from '@/store/project-store';
 import { buildProjectConfigPath } from '@/types/projects';
 
-function isWorkspacePathError(message: string) {
+function isWorkspaceRootPathError(message: string) {
   return (
-    message.includes('workspacePath') ||
+    message.includes('workspaceRootPath') ||
     message.includes('目录') ||
     message.includes('absolute path')
   );
 }
 
-function isGitUrlError(message: string) {
-  return message.includes('Git') || message.includes('git@');
+function isRepoGitUrlError(message: string) {
+  return (
+    message.includes('repoGitUrl') || message.includes('如 git@github.com')
+  );
+}
+
+function isDocGitUrlError(message: string) {
+  return (
+    message.includes('docGitUrl') ||
+    message.includes('文档') ||
+    message.includes('SSH Git 地址')
+  );
 }
 
 type ProjectCreateDialogProps = {
@@ -103,12 +113,16 @@ export function ProjectCreateDialog({
       const apiError = toApiRequestError(error);
 
       if (apiError.code === 400) {
-        if (isWorkspacePathError(apiError.message)) {
-          form.setError('workspacePath', { message: apiError.message });
+        if (isWorkspaceRootPathError(apiError.message)) {
+          form.setError('workspaceRootPath', { message: apiError.message });
         }
 
-        if (isGitUrlError(apiError.message)) {
-          form.setError('gitUrl', { message: apiError.message });
+        if (isRepoGitUrlError(apiError.message)) {
+          form.setError('repoGitUrl', { message: apiError.message });
+        }
+
+        if (isDocGitUrlError(apiError.message)) {
+          form.setError('docGitUrl', { message: apiError.message });
         }
 
         setCreateError(apiError.message);
@@ -126,7 +140,7 @@ export function ProjectCreateDialog({
         <DialogHeader>
           <DialogTitle>新建 Project</DialogTitle>
           <DialogDescription>
-            创建后 `gitUrl` 将保持只读，`workspacePath` 必须是本机已存在的目录。
+            `Workspace Root` 是 session / flow 的工作根目录；`Repo (Git)` 和 `Doc (Git)` 是远端来源。
           </DialogDescription>
         </DialogHeader>
 
@@ -165,24 +179,33 @@ export function ProjectCreateDialog({
           </FormField>
 
           <FormField
-            label="Git URL"
+            label="Repo (Git)"
             htmlFor="project-git-url"
             description="只接受 SSH Git 地址，例如 git@github.com:user/repo.git"
-            error={form.formState.errors.gitUrl?.message}
+            error={form.formState.errors.repoGitUrl?.message}
           >
-            <Input id="project-git-url" {...form.register('gitUrl')} />
+            <Input id="project-git-url" {...form.register('repoGitUrl')} />
           </FormField>
 
           <FormField
-            label="Workspace Path"
-            htmlFor="project-workspace-path"
-            description="必须是当前机器上已存在的绝对目录。"
-            error={form.formState.errors.workspacePath?.message}
+            label="Workspace Root"
+            htmlFor="project-workspace-root-path"
+            description="会话与流程都会在这个根目录下创建各自的工作目录。"
+            error={form.formState.errors.workspaceRootPath?.message}
           >
             <Input
-              id="project-workspace-path"
-              {...form.register('workspacePath')}
+              id="project-workspace-root-path"
+              {...form.register('workspaceRootPath')}
             />
+          </FormField>
+
+          <FormField
+            label="Doc (Git)"
+            htmlFor="project-doc-source"
+            description="可选，仅支持 SSH Git 地址。Session 会按需拉取到 docs 目录。"
+            error={form.formState.errors.docGitUrl?.message}
+          >
+            <Input id="project-doc-source" {...form.register('docGitUrl')} />
           </FormField>
 
           <DialogFooter>

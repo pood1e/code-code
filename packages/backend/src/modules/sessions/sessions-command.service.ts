@@ -5,6 +5,8 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import {
+  SessionWorkspaceMode,
+  SessionWorkspaceResourceKind,
   SessionStatus,
   createSessionInputSchema,
   platformSessionConfigSchema
@@ -20,6 +22,7 @@ import type {
   SendSessionMessageDto
 } from './dto/session.dto';
 import { SessionRuntimeService } from './session-runtime.service';
+import { SessionWorkspaceService } from './session-workspace.service';
 import { SessionsQueryService } from './sessions-query.service';
 
 @Injectable()
@@ -33,7 +36,8 @@ export class SessionsCommandService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessionsQueryService: SessionsQueryService,
-    private readonly sessionRuntimeService: SessionRuntimeService
+    private readonly sessionRuntimeService: SessionRuntimeService,
+    private readonly sessionWorkspaceService: SessionWorkspaceService
   ) {}
 
   async create(dto: CreateSessionDto) {
@@ -80,7 +84,13 @@ export class SessionsCommandService {
     );
 
     const platformSessionConfig = platformSessionConfigSchema.parse({
-      cwd: project.workspacePath,
+      workspaceMode: SessionWorkspaceMode.Project,
+      workspaceRoot: project.workspaceRootPath,
+      sessionRoot: project.workspaceRootPath,
+      cwd: project.workspaceRootPath,
+      workspaceResources:
+        parsed.workspaceResources ?? ([] satisfies SessionWorkspaceResourceKind[]),
+      workspaceResourceConfig: parsed.workspaceResourceConfig ?? {},
       skillIds: parsed.skillIds,
       ruleIds: parsed.ruleIds,
       mcps: parsed.mcps
@@ -105,6 +115,24 @@ export class SessionsCommandService {
     });
 
     try {
+      const initializedPlatformSessionConfig =
+        await this.sessionWorkspaceService.initializeWorkspace({
+          sessionId: created.id,
+          project,
+          customRunDirectory: parsed.customRunDirectory,
+          workspaceResources: parsed.workspaceResources ?? [],
+          workspaceResourceConfig: parsed.workspaceResourceConfig ?? {},
+          skillIds: parsed.skillIds,
+          ruleIds: parsed.ruleIds,
+          mcps: parsed.mcps
+        });
+      await this.prisma.agentSession.update({
+        where: { id: created.id },
+        data: {
+          platformSessionConfig: toInputJson(initializedPlatformSessionConfig)
+        }
+      });
+
       await this.sessionRuntimeService.ensureRuntime(created.id);
       await this.prisma.agentSession.update({
         where: { id: created.id },
@@ -124,11 +152,7 @@ export class SessionsCommandService {
         });
       }
     } catch (error) {
-      if (initialInput) {
-        await this.cleanupFailedSessionCreation(created.id);
-      } else {
-        await this.markSessionAsErrored(created.id);
-      }
+      await this.cleanupFailedSessionCreation(created.id);
       throw error;
     }
 
@@ -351,6 +375,9 @@ export class SessionsCommandService {
 
     await this.sessionRuntimeService.destroyRuntime(sessionId);
     this.sessionRuntimeService.completeEvents(sessionId);
+    await this.sessionWorkspaceService.cleanupWorkspace(
+      session.platformSessionConfig
+    );
 
     // Hard delete the session and all associated data
     await this.prisma.$transaction([
@@ -458,21 +485,6 @@ export class SessionsCommandService {
     ]);
   }
 
-  private async markSessionAsErrored(sessionId: string) {
-    const session = await this.sessionsQueryService.getSessionOrNull(sessionId);
-    if (!session) {
-      return;
-    }
-
-    await this.prisma.agentSession.update({
-      where: { id: sessionId },
-      data: {
-        status: SessionStatus.Error,
-        activeAssistantMessageId: null
-      }
-    });
-  }
-
   private async cleanupFailedSessionCreation(sessionId: string) {
     await this.sessionRuntimeService.destroyRuntime(sessionId);
     this.sessionRuntimeService.completeEvents(sessionId);
@@ -481,6 +493,10 @@ export class SessionsCommandService {
     if (!session) {
       return;
     }
+
+    await this.sessionWorkspaceService.cleanupWorkspace(
+      session.platformSessionConfig
+    );
 
     await this.prisma.agentSession.delete({
       where: { id: sessionId }

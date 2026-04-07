@@ -27,8 +27,9 @@ function mockProjectPageData() {
       id: 'project-1',
       name: 'Alpha',
       description: '',
-      workspacePath: '/tmp/project-1',
-      gitUrl: 'https://example.com/repo.git',
+      workspaceRootPath: '/tmp/project-1',
+      repoGitUrl: 'git@github.com:example/repo.git',
+      docGitUrl: null,
       createdAt: '2026-04-04T10:00:00.000Z',
       updatedAt: '2026-04-04T10:00:00.000Z'
     },

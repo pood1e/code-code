@@ -12,13 +12,21 @@ import {
 } from '../cli/parsers/cursor-cli.parser';
 import type {
   RawOutputChunk,
+  RunnerProfileInstallInput,
   RunnerSendPayload
 } from '../runner-type.interface';
 import type { RunnerContext } from '@agent-workbench/shared';
 import { RunnerTypeProvider } from '../runner-type.decorator';
 
 export const cursorCliRunnerConfigSchema = z.object({
-  executorUser: z.string().optional()
+  executorUser: z.string().optional(),
+  env: z
+    .record(z.string(), z.string())
+    .optional()
+    .meta({
+      label: '环境变量',
+      description: '以 KEY=VALUE 注入 Cursor CLI 进程'
+    })
 });
 
 export const cursorCliRunnerSessionConfigSchema = z.object({});
@@ -42,7 +50,6 @@ export const cursorCliRuntimeConfigSchema = z.object({
 export class CursorCliRunnerType extends CliRunnerTypeBase {
   readonly id = 'cursor-cli';
   readonly name = 'Cursor CLI';
-  readonly materializerTarget = 'cursor' as const;
   readonly capabilities = { skill: true, rule: true, mcp: true };
   readonly runnerConfigSchema = cursorCliRunnerConfigSchema;
   readonly runnerSessionConfigSchema = cursorCliRunnerSessionConfigSchema;
@@ -57,7 +64,7 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
     runnerConfig: unknown
   ): Promise<'online' | 'offline' | 'unknown'> {
     const config = cursorCliRunnerConfigSchema.parse(runnerConfig);
-    return probeCursorCliHealth(config.executorUser);
+    return probeCursorCliHealth(config.executorUser, config.env);
   }
 
   async probeContext(runnerConfig: unknown): Promise<RunnerContext> {
@@ -77,7 +84,8 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
             PATH: process.env.PATH,
             HOME: process.env.HOME,
             USER: process.env.USER,
-            LANG: process.env.LANG
+            LANG: process.env.LANG,
+            ...(config.env ?? {})
           }
         },
         (error, stdout) => {
@@ -98,6 +106,19 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
         }
       );
     });
+  }
+
+  protected buildProfileInstallLayout(
+    input: RunnerProfileInstallInput
+  ) {
+    return {
+      profileRootDir: input.platformConfig.cwd,
+      skillDir: '.cursor/skills',
+      ruleDir: '.cursor/rules',
+      ruleExtension: '.mdc' as const,
+      ruleUsesCursorFrontmatter: true,
+      mcpConfigPath: `${input.platformConfig.cwd}/mcp.json`
+    };
   }
 
   buildCommand(
@@ -160,14 +181,18 @@ export class CursorCliRunnerType extends CliRunnerTypeBase {
       return {
         command: 'sudo',
         args: ['-u', config.executorUser, '-i', 'agent', ...args],
-        cwd
+        cwd,
+        env: config.env,
+        stdinMode: 'closed'
       };
     }
 
     return {
       command: 'agent',
       args,
-      cwd
+      cwd,
+      env: config.env,
+      stdinMode: 'closed'
     };
   }
 

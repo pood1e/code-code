@@ -29,11 +29,11 @@ export function DesktopSidebar({
   return (
     <aside
       className={cn(
-        'hidden shrink-0 border-r border-border/50 bg-sidebar transition-[width] duration-200 ease-in-out lg:block',
+        'hidden h-screen shrink-0 border-r border-border/50 bg-sidebar transition-[width] duration-200 ease-in-out lg:block',
         collapsed ? 'w-[3.5rem]' : 'w-56'
       )}
     >
-      <div className="sticky top-0 flex h-screen flex-col py-4">
+      <div className="flex h-full flex-col py-4">
         <div
           className={cn(
             'mb-6 flex items-center',
