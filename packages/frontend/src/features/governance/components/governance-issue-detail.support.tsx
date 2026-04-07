@@ -11,6 +11,7 @@ import {
 } from '@agent-workbench/shared';
 
 import { Badge } from '@/components/ui/badge';
+import { GovernanceSessionHistorySheet } from './GovernanceSessionHistorySheet';
 
 export function getGovernancePolicyAssessment(input: {
   issue: GovernanceIssueDetail;
@@ -49,6 +50,7 @@ export function GovernanceIssueStatusNotice(input: {
 }
 
 export function GovernanceChangeUnitExecutionCard(input: {
+  scopeId: string;
   issue: GovernanceIssueDetail;
   changeUnit: GovernanceIssueDetail['changeUnits'][number];
   policy?: GovernancePolicy;
@@ -84,6 +86,13 @@ export function GovernanceChangeUnitExecutionCard(input: {
               exec #{input.changeUnit.latestExecutionAttempt.attemptNo}
             </Badge>
           ) : null}
+          <GovernanceSessionHistorySheet
+            scopeId={input.scopeId}
+            sessionId={input.changeUnit.latestExecutionAttempt?.sessionId}
+            title={`${input.changeUnit.title} · 执行日志`}
+            description="查看这个 change unit 的执行输出和工具调用记录。"
+            triggerLabel="查看执行日志"
+          />
         </div>
       </div>
       {effectiveExecutionMode !== input.changeUnit.executionMode ? (

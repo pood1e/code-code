@@ -506,6 +506,7 @@ export abstract class GovernanceRepository {
     ownerLeaseToken: string;
   }): Promise<boolean>;
   abstract recoverInterruptedAutomation(now: Date): Promise<number>;
+  abstract recoverErroredAutomationAttempts(now: Date): Promise<number>;
   abstract wakeDeferredIssues(now: Date): Promise<number>;
   abstract claimNextPendingFinding(input: {
     scopeId?: string;

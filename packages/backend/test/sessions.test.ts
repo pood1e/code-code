@@ -856,6 +856,90 @@ describe('Sessions API', () => {
         approvalMode: 'auto-edit'
       });
     });
+
+    it('running session 在服务重启恢复后应回到 ready，并允许 reload 与继续发送消息', async () => {
+      const { session } = await createTestSession({
+        withInitialMessage: true
+      });
+
+      await waitForSessionStatus(session.id, 'ready');
+      const initialMessages = await waitForSessionMessages(session.id, 2);
+      const interruptedAssistant = initialMessages.find(
+        (message) => message.role === 'assistant'
+      );
+
+      expect(interruptedAssistant?.id).toBeTruthy();
+
+      const runtimeService = getApp().get(SessionRuntimeService);
+      runtimeService.resetRuntimeTracking(session.id);
+
+      await getPrisma().sessionMessage.update({
+        where: { id: interruptedAssistant!.id },
+        data: {
+          status: 'streaming',
+          outputText: null,
+          thinkingText: null,
+          cancelledAt: null
+        }
+      });
+      await getPrisma().agentSession.update({
+        where: { id: session.id },
+        data: {
+          status: 'running',
+          activeAssistantMessageId: interruptedAssistant!.id,
+          runnerState: { handleId: 'stale-runner-handle' }
+        }
+      });
+
+      await runtimeService.recoverInterruptedSessionsOnBoot();
+
+      const recoveredSession = await getPrisma().agentSession.findUniqueOrThrow({
+        where: { id: session.id },
+        select: {
+          status: true,
+          activeAssistantMessageId: true,
+          runnerState: true
+        }
+      });
+      expect(recoveredSession.status).toBe('ready');
+      expect(recoveredSession.activeAssistantMessageId).toBeNull();
+      expect(recoveredSession.runnerState).toEqual({});
+
+      const recoveredAssistant = await getPrisma().sessionMessage.findUniqueOrThrow({
+        where: { id: interruptedAssistant!.id },
+        select: {
+          status: true,
+          errorPayload: true
+        }
+      });
+      expect(recoveredAssistant.status).toBe('error');
+      expect(recoveredAssistant.errorPayload).toEqual({
+        message: 'Session was interrupted during service restart',
+        code: 'SESSION_RECOVERED_ON_BOOT',
+        recoverable: true
+      });
+
+      expectSuccess(await api().post(`/api/sessions/${session.id}/reload`), 200);
+      await waitForSessionStatus(session.id, 'ready');
+
+      expectSuccess(
+        await api()
+          .post(`/api/sessions/${session.id}/messages`)
+          .send({ input: { prompt: 'boot recovery 之后继续发送' } }),
+        200
+      );
+      await waitForSessionStatus(session.id, 'ready');
+
+      const finalMessages = expectSuccess<{ data: SessionMessageRecord[] }>(
+        await api().get(`/api/sessions/${session.id}/messages`)
+      ).data;
+      expect(
+        finalMessages.some(
+          (message) =>
+            message.role === 'assistant' && message.status === 'complete'
+        )
+      ).toBe(true);
+    });
   });
 
   describe('POST /api/sessions/:id/messages/:messageId/edit - 编辑消息', () => {

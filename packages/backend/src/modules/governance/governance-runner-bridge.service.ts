@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import {
   MessageRole,
-  MessageStatus
+  MessageStatus,
+  SessionStatus
 } from '@agent-workbench/shared';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -92,11 +93,17 @@ export class GovernanceRunnerBridgeService {
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
-      const message = messageId
-        ? await this.prisma.sessionMessage.findUnique({
-            where: { id: messageId }
-          })
-        : await this.getLatestAssistantMessage(sessionId);
+      const [session, message] = await Promise.all([
+        this.prisma.agentSession.findUnique({
+          where: { id: sessionId },
+          select: { status: true }
+        }),
+        messageId
+          ? this.prisma.sessionMessage.findUnique({
+              where: { id: messageId }
+            })
+          : this.getLatestAssistantMessage(sessionId)
+      ]);
 
       if (message) {
         if (message.status === MessageStatus.Complete && message.outputText) {
@@ -128,6 +135,17 @@ export class GovernanceRunnerBridgeService {
             outputText: message.outputText
           };
         }
+      }
+
+      if (session?.status === SessionStatus.Error) {
+        return {
+          status: 'error',
+          sessionId,
+          messageId: message?.id ?? null,
+          code: 'SESSION_ERROR',
+          message: 'Session entered error state',
+          outputText: message?.outputText ?? null
+        };
       }
 
       await sleep(POLL_INTERVAL_MS);
