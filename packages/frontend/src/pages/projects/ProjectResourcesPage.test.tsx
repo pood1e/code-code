@@ -3,26 +3,23 @@ import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
-  AgentRunnerSummary,
   ChangeUnit,
   DeliveryArtifact,
   Finding,
+  GovernanceExecutionAttemptSummary,
+  GovernanceIssueDetail,
   GovernanceIssueSummary,
   GovernancePolicy,
   GovernancePriority,
   GovernanceReviewQueueItem,
-  GovernanceScopeOverview,
-  Project,
-  RepositoryProfile
+  Project
 } from '@agent-workbench/shared';
 import {
-  GovernanceAutoActionEligibility as GovernanceAutoActionEligibilityEnum,
   GovernanceAutomationStage,
   GovernanceAutomationSubjectType,
   GovernanceChangePlanStatus,
   GovernanceChangeUnitStatus,
   GovernanceDeliveryArtifactStatus,
-  GovernanceDeliveryCommitMode as GovernanceDeliveryCommitModeEnum,
   GovernanceExecutionAttemptStatus,
   GovernanceExecutionMode,
   GovernanceFindingSource,
@@ -31,28 +28,22 @@ import {
   GovernanceIssueStatus,
   GovernancePriority as GovernancePriorityEnum,
   GovernanceReviewQueueItemKind,
-  GovernanceViolationPolicy,
-  type UpdateGovernancePolicyInput
+  GovernanceViolationPolicy
 } from '@agent-workbench/shared';
 
-import {
-  useGovernanceRefreshRepositoryProfileMutation,
-  useGovernanceRunDiscoveryMutation,
-  useGovernanceUpdatePolicyMutation
-} from '@/features/governance/hooks/use-governance-mutations';
+import { useGovernanceRetryTriageMutation } from '@/features/governance/hooks/use-governance-mutations';
 import {
   useGovernanceChangeUnitList,
   useGovernanceDeliveryArtifactList,
   useGovernanceFindingList,
+  useGovernanceIssueDetail,
   useGovernanceIssueList,
   useGovernancePolicy,
-  useGovernanceReviewQueue,
-  useGovernanceRunnerList,
-  useGovernanceScopeOverview
+  useGovernanceReviewQueue
 } from '@/features/governance/hooks/use-governance-queries';
 import { renderWithProviders } from '@/test/render';
 
-import { ProjectGovernancePage } from './ProjectGovernancePage';
+import { ProjectResourcesPage } from './ProjectResourcesPage';
 import { useProjectPageData } from './use-project-page-data';
 
 vi.mock('./use-project-page-data', () => ({
@@ -60,38 +51,25 @@ vi.mock('./use-project-page-data', () => ({
 }));
 
 vi.mock('@/features/governance/hooks/use-governance-queries', () => ({
-  useGovernanceScopeOverview: vi.fn(),
   useGovernancePolicy: vi.fn(),
   useGovernanceReviewQueue: vi.fn(),
-  useGovernanceRunnerList: vi.fn(),
   useGovernanceFindingList: vi.fn(),
   useGovernanceIssueList: vi.fn(),
+  useGovernanceIssueDetail: vi.fn(),
   useGovernanceChangeUnitList: vi.fn(),
   useGovernanceDeliveryArtifactList: vi.fn()
 }));
 
 vi.mock('@/features/governance/hooks/use-governance-mutations', () => ({
-  useGovernanceRefreshRepositoryProfileMutation: vi.fn(),
-  useGovernanceRunDiscoveryMutation: vi.fn(),
-  useGovernanceUpdatePolicyMutation: vi.fn()
+  useGovernanceRetryTriageMutation: vi.fn()
 }));
 
 vi.mock('@/hooks/use-error-message', () => ({
   useErrorMessage: () => vi.fn()
 }));
 
-vi.mock('@/features/governance/components/GovernancePolicyPanel', () => ({
-  GovernancePolicyPanel: () => <div>治理策略表单</div>
-}));
-
-vi.mock('@/features/governance/components/GovernanceOrchestrationBoard', () => ({
-  GovernanceOrchestrationBoard: ({
-    mode,
-    issues
-  }: {
-    mode?: 'summary' | 'workspace';
-    issues: GovernanceIssueSummary[];
-  }) => <div>{`治理流水线:${mode ?? 'workspace'}:${issues.length}`}</div>
+vi.mock('@/features/governance/components/GovernanceIssueDetail', () => ({
+  GovernanceIssueDetail: () => <div>Issue Detail</div>
 }));
 
 function createProject(): Project {
@@ -107,42 +85,27 @@ function createProject(): Project {
   };
 }
 
-function createOverview(): GovernanceScopeOverview {
+function createAttempt(
+  input: {
+    stageType: GovernanceAutomationStage;
+    subjectType: GovernanceAutomationSubjectType;
+    subjectId: string;
+    status: GovernanceExecutionAttemptStatus;
+    sessionId: string;
+  }
+): GovernanceExecutionAttemptSummary {
   return {
-    scopeId: 'project-1',
-    repositoryProfile: null,
-    latestBaselineAttempt: {
-      id: 'attempt-baseline-1',
-      stageType: GovernanceAutomationStage.Baseline,
-      subjectType: GovernanceAutomationSubjectType.Scope,
-      subjectId: 'project-1',
-      attemptNo: 1,
-      status: GovernanceExecutionAttemptStatus.Succeeded,
-      sessionId: 'session-baseline-1',
-      activeRequestMessageId: 'message-baseline-1',
-      failureCode: null,
-      failureMessage: null,
-      updatedAt: '2026-04-06T00:00:00.000Z'
-    },
-    latestDiscoveryAttempt: {
-      id: 'attempt-discovery-1',
-      stageType: GovernanceAutomationStage.Discovery,
-      subjectType: GovernanceAutomationSubjectType.Scope,
-      subjectId: 'project-1',
-      attemptNo: 1,
-      status: GovernanceExecutionAttemptStatus.Running,
-      sessionId: 'session-discovery-1',
-      activeRequestMessageId: 'message-discovery-1',
-      failureCode: null,
-      failureMessage: null,
-      updatedAt: '2026-04-06T00:00:00.000Z'
-    },
-    findingCounts: {
-      pending: 1,
-      merged: 0,
-      dismissed: 0,
-      ignored: 0
-    }
+    id: `attempt-${input.stageType}-${input.subjectId}`,
+    stageType: input.stageType,
+    subjectType: input.subjectType,
+    subjectId: input.subjectId,
+    attemptNo: 1,
+    status: input.status,
+    sessionId: input.sessionId,
+    activeRequestMessageId: `message-${input.stageType}-${input.subjectId}`,
+    failureCode: null,
+    failureMessage: null,
+    updatedAt: '2026-04-06T00:00:00.000Z'
   };
 }
 
@@ -160,17 +123,12 @@ function createPolicy(): GovernancePolicy {
       } satisfies Partial<Record<string, GovernancePriority>>
     },
     autoActionPolicy: {
-      defaultEligibility:
-        GovernanceAutoActionEligibilityEnum.HumanReviewRequired,
-      severityOverrides: {
-        critical: GovernanceAutoActionEligibilityEnum.Forbidden
-      },
-      issueKindOverrides: {
-        bug: GovernanceAutoActionEligibilityEnum.HumanReviewRequired
-      }
+      defaultEligibility: 'human_review_required',
+      severityOverrides: {},
+      issueKindOverrides: {}
     },
     deliveryPolicy: {
-      commitMode: GovernanceDeliveryCommitModeEnum.PerUnit,
+      commitMode: 'per_unit',
       autoCloseIssueOnApprovedDelivery: true
     },
     sourceSelection: {
@@ -189,17 +147,6 @@ function createPolicy(): GovernancePolicy {
   };
 }
 
-function createRunner(): AgentRunnerSummary {
-  return {
-    id: 'runner-1',
-    name: 'MiniMax Runner',
-    type: 'claude-code',
-    description: null,
-    createdAt: '2026-04-06T00:00:00.000Z',
-    updatedAt: '2026-04-06T00:00:00.000Z'
-  };
-}
-
 function createFinding(): Finding {
   return {
     id: 'finding-1',
@@ -212,25 +159,21 @@ function createFinding(): Finding {
     tags: [],
     affectedTargets: [{ kind: 'file', ref: 'src/service.ts' }],
     status: GovernanceFindingStatus.Pending,
-    latestTriageAttempt: {
-      id: 'attempt-triage-1',
+    latestTriageAttempt: createAttempt({
       stageType: GovernanceAutomationStage.Triage,
       subjectType: GovernanceAutomationSubjectType.Finding,
       subjectId: 'finding-1',
-      attemptNo: 1,
       status: GovernanceExecutionAttemptStatus.NeedsHumanReview,
-      sessionId: 'session-triage-1',
-      activeRequestMessageId: 'message-triage-1',
-      failureCode: null,
-      failureMessage: null,
-      updatedAt: '2026-04-06T00:00:00.000Z'
-    },
+      sessionId: 'session-triage-1'
+    }),
     createdAt: '2026-04-06T00:00:00.000Z',
     updatedAt: '2026-04-06T00:00:00.000Z'
   };
 }
 
-function createIssueSummary(): GovernanceIssueSummary {
+function createIssueSummary(
+  overrides: Partial<GovernanceIssueSummary> = {}
+): GovernanceIssueSummary {
   return {
     id: 'issue-1',
     scopeId: 'project-1',
@@ -249,7 +192,14 @@ function createIssueSummary(): GovernanceIssueSummary {
     latestAssessment: null,
     latestResolutionDecision: null,
     latestChangePlanStatus: GovernanceChangePlanStatus.Draft,
-    latestPlanningAttempt: null
+    latestPlanningAttempt: createAttempt({
+      stageType: GovernanceAutomationStage.Planning,
+      subjectType: GovernanceAutomationSubjectType.Issue,
+      subjectId: 'issue-1',
+      status: GovernanceExecutionAttemptStatus.Running,
+      sessionId: 'session-planning-1'
+    }),
+    ...overrides
   };
 }
 
@@ -276,7 +226,13 @@ function createChangeUnit(): ChangeUnit {
     currentAttemptNo: 1,
     status: GovernanceChangeUnitStatus.Running,
     producedCommitIds: [],
-    latestExecutionAttempt: null,
+    latestExecutionAttempt: createAttempt({
+      stageType: GovernanceAutomationStage.Execution,
+      subjectType: GovernanceAutomationSubjectType.ChangeUnit,
+      subjectId: 'change-unit-1',
+      status: GovernanceExecutionAttemptStatus.Running,
+      sessionId: 'session-execution-1'
+    }),
     latestVerificationResult: null,
     createdAt: '2026-04-06T00:00:00.000Z',
     updatedAt: '2026-04-06T00:00:00.000Z'
@@ -296,6 +252,19 @@ function createArtifact(): DeliveryArtifact {
     status: GovernanceDeliveryArtifactStatus.Draft,
     createdAt: '2026-04-06T00:00:00.000Z',
     updatedAt: '2026-04-06T00:00:00.000Z'
+  };
+}
+
+function createIssueDetail(): GovernanceIssueDetail {
+  return {
+    ...createIssueSummary(),
+    relatedFindings: [createFinding()],
+    changePlan: null,
+    changeUnits: [createChangeUnit()],
+    verificationPlans: [],
+    verificationResults: [],
+    planLevelVerificationResult: null,
+    deliveryArtifact: createArtifact()
   };
 }
 
@@ -373,78 +342,40 @@ function createMutationResult<TData, TVariables>(): UseMutationResult<
   } as unknown as UseMutationResult<TData, Error, TVariables, unknown>;
 }
 
-function mockQueries() {
-  vi.mocked(useGovernanceScopeOverview).mockReturnValue(
-    createQueryResult(createOverview())
-  );
-  vi.mocked(useGovernancePolicy).mockReturnValue(createQueryResult(createPolicy()));
-  vi.mocked(useGovernanceReviewQueue).mockReturnValue(
-    createQueryResult([createReviewQueueItem()])
-  );
-  vi.mocked(useGovernanceRunnerList).mockReturnValue(
-    createQueryResult([createRunner()])
-  );
-  vi.mocked(useGovernanceFindingList).mockReturnValue(
-    createQueryResult([createFinding()])
-  );
-  vi.mocked(useGovernanceIssueList).mockReturnValue(
-    createQueryResult([createIssueSummary()])
-  );
-  vi.mocked(useGovernanceChangeUnitList).mockReturnValue(
-    createQueryResult([createChangeUnit()])
-  );
-  vi.mocked(useGovernanceDeliveryArtifactList).mockReturnValue(
-    createQueryResult([createArtifact()])
-  );
-}
-
-function mockMutations() {
-  vi.mocked(useGovernanceRefreshRepositoryProfileMutation).mockReturnValue(
-    createMutationResult<RepositoryProfile | null, void>()
-  );
-  vi.mocked(useGovernanceRunDiscoveryMutation).mockReturnValue(
-    createMutationResult<GovernanceScopeOverview, void>()
-  );
-  vi.mocked(useGovernanceUpdatePolicyMutation).mockReturnValue(
-    createMutationResult<GovernancePolicy, UpdateGovernancePolicyInput>()
-  );
-}
-
 function RouteEcho() {
   const location = useLocation();
   return <p aria-label="current-route">{location.pathname}</p>;
 }
 
-function renderProjectGovernancePage(route = '/projects/project-1/governance') {
+function renderProjectResourcesPage(route = '/projects/project-1/resources') {
   return renderWithProviders(
     <Routes>
       <Route
-        path="/projects/:id/governance"
+        path="/projects/:id/resources"
         element={
           <>
-            <ProjectGovernancePage />
+            <ProjectResourcesPage />
             <RouteEcho />
           </>
         }
       />
       <Route
-        path="/projects/:id/governance/:issueId"
+        path="/projects/:id/resources/:issueId"
         element={
           <>
-            <ProjectGovernancePage />
+            <ProjectResourcesPage />
             <RouteEcho />
           </>
         }
       />
-      <Route path="/projects/:id/resources" element={<RouteEcho />} />
-      <Route path="/projects/:id/resources/:issueId" element={<RouteEcho />} />
+      <Route path="/projects/:id/governance" element={<RouteEcho />} />
       <Route path="/projects/:id/reviews" element={<RouteEcho />} />
     </Routes>,
     { route }
   );
 }
 
-describe('ProjectGovernancePage', () => {
+describe('ProjectResourcesPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(useProjectPageData).mockReturnValue({
@@ -456,47 +387,102 @@ describe('ProjectGovernancePage', () => {
       goToProjects: vi.fn(),
       goToProjectTab: vi.fn()
     });
-    mockQueries();
-    mockMutations();
+    vi.mocked(useGovernancePolicy).mockReturnValue(createQueryResult(createPolicy()));
+    vi.mocked(useGovernanceReviewQueue).mockReturnValue(
+      createQueryResult([createReviewQueueItem()])
+    );
+    vi.mocked(useGovernanceFindingList).mockReturnValue(
+      createQueryResult([createFinding()])
+    );
+    vi.mocked(useGovernanceIssueList).mockReturnValue(
+      createQueryResult([createIssueSummary()])
+    );
+    vi.mocked(useGovernanceIssueDetail).mockReturnValue(
+      createQueryResult(createIssueDetail())
+    );
+    vi.mocked(useGovernanceChangeUnitList).mockReturnValue(
+      createQueryResult([createChangeUnit()])
+    );
+    vi.mocked(useGovernanceDeliveryArtifactList).mockReturnValue(
+      createQueryResult([createArtifact()])
+    );
+    vi.mocked(useGovernanceRetryTriageMutation).mockReturnValue(
+      createMutationResult<void, string>()
+    );
   });
 
-  it('应渲染治理运行台并把策略表单收进抽屉', async () => {
-    const { user } = renderProjectGovernancePage();
+  it('应渲染资源页双栏结构并默认选中第一个 issue', async () => {
+    renderProjectResourcesPage();
 
-    expect(
-      screen.getByRole('heading', { name: '治理工作流' })
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Issue' })).not.toBeInTheDocument();
-    expect(screen.getByText('治理流水线:workspace:1')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '审核队列' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '待归并发现' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: '最近 Change Unit' })
-    ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /策略设置/i }));
-
-    expect(await screen.findByText('治理策略表单')).toBeInTheDocument();
-  });
-
-  it('应提供资源入口并可跳转', async () => {
-    const { user } = renderProjectGovernancePage();
-
-    await user.click(screen.getAllByRole('button', { name: '资源' })[0]);
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('current-route')).toHaveTextContent(
-        '/projects/project-1/resources'
-      );
-    });
-  });
-
-  it('旧的 governance issue 深链应重定向到 resources 详情', async () => {
-    renderProjectGovernancePage('/projects/project-1/governance/issue-1');
+    expect(screen.getByRole('heading', { name: '资源' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Issue' })).toBeInTheDocument();
+    expect(screen.getByText('待归并发现')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByLabelText('current-route')).toHaveTextContent(
         '/projects/project-1/resources/issue-1'
+      );
+    });
+  });
+
+  it('应支持 backlog 搜索并自动切换到命中的 issue', async () => {
+    vi.mocked(useGovernanceIssueList).mockReturnValue(
+      createQueryResult([
+        createIssueSummary(),
+        createIssueSummary({
+          id: 'issue-2',
+          title: 'Improve review queue scanning',
+          statement: 'review queue 需要更高的扫描密度',
+          impactSummary: '审核页需要列表化',
+          affectedTargets: [{ kind: 'file', ref: 'src/reviews.tsx' }],
+          latestPlanningAttempt: null,
+          updatedAt: '2026-04-06T01:00:00.000Z'
+        })
+      ])
+    );
+    vi.mocked(useGovernanceIssueDetail).mockReturnValue(
+      createQueryResult(createIssueDetail())
+    );
+
+    const { user } = renderProjectResourcesPage();
+
+    await user.type(
+      screen.getByPlaceholderText('搜索 title、summary、target'),
+      'review queue'
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('current-route')).toHaveTextContent(
+        '/projects/project-1/resources/issue-2'
+      );
+    });
+
+    expect(screen.getByText('Improve review queue scanning')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Stabilize governance queue')
+    ).not.toBeInTheDocument();
+  });
+
+  it('应提供治理工作流入口', async () => {
+    const { user } = renderProjectResourcesPage();
+
+    await user.click(screen.getByRole('button', { name: '治理工作流' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('current-route')).toHaveTextContent(
+        '/projects/project-1/governance'
+      );
+    });
+  });
+
+  it('应提供审核队列入口', async () => {
+    const { user } = renderProjectResourcesPage();
+
+    await user.click(screen.getByRole('button', { name: /审核队列/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('current-route')).toHaveTextContent(
+        '/projects/project-1/reviews'
       );
     });
   });

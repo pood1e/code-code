@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   type GovernancePolicy,
@@ -31,7 +31,7 @@ import {
   useGovernanceRetryPlanningMutation,
   useGovernanceReviewDecisionMutation
 } from '@/features/governance/hooks/use-governance-mutations';
-import { buildProjectGovernancePath } from '@/types/projects';
+import { buildProjectResourcesPath } from '@/types/projects';
 
 type GovernanceIssueDetailProps = {
   scopeId: string;
@@ -150,11 +150,11 @@ export function GovernanceIssueDetail({
 
           <div className="grid gap-4 md:grid-cols-2">
             <GovernanceIssueInfoBlock
-              label="Impact Summary"
+              label="影响摘要"
               value={issue.impactSummary}
             />
             <GovernanceIssueInfoBlock
-              label="Latest Resolution"
+              label="最近决策"
               value={
                 issue.latestResolutionDecision
                   ? `${issue.latestResolutionDecision.resolution} · ${issue.latestResolutionDecision.reason}`
@@ -162,11 +162,11 @@ export function GovernanceIssueDetail({
               }
             />
             <GovernanceIssueInfoBlock
-              label="Categories"
+              label="分类"
               value={issue.categories.join(', ') || '未分类'}
             />
             <GovernanceIssueInfoBlock
-              label="Targets"
+              label="影响范围"
               value={
                 issue.affectedTargets.map((target) => target.ref).join(', ') ||
                 '无'
@@ -174,18 +174,18 @@ export function GovernanceIssueDetail({
             />
             {policyDerivedAssessment ? (
               <GovernanceIssueInfoBlock
-                label="Policy"
+                label="策略推导"
                 value={`priority ${policyDerivedAssessment.priority} · eligibility ${policyDerivedAssessment.autoActionEligibility} · commit ${deliveryCommitMode ?? 'n/a'}`}
               />
             ) : null}
             {issue.spinOffOfIssueId ? (
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Spin-off Source
+                  拆分来源
                 </p>
                 <Link
                   className="mt-2 inline-flex text-sm font-medium text-primary"
-                  to={buildProjectGovernancePath(scopeId, issue.spinOffOfIssueId)}
+                  to={buildProjectResourcesPath(scopeId, issue.spinOffOfIssueId)}
                 >
                   {issue.spinOffOfIssueId}
                 </Link>
@@ -194,61 +194,96 @@ export function GovernanceIssueDetail({
           </div>
         </SurfaceCard>
 
-        <GovernanceExecutionDeliverySection
-          scopeId={scopeId}
-          issue={issue}
-          policy={policy}
-          deliveryCommitMode={deliveryCommitMode}
-          reviewMutation={reviewMutation}
-          actionableChangeUnits={actionableChangeUnits}
-          selectedChangeUnit={selectedChangeUnit}
-          isSelectedChangeUnitManualReady={isSelectedChangeUnitManualReady}
-          changeUnitReviewForm={changeUnitReviewForm}
-          deliveryReviewForm={deliveryReviewForm}
-          changeUnitError={changeUnitError}
-          setChangeUnitError={setChangeUnitError}
-          deliveryError={deliveryError}
-          setDeliveryError={setDeliveryError}
-        />
+        <GovernanceDetailSection
+          title="自动化执行 / 交付"
+          description="聚焦 planning、change unit execution、验证结果和最终交付动作。"
+        >
+          <GovernanceExecutionDeliverySection
+            scopeId={scopeId}
+            issue={issue}
+            policy={policy}
+            deliveryCommitMode={deliveryCommitMode}
+            reviewMutation={reviewMutation}
+            actionableChangeUnits={actionableChangeUnits}
+            selectedChangeUnit={selectedChangeUnit}
+            isSelectedChangeUnitManualReady={isSelectedChangeUnitManualReady}
+            changeUnitReviewForm={changeUnitReviewForm}
+            deliveryReviewForm={deliveryReviewForm}
+            changeUnitError={changeUnitError}
+            setChangeUnitError={setChangeUnitError}
+            deliveryError={deliveryError}
+            setDeliveryError={setDeliveryError}
+          />
 
-        <GovernanceAutomationSection
-          scopeId={scopeId}
-          issue={issue}
-          retryPlanningMutation={retryPlanningMutation}
-          planningError={planningError}
-          setPlanningError={setPlanningError}
-        />
+          <GovernanceAutomationSection
+            scopeId={scopeId}
+            issue={issue}
+            retryPlanningMutation={retryPlanningMutation}
+            planningError={planningError}
+            setPlanningError={setPlanningError}
+          />
+        </GovernanceDetailSection>
 
-        <GovernanceResolutionSection
-          resolutionForm={resolutionForm}
-          resolution={resolution}
-          resolutionMutation={resolutionMutation}
-          resolutionError={resolutionError}
-          setResolutionError={setResolutionError}
-        />
+        <GovernanceDetailSection
+          title="决策与审批"
+          description="在这里完成 resolution、assessment override 以及 change plan / finding 审批。"
+        >
+          <GovernanceResolutionSection
+            resolutionForm={resolutionForm}
+            resolution={resolution}
+            resolutionMutation={resolutionMutation}
+            resolutionError={resolutionError}
+            setResolutionError={setResolutionError}
+          />
 
-        <GovernanceAssessmentOverrideSection
-          issue={issue}
-          reviewMutation={reviewMutation}
-          assessmentOverrideForm={assessmentOverrideForm}
-          assessmentError={assessmentError}
-          setAssessmentError={setAssessmentError}
-        />
+          <GovernanceAssessmentOverrideSection
+            issue={issue}
+            reviewMutation={reviewMutation}
+            assessmentOverrideForm={assessmentOverrideForm}
+            assessmentError={assessmentError}
+            setAssessmentError={setAssessmentError}
+          />
 
-        <GovernanceReviewActionsSection
-          issue={issue}
-          pendingFindings={pendingFindings}
-          reviewMutation={reviewMutation}
-          findingDismissForm={findingDismissForm}
-          changePlanReviewForm={changePlanReviewForm}
-          dismissError={dismissError}
-          setDismissError={setDismissError}
-          changePlanError={changePlanError}
-          setChangePlanError={setChangePlanError}
-        />
+          <GovernanceReviewActionsSection
+            issue={issue}
+            pendingFindings={pendingFindings}
+            reviewMutation={reviewMutation}
+            findingDismissForm={findingDismissForm}
+            changePlanReviewForm={changePlanReviewForm}
+            dismissError={dismissError}
+            setDismissError={setDismissError}
+            changePlanError={changePlanError}
+            setChangePlanError={setChangePlanError}
+          />
+        </GovernanceDetailSection>
 
-        <GovernanceRelatedFindingsSection scopeId={scopeId} issue={issue} />
+        <GovernanceDetailSection
+          title="相关 Findings"
+          description="保留和当前 issue 直接相关的 findings、triage 状态与上下文证据。"
+        >
+          <GovernanceRelatedFindingsSection scopeId={scopeId} issue={issue} />
+        </GovernanceDetailSection>
       </div>
     </div>
+  );
+}
+
+function GovernanceDetailSection({
+  title,
+  description,
+  children
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="space-y-1 px-1">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
   );
 }

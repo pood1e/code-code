@@ -1,13 +1,20 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Loader2, SlidersHorizontal } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { GovernanceFindingStatus, GovernanceIssueStatus } from '@agent-workbench/shared';
+import {
+  GovernanceFindingStatus,
+  GovernancePriority,
+  GovernanceIssueStatus,
+  GovernanceReviewQueueItemKind,
+  type Finding,
+  type GovernanceIssueSummary,
+  type GovernanceReviewQueueItem
+} from '@agent-workbench/shared';
 
 import { EmptyState } from '@/components/app/EmptyState';
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { NativeSelect } from '@/components/ui/native-select';
 import {
   Sheet,
   SheetContent,
@@ -17,14 +24,10 @@ import {
 } from '@/components/ui/sheet';
 import { GovernanceChangeUnitSummaryList } from '@/features/governance/components/GovernanceChangeUnitSummaryList';
 import { GovernanceDeliveryArtifactSummaryList } from '@/features/governance/components/GovernanceDeliveryArtifactSummaryList';
-import { GovernanceFindingList } from '@/features/governance/components/GovernanceFindingList';
-import { GovernanceIssueDetail } from '@/features/governance/components/GovernanceIssueDetail';
-import { GovernanceIssueList } from '@/features/governance/components/GovernanceIssueList';
 import { GovernanceOrchestrationBoard } from '@/features/governance/components/GovernanceOrchestrationBoard';
 import { GovernancePolicyPanel } from '@/features/governance/components/GovernancePolicyPanel';
 import {
   useGovernanceRefreshRepositoryProfileMutation,
-  useGovernanceRetryTriageMutation,
   useGovernanceRunDiscoveryMutation,
   useGovernanceUpdatePolicyMutation
 } from '@/features/governance/hooks/use-governance-mutations';
@@ -32,7 +35,6 @@ import {
   useGovernanceChangeUnitList,
   useGovernanceDeliveryArtifactList,
   useGovernanceFindingList,
-  useGovernanceIssueDetail,
   useGovernanceIssueList,
   useGovernancePolicy,
   useGovernanceReviewQueue,
@@ -40,19 +42,35 @@ import {
   useGovernanceScopeOverview
 } from '@/features/governance/hooks/use-governance-queries';
 import { useErrorMessage } from '@/hooks/use-error-message';
-import { buildProjectGovernancePath } from '@/types/projects';
+import {
+  buildProjectResourcesPath,
+  buildProjectReviewsPath
+} from '@/types/projects';
 
 import { useProjectPageData } from './use-project-page-data';
 
-const STATUS_OPTIONS: Array<{ label: string; value: GovernanceIssueStatus | 'all' }> = [
-  { label: '全部状态', value: 'all' },
-  { label: 'open', value: GovernanceIssueStatus.Open },
-  { label: 'planned', value: GovernanceIssueStatus.Planned },
-  { label: 'deferred', value: GovernanceIssueStatus.Deferred },
-  { label: 'accepted_risk', value: GovernanceIssueStatus.AcceptedRisk },
-  { label: 'wont_fix', value: GovernanceIssueStatus.WontFix },
-  { label: 'duplicate', value: GovernanceIssueStatus.Duplicate }
-];
+const ISSUE_STATUS_ORDER: Record<GovernanceIssueStatus, number> = {
+  [GovernanceIssueStatus.Open]: 0,
+  [GovernanceIssueStatus.Blocked]: 1,
+  [GovernanceIssueStatus.InProgress]: 2,
+  [GovernanceIssueStatus.InReview]: 3,
+  [GovernanceIssueStatus.Planned]: 4,
+  [GovernanceIssueStatus.IntegrationFailed]: 5,
+  [GovernanceIssueStatus.PartiallyResolved]: 6,
+  [GovernanceIssueStatus.Resolved]: 7,
+  [GovernanceIssueStatus.Closed]: 8,
+  [GovernanceIssueStatus.Deferred]: 9,
+  [GovernanceIssueStatus.AcceptedRisk]: 10,
+  [GovernanceIssueStatus.WontFix]: 11,
+  [GovernanceIssueStatus.Duplicate]: 12
+};
+
+const PRIORITY_ORDER: Record<GovernancePriority, number> = {
+  [GovernancePriority.P0]: 0,
+  [GovernancePriority.P1]: 1,
+  [GovernancePriority.P2]: 2,
+  [GovernancePriority.P3]: 3
+};
 
 export function ProjectGovernancePage() {
   const navigate = useNavigate();
@@ -68,44 +86,50 @@ export function ProjectGovernancePage() {
     isNotFound,
     goToProjects
   } = useProjectPageData();
-  const [status, setStatus] = useState<GovernanceIssueStatus | 'all'>('all');
   const [isPolicyOpen, setIsPolicyOpen] = useState(false);
+  const overviewQuery = useGovernanceScopeOverview(projectId);
+  const reviewQueueQuery = useGovernanceReviewQueue(projectId);
   const findingsQuery = useGovernanceFindingList(
     projectId,
     GovernanceFindingStatus.Pending
   );
-  const overviewQuery = useGovernanceScopeOverview(projectId);
-  const reviewQueueQuery = useGovernanceReviewQueue(projectId);
+  const issuesQuery = useGovernanceIssueList(projectId);
   const policyQuery = useGovernancePolicy(projectId);
   const runnerListQuery = useGovernanceRunnerList();
   const changeUnitsQuery = useGovernanceChangeUnitList(projectId);
   const deliveryArtifactsQuery = useGovernanceDeliveryArtifactList(projectId);
-  const listQuery = useGovernanceIssueList(
-    projectId,
-    status === 'all' ? undefined : status
-  );
-  const detailQuery = useGovernanceIssueDetail(issueId ?? null);
-  const retryTriageMutation = useGovernanceRetryTriageMutation(projectId ?? '');
   const refreshProfileMutation = useGovernanceRefreshRepositoryProfileMutation(
     projectId ?? ''
   );
   const discoveryMutation = useGovernanceRunDiscoveryMutation(projectId ?? '');
   const updatePolicyMutation = useGovernanceUpdatePolicyMutation(projectId ?? '');
-  const issues = useMemo(() => listQuery.data ?? [], [listQuery.data]);
+
+  const issues = useMemo(
+    () => [...(issuesQuery.data ?? [])].sort(compareGovernanceIssues),
+    [issuesQuery.data]
+  );
+  const reviewQueue = useMemo(
+    () =>
+      [...(reviewQueueQuery.data ?? [])].sort((left, right) =>
+        right.updatedAt.localeCompare(left.updatedAt)
+      ),
+    [reviewQueueQuery.data]
+  );
   const pendingFindings = useMemo(
-    () => findingsQuery.data ?? [],
+    () =>
+      [...(findingsQuery.data ?? [])].sort((left, right) =>
+        right.updatedAt.localeCompare(left.updatedAt)
+      ),
     [findingsQuery.data]
   );
-  const selectedIssueExists = useMemo(
-    () => (issueId ? issues.some((issue) => issue.id === issueId) : false),
-    [issueId, issues]
-  );
-  const selectedStatusLabel = useMemo(
-    () =>
-      STATUS_OPTIONS.find((option) => option.value === status)?.label ??
-      '全部状态',
-    [status]
-  );
+
+  useEffect(() => {
+    if (projectId && issueId) {
+      void navigate(buildProjectResourcesPath(projectId, issueId), {
+        replace: true
+      });
+    }
+  }, [issueId, navigate, projectId]);
 
   useEffect(() => {
     if (overviewQuery.error) {
@@ -127,21 +151,15 @@ export function ProjectGovernancePage() {
 
   useEffect(() => {
     if (findingsQuery.error) {
-      handleError(findingsQuery.error, { context: '加载 pending findings 失败' });
+      handleError(findingsQuery.error, { context: '加载待归并 findings 失败' });
     }
   }, [findingsQuery.error, handleError]);
 
   useEffect(() => {
-    if (listQuery.error) {
-      handleError(listQuery.error, { context: '加载治理 backlog 失败' });
+    if (issuesQuery.error) {
+      handleError(issuesQuery.error, { context: '加载治理 backlog 失败' });
     }
-  }, [handleError, listQuery.error]);
-
-  useEffect(() => {
-    if (detailQuery.error) {
-      handleError(detailQuery.error, { context: '加载 issue 详情失败' });
-    }
-  }, [detailQuery.error, handleError]);
+  }, [handleError, issuesQuery.error]);
 
   useEffect(() => {
     if (changeUnitsQuery.error) {
@@ -162,29 +180,6 @@ export function ProjectGovernancePage() {
       handleError(runnerListQuery.error, { context: '加载 Agent Runners 失败' });
     }
   }, [handleError, runnerListQuery.error]);
-
-  useEffect(() => {
-    if (!projectId) {
-      return;
-    }
-
-    if (issues.length === 0) {
-      if (issueId) {
-        void navigate(buildProjectGovernancePath(projectId), {
-          replace: true
-        });
-      }
-      return;
-    }
-
-    if (issueId && selectedIssueExists) {
-      return;
-    }
-
-    void navigate(buildProjectGovernancePath(projectId, issues[0]!.id), {
-      replace: true
-    });
-  }, [issueId, issues, navigate, projectId, selectedIssueExists]);
 
   if (isProjectLoading) {
     return <div className="p-8" />;
@@ -238,230 +233,159 @@ export function ProjectGovernancePage() {
     );
   }
 
-  const overview = overviewQuery.data;
-
   return (
     <Sheet open={isPolicyOpen} onOpenChange={setIsPolicyOpen}>
       <div className="flex h-full min-h-0 flex-col bg-muted/10">
-        <header className="border-b bg-background px-6 py-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold text-foreground">治理台</h2>
-              <p className="text-sm text-muted-foreground">
-                发现问题、筛选 backlog、推进修复与交付。
-              </p>
+        <header className="border-b border-border/60 bg-background">
+          <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-6 py-4">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <h1 className="text-[24px] font-semibold leading-tight text-foreground">
+                  治理工作流
+                </h1>
+                <Badge variant="outline" className="truncate">
+                  {project.name}
+                </Badge>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void navigate(buildProjectResourcesPath(projectId))}
+                >
+                  资源
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void navigate(buildProjectReviewsPath(projectId))}
+                >
+                  审核队列
+                  {reviewQueue.length > 0 ? (
+                    <span className="ml-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px]">
+                      {reviewQueue.length}
+                    </span>
+                  ) : null}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={refreshProfileMutation.isPending}
+                  onClick={() => {
+                    void refreshProfileMutation.mutateAsync().catch((error) => {
+                      handleError(error, { context: '刷新 repository profile 失败' });
+                    });
+                  }}
+                >
+                  刷新仓库画像
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={discoveryMutation.isPending}
+                  onClick={() => {
+                    void discoveryMutation.mutateAsync().catch((error) => {
+                      handleError(error, { context: '执行 discovery 失败' });
+                    });
+                  }}
+                >
+                  {discoveryMutation.isPending ? (
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                  ) : null}
+                  运行 Discovery
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsPolicyOpen(true)}
+                >
+                  <SlidersHorizontal className="mr-1.5 size-4" />
+                  策略设置
+                </Button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={refreshProfileMutation.isPending}
-                onClick={() => {
-                  void refreshProfileMutation.mutateAsync().catch((error) => {
-                    handleError(error, { context: '刷新 repository profile 失败' });
-                  });
-                }}
-              >
-                刷新仓库画像
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={discoveryMutation.isPending}
-                onClick={() => {
-                  void discoveryMutation.mutateAsync().catch((error) => {
-                    handleError(error, { context: '执行 discovery 失败' });
-                  });
-                }}
-              >
-                运行 Discovery
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPolicyOpen(true)}
-              >
-                <SlidersHorizontal className="size-4" />
-                策略设置
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <OverviewStatCard
-              label="仓库画像"
-              value={overview?.repositoryProfile?.branch ?? '未生成'}
-              hint={
-                overview?.repositoryProfile
-                  ? `snapshot ${overview.repositoryProfile.snapshotAt}`
-                  : '先刷新一次仓库画像'
-              }
-            />
-            <OverviewStatCard
-              label="待处理 Finding"
-              value={String(overview?.findingCounts.pending ?? 0)}
-              hint={pendingFindings.length > 0 ? '左侧可直接处理 triage' : '当前没有待处理 finding'}
-            />
-            <OverviewStatCard
-              label="Issue Backlog"
-              value={String(issues.length)}
-              hint={
-                issues.length > 0
-                  ? '左侧 backlog 可直接进入 issue 详情和自动化分支'
-                  : '当前还没有进入 backlog 的 issue'
-              }
-            />
-            <OverviewStatCard
-              label="Review Queue"
-              value={String(reviewQueueQuery.data?.length ?? 0)}
-              hint={
-                (reviewQueueQuery.data?.length ?? 0) > 0
-                  ? '需要人工处理的治理项会集中显示在审核队列'
-                  : '当前没有待审核项'
-              }
-            />
-          </div>
-
-          <div className="mt-4">
             <GovernanceOrchestrationBoard
               scopeId={projectId}
               projectName={project.name}
-              overview={overview}
-              reviewQueue={reviewQueueQuery.data ?? []}
+              overview={overviewQuery.data}
+              reviewQueue={reviewQueue}
               findings={pendingFindings}
               issues={issues}
-              selectedIssue={detailQuery.data}
               changeUnits={changeUnitsQuery.data ?? []}
               deliveryArtifacts={deliveryArtifactsQuery.data ?? []}
             />
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1">
-          <aside className="flex w-80 flex-shrink-0 flex-col border-r bg-background">
-            <div className="space-y-3 border-b px-4 py-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Issue Backlog
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    当前筛选：{selectedStatusLabel}
-                  </p>
-                </div>
-                <Badge variant="outline">{issues.length}</Badge>
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="governance-status-filter"
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  状态过滤
-                </label>
-                <NativeSelect
-                  id="governance-status-filter"
-                  aria-label="治理状态过滤"
-                  value={status}
-                  onChange={(event) =>
-                    setStatus(event.target.value as GovernanceIssueStatus | 'all')
-                  }
-                >
-                  {STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {pendingFindings.length > 0 ? (
-                <section className="border-b px-4 py-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">
-                        待处理 Findings
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        triage 失败或待归并的问题发现
-                      </p>
-                    </div>
-                    <Badge variant="secondary">{pendingFindings.length}</Badge>
-                  </div>
-                  <GovernanceFindingList
-                    findings={pendingFindings}
-                    retryingFindingId={
-                      retryTriageMutation.variables ?? null
-                    }
-                    onRetry={(findingId) => {
-                      void retryTriageMutation
-                        .mutateAsync(findingId)
-                        .catch((error) => {
-                          handleError(error, { context: '重试 triage 失败' });
-                        });
-                    }}
-                  />
-                </section>
-              ) : null}
-
-              <section className="px-4 py-4">
-                {listQuery.isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : issues.length > 0 ? (
-                  <GovernanceIssueList
-                    issues={issues}
-                    selectedId={issueId ?? null}
-                    onSelect={(nextIssueId) =>
-                      void navigate(buildProjectGovernancePath(projectId, nextIssueId))
-                    }
-                  />
-                ) : (
-                  <EmptyState
-                    size="compact"
-                    title="暂无 Governance Issue"
-                    description="当前筛选下还没有进入 backlog 的问题项。"
-                  />
-                )}
-              </section>
-            </div>
-          </aside>
-
-          <main className="min-w-0 flex-1 overflow-y-auto">
-            {issueId ? (
-              <GovernanceIssueDetail
-                scopeId={projectId}
-                issueId={issueId}
-                issue={detailQuery.data}
-                isLoading={detailQuery.isLoading}
-                policy={policyQuery.data}
-                selectedStatus={status === 'all' ? undefined : status}
-              />
-            ) : (
-              <GovernanceOverviewPanel
-                issuesCount={issues.length}
-                changeUnits={changeUnitsQuery.data?.slice(0, 6) ?? []}
-                artifacts={deliveryArtifactsQuery.data?.slice(0, 6) ?? []}
+        <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-6 py-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
+            <SignalPanel
+              title="审核队列"
+              actionLabel="查看全部"
+              onAction={() => void navigate(buildProjectReviewsPath(projectId))}
+            >
+              <ReviewQueueSummaryList
+                items={reviewQueue.slice(0, 5)}
                 onSelectIssue={(nextIssueId) =>
-                  void navigate(buildProjectGovernancePath(projectId, nextIssueId))
+                  void navigate(buildProjectResourcesPath(projectId, nextIssueId))
+                }
+                onOpenQueue={() => void navigate(buildProjectReviewsPath(projectId))}
+              />
+            </SignalPanel>
+
+            <SignalPanel
+              title="待归并发现"
+              actionLabel="打开资源"
+              onAction={() => void navigate(buildProjectResourcesPath(projectId))}
+            >
+              <PendingFindingList
+                findings={pendingFindings.slice(0, 5)}
+                onOpenResources={() =>
+                  void navigate(buildProjectResourcesPath(projectId))
                 }
               />
-            )}
-          </main>
-        </div>
+            </SignalPanel>
+
+            <SignalPanel
+              title="最近 Change Unit"
+              actionLabel="资源"
+              onAction={() => void navigate(buildProjectResourcesPath(projectId))}
+            >
+              <GovernanceChangeUnitSummaryList
+                changeUnits={changeUnitsQuery.data?.slice(0, 5) ?? []}
+                onSelectIssue={(nextIssueId) =>
+                  void navigate(buildProjectResourcesPath(projectId, nextIssueId))
+                }
+              />
+            </SignalPanel>
+
+            <SignalPanel
+              title="最近 Delivery Artifact"
+              actionLabel="资源"
+              onAction={() => void navigate(buildProjectResourcesPath(projectId))}
+            >
+              <GovernanceDeliveryArtifactSummaryList
+                artifacts={deliveryArtifactsQuery.data?.slice(0, 5) ?? []}
+                onSelectIssue={(nextIssueId) =>
+                  void navigate(buildProjectResourcesPath(projectId, nextIssueId))
+                }
+              />
+            </SignalPanel>
+          </div>
+        </main>
       </div>
 
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-xl">
         <SheetHeader className="border-b">
           <SheetTitle>治理策略</SheetTitle>
           <SheetDescription>
-            Runner 选择和 priority / auto-action / delivery 策略放在这里统一维护。
+            Runner 选择以及 priority、auto-action、delivery 策略统一维护在这里。
           </SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -480,87 +404,173 @@ export function ProjectGovernancePage() {
   );
 }
 
-function OverviewStatCard({
-  label,
-  value,
-  hint,
-  action
+function SignalPanel({
+  title,
+  actionLabel,
+  onAction,
+  children
 }: {
-  label: string;
-  value: string;
-  hint: string;
-  action?: ReactNode;
+  title: string;
+  actionLabel: string;
+  onAction: () => void;
+  children: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        {action}
+    <SurfaceCard className="overflow-hidden p-0 shadow-none">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <Button type="button" variant="ghost" size="sm" onClick={onAction}>
+          {actionLabel}
+        </Button>
       </div>
-      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{hint}</p>
+      <div className="p-3">{children}</div>
+    </SurfaceCard>
+  );
+}
+
+function ReviewQueueSummaryList({
+  items,
+  onSelectIssue,
+  onOpenQueue
+}: {
+  items: GovernanceReviewQueueItem[];
+  onSelectIssue: (issueId: string) => void;
+  onOpenQueue: () => void;
+}) {
+  if (items.length === 0) {
+    return <InlineHint text="当前没有待审核项。" />;
+  }
+
+  return (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <button
+          key={`${item.kind}:${item.subjectId}`}
+          type="button"
+          className="flex w-full items-start justify-between gap-3 rounded-xl border border-border/60 px-3 py-3 text-left transition hover:bg-muted/20"
+          onClick={() => {
+            if (item.issueId) {
+              onSelectIssue(item.issueId);
+              return;
+            }
+            onOpenQueue();
+          }}
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">{getQueueItemLabel(item.kind)}</Badge>
+              {item.issueId ? <Badge variant="outline">Issue</Badge> : null}
+            </div>
+            <p className="mt-2 truncate text-sm font-semibold text-foreground">
+              {item.title}
+            </p>
+            <p className="mt-1 line-clamp-1 text-xs leading-5 text-muted-foreground">
+              {item.failureMessage ?? item.status}
+            </p>
+          </div>
+          <div className="shrink-0 pt-1 text-[11px] text-muted-foreground">
+            {formatTimestamp(item.updatedAt)}
+          </div>
+        </button>
+      ))}
     </div>
   );
 }
 
-function GovernanceOverviewPanel({
-  issuesCount,
-  changeUnits,
-  artifacts,
-  onSelectIssue
+function PendingFindingList({
+  findings,
+  onOpenResources
 }: {
-  issuesCount: number;
-  changeUnits: Parameters<typeof GovernanceChangeUnitSummaryList>[0]['changeUnits'];
-  artifacts: Parameters<
-    typeof GovernanceDeliveryArtifactSummaryList
-  >[0]['artifacts'];
-  onSelectIssue: (issueId: string) => void;
+  findings: Finding[];
+  onOpenResources: () => void;
 }) {
-  const hasBacklog = issuesCount > 0;
+  if (findings.length === 0) {
+    return <InlineHint text="当前没有待归并发现。" />;
+  }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 px-6 py-6">
-      <SurfaceCard className="space-y-3">
-        <div>
-          <h3 className="text-base font-semibold text-foreground">治理概览</h3>
-          <p className="text-sm text-muted-foreground">
-            {hasBacklog
-              ? '从左侧 Issue Backlog 选择一个问题项，进入评估、规划、执行和交付。'
-              : '当前还没有可处理的 Issue。先运行 Discovery 或等待 triage 生成 backlog。'}
-          </p>
-        </div>
-        <div className="grid gap-4 xl:grid-cols-2">
-          <SurfaceCard className="space-y-3 rounded-xl border-border/50 bg-background p-4 shadow-none">
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">
-                最近 Change Unit
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                查看最近执行中的变更单元和验证结果。
-              </p>
+    <div className="space-y-2">
+      {findings.map((finding) => (
+        <button
+          key={finding.id}
+          type="button"
+          className="flex w-full items-start justify-between gap-3 rounded-xl border border-border/60 px-3 py-3 text-left transition hover:bg-muted/20"
+          onClick={onOpenResources}
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">Finding</Badge>
+              <Badge variant="outline">
+                {finding.latestTriageAttempt?.status ?? finding.status}
+              </Badge>
             </div>
-            <GovernanceChangeUnitSummaryList
-              changeUnits={changeUnits}
-              onSelectIssue={onSelectIssue}
-            />
-          </SurfaceCard>
-
-          <SurfaceCard className="space-y-3 rounded-xl border-border/50 bg-background p-4 shadow-none">
-            <div>
-              <h4 className="text-sm font-semibold text-foreground">
-                最近 Delivery Artifact
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                这里汇总最近待审批的交付单和关联结果。
-              </p>
-            </div>
-            <GovernanceDeliveryArtifactSummaryList
-              artifacts={artifacts}
-              onSelectIssue={onSelectIssue}
-            />
-          </SurfaceCard>
-        </div>
-      </SurfaceCard>
+            <p className="mt-2 truncate text-sm font-semibold text-foreground">
+              {finding.title}
+            </p>
+            <p className="mt-1 line-clamp-1 text-xs leading-5 text-muted-foreground">
+              {finding.summary}
+            </p>
+          </div>
+          <div className="shrink-0 pt-1 text-[11px] text-muted-foreground">
+            {formatTimestamp(finding.updatedAt)}
+          </div>
+        </button>
+      ))}
     </div>
   );
+}
+
+function InlineHint({ text }: { text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 px-3 py-4">
+      <p className="text-sm text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function compareGovernanceIssues(
+  left: GovernanceIssueSummary,
+  right: GovernanceIssueSummary
+) {
+  const leftStatusRank = ISSUE_STATUS_ORDER[left.status] ?? Number.MAX_SAFE_INTEGER;
+  const rightStatusRank =
+    ISSUE_STATUS_ORDER[right.status] ?? Number.MAX_SAFE_INTEGER;
+  if (leftStatusRank !== rightStatusRank) {
+    return leftStatusRank - rightStatusRank;
+  }
+
+  const leftPriority =
+    left.latestAssessment?.priority && left.latestAssessment.priority in PRIORITY_ORDER
+      ? PRIORITY_ORDER[left.latestAssessment.priority]
+      : Number.MAX_SAFE_INTEGER;
+  const rightPriority =
+    right.latestAssessment?.priority && right.latestAssessment.priority in PRIORITY_ORDER
+      ? PRIORITY_ORDER[right.latestAssessment.priority]
+      : Number.MAX_SAFE_INTEGER;
+  if (leftPriority !== rightPriority) {
+    return leftPriority - rightPriority;
+  }
+
+  return right.updatedAt.localeCompare(left.updatedAt);
+}
+
+function getQueueItemLabel(kind: GovernanceReviewQueueItemKind) {
+  switch (kind) {
+    case GovernanceReviewQueueItemKind.Baseline:
+      return 'Baseline';
+    case GovernanceReviewQueueItemKind.Discovery:
+      return 'Discovery';
+    case GovernanceReviewQueueItemKind.Triage:
+      return 'Triage';
+    case GovernanceReviewQueueItemKind.Planning:
+      return 'Planning';
+    case GovernanceReviewQueueItemKind.ChangeUnit:
+      return 'Change Unit';
+    case GovernanceReviewQueueItemKind.DeliveryArtifact:
+      return 'Delivery Artifact';
+  }
+}
+
+function formatTimestamp(value: string) {
+  return new Date(value).toLocaleString('zh-CN');
 }

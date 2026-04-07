@@ -7,10 +7,7 @@ import {
   GovernanceDeliveryBodyStrategy,
   GovernanceAssessmentSource,
   GovernanceAutoActionEligibility,
-  GovernanceAutomationStage,
-  GovernanceAutomationSubjectType,
   GovernanceChangeUnitStatus,
-  GovernanceExecutionAttemptStatus,
   GovernanceExecutionMode,
   GovernanceFindingSource,
   GovernanceFindingStatus,
@@ -45,16 +42,6 @@ vi.mock('../hooks/use-governance-mutations', () => ({
   })
 }));
 
-vi.mock('./GovernanceSessionHistorySheet', () => ({
-  GovernanceSessionHistorySheet: ({
-    title,
-    triggerLabel = '查看日志'
-  }: {
-    title: string;
-    triggerLabel?: string;
-  }) => <button type="button">{`${triggerLabel}:${title}`}</button>
-}));
-
 function createIssue(): GovernanceIssueDetail {
   return {
     id: 'issue-1',
@@ -86,19 +73,7 @@ function createIssue(): GovernanceIssueDetail {
       createdAt: '2026-04-06T10:00:00.000Z'
     },
     latestResolutionDecision: null,
-    latestPlanningAttempt: {
-      id: 'planning-attempt-1',
-      stageType: GovernanceAutomationStage.Planning,
-      subjectType: GovernanceAutomationSubjectType.Issue,
-      subjectId: 'issue-1',
-      attemptNo: 1,
-      status: GovernanceExecutionAttemptStatus.Running,
-      sessionId: 'session-planning-1',
-      activeRequestMessageId: 'message-planning-1',
-      failureCode: null,
-      failureMessage: null,
-      updatedAt: '2026-04-06T10:00:00.000Z'
-    },
+    latestPlanningAttempt: null,
     relatedFindings: [
       {
         id: 'finding-1',
@@ -111,19 +86,7 @@ function createIssue(): GovernanceIssueDetail {
         tags: [],
         affectedTargets: [{ kind: 'file', ref: 'src/service.ts' }],
         status: GovernanceFindingStatus.Pending,
-        latestTriageAttempt: {
-          id: 'triage-attempt-1',
-          stageType: GovernanceAutomationStage.Triage,
-          subjectType: GovernanceAutomationSubjectType.Finding,
-          subjectId: 'finding-1',
-          attemptNo: 1,
-          status: GovernanceExecutionAttemptStatus.Running,
-          sessionId: 'session-triage-1',
-          activeRequestMessageId: 'message-triage-1',
-          failureCode: null,
-          failureMessage: null,
-          updatedAt: '2026-04-06T10:00:00.000Z'
-        },
+        latestTriageAttempt: null,
         createdAt: '2026-04-06T10:00:00.000Z',
         updatedAt: '2026-04-06T10:00:00.000Z'
       }
@@ -138,19 +101,21 @@ function createIssue(): GovernanceIssueDetail {
 }
 
 function createIssueTwo(): GovernanceIssueDetail {
+  const issue = createIssue();
+
   return {
-    ...createIssue(),
+    ...issue,
     id: 'issue-2',
     title: '测试缺口',
     statement: '缺少关键路径单测',
     spinOffOfIssueId: 'issue-1',
     latestAssessment: {
-      ...createIssue().latestAssessment!,
+      ...issue.latestAssessment,
       id: 'assessment-2'
     },
     relatedFindings: [
       {
-        ...createIssue().relatedFindings[0]!,
+        ...issue.relatedFindings[0],
         id: 'finding-2',
         title: '缺少测试',
         summary: '需要补测试'
@@ -160,13 +125,15 @@ function createIssueTwo(): GovernanceIssueDetail {
 }
 
 function createIssueRefetch(): GovernanceIssueDetail {
+  const issue = createIssue();
+
   return {
-    ...createIssue(),
+    ...issue,
     updatedAt: '2026-04-06T10:05:00.000Z',
     relatedFindings: [
-      ...createIssue().relatedFindings,
+      ...issue.relatedFindings,
       {
-        ...createIssue().relatedFindings[0]!,
+        ...issue.relatedFindings[0],
         id: 'finding-3',
         title: '新增 finding',
         summary: '同一 issue 刷新后的新增 finding'
@@ -198,19 +165,6 @@ function createManualReadyIssue(): GovernanceIssueDetail {
         currentAttemptNo: 0,
         status: GovernanceChangeUnitStatus.Ready,
         producedCommitIds: [],
-        latestExecutionAttempt: {
-          id: 'execution-attempt-1',
-          stageType: GovernanceAutomationStage.Execution,
-          subjectType: GovernanceAutomationSubjectType.ChangeUnit,
-          subjectId: 'change-unit-1',
-          attemptNo: 1,
-          status: GovernanceExecutionAttemptStatus.Running,
-          sessionId: 'session-execution-1',
-          activeRequestMessageId: 'message-execution-1',
-          failureCode: null,
-          failureMessage: null,
-          updatedAt: '2026-04-06T10:00:00.000Z'
-        },
         createdAt: '2026-04-06T10:00:00.000Z',
         updatedAt: '2026-04-06T10:00:00.000Z'
       }
@@ -276,6 +230,9 @@ describe('GovernanceIssueDetail', () => {
       />
     );
 
+    expect(screen.getByText('自动化执行 / 交付')).toBeInTheDocument();
+    expect(screen.getByText('决策与审批')).toBeInTheDocument();
+    expect(screen.getByText('相关 Findings')).toBeInTheDocument();
     expect(screen.getByText('重复判空逻辑')).toBeInTheDocument();
     expect(screen.getByText('同一模块存在重复判空逻辑')).toBeInTheDocument();
 
@@ -435,28 +392,6 @@ describe('GovernanceIssueDetail', () => {
 
     expect(
       screen.getByText(/当前 issue 已 blocked/)
-    ).toBeInTheDocument();
-  });
-
-  it('应为 planning、triage 和 execution 展示日志入口', () => {
-    renderWithProviders(
-      <GovernanceIssueDetailPanel
-        scopeId="project-1"
-        issueId="issue-manual"
-        issue={createManualReadyIssue()}
-        isLoading={false}
-        policy={createPolicy()}
-      />
-    );
-
-    expect(
-      screen.getByRole('button', { name: '查看 Planning 日志:重复判空逻辑 · Planning 日志' })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: '查看执行日志:手工修复单元 · 执行日志' })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: '查看 Triage 日志:误报 candidate · Triage 日志' })
     ).toBeInTheDocument();
   });
 });

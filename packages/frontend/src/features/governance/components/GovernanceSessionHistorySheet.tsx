@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   type PagedSessionMessages,
   type SessionMessageDetail
@@ -14,10 +14,9 @@ import { SessionAssistantThreadHistory } from '@/features/chat/runtime/assistant
 import { ThreadConfigContext } from '@/features/chat/runtime/assistant-ui/context';
 import {
   buildSessionAssistantMessageRecords,
-  type SessionAssistantMessageRecord
 } from '@/features/chat/runtime/assistant-ui/thread-adapter';
 import { useSessionEventStream } from '@/pages/projects/use-session-event-stream';
-import { NOOP_QUERY_KEY, queryKeys } from '@/query/query-keys';
+import { queryKeys } from '@/query/query-keys';
 import { useSessionRuntimeStore } from '@/store/session-runtime-store';
 
 type GovernanceSessionHistorySheetProps = {
@@ -60,8 +59,11 @@ export function GovernanceSessionHistorySheet({
       </Button>
 
       {open ? (
-        <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-4xl">
-          <SheetHeader className="border-b">
+        <SheetContent
+          side="right"
+          className="w-full gap-0 p-0 sm:max-w-[90vw] xl:max-w-[1280px]"
+        >
+          <SheetHeader className="border-b pr-12">
             <SheetTitle>{title}</SheetTitle>
             <SheetDescription>
               {description ?? '直接复用会话历史组件查看治理 Agent 的实时输出。'}
@@ -102,9 +104,13 @@ function GovernanceSessionHistoryBody({
     getNextPageParam: (lastPage: PagedSessionMessages) =>
       lastPage.nextCursor || undefined
   });
-  const runtimeState =
-    useSessionRuntimeStore((state) => state.stateBySessionId[sessionId]) ?? {};
-  const previousRecordsRef = useRef<SessionAssistantMessageRecord[]>([]);
+  const sessionRuntimeState = useSessionRuntimeStore(
+    (state) => state.stateBySessionId[sessionId]
+  );
+  const runtimeState = useMemo(
+    () => sessionRuntimeState ?? {},
+    [sessionRuntimeState]
+  );
 
   const flatMessages = useMemo(() => {
     if (!sessionMessagesQuery.data) {
@@ -117,18 +123,9 @@ function GovernanceSessionHistoryBody({
   }, [sessionMessagesQuery.data]);
 
   const records = useMemo(
-    () =>
-      buildSessionAssistantMessageRecords(
-        flatMessages,
-        runtimeState,
-        previousRecordsRef.current
-      ),
+    () => buildSessionAssistantMessageRecords(flatMessages, runtimeState),
     [flatMessages, runtimeState]
   );
-
-  useEffect(() => {
-    previousRecordsRef.current = records;
-  }, [records]);
 
   useSessionEventStream({
     scopeId,
@@ -152,8 +149,8 @@ function GovernanceSessionHistoryBody({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-muted/10">
-      <div className="border-b px-4 py-4 sm:px-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/10">
+      <div className="shrink-0 border-b px-4 py-3 sm:px-6">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>session: {sessionId}</span>
           <span>status: {sessionDetailQuery.data.status}</span>
@@ -161,23 +158,25 @@ function GovernanceSessionHistoryBody({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 px-0 py-0">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {records.length > 0 ? (
-          <ThreadConfigContext.Provider value={{ assistantName }}>
-            <SessionAssistantThreadHistory
-              canReload={false}
-              records={records}
-              firstItemIndex={100_000}
-              onLoadMore={
-                sessionMessagesQuery.hasNextPage
-                  ? () => {
-                      void sessionMessagesQuery.fetchNextPage();
-                    }
-                  : undefined
-              }
-              onReload={async () => undefined}
-            />
-          </ThreadConfigContext.Provider>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ThreadConfigContext.Provider value={{ assistantName }}>
+              <SessionAssistantThreadHistory
+                canReload={false}
+                records={records}
+                firstItemIndex={100_000}
+                onLoadMore={
+                  sessionMessagesQuery.hasNextPage
+                    ? () => {
+                        void sessionMessagesQuery.fetchNextPage();
+                      }
+                    : undefined
+                }
+                onReload={() => Promise.resolve()}
+              />
+            </ThreadConfigContext.Provider>
+          </div>
         ) : (
           <GovernanceSessionHistoryEmptyState
             title="当前没有日志输出"

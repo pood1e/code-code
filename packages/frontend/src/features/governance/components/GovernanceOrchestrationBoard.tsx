@@ -1,7 +1,5 @@
 import {
   AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
   CircleDashed,
   GitBranch,
   Loader2,
@@ -27,6 +25,7 @@ import {
 import { SurfaceCard } from '@/components/app/SurfaceCard';
 import { Badge } from '@/components/ui/badge';
 import { GovernanceSessionHistorySheet } from './GovernanceSessionHistorySheet';
+import { cn } from '@/lib/utils';
 
 type GovernanceOrchestrationBoardProps = {
   scopeId: string;
@@ -38,6 +37,7 @@ type GovernanceOrchestrationBoardProps = {
   selectedIssue?: GovernanceIssueDetail;
   changeUnits: ChangeUnit[];
   deliveryArtifacts: DeliveryArtifact[];
+  mode?: 'summary' | 'workspace';
 };
 
 type StageTone = 'idle' | 'queued' | 'running' | 'success' | 'attention';
@@ -46,22 +46,21 @@ type StageViewModel = {
   key: string;
   label: string;
   summary: string;
-  detail: string;
+  detail?: string;
   tone: StageTone;
   statusLabel: string;
+  activeCount?: number;
   sessionId?: string | null;
   sessionTitle?: string;
 };
 
-type ActiveAgentItem = {
-  key: string;
-  label: string;
-  title: string;
-  status: GovernanceExecutionAttemptStatus;
-  sessionId: string;
-  updatedAt: string;
-  detail: string;
-  sessionTitle: string;
+type StageVisual = {
+  cardClass: string;
+  iconShellClass: string;
+  badgeClass: string;
+  chipClass: string;
+  iconClass: string;
+  accentClass: string;
 };
 
 const ACTIVE_ATTEMPT_STATUSES = new Set<GovernanceExecutionAttemptStatus>([
@@ -78,7 +77,8 @@ export function GovernanceOrchestrationBoard({
   issues,
   selectedIssue,
   changeUnits,
-  deliveryArtifacts
+  deliveryArtifacts,
+  mode = 'workspace'
 }: GovernanceOrchestrationBoardProps) {
   const stages = buildStageViewModels({
     projectName,
@@ -90,156 +90,104 @@ export function GovernanceOrchestrationBoard({
     changeUnits,
     deliveryArtifacts
   });
-  const activeAgents = buildActiveAgentItems({
-    projectName,
-    overview,
-    findings,
-    issues,
-    changeUnits
-  });
+  const isSummaryMode = mode === 'summary';
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)]">
-      <SurfaceCard className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h3 className="text-base font-semibold text-foreground">治理流水线</h3>
-            <p className="text-sm text-muted-foreground">
-              像看 GitHub Actions 一样看 baseline、discovery、triage、planning、execution
-              和 review 当前卡在哪一步。
-            </p>
-          </div>
-          {selectedIssue ? (
-            <Badge variant="secondary">当前 Issue: {selectedIssue.title}</Badge>
-          ) : (
-            <Badge variant="outline">Project 级视图</Badge>
-          )}
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-[repeat(6,minmax(0,1fr))]">
-          {stages.map((stage, index) => (
-            <StageCard
-              key={stage.key}
-              scopeId={scopeId}
-              stage={stage}
-              showConnector={index < stages.length - 1}
-            />
-          ))}
-        </div>
-      </SurfaceCard>
-
-      <SurfaceCard className="space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h3 className="text-base font-semibold text-foreground">运行中 Agent</h3>
-            <p className="text-sm text-muted-foreground">
-              这里直接列出当前在跑的治理会话，点开就能看实时日志。
-            </p>
-          </div>
-          <Badge variant="secondary">{activeAgents.length}</Badge>
-        </div>
-
-        {activeAgents.length > 0 ? (
-          <div className="space-y-3">
-            {activeAgents.map((agent) => (
-              <div
-                key={agent.key}
-                className="rounded-xl border border-border/60 bg-muted/20 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{agent.label}</Badge>
-                      <AttemptStatusBadge status={agent.status} />
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">{agent.title}</p>
-                    <p className="text-xs leading-5 text-muted-foreground">
-                      {agent.detail}
-                    </p>
-                  </div>
-                  <GovernanceSessionHistorySheet
-                    scopeId={scopeId}
-                    sessionId={agent.sessionId}
-                    title={agent.sessionTitle}
-                    description="直接查看当前治理 Agent 的会话历史和实时输出。"
-                    triggerVariant="secondary"
-                  />
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-                  <span className="font-mono">session: {agent.sessionId}</span>
-                  <span>updated: {formatTimestamp(agent.updatedAt)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 px-4 py-6 text-sm text-muted-foreground">
-            当前没有运行中的治理 Agent。运行 discovery、让 triage/planning/execution
-            进入自动化后，这里会直接出现对应会话。
-          </div>
+    <SurfaceCard className="border-border/60 bg-card p-3 shadow-none sm:p-4">
+      <div
+        className={cn(
+          'grid gap-1.5',
+          'sm:grid-cols-2 xl:grid-cols-6'
         )}
-      </SurfaceCard>
-    </div>
+      >
+        {stages.map((stage, index) => (
+          <StageStripItem
+            key={stage.key}
+            scopeId={scopeId}
+            stage={stage}
+            stageIndex={index + 1}
+            mode={isSummaryMode ? 'summary' : 'workspace'}
+          />
+        ))}
+      </div>
+    </SurfaceCard>
   );
 }
 
-function StageCard({
+function StageStripItem({
   scopeId,
   stage,
-  showConnector
+  stageIndex,
+  mode
 }: {
   scopeId: string;
   stage: StageViewModel;
-  showConnector: boolean;
+  stageIndex: number;
+  mode: 'summary' | 'workspace';
 }) {
   const visual = getStageToneVisual(stage.tone);
+  const isSummaryMode = mode === 'summary';
+  const detailText = isSummaryMode
+    ? stage.tone === 'attention'
+      ? stage.detail
+      : undefined
+    : stage.detail;
 
   return (
-    <div className="flex items-stretch gap-2 lg:gap-3">
-      <div className="min-w-0 flex-1">
+    <div
+      className={cn(
+        'rounded-xl border px-3 py-2.5',
+        isSummaryMode ? 'min-h-[84px]' : 'min-h-[82px]',
+        visual.cardClass
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="font-mono text-[10px] text-muted-foreground/80">
+          {String(stageIndex).padStart(2, '0')}
+        </span>
         <div
-          className={`relative h-full min-h-[188px] rounded-2xl border px-4 py-4 ${visual.cardClass}`}
+          className={cn(
+            'flex size-6 shrink-0 items-center justify-center rounded-full border',
+            visual.iconShellClass
+          )}
         >
-          <div className="flex items-start justify-between gap-3">
-            <div
-              className={`flex size-9 items-center justify-center rounded-full border ${visual.iconShellClass}`}
-            >
-              <StageIcon stageKey={stage.key} tone={stage.tone} />
-            </div>
-            <Badge className={visual.badgeClass}>{stage.statusLabel}</Badge>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                {stage.label}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-foreground">
-                {stage.summary}
-              </p>
-            </div>
-            <p className="text-xs leading-5 text-muted-foreground">{stage.detail}</p>
-          </div>
-
-          {stage.sessionId && stage.sessionTitle ? (
-            <div className="mt-4">
-              <GovernanceSessionHistorySheet
-                scopeId={scopeId}
-                sessionId={stage.sessionId}
-                title={stage.sessionTitle}
-                description={`查看 ${stage.label} 阶段的完整 agent 会话。`}
-              />
-            </div>
-          ) : null}
+          <StageIcon stageKey={stage.key} tone={stage.tone} />
         </div>
+        <p className="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          {stage.label}
+        </p>
       </div>
 
-      {showConnector ? (
-        <div className="hidden items-center justify-center lg:flex">
-          <ArrowRight className="size-4 text-muted-foreground/60" />
+      <div className="mt-2 space-y-0.5">
+        <p className="line-clamp-1 text-sm font-semibold leading-5 text-foreground">
+          {stage.summary}
+        </p>
+        {detailText ? (
+          <p className="line-clamp-1 text-xs leading-5 text-muted-foreground">
+            {detailText}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-2 flex min-h-[22px] items-end justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <Badge className={visual.badgeClass}>{stage.statusLabel}</Badge>
+          {stage.activeCount && stage.activeCount > 1 ? (
+            <span className="text-[11px] text-muted-foreground">
+              {stage.activeCount} active
+            </span>
+          ) : null}
         </div>
-      ) : null}
+        {stage.sessionId && stage.sessionTitle ? (
+          <GovernanceSessionHistorySheet
+            scopeId={scopeId}
+            sessionId={stage.sessionId}
+            title={stage.sessionTitle}
+            description={`查看 ${stage.label} 阶段的完整 agent 会话。`}
+            triggerVariant="ghost"
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -263,22 +211,16 @@ function StageIcon({
     case 'planning':
       return <Wrench className={iconClassName} />;
     case 'execution':
-      return <Loader2 className={tone === 'running' ? `${iconClassName} animate-spin` : iconClassName} />;
+      return (
+        <Loader2
+          className={tone === 'running' ? `${iconClassName} animate-spin` : iconClassName}
+        />
+      );
     case 'review':
       return <AlertTriangle className={iconClassName} />;
     default:
       return <CircleDashed className={iconClassName} />;
   }
-}
-
-function AttemptStatusBadge({
-  status
-}: {
-  status: GovernanceExecutionAttemptStatus;
-}) {
-  const visual = getAttemptStatusVisual(status);
-
-  return <Badge className={visual.className}>{visual.label}</Badge>;
 }
 
 function buildStageViewModels(input: {
@@ -291,6 +233,16 @@ function buildStageViewModels(input: {
   changeUnits: ChangeUnit[];
   deliveryArtifacts: DeliveryArtifact[];
 }): StageViewModel[] {
+  const triageActiveFindings = input.findings.filter((finding) =>
+    isActiveAttempt(finding.latestTriageAttempt)
+  );
+  const planningActiveIssues = input.issues.filter((issue) =>
+    isActiveAttempt(issue.latestPlanningAttempt)
+  );
+  const executionRunningUnits = input.changeUnits.filter((unit) =>
+    isActiveAttempt(unit.latestExecutionAttempt)
+  );
+
   const baseline = attemptStageView({
     label: 'Baseline',
     summaryFallback: input.overview?.repositoryProfile?.branch
@@ -298,7 +250,7 @@ function buildStageViewModels(input: {
       : '等待仓库画像',
     detailFallback: input.overview?.repositoryProfile
       ? `snapshot ${input.overview.repositoryProfile.snapshotAt}`
-      : '先刷新仓库画像，生成最新仓库快照。',
+      : undefined,
     attempt: input.overview?.latestBaselineAttempt,
     sessionTitle: `${input.projectName} · Baseline 日志`
   });
@@ -307,25 +259,20 @@ function buildStageViewModels(input: {
     label: 'Discovery',
     summaryFallback:
       (input.overview?.findingCounts.pending ?? 0) > 0
-        ? `${input.overview?.findingCounts.pending ?? 0} findings pending`
+        ? `${input.overview.findingCounts.pending} findings`
         : '等待问题发现',
-    detailFallback: input.overview?.latestDiscoveryAttempt
-      ? '自动发现仓库中的 bug、risk、debt 和治理缺口。'
-      : '运行 discovery 后，这里会显示本轮发现状态。',
+    detailFallback: undefined,
     attempt: input.overview?.latestDiscoveryAttempt,
     sessionTitle: `${input.projectName} · Discovery 日志`
   });
 
-  const activeTriageFinding = input.findings.find((finding) =>
-    isActiveAttempt(finding.latestTriageAttempt)
-  );
   const triageAttentionFinding = input.findings.find(
     (finding) =>
       finding.latestTriageAttempt?.status ===
       GovernanceExecutionAttemptStatus.NeedsHumanReview
   );
   const triageAttempt =
-    activeTriageFinding?.latestTriageAttempt ??
+    triageActiveFindings[0]?.latestTriageAttempt ??
     triageAttentionFinding?.latestTriageAttempt ??
     null;
   const triageTone = triageAttempt
@@ -340,31 +287,27 @@ function buildStageViewModels(input: {
     : input.findings.length > 0
       ? '待处理'
       : input.issues.length > 0
-        ? 'backlog ready'
+        ? 'ready'
         : 'idle';
-  const triageSummary = activeTriageFinding
-    ? activeTriageFinding.title
-    : triageAttentionFinding
-      ? triageAttentionFinding.title
-      : input.findings.length > 0
-        ? `${input.findings.length} findings 等待 triage`
-        : input.issues.length > 0
-          ? `${input.issues.length} issues 已进入 backlog`
-          : '暂无 triage 活动';
-  const triageDetail = activeTriageFinding
-    ? `自动归并 finding，session ${triageAttempt?.sessionId ?? '—'}`
-    : triageAttentionFinding
-      ? triageAttentionFinding.latestTriageAttempt?.failureMessage ??
-        'triage 需要人工处理'
-      : input.findings.length > 0
-        ? '待处理 findings 会在这里进入 issue 创建或归并流程。'
-        : '当前没有待 triage 的 findings。';
+  const triageSummary = triageActiveFindings.length > 1
+    ? `${triageActiveFindings.length} findings running`
+    : triageActiveFindings[0]
+      ? triageActiveFindings[0].title
+      : triageAttentionFinding
+        ? triageAttentionFinding.title
+        : input.findings.length > 0
+          ? `${input.findings.length} findings 等待 triage`
+          : input.issues.length > 0
+            ? `${input.issues.length} issues 已入 backlog`
+            : '暂无 triage';
+  const triageDetail = triageAttentionFinding
+    ? triageAttentionFinding.latestTriageAttempt?.failureMessage ?? '需要人工处理'
+    : triageActiveFindings[0]
+      ? undefined
+      : undefined;
 
   const selectedPlanningAttempt =
     input.selectedIssue?.latestPlanningAttempt ?? null;
-  const listPlanningIssue = input.issues.find((issue) =>
-    isActiveAttempt(issue.latestPlanningAttempt)
-  );
   const attentionPlanningIssue = input.issues.find(
     (issue) =>
       issue.latestPlanningAttempt?.status ===
@@ -372,19 +315,20 @@ function buildStageViewModels(input: {
   );
   const planningAttempt =
     selectedPlanningAttempt ??
-    listPlanningIssue?.latestPlanningAttempt ??
+    planningActiveIssues[0]?.latestPlanningAttempt ??
     attentionPlanningIssue?.latestPlanningAttempt ??
     null;
   const planningOwner =
     input.selectedIssue ??
-    listPlanningIssue ??
+    planningActiveIssues[0] ??
     attentionPlanningIssue ??
     null;
   const planningTone = planningAttempt
     ? mapAttemptTone(planningAttempt.status)
     : input.selectedIssue?.changePlan ||
         input.issues.some(
-          (issue) => issue.latestChangePlanStatus === GovernanceChangePlanStatus.Approved
+          (issue) =>
+            issue.latestChangePlanStatus === GovernanceChangePlanStatus.Approved
         )
       ? 'success'
       : input.issues.length > 0
@@ -394,28 +338,26 @@ function buildStageViewModels(input: {
     ? getAttemptStatusVisual(planningAttempt.status).label
     : input.selectedIssue?.changePlan ||
         input.issues.some(
-          (issue) => issue.latestChangePlanStatus === GovernanceChangePlanStatus.Approved
+          (issue) =>
+            issue.latestChangePlanStatus === GovernanceChangePlanStatus.Approved
         )
-      ? 'plan ready'
+      ? 'ready'
       : input.issues.length > 0
         ? '待规划'
         : 'idle';
-  const planningSummary = planningOwner
-    ? planningOwner.title
-    : input.issues.length > 0
-      ? `${input.issues.length} issues 可进入 planning`
-      : '暂无 planning 活动';
-  const planningDetail = planningAttempt
-    ? planningAttempt.failureMessage ?? '生成修复目标、策略和 change units。'
-    : input.selectedIssue?.changePlan
-      ? '当前选中 issue 已有 change plan。'
+  const planningSummary = planningActiveIssues.length > 1
+    ? `${planningActiveIssues.length} issues running`
+    : planningOwner
+      ? planningOwner.title
       : input.issues.length > 0
-        ? '选择一个 issue 后可以看到更细的 planning / execution 分支。'
-        : '等待 triage 产出新的 issue。';
+        ? `${input.issues.length} issues 可规划`
+        : '暂无 planning';
+  const planningDetail = attentionPlanningIssue
+    ? attentionPlanningIssue.latestPlanningAttempt?.failureMessage ?? '需要人工处理'
+    : planningAttempt && planningAttempt.failureMessage
+      ? planningAttempt.failureMessage
+      : undefined;
 
-  const runningChangeUnits = input.changeUnits.filter((unit) =>
-    isActiveAttempt(unit.latestExecutionAttempt)
-  );
   const attentionChangeUnit = input.changeUnits.find(
     (unit) =>
       unit.latestExecutionAttempt?.status ===
@@ -434,7 +376,7 @@ function buildStageViewModels(input: {
     ].includes(unit.status)
   );
   const executionAttempt =
-    runningChangeUnits[0]?.latestExecutionAttempt ??
+    executionRunningUnits[0]?.latestExecutionAttempt ??
     attentionChangeUnit?.latestExecutionAttempt ??
     null;
   const executionTone = executionAttempt
@@ -451,35 +393,29 @@ function buildStageViewModels(input: {
       : completedChangeUnits.length > 0
         ? 'verified'
         : 'idle';
-  const executionSummary =
-    runningChangeUnits.length > 0
-      ? runningChangeUnits.length > 1
-        ? `${runningChangeUnits.length} change units running`
-        : runningChangeUnits[0]!.title
+  const executionSummary = executionRunningUnits.length > 1
+    ? `${executionRunningUnits.length} units running`
+    : executionRunningUnits[0]
+      ? executionRunningUnits[0].title
       : attentionChangeUnit
         ? attentionChangeUnit.title
         : readyChangeUnits.length > 0
-          ? `${readyChangeUnits.length} change units ready`
+          ? `${readyChangeUnits.length} units ready`
           : completedChangeUnits.length > 0
-            ? `${completedChangeUnits.length} change units finished`
-            : '暂无 execution 活动';
-  const executionDetail =
-    runningChangeUnits.length > 0
-      ? `自动执行变更与验证，当前 attempt ${executionAttempt?.attemptNo ?? '—'}`
-      : attentionChangeUnit
-        ? attentionChangeUnit.latestExecutionAttempt?.failureMessage ??
-          '执行阶段需要人工接管'
-        : readyChangeUnits.length > 0
-          ? 'change plan 已拆解，等待进入执行。'
-          : '当前没有可执行的 change unit。';
+            ? `${completedChangeUnits.length} units finished`
+            : '暂无 execution';
+  const executionDetail = attentionChangeUnit
+    ? attentionChangeUnit.latestExecutionAttempt?.failureMessage ?? '需要人工处理'
+    : executionAttempt?.failureMessage ?? undefined;
 
   const reviewAttentionItem = input.reviewQueue[0] ?? null;
+  const submittedArtifacts = input.deliveryArtifacts.filter(
+    (artifact) => artifact.status === GovernanceDeliveryArtifactStatus.Submitted
+  );
   const reviewTone =
     input.reviewQueue.length > 0
       ? 'attention'
-      : input.deliveryArtifacts.some(
-            (artifact) => artifact.status === GovernanceDeliveryArtifactStatus.Submitted
-          )
+      : submittedArtifacts.length > 0
         ? 'queued'
         : input.deliveryArtifacts.length > 0
           ? 'success'
@@ -487,23 +423,19 @@ function buildStageViewModels(input: {
   const reviewStatusLabel =
     input.reviewQueue.length > 0
       ? 'needs review'
-      : input.deliveryArtifacts.some(
-            (artifact) => artifact.status === GovernanceDeliveryArtifactStatus.Submitted
-          )
+      : submittedArtifacts.length > 0
         ? 'submitted'
         : input.deliveryArtifacts.length > 0
           ? 'delivered'
           : 'idle';
   const reviewSummary = reviewAttentionItem
-    ? `${input.reviewQueue.length} items waiting review`
+    ? `${input.reviewQueue.length} items waiting`
     : input.deliveryArtifacts.length > 0
-      ? `${input.deliveryArtifacts.length} delivery artifacts`
-      : '暂无 review 队列';
+      ? `${input.deliveryArtifacts.length} artifacts`
+      : '暂无 review';
   const reviewDetail = reviewAttentionItem
-    ? `${reviewAttentionItem.title} · ${reviewAttentionItem.failureMessage ?? reviewAttentionItem.status}`
-    : input.deliveryArtifacts.length > 0
-      ? '最近交付产物和人工审核队列会统一显示在这里。'
-      : '执行结果、delivery artifact 和人工处理项会在这里汇总。';
+    ? reviewAttentionItem.failureMessage ?? reviewAttentionItem.status
+    : undefined;
 
   return [
     baseline,
@@ -515,6 +447,7 @@ function buildStageViewModels(input: {
       detail: triageDetail,
       tone: triageTone,
       statusLabel: triageStatusLabel,
+      activeCount: triageActiveFindings.length,
       sessionId: triageAttempt?.sessionId ?? null,
       sessionTitle: triageAttempt?.sessionId
         ? `${triageSummary} · Triage 日志`
@@ -527,6 +460,7 @@ function buildStageViewModels(input: {
       detail: planningDetail,
       tone: planningTone,
       statusLabel: planningStatusLabel,
+      activeCount: planningActiveIssues.length,
       sessionId: planningAttempt?.sessionId ?? null,
       sessionTitle: planningAttempt?.sessionId
         ? `${planningSummary} · Planning 日志`
@@ -539,6 +473,7 @@ function buildStageViewModels(input: {
       detail: executionDetail,
       tone: executionTone,
       statusLabel: executionStatusLabel,
+      activeCount: executionRunningUnits.length,
       sessionId: executionAttempt?.sessionId ?? null,
       sessionTitle: executionAttempt?.sessionId
         ? `${executionSummary} · Execution 日志`
@@ -551,6 +486,7 @@ function buildStageViewModels(input: {
       detail: reviewDetail,
       tone: reviewTone,
       statusLabel: reviewStatusLabel,
+      activeCount: input.reviewQueue.length,
       sessionId: reviewAttentionItem?.sessionId ?? null,
       sessionTitle: reviewAttentionItem?.sessionId
         ? `${reviewAttentionItem.title} · Review 日志`
@@ -559,116 +495,10 @@ function buildStageViewModels(input: {
   ];
 }
 
-function buildActiveAgentItems(input: {
-  projectName: string;
-  overview?: GovernanceScopeOverview;
-  findings: Finding[];
-  issues: GovernanceIssueSummary[];
-  changeUnits: ChangeUnit[];
-}) {
-  const items: ActiveAgentItem[] = [];
-  const seen = new Set<string>();
-
-  const push = (item: ActiveAgentItem | null) => {
-    if (!item || seen.has(item.key)) {
-      return;
-    }
-    seen.add(item.key);
-    items.push(item);
-  };
-
-  const baselineAttempt = input.overview?.latestBaselineAttempt;
-  if (baselineAttempt && isActiveAttempt(baselineAttempt) && baselineAttempt.sessionId) {
-    push({
-      key: `baseline:${baselineAttempt.id}`,
-      label: 'Baseline',
-      title: '仓库画像生成',
-      status: baselineAttempt.status,
-      sessionId: baselineAttempt.sessionId,
-      updatedAt: baselineAttempt.updatedAt,
-      detail: '扫描仓库结构、分支和测试基线。',
-      sessionTitle: `${input.projectName} · Baseline 日志`
-    });
-  }
-
-  const discoveryAttempt = input.overview?.latestDiscoveryAttempt;
-  if (
-    discoveryAttempt &&
-    isActiveAttempt(discoveryAttempt) &&
-    discoveryAttempt.sessionId
-  ) {
-    push({
-      key: `discovery:${discoveryAttempt.id}`,
-      label: 'Discovery',
-      title: '问题发现',
-      status: discoveryAttempt.status,
-      sessionId: discoveryAttempt.sessionId,
-      updatedAt: discoveryAttempt.updatedAt,
-      detail: '自动发现当前仓库中的治理问题。',
-      sessionTitle: `${input.projectName} · Discovery 日志`
-    });
-  }
-
-  for (const finding of input.findings) {
-    const attempt = finding.latestTriageAttempt;
-    if (!attempt || !isActiveAttempt(attempt) || !attempt.sessionId) {
-      continue;
-    }
-    push({
-      key: `triage:${attempt.id}`,
-      label: 'Triage',
-      title: finding.title,
-      status: attempt.status,
-      sessionId: attempt.sessionId,
-      updatedAt: attempt.updatedAt,
-      detail: '自动归并 finding 到现有 issue 或创建新 issue。',
-      sessionTitle: `${finding.title} · Triage 日志`
-    });
-  }
-
-  for (const issue of input.issues) {
-    const attempt = issue.latestPlanningAttempt;
-    if (!attempt || !isActiveAttempt(attempt) || !attempt.sessionId) {
-      continue;
-    }
-    push({
-      key: `planning:${attempt.id}`,
-      label: 'Planning',
-      title: issue.title,
-      status: attempt.status,
-      sessionId: attempt.sessionId,
-      updatedAt: attempt.updatedAt,
-      detail: '生成 change plan、change units 和 verification plan。',
-      sessionTitle: `${issue.title} · Planning 日志`
-    });
-  }
-
-  for (const changeUnit of input.changeUnits) {
-    const attempt = changeUnit.latestExecutionAttempt;
-    if (!attempt || !isActiveAttempt(attempt) || !attempt.sessionId) {
-      continue;
-    }
-    push({
-      key: `execution:${attempt.id}`,
-      label: 'Execution',
-      title: changeUnit.title,
-      status: attempt.status,
-      sessionId: attempt.sessionId,
-      updatedAt: attempt.updatedAt,
-      detail: '执行代码修改并跑验证。',
-      sessionTitle: `${changeUnit.title} · Execution 日志`
-    });
-  }
-
-  return items.sort((left, right) =>
-    right.updatedAt.localeCompare(left.updatedAt)
-  );
-}
-
 function attemptStageView(input: {
   label: string;
   summaryFallback: string;
-  detailFallback: string;
+  detailFallback?: string;
   attempt?: GovernanceExecutionAttemptSummary | null;
   sessionTitle: string;
 }): StageViewModel {
@@ -717,42 +547,44 @@ function getAttemptStatusVisual(status: GovernanceExecutionAttemptStatus) {
     case GovernanceExecutionAttemptStatus.Pending:
       return {
         label: 'pending',
-        className: 'border border-slate-300/80 bg-slate-100 text-slate-700'
+        className:
+          'border border-border/60 bg-background/80 text-muted-foreground'
       };
     case GovernanceExecutionAttemptStatus.Running:
       return {
         label: 'running',
-        className: 'border border-sky-300/80 bg-sky-100 text-sky-800'
+        className: 'border border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-300'
       };
     case GovernanceExecutionAttemptStatus.WaitingRepair:
       return {
-        label: 'waiting repair',
-        className: 'border border-amber-300/80 bg-amber-100 text-amber-800'
+        label: 'waiting',
+        className: 'border border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300'
       };
     case GovernanceExecutionAttemptStatus.Succeeded:
       return {
         label: 'succeeded',
-        className: 'border border-emerald-300/80 bg-emerald-100 text-emerald-800'
+        className: 'border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
       };
     case GovernanceExecutionAttemptStatus.Failed:
       return {
         label: 'failed',
-        className: 'border border-rose-300/80 bg-rose-100 text-rose-800'
+        className: 'border border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300'
       };
     case GovernanceExecutionAttemptStatus.NeedsHumanReview:
       return {
         label: 'needs review',
-        className: 'border border-orange-300/80 bg-orange-100 text-orange-800'
+        className: 'border border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300'
       };
     case GovernanceExecutionAttemptStatus.ResolvedByHuman:
       return {
         label: 'resolved',
-        className: 'border border-emerald-300/80 bg-emerald-100 text-emerald-800'
+        className: 'border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
       };
     case GovernanceExecutionAttemptStatus.Cancelled:
       return {
         label: 'cancelled',
-        className: 'border border-slate-300/80 bg-slate-100 text-slate-700'
+        className:
+          'border border-border/60 bg-background/80 text-muted-foreground'
       };
   }
 }
@@ -761,45 +593,49 @@ function getStageToneVisual(tone: StageTone) {
   switch (tone) {
     case 'running':
       return {
-        cardClass:
-          'border-sky-200 bg-sky-50/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]',
-        iconShellClass: 'border-sky-300/80 bg-white',
-        badgeClass: 'border border-sky-300/80 bg-sky-100 text-sky-800',
-        iconClass: 'size-4 text-sky-700'
-      };
+        cardClass: 'border-sky-500/25 bg-sky-500/[0.05]',
+        iconShellClass: 'border-sky-500/25 bg-sky-500/[0.08]',
+        badgeClass: 'border border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-300',
+        chipClass: 'border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-300',
+        iconClass: 'size-3.5 text-sky-600 dark:text-sky-300',
+        accentClass: 'bg-sky-400/80'
+      } satisfies StageVisual;
     case 'success':
       return {
-        cardClass:
-          'border-emerald-200 bg-emerald-50/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]',
-        iconShellClass: 'border-emerald-300/80 bg-white',
-        badgeClass:
-          'border border-emerald-300/80 bg-emerald-100 text-emerald-800',
-        iconClass: 'size-4 text-emerald-700'
-      };
+        cardClass: 'border-emerald-500/20 bg-emerald-500/[0.04]',
+        iconShellClass: 'border-emerald-500/25 bg-emerald-500/[0.08]',
+        badgeClass: 'border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+        chipClass: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+        iconClass: 'size-3.5 text-emerald-700 dark:text-emerald-300',
+        accentClass: 'bg-emerald-400/80'
+      } satisfies StageVisual;
     case 'attention':
       return {
-        cardClass:
-          'border-orange-200 bg-orange-50/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]',
-        iconShellClass: 'border-orange-300/80 bg-white',
-        badgeClass: 'border border-orange-300/80 bg-orange-100 text-orange-800',
-        iconClass: 'size-4 text-orange-700'
-      };
+        cardClass: 'border-amber-500/25 bg-amber-500/[0.05]',
+        iconShellClass: 'border-amber-500/25 bg-amber-500/[0.08]',
+        badgeClass: 'border border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+        chipClass: 'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+        iconClass: 'size-3.5 text-amber-700 dark:text-amber-300',
+        accentClass: 'bg-amber-400/80'
+      } satisfies StageVisual;
     case 'queued':
       return {
-        cardClass:
-          'border-indigo-200 bg-indigo-50/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]',
-        iconShellClass: 'border-indigo-300/80 bg-white',
-        badgeClass: 'border border-indigo-300/80 bg-indigo-100 text-indigo-800',
-        iconClass: 'size-4 text-indigo-700'
-      };
+        cardClass: 'border-border/60 bg-muted/20',
+        iconShellClass: 'border-border/60 bg-background/80',
+        badgeClass: 'border border-border/60 bg-background/80 text-muted-foreground',
+        chipClass: 'border-border/60 bg-background/80 text-muted-foreground',
+        iconClass: 'size-3.5 text-muted-foreground',
+        accentClass: 'bg-border/70'
+      } satisfies StageVisual;
     case 'idle':
       return {
-        cardClass:
-          'border-border/60 bg-muted/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
-        iconShellClass: 'border-border/70 bg-background',
-        badgeClass: 'border border-border/70 bg-background text-muted-foreground',
-        iconClass: 'size-4 text-muted-foreground'
-      };
+        cardClass: 'border-border/60 bg-background/70',
+        iconShellClass: 'border-border/60 bg-background/80',
+        badgeClass: 'border border-border/60 bg-background/80 text-muted-foreground',
+        chipClass: 'border-border/60 bg-background/80 text-muted-foreground',
+        iconClass: 'size-3.5 text-muted-foreground',
+        accentClass: 'bg-border/70'
+      } satisfies StageVisual;
   }
 }
 
@@ -807,8 +643,4 @@ function isActiveAttempt(
   attempt: GovernanceExecutionAttemptSummary | null | undefined
 ): attempt is GovernanceExecutionAttemptSummary {
   return Boolean(attempt && ACTIVE_ATTEMPT_STATUSES.has(attempt.status));
-}
-
-function formatTimestamp(value: string) {
-  return new Date(value).toLocaleString('zh-CN');
 }

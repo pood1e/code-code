@@ -28,6 +28,14 @@ vi.mock('./pages/projects/ProjectDashboardPage', () => ({
   ProjectDashboardPage: () => <p>Project Dashboard Page</p>
 }));
 
+vi.mock('./pages/projects/ProjectResourcesPage', () => ({
+  ProjectResourcesPage: () => <p>Project Resources Page</p>
+}));
+
+vi.mock('./pages/projects/ProjectGovernancePage', () => ({
+  ProjectGovernancePage: () => <p>Project Governance Page</p>
+}));
+
 vi.mock('./pages/projects/ProjectReviewsPage', () => ({
   ProjectReviewsPage: () => <p>Project Reviews Page</p>
 }));
@@ -105,6 +113,14 @@ describe('App', () => {
     renderApp('/projects/project-1/reviews');
 
     expect(await screen.findByText('Project Reviews Page')).toBeInTheDocument();
+  });
+
+  it('Project resources/governance 路由应命中对应页面', async () => {
+    renderApp('/projects/project-1/resources');
+    expect(await screen.findByText('Project Resources Page')).toBeInTheDocument();
+
+    renderApp('/projects/project-1/governance');
+    expect(await screen.findByText('Project Governance Page')).toBeInTheDocument();
   });
 
   it('资源新建路由应命中对应 kind 的编辑页', async () => {

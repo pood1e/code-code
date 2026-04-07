@@ -9,6 +9,7 @@ export type ProjectTabKey =
   | 'dashboard'
   | 'chats'
   | 'pipelines'
+  | 'resources'
   | 'governance'
   | 'reviews'
   | 'channels'
@@ -23,6 +24,8 @@ export const projectRoutePatterns = {
   chatDetail: `${projectConfig.path}/:id/chats/:chatId`,
   pipelines: `${projectConfig.path}/:id/pipelines`,
   pipelineDetail: `${projectConfig.path}/:id/pipelines/:pipelineId`,
+  resources: `${projectConfig.path}/:id/resources`,
+  resourceDetail: `${projectConfig.path}/:id/resources/:issueId`,
   governance: `${projectConfig.path}/:id/governance`,
   governanceDetail: `${projectConfig.path}/:id/governance/:issueId`,
   reviews: `${projectConfig.path}/:id/reviews`,
@@ -70,6 +73,15 @@ export function buildProjectPipelinesPath(
     : `${projectConfig.path}/${projectId}/pipelines`;
 }
 
+export function buildProjectResourcesPath(
+  projectId: string,
+  issueId?: string | null
+) {
+  return issueId
+    ? `${projectConfig.path}/${projectId}/resources/${issueId}`
+    : `${projectConfig.path}/${projectId}/resources`;
+}
+
 export function buildProjectGovernancePath(
   projectId: string,
   issueId?: string | null
@@ -101,6 +113,8 @@ export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
       return buildProjectNotificationsPath(projectId);
     case 'pipelines':
       return buildProjectPipelinesPath(projectId);
+    case 'resources':
+      return buildProjectResourcesPath(projectId);
     default:
       return buildProjectChatsPath(projectId);
   }

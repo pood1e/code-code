@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import {
   GovernanceReviewQueueItemKind,
@@ -6,7 +6,7 @@ import {
   type GovernanceReviewQueueItem,
   type Project
 } from '@agent-workbench/shared';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -139,13 +139,26 @@ function createQueueItem(
   };
 }
 
+function RouteEcho() {
+  const location = useLocation();
+  return <p aria-label="current-route">{location.pathname}</p>;
+}
+
 function renderProjectReviewsPage() {
   return renderWithProviders(
     <Routes>
-      <Route path="/projects/:id/reviews" element={<ProjectReviewsPage />} />
       <Route
-        path="/projects/:id/governance/:issueId"
-        element={<p>Governance Issue Page</p>}
+        path="/projects/:id/reviews"
+        element={
+          <>
+            <ProjectReviewsPage />
+            <RouteEcho />
+          </>
+        }
+      />
+      <Route
+        path="/projects/:id/resources/:issueId"
+        element={<RouteEcho />}
       />
     </Routes>,
     {
@@ -174,7 +187,9 @@ describe('ProjectReviewsPage', () => {
           subjectId: 'change-unit-1',
           issueId: 'issue-1',
           title: '人工处理变更单元',
-          status: 'ready'
+          status: 'ready',
+          failureCode: null,
+          updatedAt: '2026-04-06T10:00:00.000Z'
         })
       ])
     );
@@ -192,7 +207,7 @@ describe('ProjectReviewsPage', () => {
     );
   });
 
-  it('应展示 project 独立审核队列，并允许重试 discovery', async () => {
+  it('应展示可扫描的审核列表，并允许过滤和重试 discovery', async () => {
     const retryMutation = createMutationResult<void, void>();
     const typedRetryMutation =
       retryMutation as unknown as UseMutationResult<
@@ -208,31 +223,61 @@ describe('ProjectReviewsPage', () => {
     const { user } = renderProjectReviewsPage();
 
     expect(screen.getByRole('heading', { name: '审核队列' })).toBeInTheDocument();
-    expect(screen.getByText('Discovery 需要人工处理')).toBeInTheDocument();
-    expect(screen.getAllByText('DISCOVERY_TIMEOUT')).toHaveLength(2);
+    expect(screen.getByRole('columnheader', { name: '类型' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: '阻塞原因' })
+    ).toBeInTheDocument();
 
-    await user.click(screen.getAllByRole('button', { name: '重试' })[0]!);
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: '审核类型过滤' }),
+      GovernanceReviewQueueItemKind.Discovery
+    );
+
+    expect(screen.getByText('Discovery 需要人工处理')).toBeInTheDocument();
+    expect(screen.queryByText('人工处理变更单元')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '重试' }));
 
     await waitFor(() => {
-      expect(typedRetryMutation.mutateAsync).toHaveBeenCalled();
+      expect(typedRetryMutation.mutateAsync).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('change unit 队列项应跳转到 governance issue 详情', async () => {
+  it('change unit 队列项应跳转到资源 issue 详情，并保持不可重试按钮稳定', async () => {
     const { user } = renderProjectReviewsPage();
 
-    await user.click(screen.getByRole('button', { name: '打开 Issue' }));
+    const changeUnitRow = screen.getByText('人工处理变更单元').closest('tr');
+    expect(changeUnitRow).not.toBeNull();
+    const issueButton = within(changeUnitRow as HTMLElement).getByRole('button', {
+      name: '打开 Issue'
+    });
 
-    expect(await screen.findByText('Governance Issue Page')).toBeInTheDocument();
+    const retryButtons = screen.getAllByRole('button', { name: '重试' });
+    expect(retryButtons[1]).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: '查看日志:人工处理变更单元 · Agent 日志' })
+    ).toBeInTheDocument();
+
+    await user.click(issueButton);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('current-route')).toHaveTextContent(
+        '/projects/project-1/resources/issue-1'
+      );
+    });
   });
 
-  it('应为带 sessionId 的审核项展示日志入口', () => {
-    renderProjectReviewsPage();
+  it('应支持按搜索词过滤审核项', async () => {
+    const { user } = renderProjectReviewsPage();
 
+    await user.type(
+      screen.getByPlaceholderText('搜索标题、subject 或失败原因'),
+      'change-unit-1'
+    );
+
+    expect(screen.getByText('人工处理变更单元')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {
-        name: '查看日志:Discovery 需要人工处理 · Agent 日志'
-      })
-    ).toBeInTheDocument();
+      screen.queryByText('Discovery 需要人工处理')
+    ).not.toBeInTheDocument();
   });
 });
