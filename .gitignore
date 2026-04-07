@@ -9,6 +9,7 @@ packages/backend/prisma/test.db
 packages/backend/prisma/test.db-journal
 packages/backend/.env
 packages/frontend/tsconfig.tsbuildinfo
+.agent/
 
 AGENTS.md
 docs/design/
@@ -25,3 +26,6 @@ packages/e2e/test-results/
 packages/e2e/playwright-report/
 packages/backend/prisma/e2e.db
 packages/backend/prisma/e2e.db-journal
+
+# Docker volumes
+data/
