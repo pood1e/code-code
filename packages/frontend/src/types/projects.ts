@@ -9,6 +9,9 @@ export type ProjectTabKey =
   | 'dashboard'
   | 'chats'
   | 'pipelines'
+  | 'resources'
+  | 'governance'
+  | 'reviews'
   | 'channels'
   | 'send'
   | 'notifications'
@@ -21,6 +24,11 @@ export const projectRoutePatterns = {
   chatDetail: `${projectConfig.path}/:id/chats/:chatId`,
   pipelines: `${projectConfig.path}/:id/pipelines`,
   pipelineDetail: `${projectConfig.path}/:id/pipelines/:pipelineId`,
+  resources: `${projectConfig.path}/:id/resources`,
+  resourceDetail: `${projectConfig.path}/:id/resources/:issueId`,
+  governance: `${projectConfig.path}/:id/governance`,
+  governanceDetail: `${projectConfig.path}/:id/governance/:issueId`,
+  reviews: `${projectConfig.path}/:id/reviews`,
   channels: `${projectConfig.path}/:id/channels`,
   send: `${projectConfig.path}/:id/send`,
   notifications: `${projectConfig.path}/:id/notifications`,
@@ -65,12 +73,38 @@ export function buildProjectPipelinesPath(
     : `${projectConfig.path}/${projectId}/pipelines`;
 }
 
+export function buildProjectResourcesPath(
+  projectId: string,
+  issueId?: string | null
+) {
+  return issueId
+    ? `${projectConfig.path}/${projectId}/resources/${issueId}`
+    : `${projectConfig.path}/${projectId}/resources`;
+}
+
+export function buildProjectGovernancePath(
+  projectId: string,
+  issueId?: string | null
+) {
+  return issueId
+    ? `${projectConfig.path}/${projectId}/governance/${issueId}`
+    : `${projectConfig.path}/${projectId}/governance`;
+}
+
+export function buildProjectReviewsPath(projectId: string) {
+  return `${projectConfig.path}/${projectId}/reviews`;
+}
+
 export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
   switch (tab) {
     case 'dashboard':
       return buildProjectDashboardPath(projectId);
     case 'config':
       return buildProjectConfigPath(projectId);
+    case 'governance':
+      return buildProjectGovernancePath(projectId);
+    case 'reviews':
+      return buildProjectReviewsPath(projectId);
     case 'channels':
       return buildProjectChannelsPath(projectId);
     case 'send':
@@ -79,6 +113,8 @@ export function buildProjectTabPath(projectId: string, tab: ProjectTabKey) {
       return buildProjectNotificationsPath(projectId);
     case 'pipelines':
       return buildProjectPipelinesPath(projectId);
+    case 'resources':
+      return buildProjectResourcesPath(projectId);
     default:
       return buildProjectChatsPath(projectId);
   }

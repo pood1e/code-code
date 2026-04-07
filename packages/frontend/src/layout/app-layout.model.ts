@@ -4,7 +4,9 @@ import {
   Blocks,
   Bot,
   CircuitBoard,
+  ClipboardCheck,
   FolderKanban,
+  ClipboardList,
   LayoutDashboard,
   MessageSquareText,
   Send,
@@ -18,7 +20,6 @@ import { agentRunnerConfig } from '@/types/agent-runners';
 import { profileConfig } from '@/types/profiles';
 import {
   buildProjectDashboardPath,
-  buildProjectTabPath,
   projectConfig,
   type ProjectTabKey
 } from '@/types/projects';
@@ -72,6 +73,9 @@ export const projectTabItems: ProjectTabItem[] = [
   { key: 'dashboard', label: '概览', icon: LayoutDashboard },
   { key: 'chats', label: '会话', icon: MessageSquareText },
   { key: 'pipelines', label: '流水线', icon: Workflow },
+  { key: 'resources', label: '资源', icon: Blocks },
+  { key: 'governance', label: '治理工作流', icon: ClipboardList },
+  { key: 'reviews', label: '审核队列', icon: ClipboardCheck },
   { key: 'channels', label: '通知渠道', icon: Bell },
   { key: 'send', label: '手工发送', icon: Send },
   { key: 'notifications', label: '通知记录', icon: BellRing },
@@ -89,7 +93,7 @@ export type AppLayoutRouteState = {
 export function deriveAppLayoutRouteState(pathname: string): AppLayoutRouteState {
   const selectedProjectTab =
     (pathname.match(
-      /^\/projects\/[^/]+\/(dashboard|chats|pipelines|channels|send|notifications|config)/
+      /^\/projects\/[^/]+\/(dashboard|chats|pipelines|resources|governance|reviews|channels|send|notifications|config)/
     )?.[1] as ProjectTabKey | undefined) ?? 'dashboard';
 
   return {
