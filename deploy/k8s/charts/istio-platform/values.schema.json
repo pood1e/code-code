@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "partOf": { "type": "string", "minLength": 1 },
+        "platformNamespace": { "type": "string", "minLength": 1 },
+        "runNamespace": { "type": "string", "minLength": 1 },
+        "infraNamespace": { "type": "string", "minLength": 1 },
+        "observabilityNamespace": { "type": "string", "minLength": 1 },
+        "istioNamespace": { "type": "string", "minLength": 1 },
+        "certManagerNamespace": { "type": "string", "minLength": 1 },
+        "egressNamespace": { "type": "string", "minLength": 1 },
+        "egressGatewaySelector": { "type": "string", "minLength": 1 },
+        "imageRegistry": { "type": "string" },
+        "imageTag": { "type": "string", "minLength": 1 },
+        "wasmRuntimeImageName": { "type": "string", "minLength": 1 },
+        "wasmControlPlaneImageName": { "type": "string", "minLength": 1 }
+      },
+      "required": [
+        "partOf",
+        "platformNamespace",
+        "runNamespace",
+        "infraNamespace",
+        "observabilityNamespace",
+        "istioNamespace",
+        "certManagerNamespace",
+        "egressNamespace",
+        "egressGatewaySelector",
+        "imageRegistry",
+        "imageTag",
+        "wasmRuntimeImageName",
+        "wasmControlPlaneImageName"
+      ]
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "egressCertificates": { "$ref": "#/$defs/enabledToggle" },
+        "waypoints": { "$ref": "#/$defs/enabledToggle" },
+        "telemetry": { "$ref": "#/$defs/enabledToggle" },
+        "controlPlaneEgress": { "$ref": "#/$defs/enabledToggle" },
+        "wasmPlugins": { "$ref": "#/$defs/enabledToggle" }
+      },
+      "required": [
+        "egressCertificates",
+        "waypoints",
+        "telemetry",
+        "controlPlaneEgress",
+        "wasmPlugins"
+      ]
+    }
+  },
+  "required": ["global", "components"],
+  "$defs": {
+    "enabledToggle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      },
+      "required": ["enabled"]
+    }
+  }
+}

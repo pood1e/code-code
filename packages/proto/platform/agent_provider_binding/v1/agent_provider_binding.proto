@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package platform.agent_provider_binding.v1;
+
+option go_package = "code-code.internal/go-contract/platform/agent_provider_binding/v1;agentproviderbindingv1";
+
+// AgentProviderBinding describes one platform-owned enable gate for one agent
+// provider / CLI identity.
+message AgentProviderBinding {
+  string provider_id = 1;
+  bool enabled = 2;
+}

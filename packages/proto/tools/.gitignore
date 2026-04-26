@@ -1,0 +1,3 @@
+.node-localstorage-shm
+.node-localstorage-wal
+protoc-gen-es-wrapper.log

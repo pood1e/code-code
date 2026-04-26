@@ -1,0 +1,51 @@
+{
+  "name": "@code-code/console-web-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@code-code/console-web-agentprofile": "workspace:*",
+    "@code-code/console-web-chat": "workspace:*",
+    "@code-code/console-web-provider": "workspace:*",
+    "@code-code/console-web-overview": "workspace:*",
+    "@code-code/console-web-ui": "workspace:*",
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/context-zone": "2.7.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.215.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.215.0",
+    "@opentelemetry/instrumentation": "0.215.0",
+    "@opentelemetry/instrumentation-document-load": "0.60.0",
+    "@opentelemetry/instrumentation-fetch": "0.215.0",
+    "@opentelemetry/instrumentation-xml-http-request": "0.215.0",
+    "@opentelemetry/resources": "2.7.0",
+    "@opentelemetry/sdk-metrics": "2.7.0",
+    "@opentelemetry/sdk-trace-base": "2.7.0",
+    "@opentelemetry/sdk-trace-web": "2.7.0",
+    "@opentelemetry/semantic-conventions": "1.40.0",
+    "@radix-ui/themes": "3.3.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-error-boundary": "^4.0.11",
+    "react-hook-form": "^7.72.1",
+    "react-router-dom": "^6.22.3",
+    "swr": "^2.4.1",
+    "web-vitals": "5.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "24.10.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.1",
+    "jsdom": "29.0.2",
+    "typescript": "6.0.2",
+    "vite": "8.0.8",
+    "vitest": "4.1.4"
+  }
+}

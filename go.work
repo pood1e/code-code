@@ -1,0 +1,12 @@
+go 1.26.2
+
+toolchain go1.26.2
+
+use (
+	./packages/agent-runtime-contract
+	./packages/console-api
+	./packages/go-contract
+	./packages/platform-contract
+	./packages/platform-k8s
+	./packages/session
+)

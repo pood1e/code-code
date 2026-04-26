@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package platform.skill.v1;
+
+option go_package = "code-code.internal/go-contract/platform/skill/v1;skillv1";
+
+// Skill describes one reusable skill instruction.
+message Skill {
+  string skill_id = 1;
+  string name = 2;
+  string description = 3;
+  string content = 4;
+}

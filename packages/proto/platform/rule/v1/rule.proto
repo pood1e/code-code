@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package platform.rule.v1;
+
+option go_package = "code-code.internal/go-contract/platform/rule/v1;rulev1";
+
+// Rule describes one reusable rule instruction.
+message Rule {
+  string rule_id = 1;
+  string name = 2;
+  string description = 3;
+  string content = 4;
+}

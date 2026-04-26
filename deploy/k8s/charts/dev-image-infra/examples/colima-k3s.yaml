@@ -1,0 +1,18 @@
+global:
+  infraNamespace: code-code-infra
+
+registry:
+  service:
+    type: NodePort
+    nodePort: 30500
+
+cache:
+  service:
+    type: NodePort
+  mirrors:
+    dockerIo:
+      nodePort: 30502
+    registryK8sIo:
+      nodePort: 30503
+    quayIo:
+      nodePort: 30504

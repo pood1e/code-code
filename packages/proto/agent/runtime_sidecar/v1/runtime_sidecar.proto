@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package agent.runtime_sidecar.v1;
+
+option go_package = "code-code.internal/go-contract/agent/runtime_sidecar/v1;runtimesidecarv1";
+
+// CLIOutputSidecarService is the pod-local query/control surface exposed by
+// the CLI output parsing sidecar.
+service CLIOutputSidecarService {
+  // GetAccumulator returns the current accumulated assistant/reasoning text.
+  rpc GetAccumulator(GetAccumulatorRequest) returns (GetAccumulatorResponse);
+
+  // Stop requests the current run to stop.
+  rpc Stop(StopRequest) returns (StopResponse);
+}
+
+// GetAccumulatorRequest requests the current accumulator snapshot.
+message GetAccumulatorRequest {}
+
+// GetAccumulatorResponse returns the current accumulated text state.
+message GetAccumulatorResponse {
+  uint64 last_sequence = 1;
+  string assistant_text = 2;
+  string reasoning_text = 3;
+}
+
+// StopRequest requests a graceful or forced stop.
+message StopRequest {
+  bool force = 1;
+}
+
+// StopResponse reports whether the stop request was accepted.
+message StopResponse {
+  bool accepted = 1;
+}

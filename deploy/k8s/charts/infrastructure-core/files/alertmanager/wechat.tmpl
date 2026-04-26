@@ -1,0 +1,14 @@
+{{ define "codecode.wechat.message" -}}
+{{- if eq .Status "firing" -}}# Code Code alerts firing{{- else -}}# Code Code alerts resolved{{- end }}
+{{ range .Alerts }}
+> **{{ .Labels.alertname }}** ({{ .Labels.severity }})
+> component: {{ .Labels.component }}
+> {{ .Annotations.summary }}
+{{- if .Annotations.description }}
+> {{ .Annotations.description }}
+{{- end }}
+{{- if .Annotations.runbook_url }}
+> runbook: {{ .Annotations.runbook_url }}
+{{- end }}
+{{ end -}}
+{{ end }}

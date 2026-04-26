@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package agent.policy.v1;
+
+import "model/v1/model.proto";
+
+option go_package = "code-code.internal/go-contract/agent/policy/v1;policyv1";
+
+// ProviderFilter describes which LLM providers and model capabilities an
+// agent can use.
+message ProviderFilter {
+  repeated string allowed_surface_ids = 1;
+  repeated model.v1.ModelCapability required_model_capabilities = 2;
+}

@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-agent-runtime-service
+spec:
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: platform-agent-runtime-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: platform-agent-runtime-service
+    spec:
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: platform-agent-runtime-service
+      containers:
+        - name: platform-agent-runtime-service
+          image: code-code/platform-agent-runtime-service:0.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_GRPC_ADDR
+              value: :8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_HTTP_ADDR
+              value: :8080
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_RUNTIME_NAMESPACE
+              value: code-code-runs
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_PROFILE_GRPC_ADDR
+              value: platform-profile-service:8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_PROVIDER_GRPC_ADDR
+              value: platform-provider-service:8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_CLI_RUNTIME_GRPC_ADDR
+              value: platform-cli-runtime-service:8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_MODEL_GRPC_ADDR
+              value: platform-model-service:8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_SUPPORT_GRPC_ADDR
+              value: platform-support-service:8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_EGRESS_GRPC_ADDR
+              value: platform-network-service:8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_AUTH_GRPC_ADDR
+              value: platform-auth-service:8081
+            - name: PLATFORM_AGENT_RUNTIME_SERVICE_CLI_OUTPUT_SIDECAR_IMAGE
+              value: code-code/cli-output-sidecar:0.0.0
+            - name: PLATFORM_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: DATABASE_URL
+            - name: TEMPORAL_ADDRESS
+              value: temporal-frontend.code-code-infra.svc.cluster.local:7233
+            - name: TEMPORAL_NAMESPACE
+              value: default
+            - name: OTEL_SERVICE_NAME
+              value: platform-agent-runtime-service
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.code-code-observability.svc.cluster.local:4317
+            - name: USER
+              value: nonroot
+            - name: SSL_CERT_FILE
+              value: /var/run/code-code-egress-trust/ca-certificates.crt
+            - name: REQUESTS_CA_BUNDLE
+              value: /var/run/code-code-egress-trust/ca-certificates.crt
+            - name: CURL_CA_BUNDLE
+              value: /var/run/code-code-egress-trust/ca-certificates.crt
+            - name: GIT_SSL_CAINFO
+              value: /var/run/code-code-egress-trust/ca-certificates.crt
+            - name: NODE_EXTRA_CA_CERTS
+              value: /var/run/code-code-egress-trust/ca-certificates.crt
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 8081
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
+          startupProbe:
+            grpc:
+              port: 8081
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 72
+          readinessProbe:
+            grpc:
+              port: 8081
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          livenessProbe:
+            grpc:
+              port: 8081
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: egress-trust-bundle
+              mountPath: /var/run/code-code-egress-trust
+              readOnly: true
+      volumes:
+        - name: egress-trust-bundle
+          configMap:
+            name: code-code-egress-trust-bundle

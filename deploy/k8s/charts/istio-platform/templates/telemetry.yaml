@@ -1,0 +1,17 @@
+{{- if .Values.components.telemetry.enabled }}
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: {{ .Values.global.istioNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "mesh-default" "componentLabel" "telemetry") | nindent 4 }}
+spec:
+  metrics:
+    - providers:
+        - name: prometheus
+  tracing:
+    - providers:
+        - name: otel-tracing
+      randomSamplingPercentage: 100
+{{- end }}

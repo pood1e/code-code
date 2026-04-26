@@ -1,0 +1,58 @@
+{{- if .Values.components.egressCertificates.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: code-code-egress-selfsigned
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "code-code-egress-selfsigned" "componentLabel" "egress-ca") | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: code-code-egress-root-ca
+  namespace: {{ .Values.global.certManagerNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "code-code-egress-root-ca" "componentLabel" "egress-ca") | nindent 4 }}
+spec:
+  isCA: true
+  commonName: code-code egress TLS termination root CA
+  secretName: code-code-egress-root-ca
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: code-code-egress-selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: code-code-egress-ca
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "code-code-egress-ca" "componentLabel" "egress-ca") | nindent 4 }}
+spec:
+  ca:
+    secretName: code-code-egress-root-ca
+---
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: code-code-egress-trust-bundle
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "code-code-egress-trust-bundle" "componentLabel" "egress-ca") | nindent 4 }}
+spec:
+  sources:
+    - useDefaultCAs: true
+    - secret:
+        name: code-code-egress-root-ca
+        key: tls.crt
+  target:
+    configMap:
+      key: ca-certificates.crt
+    namespaceSelector:
+      matchLabels:
+        egress.platform.code-code.internal/trust-bundle: "enabled"
+{{- end }}

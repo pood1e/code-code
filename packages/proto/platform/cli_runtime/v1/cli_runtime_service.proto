@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package platform.cli_runtime.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "code-code.internal/go-contract/platform/cli_runtime/v1;cliruntimev1";
+
+service CLIRuntimeService {
+  rpc ListCLIRuntimeRecords(ListCLIRuntimeRecordsRequest) returns (ListCLIRuntimeRecordsResponse);
+  rpc GetLatestAvailableCLIRuntimeImages(GetLatestAvailableCLIRuntimeImagesRequest) returns (GetLatestAvailableCLIRuntimeImagesResponse);
+}
+
+message ListCLIRuntimeRecordsRequest {
+  string cli_id = 1;
+}
+
+message ListCLIRuntimeRecordsResponse {
+  repeated CLIRuntimeRecord items = 1;
+}
+
+message GetLatestAvailableCLIRuntimeImagesRequest {
+  string cli_id = 1;
+}
+
+message GetLatestAvailableCLIRuntimeImagesResponse {
+  repeated CLIRuntimeImage items = 1;
+}
+
+message CLIRuntimeRecord {
+  CLIVersionSnapshot version = 1;
+  repeated CLIRuntimeImage images = 2;
+}
+
+message CLIVersionSnapshot {
+  string cli_id = 1;
+  string version = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+message CLIRuntimeImage {
+  string cli_id = 1;
+  string cli_version = 2;
+  string execution_class = 3;
+  string build_target = 4;
+  string image_repository = 5;
+  string image_tag = 6;
+  string image = 7;
+}

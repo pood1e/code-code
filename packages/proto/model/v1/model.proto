@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package model.v1;
+
+import "google/protobuf/field_mask.proto";
+
+option go_package = "code-code.internal/go-contract/model/v1;modelv1";
+
+// ModelRef references one default model definition by stable identity.
+// Canonical identity is vendor_id + model_id.
+message ModelRef {
+  string model_id = 1;
+  string vendor_id = 2;
+}
+
+// ModelDefinition describes one default model definition.
+message ModelDefinition {
+  string model_id = 1;
+  string display_name = 2;
+  repeated ModelAlias aliases = 3;
+  int64 context_window_tokens = 4;
+  int64 max_output_tokens = 5;
+  repeated ModelCapability capabilities = 6;
+  ModelShape primary_shape = 7;
+  repeated ModelShape supported_shapes = 8;
+  repeated Modality input_modalities = 9;
+  repeated Modality output_modalities = 10;
+  reserved 11, 12, 13, 14;
+  reserved "knowledge_cutoff", "training_cutoff", "pricing", "lifecycle";
+
+  // Model vendor stable identifier aligned with industry APIs
+  // (OpenAI owned_by, Gemini publisher prefix).
+  // Examples: "openai", "anthropic", "google", "meta", "deepseek".
+  string vendor_id = 15;
+
+  reserved 16, 17, 18;
+  reserved "family_id", "description", "labels";
+}
+
+// ModelOverride describes provider-supplied overrides for one default model
+// definition.
+message ModelOverride {
+  google.protobuf.FieldMask field_mask = 1;
+  optional string display_name = 2;
+  reserved 3;
+  reserved "aliases";
+  optional int64 context_window_tokens = 4;
+  optional int64 max_output_tokens = 5;
+  repeated ModelCapability capabilities = 6;
+  optional ModelShape primary_shape = 7;
+  repeated ModelShape supported_shapes = 8;
+  repeated Modality input_modalities = 9;
+  repeated Modality output_modalities = 10;
+  reserved 11, 12, 13, 14;
+  reserved "knowledge_cutoff", "training_cutoff", "pricing", "lifecycle";
+  reserved 15, 16, 17, 18;
+  reserved "vendor_id", "family_id", "description", "labels";
+}
+
+// ResolvedModel describes the effective model after merging the default
+// definition with an optional override.
+message ResolvedModel {
+  string model_id = 1;
+  ModelDefinition effective_definition = 2;
+}
+
+// ModelAlias describes an alternate model identifier.
+message ModelAlias {
+  AliasKind kind = 1;
+  string value = 2;
+}
+
+// AliasKind identifies the semantic kind of one model alias.
+enum AliasKind {
+  ALIAS_KIND_UNSPECIFIED = 0;
+  ALIAS_KIND_STABLE = 1;
+  ALIAS_KIND_SNAPSHOT = 2;
+  ALIAS_KIND_BEDROCK = 3;
+  ALIAS_KIND_VERTEX = 4;
+}
+
+// ModelCapability identifies a capability exposed by one model.
+enum ModelCapability {
+  MODEL_CAPABILITY_UNSPECIFIED = 0;
+  MODEL_CAPABILITY_TOOL_CALLING = 1;
+  MODEL_CAPABILITY_STRUCTURED_OUTPUT = 2;
+  MODEL_CAPABILITY_IMAGE_INPUT = 3;
+  MODEL_CAPABILITY_STREAMING = 4;
+}
+
+// ModelShape identifies the request/response surface used to call one model.
+enum ModelShape {
+  MODEL_SHAPE_UNSPECIFIED = 0;
+  MODEL_SHAPE_RESPONSES = 1;
+  MODEL_SHAPE_CHAT_COMPLETIONS = 2;
+  MODEL_SHAPE_ANTHROPIC_MESSAGES = 3;
+}
+
+// Modality identifies one input or output modality exposed by one model.
+enum Modality {
+  MODALITY_UNSPECIFIED = 0;
+  MODALITY_TEXT = 1;
+  MODALITY_IMAGE = 2;
+  MODALITY_AUDIO = 3;
+  MODALITY_VIDEO = 4;
+}

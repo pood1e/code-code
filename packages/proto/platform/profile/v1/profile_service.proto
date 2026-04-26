@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package platform.profile.v1;
+
+import "platform/management/v1/management.proto";
+
+option go_package = "code-code.internal/go-contract/platform/profile/v1;profileservicev1";
+
+service ProfileService {
+  rpc ListAgentProfiles(platform.management.v1.ListAgentProfilesRequest) returns (platform.management.v1.ListAgentProfilesResponse);
+  rpc GetAgentProfile(platform.management.v1.GetAgentProfileRequest) returns (platform.management.v1.GetAgentProfileResponse);
+  rpc CreateAgentProfile(platform.management.v1.CreateAgentProfileRequest) returns (platform.management.v1.CreateAgentProfileResponse);
+  rpc UpdateAgentProfile(platform.management.v1.UpdateAgentProfileRequest) returns (platform.management.v1.UpdateAgentProfileResponse);
+  rpc DeleteAgentProfile(platform.management.v1.DeleteAgentProfileRequest) returns (platform.management.v1.DeleteAgentProfileResponse);
+
+  rpc ListMCPServers(platform.management.v1.ListMCPServersRequest) returns (platform.management.v1.ListMCPServersResponse);
+  rpc GetMCPServer(platform.management.v1.GetMCPServerRequest) returns (platform.management.v1.GetMCPServerResponse);
+  rpc CreateMCPServer(platform.management.v1.CreateMCPServerRequest) returns (platform.management.v1.CreateMCPServerResponse);
+  rpc UpdateMCPServer(platform.management.v1.UpdateMCPServerRequest) returns (platform.management.v1.UpdateMCPServerResponse);
+  rpc DeleteMCPServer(platform.management.v1.DeleteMCPServerRequest) returns (platform.management.v1.DeleteMCPServerResponse);
+
+  rpc ListSkills(platform.management.v1.ListSkillsRequest) returns (platform.management.v1.ListSkillsResponse);
+  rpc GetSkill(platform.management.v1.GetSkillRequest) returns (platform.management.v1.GetSkillResponse);
+  rpc CreateSkill(platform.management.v1.CreateSkillRequest) returns (platform.management.v1.CreateSkillResponse);
+  rpc UpdateSkill(platform.management.v1.UpdateSkillRequest) returns (platform.management.v1.UpdateSkillResponse);
+  rpc DeleteSkill(platform.management.v1.DeleteSkillRequest) returns (platform.management.v1.DeleteSkillResponse);
+
+  rpc ListRules(platform.management.v1.ListRulesRequest) returns (platform.management.v1.ListRulesResponse);
+  rpc GetRule(platform.management.v1.GetRuleRequest) returns (platform.management.v1.GetRuleResponse);
+  rpc CreateRule(platform.management.v1.CreateRuleRequest) returns (platform.management.v1.CreateRuleResponse);
+  rpc UpdateRule(platform.management.v1.UpdateRuleRequest) returns (platform.management.v1.UpdateRuleResponse);
+  rpc DeleteRule(platform.management.v1.DeleteRuleRequest) returns (platform.management.v1.DeleteRuleResponse);
+}

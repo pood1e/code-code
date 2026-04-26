@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package platform.agent_session.v1;
+
+import "agent/cap/v1/cap.proto";
+import "google/protobuf/timestamp.proto";
+import "provider/v1/provider.proto";
+import "model/v1/model.proto";
+import "platform/agent_run/v1/agent_run.proto";
+import "platform/condition/v1/condition.proto";
+
+option go_package = "code-code.internal/go-contract/platform/agent_session/v1;agentsessionv1";
+
+// AgentSessionSpec describes the desired state for one recoverable agent
+// session. provider_id identifies the fixed agent provider / CLI bound to the
+// session.
+message AgentSessionSpec {
+  string session_id = 1;
+  string provider_id = 2;
+  string profile_id = 3;
+  AgentSessionRuntimeConfig runtime_config = 4;
+  agent.cap.v1.AgentResources resource_config = 5;
+  AgentSessionWorkspaceRef workspace_ref = 6;
+  AgentSessionHomeStateRef home_state_ref = 7;
+  int64 profile_generation = 8;
+  string execution_class = 9;
+  repeated AgentSessionPrepareJob prepare_jobs = 10;
+}
+
+// AgentSessionRuntimeConfig describes the runtime reload surface used for
+// future turns of one session.
+message AgentSessionRuntimeConfig {
+  provider.v1.ProviderRuntimeRef provider_runtime_ref = 1;
+  repeated AgentSessionRuntimeFallbackCandidate fallbacks = 2;
+  reserved 3, 4;
+  AgentSessionRuntimeModelSelector primary_model_selector = 5;
+  reserved "provider_credential_id", "network_policy_id", "provider_surface_binding", "default_model_id";
+}
+
+// AgentSessionRuntimeModelSelector describes the model selector used for the
+// primary runtime candidate when one turn request does not override it.
+message AgentSessionRuntimeModelSelector {
+  oneof selector {
+    model.v1.ModelRef model_ref = 1;
+    string provider_model_id = 2;
+  }
+}
+
+// AgentSessionRuntimeFallbackCandidate describes one secondary runtime
+// candidate used for future fallback inside one session.
+message AgentSessionRuntimeFallbackCandidate {
+  provider.v1.ProviderRuntimeRef provider_runtime_ref = 1;
+
+  oneof model_selector {
+    model.v1.ModelRef model_ref = 2;
+    string provider_model_id = 3;
+  }
+}
+
+// AgentSessionPrepareJob stores one session-owned CLI prepare job template for
+// future turns.
+message AgentSessionPrepareJob {
+  string job_id = 1;
+  string cli_id = 2;
+  string job_type = 3;
+  platform.agent_run.v1.AgentRunPrepareJobRunType run_type = 4;
+  string change_key = 5;
+  bool cleanup = 6;
+  string parameters_yaml = 7;
+}
+
+// AgentSessionWorkspaceRef identifies the workspace carrier for one session
+// using an implementation-agnostic opaque handle.
+message AgentSessionWorkspaceRef {
+  string workspace_id = 1;
+}
+
+// AgentSessionHomeStateRef identifies the recoverable warm-state carrier for
+// one session using an implementation-agnostic opaque handle.
+message AgentSessionHomeStateRef {
+  string home_state_id = 1;
+}
+
+// AgentSessionRef identifies one submitted agent session.
+message AgentSessionRef {
+  string session_id = 1;
+}
+
+// AgentSessionActiveRunRef identifies the currently running turn of one
+// session.
+message AgentSessionActiveRunRef {
+  string run_id = 1;
+}
+
+// AgentSessionPhase describes the observed lifecycle phase of one agent
+// session.
+enum AgentSessionPhase {
+  AGENT_SESSION_PHASE_UNSPECIFIED = 0;
+  AGENT_SESSION_PHASE_PENDING = 1;
+  AGENT_SESSION_PHASE_READY = 2;
+  AGENT_SESSION_PHASE_RUNNING = 3;
+  AGENT_SESSION_PHASE_FAILED = 5;
+  reserved 4, 6;
+  reserved "AGENT_SESSION_PHASE_SUSPENDED", "AGENT_SESSION_PHASE_CLOSED";
+}
+
+// AgentSessionStatus describes observed summary state for one agent session.
+message AgentSessionStatus {
+  string session_id = 1;
+  AgentSessionPhase phase = 2;
+  int64 observed_generation = 3;
+  int64 runtime_config_generation = 4;
+  int64 resource_config_generation = 5;
+  int64 state_generation = 6;
+  string message = 7;
+  AgentSessionActiveRunRef active_run = 8;
+  repeated platform.condition.v1.Condition conditions = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  string realized_rule_revision = 11;
+  string realized_skill_revision = 12;
+  string realized_mcp_revision = 13;
+  string observed_home_state_id = 14;
+}
+
+// AgentSessionState combines desired state and observed state for one agent
+// session. The wrapper does not repeat session_id; identity is carried by spec
+// and status.
+message AgentSessionState {
+  int64 generation = 1;
+  AgentSessionSpec spec = 2;
+  AgentSessionStatus status = 3;
+}

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "partOf": { "type": "string", "minLength": 1 },
+        "infraNamespace": { "type": "string", "minLength": 1 }
+      },
+      "required": ["partOf", "infraNamespace"]
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "name": { "type": "string", "minLength": 1 },
+        "image": { "type": "string", "minLength": 1 },
+        "replicaCount": { "type": "integer", "minimum": 1 },
+        "port": { "type": "integer", "minimum": 1 },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+            "nodePort": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["type", "nodePort"]
+        },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "persistentVolumeClaim": { "type": "string" }
+          },
+          "required": ["persistentVolumeClaim"]
+        },
+        "deleteEnabled": { "type": "boolean" },
+        "resources": { "type": "object", "additionalProperties": true }
+      },
+      "required": [
+        "enabled",
+        "name",
+        "image",
+        "replicaCount",
+        "port",
+        "service",
+        "storage",
+        "deleteEnabled",
+        "resources"
+      ]
+    },
+    "cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "replicaCount": { "type": "integer", "minimum": 1 },
+        "port": { "type": "integer", "minimum": 1 },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] }
+          },
+          "required": ["type"]
+        },
+        "deleteEnabled": { "type": "boolean" },
+        "resources": { "type": "object", "additionalProperties": true },
+        "mirrors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "dockerIo": { "$ref": "#/$defs/mirror" },
+            "registryK8sIo": { "$ref": "#/$defs/mirror" },
+            "quayIo": { "$ref": "#/$defs/mirror" }
+          },
+          "required": ["dockerIo", "registryK8sIo", "quayIo"]
+        }
+      },
+      "required": [
+        "enabled",
+        "image",
+        "replicaCount",
+        "port",
+        "service",
+        "deleteEnabled",
+        "resources",
+        "mirrors"
+      ]
+    }
+  },
+  "required": ["global", "registry", "cache"],
+  "$defs": {
+    "mirror": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "name": { "type": "string", "minLength": 1 },
+        "remoteUrl": { "type": "string", "minLength": 1 },
+        "nodePort": { "type": "integer", "minimum": 0 },
+        "persistentVolumeClaim": { "type": "string" }
+      },
+      "required": ["enabled", "name", "remoteUrl", "nodePort", "persistentVolumeClaim"]
+    }
+  }
+}

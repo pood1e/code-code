@@ -1,0 +1,28 @@
+{
+  "name": "@code-code/console-web-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "pnpm": {
+    "overrides": {
+      "streamdown": "2.5.0"
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "eslint": "^10.2.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "typescript-eslint": "^8.58.1"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @code-code/agent-contract build && pnpm --filter @code-code/console-web-ui build && pnpm -r typecheck",
+    "test": "pnpm --filter @code-code/agent-contract build && pnpm --filter @code-code/console-web-ui build && pnpm -r test",
+    "lint": "eslint 'packages/*/src/**/*.{ts,tsx}' 'app/src/**/*.{ts,tsx}'"
+  }
+}

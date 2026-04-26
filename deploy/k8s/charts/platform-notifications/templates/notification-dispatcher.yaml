@@ -1,0 +1,454 @@
+{{- if .Values.notificationDispatcher.enabled }}
+{{- $dispatcher := .Values.notificationDispatcher.dispatcher }}
+{{- $apprise := .Values.notificationDispatcher.appriseApi }}
+{{- $wecom := .Values.notificationDispatcher.wecomCallbackAdapter }}
+{{- $robot := .Values.notificationDispatcher.wecomRobotDefaultCallbackAdapter }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $apprise.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $apprise.name "componentLabel" "notification-sender") | nindent 4 }}
+spec:
+  selector:
+{{ include "platform.selectorLabels" (dict "root" . "name" $apprise.name) | nindent 4 }}
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $wecom.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $wecom.name "componentLabel" "inbound-message-adapter") | nindent 4 }}
+spec:
+  selector:
+{{ include "platform.selectorLabels" (dict "root" . "name" $wecom.name) | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $robot.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $robot.name "componentLabel" "inbound-message-adapter") | nindent 4 }}
+spec:
+  selector:
+{{ include "platform.selectorLabels" (dict "root" . "name" $robot.name) | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $dispatcher.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $dispatcher.name "componentLabel" "notification-dispatch") | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 300
+  selector:
+    matchLabels:
+{{ include "platform.selectorLabels" (dict "root" . "name" $dispatcher.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "platform.labels" (dict "root" . "name" $dispatcher.name "componentLabel" "notification-dispatch") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: dispatcher
+          image: {{ include "platform.image" (dict "root" . "imageName" $dispatcher.imageName) }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
+          env:
+            - name: NOTIFICATION_DISPATCHER_HTTP_ADDR
+              value: :8080
+            - name: NOTIFICATION_DISPATCHER_NATS_URL
+              value: {{ .Values.notificationDispatcher.natsUrl | quote }}
+            - name: NOTIFICATION_DISPATCHER_SUBJECT
+              value: {{ .Values.notificationDispatcher.subject | quote }}
+            - name: NOTIFICATION_DISPATCHER_APPRISE_URL
+              value: {{ printf "http://%s.%s.svc.cluster.local:8000/notify/" $apprise.name .Release.Namespace | quote }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+              ephemeral-storage: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+              ephemeral-storage: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $apprise.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $apprise.name "componentLabel" "notification-sender") | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+{{ include "platform.selectorLabels" (dict "root" . "name" $apprise.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "platform.labels" (dict "root" . "name" $apprise.name "componentLabel" "notification-sender") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: {{ $apprise.name }}
+          image: {{ printf "%s:%s" $apprise.image.repository ($apprise.image.tag | toString) }}
+          imagePullPolicy: {{ $apprise.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
+          env:
+            - name: APPRISE_ADMIN
+              value: "n"
+            - name: APPRISE_API_ONLY
+              value: "yes"
+            - name: APPRISE_STATEFUL_MODE
+              value: simple
+            - name: APPRISE_STATELESS_URLS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.notificationDispatcher.secretNames.appriseUrls }}
+                  key: urls
+            - name: APPRISE_WORKER_COUNT
+              value: "1"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: plugin
+              mountPath: /plugin
+            - name: attach
+              mountPath: /attach
+            - name: tmp
+              mountPath: /tmp
+          startupProbe:
+            httpGet:
+              path: /status/
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /status/
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /status/
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+              ephemeral-storage: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+              ephemeral-storage: 512Mi
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: plugin
+          emptyDir: {}
+        - name: attach
+          emptyDir: {}
+        - name: tmp
+          emptyDir:
+            medium: Memory
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $wecom.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $wecom.name "componentLabel" "inbound-message-adapter") | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 300
+  selector:
+    matchLabels:
+{{ include "platform.selectorLabels" (dict "root" . "name" $wecom.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "platform.labels" (dict "root" . "name" $wecom.name "componentLabel" "inbound-message-adapter") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: adapter
+          image: {{ include "platform.image" (dict "root" . "imageName" $wecom.imageName) }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
+          env:
+            - name: WECOM_CALLBACK_ENCODING_AES_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.notificationDispatcher.secretNames.wecomCallback }}
+                  key: encoding-aes-key
+            - name: WECOM_CALLBACK_HTTP_ADDR
+              value: :8080
+            - name: WECOM_CALLBACK_NATS_SUBJECT
+              value: platform.wecom.messages.received
+            - name: WECOM_CALLBACK_NATS_URL
+              value: {{ .Values.notificationDispatcher.natsUrl | quote }}
+            - name: WECOM_CALLBACK_PATH
+              value: /wecom/callback
+            - name: WECOM_CALLBACK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.notificationDispatcher.secretNames.wecomCallback }}
+                  key: token
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+              ephemeral-storage: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+              ephemeral-storage: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $robot.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $robot.name "componentLabel" "inbound-message-adapter") | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 300
+  selector:
+    matchLabels:
+{{ include "platform.selectorLabels" (dict "root" . "name" $robot.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "platform.labels" (dict "root" . "name" $robot.name "componentLabel" "inbound-message-adapter") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: adapter
+          image: {{ include "platform.image" (dict "root" . "imageName" $robot.imageName) }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
+          env:
+            - name: WECOM_CALLBACK_ENCODING_AES_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.notificationDispatcher.secretNames.wecomRobotDefaultCallback }}
+                  key: encoding-aes-key
+            - name: WECOM_CALLBACK_HTTP_ADDR
+              value: :8080
+            - name: WECOM_CALLBACK_NATS_SUBJECT
+              value: platform.wecom.robots.default.messages.received
+            - name: WECOM_CALLBACK_NATS_URL
+              value: {{ .Values.notificationDispatcher.natsUrl | quote }}
+            - name: WECOM_CALLBACK_PATH
+              value: /wecom/robots/default/callback
+            - name: WECOM_CALLBACK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.notificationDispatcher.secretNames.wecomRobotDefaultCallback }}
+                  key: token
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+              ephemeral-storage: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+              ephemeral-storage: 128Mi
+---
+{{- if .Values.notificationDispatcher.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: platform-notifications
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $dispatcher.name "componentLabel" "inbound-message-adapter") | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: {{ .Values.notificationDispatcher.ingress.proxyBodySize | quote }}
+spec:
+  ingressClassName: {{ .Values.notificationDispatcher.ingress.className }}
+  tls:
+    - hosts:
+{{ toYaml .Values.notificationDispatcher.ingress.hosts | nindent 8 }}
+      secretName: {{ .Values.notificationDispatcher.ingress.tlsSecretName }}
+  rules:
+{{- range $host := .Values.notificationDispatcher.ingress.hosts }}
+    - host: {{ $host }}
+      http:
+        paths:
+          - path: /wecom/callback
+            pathType: Exact
+            backend:
+              service:
+                name: {{ $wecom.name }}
+                port:
+                  number: 8080
+          - path: /wecom/robots/default/callback
+            pathType: Exact
+            backend:
+              service:
+                name: {{ $robot.name }}
+                port:
+                  number: 8080
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package platform.workload_profile.v1;
+
+import "agent/core/v1/agent.proto";
+
+option go_package = "code-code.internal/go-contract/platform/workload_profile/v1;workloadprofilev1";
+
+// WorkloadProfile describes one stable workload realization profile.
+message WorkloadProfile {
+  string profile_id = 1;
+  agent.core.v1.RuntimeEnvironment runtime_environment = 2;
+}

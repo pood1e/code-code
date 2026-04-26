@@ -1,0 +1,817 @@
+syntax = "proto3";
+
+package platform.management.v1;
+
+import "egress/v1/policy.proto";
+import "google/protobuf/timestamp.proto";
+import "api_protocol/v1/protocol.proto";
+import "provider/v1/provider.proto";
+import "platform/agent_profile/v1/agent_profile.proto";
+import "platform/management/v1/credential_subject_summary.proto";
+import "platform/mcp/v1/mcp.proto";
+import "platform/rule/v1/rule.proto";
+import "platform/skill/v1/skill.proto";
+
+option go_package = "code-code.internal/go-contract/platform/management/v1;managementv1";
+
+message ListAgentProfilesRequest {}
+
+message ListAgentProfilesResponse {
+  repeated AgentProfileListItem items = 1;
+}
+
+message AgentProfileListItem {
+  string profile_id = 1;
+  string name = 2;
+  string provider_id = 3;
+  string selection_summary = 4;
+  int32 mcp_count = 5;
+  int32 skill_count = 6;
+  int32 rule_count = 7;
+}
+
+message GetAgentProfileRequest {
+  string profile_id = 1;
+}
+
+message GetAgentProfileResponse {
+  platform.agent_profile.v1.AgentProfile profile = 1;
+  int64 generation = 2;
+}
+
+message UpsertAgentProfileRequest {
+  string profile_id = 1;
+  string name = 2;
+  platform.agent_profile.v1.AgentSelectionStrategy selection_strategy = 3;
+  repeated string mcp_ids = 4;
+  repeated string skill_ids = 5;
+  repeated string rule_ids = 6;
+}
+
+message CreateAgentProfileRequest {
+  UpsertAgentProfileRequest profile = 1;
+}
+
+message CreateAgentProfileResponse {
+  platform.agent_profile.v1.AgentProfile profile = 1;
+}
+
+message UpdateAgentProfileRequest {
+  string profile_id = 1;
+  UpsertAgentProfileRequest profile = 2;
+}
+
+message UpdateAgentProfileResponse {
+  platform.agent_profile.v1.AgentProfile profile = 1;
+}
+
+message DeleteAgentProfileRequest {
+  string profile_id = 1;
+}
+
+message DeleteAgentProfileResponse {
+  string status = 1;
+}
+
+message ListMCPServersRequest {}
+
+message ListMCPServersResponse {
+  repeated MCPServerListItem items = 1;
+}
+
+message MCPServerListItem {
+  string mcp_id = 1;
+  string name = 2;
+  platform.mcp.v1.MCPTransportKind transport_kind = 3;
+  string transport_summary = 4;
+}
+
+message GetMCPServerRequest {
+  string mcp_id = 1;
+}
+
+message GetMCPServerResponse {
+  platform.mcp.v1.MCPServer mcp = 1;
+}
+
+message UpsertMCPServerRequest {
+  string mcp_id = 1;
+  string name = 2;
+
+  oneof transport {
+    platform.mcp.v1.MCPServerStdioTransport stdio = 3;
+    platform.mcp.v1.MCPServerStreamableHTTPTransport streamable_http = 4;
+  }
+}
+
+message CreateMCPServerRequest {
+  UpsertMCPServerRequest mcp = 1;
+}
+
+message CreateMCPServerResponse {
+  platform.mcp.v1.MCPServer mcp = 1;
+}
+
+message UpdateMCPServerRequest {
+  string mcp_id = 1;
+  UpsertMCPServerRequest mcp = 2;
+}
+
+message UpdateMCPServerResponse {
+  platform.mcp.v1.MCPServer mcp = 1;
+}
+
+message DeleteMCPServerRequest {
+  string mcp_id = 1;
+}
+
+message DeleteMCPServerResponse {
+  string status = 1;
+}
+
+message ListSkillsRequest {}
+
+message ListSkillsResponse {
+  repeated SkillListItem items = 1;
+}
+
+message SkillListItem {
+  string skill_id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message GetSkillRequest {
+  string skill_id = 1;
+}
+
+message GetSkillResponse {
+  platform.skill.v1.Skill skill = 1;
+}
+
+message UpsertSkillRequest {
+  string skill_id = 1;
+  string name = 2;
+  string description = 3;
+  string content = 4;
+}
+
+message CreateSkillRequest {
+  UpsertSkillRequest skill = 1;
+}
+
+message CreateSkillResponse {
+  platform.skill.v1.Skill skill = 1;
+}
+
+message UpdateSkillRequest {
+  string skill_id = 1;
+  UpsertSkillRequest skill = 2;
+}
+
+message UpdateSkillResponse {
+  platform.skill.v1.Skill skill = 1;
+}
+
+message DeleteSkillRequest {
+  string skill_id = 1;
+}
+
+message DeleteSkillResponse {
+  string status = 1;
+}
+
+message ListRulesRequest {}
+
+message ListRulesResponse {
+  repeated RuleListItem items = 1;
+}
+
+message RuleListItem {
+  string rule_id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message GetRuleRequest {
+  string rule_id = 1;
+}
+
+message GetRuleResponse {
+  platform.rule.v1.Rule rule = 1;
+}
+
+message UpsertRuleRequest {
+  string rule_id = 1;
+  string name = 2;
+  string description = 3;
+  string content = 4;
+}
+
+message CreateRuleRequest {
+  UpsertRuleRequest rule = 1;
+}
+
+message CreateRuleResponse {
+  platform.rule.v1.Rule rule = 1;
+}
+
+message UpdateRuleRequest {
+  string rule_id = 1;
+  UpsertRuleRequest rule = 2;
+}
+
+message UpdateRuleResponse {
+  platform.rule.v1.Rule rule = 1;
+}
+
+message DeleteRuleRequest {
+  string rule_id = 1;
+}
+
+message DeleteRuleResponse {
+  string status = 1;
+}
+
+message ListProviderSurfacesRequest {}
+
+message ListProviderSurfacesResponse {
+  repeated provider.v1.ProviderSurface items = 1;
+}
+
+message ListProvidersRequest {}
+
+message ListProvidersResponse {
+  repeated ProviderView items = 1;
+}
+
+message ProviderView {
+  string provider_id = 1;
+  string display_name = 2;
+  string vendor_id = 3;
+  string provider_credential_id = 4;
+  repeated ProviderSurfaceBindingView surfaces = 5;
+  string icon_url = 6;
+  repeated CredentialSubjectSummaryFieldView credential_subject_summary = 7;
+  reserved 9;
+  reserved "default_model_id";
+  provider.v1.ProviderModelCatalog model_catalog = 10;
+}
+
+message ListProviderSurfaceBindingsRequest {}
+
+message ListProviderSurfaceBindingsResponse {
+  repeated ProviderSurfaceBindingView items = 1;
+}
+
+enum ProviderSurfaceBindingPhase {
+  PROVIDER_SURFACE_BINDING_PHASE_UNSPECIFIED = 0;
+  PROVIDER_SURFACE_BINDING_PHASE_READY = 1;
+  PROVIDER_SURFACE_BINDING_PHASE_INVALID_CONFIG = 2;
+  PROVIDER_SURFACE_BINDING_PHASE_REFRESHING = 3;
+  PROVIDER_SURFACE_BINDING_PHASE_STALE = 4;
+  PROVIDER_SURFACE_BINDING_PHASE_ERROR = 5;
+}
+
+message ProviderSurfaceBindingStatus {
+  ProviderSurfaceBindingPhase phase = 1;
+  // reason is an optional human-readable detail for the current phase.
+  string reason = 2;
+}
+
+message ProviderSurfaceBindingView {
+  string display_name = 1;
+  string surface_id = 2;
+  reserved 4, 5;
+  reserved "protocol", "base_url";
+  reserved 6;
+  reserved "default_model_id";
+  reserved 7, 8;
+  reserved "allowed_model_ids", "fallback_model_ids";
+  reserved 9;
+  reserved "selection_priority";
+  reserved 10;
+  reserved "credential_id";
+  reserved 11;
+  reserved "network_policy_id";
+  reserved 12;
+  reserved "vendor_account_id";
+  string provider_credential_id = 13;
+  provider.v1.ProviderSurfaceRuntime runtime = 14;
+  // status carries the observed lifecycle phase derived from provider config
+  // validation.
+  ProviderSurfaceBindingStatus status = 15;
+  string vendor_id = 16;
+  string provider_id = 17;
+  string provider_display_name = 18;
+}
+
+message UpsertProviderSurfaceBindingRequest {
+  string display_name = 1;
+  string surface_id = 2;
+  reserved 4, 5;
+  reserved "protocol", "base_url";
+  reserved 6;
+  reserved "default_model_id";
+  reserved 7, 8;
+  reserved "allowed_model_ids", "fallback_model_ids";
+  reserved 9;
+  reserved "selection_priority";
+  reserved 10;
+  reserved "credential_id";
+  reserved 11;
+  reserved "network_policy_id";
+  reserved 12;
+  reserved "vendor_account_id";
+  string provider_credential_id = 13;
+  provider.v1.ProviderSurfaceRuntime runtime = 14;
+  string vendor_id = 15;
+  string provider_id = 16;
+  string provider_display_name = 17;
+}
+
+message UpdateProviderRequest {
+  string provider_id = 1;
+  string display_name = 2;
+}
+
+message UpdateProviderResponse {
+  ProviderView provider = 1;
+}
+
+message ApiKeyAuthenticationUpdateMaterial {
+  string api_key = 1;
+  reserved 2;
+  reserved "observability_token";
+}
+
+message CLIOAuthAuthenticationUpdateMaterial {}
+
+message UpdateProviderAuthenticationRequest {
+  string provider_id = 1;
+
+  oneof auth_material {
+    ApiKeyAuthenticationUpdateMaterial api_key = 2;
+    CLIOAuthAuthenticationUpdateMaterial cli_oauth = 3;
+  }
+}
+
+message UpdateProviderAuthenticationResponse {
+  oneof outcome {
+    ProviderView provider = 1;
+    ProviderConnectSessionView session = 2;
+  }
+}
+
+message UpdateProviderObservabilityAuthenticationRequest {
+  string provider_id = 1;
+  SessionMaterial session_material = 2;
+}
+
+message UpdateProviderObservabilityAuthenticationResponse {
+  ProviderView provider = 1;
+}
+
+message DeleteProviderRequest {
+  string provider_id = 1;
+}
+
+message DeleteProviderResponse {
+  string status = 1;
+}
+
+message CreateProviderSurfaceBindingRequest {
+  UpsertProviderSurfaceBindingRequest surface = 1;
+}
+
+message CreateProviderSurfaceBindingResponse {
+  ProviderSurfaceBindingView surface = 1;
+}
+
+message UpdateProviderSurfaceBindingRequest {
+  string surface_id = 1;
+  UpsertProviderSurfaceBindingRequest surface = 2;
+}
+
+message UpdateProviderSurfaceBindingResponse {
+  ProviderSurfaceBindingView surface = 1;
+}
+
+message DeleteProviderSurfaceBindingRequest {
+  string surface_id = 1;
+}
+
+message DeleteProviderSurfaceBindingResponse {
+  string status = 1;
+}
+
+enum ProviderConnectSessionPhase {
+  PROVIDER_CONNECT_SESSION_PHASE_UNSPECIFIED = 0;
+  PROVIDER_CONNECT_SESSION_PHASE_PENDING = 1;
+  PROVIDER_CONNECT_SESSION_PHASE_AWAITING_USER = 2;
+  PROVIDER_CONNECT_SESSION_PHASE_PROCESSING = 3;
+  PROVIDER_CONNECT_SESSION_PHASE_SUCCEEDED = 4;
+  PROVIDER_CONNECT_SESSION_PHASE_FAILED = 5;
+  PROVIDER_CONNECT_SESSION_PHASE_EXPIRED = 6;
+  PROVIDER_CONNECT_SESSION_PHASE_CANCELED = 7;
+}
+
+enum ProviderAddMethod {
+  PROVIDER_ADD_METHOD_UNSPECIFIED = 0;
+  PROVIDER_ADD_METHOD_API_KEY = 1;
+  PROVIDER_ADD_METHOD_CLI_OAUTH = 2;
+}
+
+message ApiKeyConnectMaterial {
+  // Secret API key value.
+  string api_key = 1;
+  reserved 6;
+  reserved "observability_token";
+
+  // Concrete base URL chosen by the user. Required only for custom API key
+  // connect; vendor-backed API key connect derives fixed base URLs from the
+  // vendor support surface.
+  string base_url = 2;
+
+  // Concrete protocol used by the generated surface. Required only when
+  // vendor_id is empty.
+  api_protocol.v1.Protocol protocol = 3;
+
+  // Final surface-scoped model entries to persist onto the created provider
+  // surfaces. Each entry carries one surface-local provider_model_id plus one
+  // optional authority model binding.
+  repeated ProviderSurfaceModelCatalog surface_model_catalogs = 4;
+
+}
+
+message CLIOAuthConnectMaterial {}
+
+message ProviderSurfaceModelCatalog {
+  string surface_id = 1;
+  repeated provider.v1.ProviderModelCatalogEntry models = 2;
+}
+
+message ConnectProviderRequest {
+  // Required for vendor-backed API key path. Empty means user-defined custom
+  // API key path.
+  string vendor_id = 8;
+
+  // Required for CLI OAuth path.
+  string cli_id = 9;
+
+  reserved 2;
+  reserved "provider_surface_id";
+  // Common provider inputs for every add path.
+  string display_name = 3;
+  reserved 4;
+  reserved "network_policy_id";
+
+  // API key and CLI OAuth are the only supported provider add methods.
+  ProviderAddMethod add_method = 7;
+
+  oneof auth_material {
+    ApiKeyConnectMaterial api_key = 5;
+    CLIOAuthConnectMaterial cli_oauth = 6;
+  }
+}
+
+message ProviderConnectSessionView {
+  string session_id = 1;
+  string oauth_session_id = 2;
+  ProviderConnectSessionPhase phase = 3;
+  string display_name = 4;
+  string authorization_url = 5;
+  string user_code = 6;
+  string message = 7;
+  string error_message = 8;
+  ProviderView provider = 9;
+  ProviderAddMethod add_method = 10;
+  string vendor_id = 11;
+  string cli_id = 12;
+}
+
+message ConnectProviderResponse {
+  oneof outcome {
+    ProviderView provider = 1;
+    ProviderConnectSessionView session = 2;
+  }
+}
+
+message GetProviderConnectSessionRequest {
+  string session_id = 1;
+}
+
+message GetProviderConnectSessionResponse {
+  ProviderConnectSessionView session = 1;
+}
+
+enum ProviderOAuthObservabilityProbeOutcome {
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_UNSPECIFIED = 0;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_EXECUTED = 1;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_THROTTLED = 2;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_AUTH_BLOCKED = 3;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_UNSUPPORTED = 4;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_FAILED = 5;
+}
+
+enum ProviderObservabilityProbeTrigger {
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_UNSPECIFIED = 0;
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_MANUAL = 1;
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_CONNECT = 2;
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_SCHEDULE = 3;
+}
+
+message ProbeProviderObservabilityRequest {
+  string provider_id = 1;
+  ProviderObservabilityProbeTrigger trigger = 2;
+  repeated string provider_ids = 3;
+}
+
+message ProbeProviderObservabilityResponse {
+  string provider_id = 1;
+  string cli_id = 2;
+  ProviderOAuthObservabilityProbeOutcome outcome = 3;
+  string message = 4;
+  string next_allowed_at = 5;
+  string last_attempt_at = 6;
+  repeated string provider_ids = 7;
+  string workflow_id = 8;
+}
+
+enum ProviderStatusEventKind {
+  PROVIDER_STATUS_EVENT_KIND_UNSPECIFIED = 0;
+  PROVIDER_STATUS_EVENT_KIND_WORKFLOW = 1;
+  PROVIDER_STATUS_EVENT_KIND_SURFACE_BINDING_STATUS = 2;
+}
+
+enum ProviderWorkflowPhase {
+  PROVIDER_WORKFLOW_PHASE_UNSPECIFIED = 0;
+  PROVIDER_WORKFLOW_PHASE_PENDING = 1;
+  PROVIDER_WORKFLOW_PHASE_RUNNING = 2;
+  PROVIDER_WORKFLOW_PHASE_SUCCEEDED = 3;
+  PROVIDER_WORKFLOW_PHASE_FAILED = 4;
+  PROVIDER_WORKFLOW_PHASE_ERROR = 5;
+  PROVIDER_WORKFLOW_PHASE_CANCELED = 6;
+}
+
+message ProviderWorkflowStatus {
+  string workflow_id = 1;
+  string workflow_kind = 2;
+  ProviderWorkflowPhase phase = 3;
+  string message = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp finished_at = 6;
+}
+
+message ProviderStatusEvent {
+  string provider_id = 1;
+  string surface_id = 2;
+  ProviderStatusEventKind kind = 3;
+  ProviderWorkflowStatus workflow = 4;
+  ProviderSurfaceBindingStatus surface_binding_status = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+}
+
+message ListCredentialsRequest {}
+
+message ListCredentialsResponse {
+  repeated CredentialView items = 1;
+}
+
+message CredentialStatus {
+  bool material_ready = 1;
+  // reason is an optional human-readable detail when material_ready is false.
+  string reason = 2;
+}
+
+message CredentialView {
+  string credential_id = 1;
+  string display_name = 2;
+  string kind = 3;
+  string purpose = 4;
+  string vendor_id = 5;
+  string cli_id = 6;
+  string account_email = 8;
+  int64 credential_generation = 9;
+  string expires_at = 10;
+  reserved 11;
+  reserved "api_key_surfaces";
+  CredentialStatus status = 12;
+}
+
+message UpsertCredentialRequest {
+  string credential_id = 1;
+  string display_name = 2;
+  string kind = 3;
+  string purpose = 4;
+  string vendor_id = 5;
+  string cli_id = 6;
+  // Fields 5-9 replaced by oneof material.
+  reserved 7, 8, 9;
+  oneof material {
+    ApiKeyMaterial api_key_material = 10;
+    OAuthMaterial oauth_material = 11;
+    SessionMaterial session_material = 12;
+  }
+}
+
+// ApiKeyMaterial carries the secret material for an API key credential.
+message ApiKeyMaterial {
+  string api_key = 1;
+  reserved 2;
+  reserved "surfaces";
+}
+
+// OAuthMaterial carries the secret material for an OAuth credential.
+message OAuthMaterial {
+  string access_token = 1;
+  string token_type = 2;
+  string account_id = 3;
+  repeated string scopes = 4;
+  string expires_at = 5;
+}
+
+// SessionMaterial carries management-plane session auth fields.
+message SessionMaterial {
+  string schema_id = 1;
+  map<string, string> values = 2;
+  repeated string required_keys = 3;
+}
+
+message CreateCredentialRequest {
+  UpsertCredentialRequest credential = 1;
+}
+
+message CreateCredentialResponse {
+  CredentialView credential = 1;
+}
+
+message UpdateCredentialRequest {
+  string credential_id = 1;
+  UpsertCredentialRequest credential = 2;
+}
+
+message UpdateCredentialResponse {
+  CredentialView credential = 1;
+}
+
+message DeleteCredentialRequest {
+  string credential_id = 1;
+}
+
+message DeleteCredentialResponse {
+  string status = 1;
+}
+
+message ListEgressPoliciesRequest {}
+
+message ListEgressPoliciesResponse {
+  repeated EgressPolicyView items = 1;
+}
+
+message UpdateEgressPolicyRequest {
+  string policy_id = 1;
+  egress.v1.EgressPolicy policy = 2;
+}
+
+message UpdateEgressPolicyResponse {
+  EgressPolicyView item = 1;
+}
+
+message EgressPolicyView {
+  egress.v1.EgressPolicy policy = 1;
+  EgressConfigSource configured_by = 2;
+  repeated EgressConsumer consumers = 3;
+  egress.v1.EgressSyncStatus sync = 4;
+  repeated HeaderModificationView header_modifications = 5;
+  repeated HeaderMetricView header_metrics = 6;
+  egress.v1.EgressExternalRuleSetStatus external_rule_set_status = 7;
+}
+
+message EgressConfigSource {
+  string kind = 1;
+  string id = 2;
+  string display_name = 3;
+  string crd_kind = 4;
+}
+
+message EgressConsumer {
+  string kind = 1;
+  string id = 2;
+  string display_name = 3;
+  string crd_kind = 4;
+}
+
+message HeaderModificationView {
+  string scope = 1;
+  string header = 2;
+  string action = 3;
+  string value_source = 4;
+}
+
+message HeaderMetricView {
+  string profile = 1;
+  string header = 2;
+  string metric = 3;
+  string value_type = 4;
+  repeated string labels = 5;
+}
+
+message ListTemplatesRequest {}
+
+message ListTemplatesResponse {
+  repeated TemplateView items = 1;
+}
+
+message TemplateView {
+  string template_id = 1;
+  string display_name = 2;
+  string vendor = 3;
+  string protocol = 4;
+  string default_base_url = 5;
+  reserved 6;
+  reserved "default_model_id";
+  repeated string default_models = 7;
+  bool requires_credential = 8;
+  reserved 9;
+  reserved "supports_discovery";
+}
+
+message ApplyTemplateRequest {
+  string template_id = 1;
+  string namespace = 2;
+  string display_name = 3;
+  string provider_id = 4;
+  reserved 5;
+  reserved "selection_priority";
+  reserved 6;
+  reserved "default_model_id";
+  repeated string allowed_model_ids = 7;
+  reserved 8;
+  reserved "credential_id";
+  reserved 9;
+  reserved "network_policy_id";
+  string provider_credential_id = 10;
+}
+
+message ApplyTemplateResult {
+  string template_id = 1;
+  string namespace = 2;
+  string display_name = 3;
+  string provider_id = 4;
+  repeated string applied_kinds = 5;
+  reserved 6;
+  reserved "default_model_id";
+  reserved 7;
+  reserved "allowed_model_ids";
+}
+
+message ApplyTemplateResponse {
+  ApplyTemplateResult result = 1;
+}
+
+message ListVendorsRequest {}
+
+message ListVendorsResponse {
+  repeated VendorView items = 1;
+}
+
+message VendorView {
+  string vendor_id = 1;
+  string display_name = 2;
+  string icon_url = 3;
+  string website_url = 4;
+  string description = 5;
+  reserved 6;
+  reserved "kind";
+  repeated string aliases = 7;
+}
+
+message ListCLIDefinitionsRequest {}
+
+message ListCLIDefinitionsResponse {
+  repeated CLIDefinitionView items = 1;
+}
+
+message CLIDefinitionView {
+  string cli_id = 1;
+  string display_name = 2;
+  string icon_url = 3;
+  string website_url = 4;
+  repeated CLIContainerImageView container_images = 5;
+  string description = 6;
+  CLIDefinitionCapabilityView capabilities = 7;
+}
+
+message CLIContainerImageView {
+  string execution_class = 1;
+  string image = 2;
+  string cpu_request = 3;
+  string memory_request = 4;
+}
+
+message CLIDefinitionCapabilityView {
+  bool supports_streaming = 1;
+  bool supports_approval_mode = 2;
+  repeated string supported_protocols = 3;
+}

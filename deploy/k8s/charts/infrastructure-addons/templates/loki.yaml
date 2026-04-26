@@ -1,0 +1,126 @@
+{{- if .Values.loki.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "loki" "componentLabel" "logging") | nindent 4 }}
+data:
+  loki.yaml: |-
+{{ tpl (.Files.Get "files/loki/loki.yaml") . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "loki" "componentLabel" "logging") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "loki") | nindent 4 }}
+  ports:
+    - name: http
+      port: 3100
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "loki" "componentLabel" "logging") | nindent 4 }}
+spec:
+  revisionHistoryLimit: 2
+  serviceName: loki
+  replicas: 1
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "loki") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "loki" "componentLabel" "logging") | nindent 8 }}
+{{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: loki
+          image: {{ .Values.loki.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - -config.file=/etc/loki/loki.yaml
+          ports:
+            - name: http
+              containerPort: 3100
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki
+              readOnly: true
+            - name: data
+              mountPath: /var/loki
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 120
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+              ephemeral-storage: 2Gi
+      volumes:
+        - name: config
+          configMap:
+            name: loki-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "loki" "componentLabel" "logging") | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.loki.storageClassName }}
+        storageClassName: {{ .Values.loki.storageClassName | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.loki.dataSize }}
+{{- end }}

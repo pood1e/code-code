@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+package platform.agent_run.v1;
+
+import "agent/core/v1/agent.proto";
+import "agent/result/v1/result.proto";
+import "google/protobuf/timestamp.proto";
+import "provider/v1/provider.proto";
+import "observability/v1/observability.proto";
+import "platform/condition/v1/condition.proto";
+
+option go_package = "code-code.internal/go-contract/platform/agent_run/v1;agentrunv1";
+
+// AgentRunSpec describes the desired state for one turn within one
+// AgentSession. The frozen generation fields capture which version of the
+// session and its reload surfaces were bound to this turn at submit time.
+message AgentRunSpec {
+  string run_id = 1;
+  string session_id = 2;
+  int64 session_generation = 3;
+  int64 runtime_config_generation = 4;
+  int64 resource_config_generation = 5;
+  int64 state_generation = 6;
+  agent.core.v1.RunRequest request = 7;
+  string execution_class = 8;
+  string container_image = 9;
+  string cpu_request = 10;
+  string memory_request = 11;
+  string provider_id = 12;
+  AgentRunAuthRequirement auth_requirement = 13;
+  bool cancel_requested = 14;
+  agent.core.v1.RuntimeEnvironment runtime_environment = 15;
+  string workspace_id = 16;
+  string home_state_id = 17;
+  repeated AgentRunPrepareJob prepare_jobs = 18;
+  string agent_runtime_id = 19;
+}
+
+// AgentRunAuthRequirement captures the provider auth requirement visible to
+// the session/run domain.
+message AgentRunAuthRequirement {
+  string provider_id = 1;
+  string provider_surface_binding_id = 2;
+  string auth_status = 3;
+  string runtime_url = 4;
+  string materialization_key = 5;
+  provider.v1.ProviderRunBinding provider_run_binding = 6;
+}
+
+// AgentRunPrepareJob captures one CLI-scoped prepare workload before execution.
+message AgentRunPrepareJob {
+  string job_id = 1;
+  string job_type = 2;
+  AgentRunPrepareJobRunType run_type = 3;
+  string change_key = 4;
+  bool cleanup = 5;
+  string parameters_yaml = 6;
+  string cli_id = 7;
+}
+
+// AgentRunPrepareJobStatus captures the observed summary for one prepare job.
+message AgentRunPrepareJobStatus {
+  string job_id = 1;
+  AgentRunPrepareJobPhase phase = 2;
+  string message = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp finished_at = 5;
+}
+
+// AgentRunResponseHeaderRule captures one runtime response-header rule frozen
+// at submit time.
+message AgentRunResponseHeaderRule {
+  string header_name = 1;
+  string metric_name = 2;
+  observability.v1.HeaderValueType value_type = 3;
+  repeated AgentRunMetricLabel labels = 4;
+  AgentRunResponseHeaderRuleContext context = 5;
+}
+
+// AgentRunMetricLabel stores one fixed runtime metric label.
+message AgentRunMetricLabel {
+  string name = 1;
+  string value = 2;
+}
+
+// AgentRunResponseHeaderRuleContext identifies the runtime label context used
+// when exporting one header-derived metric.
+enum AgentRunResponseHeaderRuleContext {
+  AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED = 0;
+  AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_CLI_RUNTIME = 1;
+  AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_VENDOR_RUNTIME = 2;
+}
+
+// AgentRunPrepareJobRunType identifies when one prepare job should run.
+enum AgentRunPrepareJobRunType {
+  AGENT_RUN_PREPARE_JOB_RUN_TYPE_UNSPECIFIED = 0;
+  AGENT_RUN_PREPARE_JOB_RUN_TYPE_INIT = 1;
+  AGENT_RUN_PREPARE_JOB_RUN_TYPE_PER_RUN = 2;
+  AGENT_RUN_PREPARE_JOB_RUN_TYPE_ON_CHANGED = 3;
+}
+
+// AgentRunPrepareJobPhase describes the observed lifecycle phase of one prepare job.
+enum AgentRunPrepareJobPhase {
+  AGENT_RUN_PREPARE_JOB_PHASE_UNSPECIFIED = 0;
+  AGENT_RUN_PREPARE_JOB_PHASE_PENDING = 1;
+  AGENT_RUN_PREPARE_JOB_PHASE_SKIPPED = 2;
+  AGENT_RUN_PREPARE_JOB_PHASE_RUNNING = 3;
+  AGENT_RUN_PREPARE_JOB_PHASE_SUCCEEDED = 4;
+  AGENT_RUN_PREPARE_JOB_PHASE_FAILED = 5;
+  AGENT_RUN_PREPARE_JOB_PHASE_CANCELED = 6;
+}
+
+// AgentRunRef identifies one submitted agent run.
+message AgentRunRef {
+  string run_id = 1;
+}
+
+// WorkloadRef identifies the workload backing one agent run.
+message WorkloadRef {
+  string workload_id = 1;
+}
+
+// AgentRunPhase describes the observed lifecycle phase of one turn.
+enum AgentRunPhase {
+  AGENT_RUN_PHASE_UNSPECIFIED = 0;
+  AGENT_RUN_PHASE_PENDING = 1;
+  AGENT_RUN_PHASE_SCHEDULED = 2;
+  AGENT_RUN_PHASE_RUNNING = 3;
+  AGENT_RUN_PHASE_SUCCEEDED = 4;
+  AGENT_RUN_PHASE_FAILED = 5;
+  AGENT_RUN_PHASE_CANCELED = 6;
+}
+
+// AgentRunStatus describes observed summary state for one turn. run_id
+// keeps the run identity available when status is serialized independently of a
+// Kubernetes resource envelope.
+message AgentRunStatus {
+  string run_id = 1;
+  AgentRunPhase phase = 2;
+  int64 observed_generation = 3;
+  string message = 4;
+  WorkloadRef workload = 5;
+  repeated platform.condition.v1.Condition conditions = 6;
+  agent.result.v1.RunResult result = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  repeated AgentRunPrepareJobStatus prepare_jobs = 9;
+}
+
+// AgentRunState combines desired state and observed state for one turn.
+// The wrapper does not repeat run_id; identity is carried by spec and status.
+message AgentRunState {
+  int64 generation = 1;
+  AgentRunSpec spec = 2;
+  AgentRunStatus status = 3;
+}

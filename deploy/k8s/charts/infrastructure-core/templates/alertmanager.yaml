@@ -1,0 +1,168 @@
+{{- if .Values.alertmanager.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "alertmanager" "componentLabel" "alerting") | nindent 4 }}
+data:
+  alertmanager.yml: |-
+{{ tpl (.Files.Get "files/alertmanager/alertmanager.yml") . | nindent 4 }}
+  wechat.tmpl: |-
+{{ .Files.Get "files/alertmanager/wechat.tmpl" | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "alertmanager" "componentLabel" "alerting") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "alertmanager") | nindent 4 }}
+  ports:
+    - name: http
+      port: 9093
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-headless
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "alertmanager" "componentLabel" "alerting") | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "alertmanager") | nindent 4 }}
+  ports:
+    - name: http
+      port: 9093
+      targetPort: http
+    - name: cluster-tcp
+      port: 9094
+      protocol: TCP
+      targetPort: cluster-tcp
+    - name: cluster-udp
+      port: 9094
+      protocol: UDP
+      targetPort: cluster-udp
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alertmanager
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "alertmanager" "componentLabel" "alerting") | nindent 4 }}
+spec:
+  serviceName: alertmanager-headless
+  replicas: 1
+  revisionHistoryLimit: 2
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "alertmanager") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "alertmanager" "componentLabel" "alerting") | nindent 8 }}
+{{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: alertmanager
+          image: {{ .Values.alertmanager.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --storage.path=/alertmanager
+            - --web.listen-address=:9093
+            - --cluster.listen-address=0.0.0.0:9094
+          ports:
+            - name: http
+              containerPort: 9093
+            - name: cluster-tcp
+              containerPort: 9094
+              protocol: TCP
+            - name: cluster-udp
+              containerPort: 9094
+              protocol: UDP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+              readOnly: true
+            - name: receivers
+              mountPath: /etc/alertmanager-secrets
+              readOnly: true
+            - name: data
+              mountPath: /alertmanager
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          startupProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 240
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+              ephemeral-storage: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+              ephemeral-storage: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+            items:
+              - key: alertmanager.yml
+                path: alertmanager.yml
+              - key: wechat.tmpl
+                path: templates/wechat.tmpl
+        - name: receivers
+          secret:
+            secretName: {{ .Values.global.alertmanagerReceiversSecretName }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.alertmanager.storageSize }}
+{{- end }}

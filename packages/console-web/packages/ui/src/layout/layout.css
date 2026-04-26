@@ -1,0 +1,143 @@
+/* === Sidebar structural === */
+.sidebar {
+  background-color: var(--color-panel-solid);
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}
+
+/* === Nav button === */
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  min-height: 36px;
+  border-radius: var(--radius-3);
+  color: var(--gray-11);
+  font-family: inherit;
+  font-size: var(--font-size-2);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  user-select: none;
+}
+
+.navButton:hover {
+  background-color: var(--gray-a3);
+  color: var(--gray-12);
+}
+
+.navButtonExpanded {
+  justify-content: flex-start;
+  padding: 0 var(--space-3);
+  gap: var(--space-3);
+}
+
+.navButtonCollapsed {
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  margin: 0 auto;
+}
+
+/* === Active state === */
+.navButtonActive {
+  background-color: var(--teal-a3);
+  color: var(--teal-11) !important;
+  font-weight: 500;
+}
+
+.navButtonActive:hover {
+  background-color: var(--teal-a4);
+}
+
+/* === Icon wrapper === */
+.iconWrapper {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* === Sidebar collapse button === */
+.sidebarCollapseButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--gray-11);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  flex-shrink: 0;
+}
+
+.sidebarCollapseButtonCollapsed {
+  margin-inline: auto;
+  align-self: center;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.sidebarCollapseButton:hover {
+  background-color: var(--gray-a3);
+  color: var(--gray-12);
+}
+
+/* === Sidebar footer === */
+.sidebarFooter {
+  border-top: 1px solid var(--gray-a3);
+}
+
+/* === Theme toggle section === */
+.themeToggleSection {
+  border-top: 1px solid var(--gray-a3);
+}
+
+/* === Main content area — centered with max-width === */
+.mainContent {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: var(--space-8) var(--space-6);
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.mainContentFullBleed {
+  max-width: none;
+  margin-inline: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* === ScrollArea fill === */
+.scrollArea {
+  flex-grow: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* === Shell root background === */
+.shellRoot {
+  background-color: var(--color-background);
+  height: 100vh;
+  overflow: hidden;
+}

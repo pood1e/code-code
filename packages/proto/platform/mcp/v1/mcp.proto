@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package platform.mcp.v1;
+
+option go_package = "code-code.internal/go-contract/platform/mcp/v1;mcpv1";
+
+// MCPServer describes one reusable MCP server configuration.
+message MCPServer {
+  string mcp_id = 1;
+  string name = 2;
+
+  oneof transport {
+    MCPServerStdioTransport stdio = 3;
+    MCPServerStreamableHTTPTransport streamable_http = 4;
+  }
+}
+
+// MCPTransportKind identifies the configured MCP transport.
+enum MCPTransportKind {
+  MCP_TRANSPORT_KIND_UNSPECIFIED = 0;
+  MCP_TRANSPORT_KIND_STDIO = 1;
+  MCP_TRANSPORT_KIND_STREAMABLE_HTTP = 2;
+}
+
+// MCPServerStdioTransport describes one stdio MCP subprocess configuration.
+message MCPServerStdioTransport {
+  string command = 1;
+  repeated string args = 2;
+  repeated MCPServerEnvVar env = 3;
+}
+
+// MCPServerStreamableHTTPTransport describes one Streamable HTTP MCP endpoint
+// configuration.
+message MCPServerStreamableHTTPTransport {
+  string endpoint_url = 1;
+  repeated MCPServerHeader headers = 2;
+}
+
+// MCPServerEnvVar describes one ordered environment variable entry.
+message MCPServerEnvVar {
+  string name = 1;
+  string value = 2;
+}
+
+// MCPServerHeader describes one ordered HTTP header entry.
+message MCPServerHeader {
+  string name = 1;
+  string value = 2;
+}

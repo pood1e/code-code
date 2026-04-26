@@ -1,0 +1,132 @@
+{{- if .Values.nats.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats-config
+  namespace: {{ .Values.global.infraNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "nats" "componentLabel" "event-bus") | nindent 4 }}
+data:
+  nats-server.conf: |-
+    port: 4222
+    http_port: 8222
+    jetstream {
+      store_dir: "/data/jetstream"
+      max_mem_store: 128Mi
+      max_file_store: 5Gi
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats
+  namespace: {{ .Values.global.infraNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "nats" "componentLabel" "event-bus") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "nats") | nindent 4 }}
+  ports:
+    - name: tcp-client
+      appProtocol: tcp
+      port: 4222
+      targetPort: tcp-client
+    - name: http-monitor
+      appProtocol: http
+      port: 8222
+      targetPort: http-monitor
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nats
+  namespace: {{ .Values.global.infraNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "nats" "componentLabel" "event-bus") | nindent 4 }}
+spec:
+  serviceName: nats
+  replicas: 1
+  revisionHistoryLimit: 2
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "nats") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "nats" "componentLabel" "event-bus") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: nats
+          image: {{ .Values.nats.image }}
+          imagePullPolicy: IfNotPresent
+          args: ["-c", "/etc/nats/nats-server.conf"]
+          ports:
+            - name: tcp-client
+              containerPort: 4222
+            - name: http-monitor
+              containerPort: 8222
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nats
+              readOnly: true
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http-monitor
+            timeoutSeconds: 5
+            failureThreshold: 12
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http-monitor
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 240
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-monitor
+            timeoutSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+              ephemeral-storage: 128Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+              ephemeral-storage: 512Mi
+      volumes:
+        - name: config
+          configMap:
+            name: nats-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.nats.storageSize }}
+{{- end }}

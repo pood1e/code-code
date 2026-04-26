@@ -1,0 +1,425 @@
+syntax = "proto3";
+
+package platform.provider.v1;
+
+import "google/protobuf/timestamp.proto";
+import "api_protocol/v1/protocol.proto";
+import "provider/v1/provider.proto";
+
+option go_package = "code-code.internal/go-contract/platform/provider/v1;providerservicev1";
+
+service ProviderService {
+  rpc ListProviderSurfaces(ListProviderSurfacesRequest) returns (ListProviderSurfacesResponse);
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+  rpc ListProviderSurfaceBindings(ListProviderSurfaceBindingsRequest) returns (ListProviderSurfaceBindingsResponse);
+  rpc UpdateProvider(UpdateProviderRequest) returns (UpdateProviderResponse);
+  rpc UpdateProviderAuthentication(UpdateProviderAuthenticationRequest) returns (UpdateProviderAuthenticationResponse);
+  rpc UpdateProviderObservabilityAuthentication(UpdateProviderObservabilityAuthenticationRequest) returns (UpdateProviderObservabilityAuthenticationResponse);
+  rpc DeleteProvider(DeleteProviderRequest) returns (DeleteProviderResponse);
+  rpc CreateProviderSurfaceBinding(CreateProviderSurfaceBindingRequest) returns (CreateProviderSurfaceBindingResponse);
+  rpc UpdateProviderSurfaceBinding(UpdateProviderSurfaceBindingRequest) returns (UpdateProviderSurfaceBindingResponse);
+  rpc DeleteProviderSurfaceBinding(DeleteProviderSurfaceBindingRequest) returns (DeleteProviderSurfaceBindingResponse);
+  rpc ConnectProvider(ConnectProviderRequest) returns (ConnectProviderResponse);
+  rpc GetProviderConnectSession(GetProviderConnectSessionRequest) returns (GetProviderConnectSessionResponse);
+  rpc ProbeProviderObservability(ProbeProviderObservabilityRequest) returns (ProbeProviderObservabilityResponse);
+  rpc WatchProviderStatusEvents(WatchProviderStatusEventsRequest) returns (stream WatchProviderStatusEventsResponse);
+  rpc ListVendors(ListVendorsRequest) returns (ListVendorsResponse);
+  rpc ListCLIDefinitions(ListCLIDefinitionsRequest) returns (ListCLIDefinitionsResponse);
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse);
+  rpc ApplyTemplate(ApplyTemplateRequest) returns (ApplyTemplateResponse);
+  rpc BindProviderCatalogs(BindProviderCatalogsRequest) returns (BindProviderCatalogsResponse);
+}
+
+message ListProviderSurfacesRequest {}
+
+message ListProviderSurfacesResponse {
+  repeated .provider.v1.ProviderSurface items = 1;
+}
+
+message ListProvidersRequest {}
+
+message ListProvidersResponse {
+  repeated ProviderView items = 1;
+}
+
+message ProviderView {
+  string provider_id = 1;
+  string display_name = 2;
+  string vendor_id = 3;
+  string provider_credential_id = 4;
+  repeated ProviderSurfaceBindingView surfaces = 5;
+  string icon_url = 6;
+  repeated CredentialSubjectSummaryFieldView credential_subject_summary = 7;
+  reserved 9;
+  reserved "default_model_id";
+  .provider.v1.ProviderModelCatalog model_catalog = 10;
+}
+
+message CredentialSubjectSummaryFieldView {
+  string field_id = 1;
+  string label = 2;
+  string value = 3;
+}
+
+message ListProviderSurfaceBindingsRequest {}
+
+message ListProviderSurfaceBindingsResponse {
+  repeated ProviderSurfaceBindingView items = 1;
+}
+
+enum ProviderSurfaceBindingPhase {
+  PROVIDER_SURFACE_BINDING_PHASE_UNSPECIFIED = 0;
+  PROVIDER_SURFACE_BINDING_PHASE_READY = 1;
+  PROVIDER_SURFACE_BINDING_PHASE_INVALID_CONFIG = 2;
+  PROVIDER_SURFACE_BINDING_PHASE_REFRESHING = 3;
+  PROVIDER_SURFACE_BINDING_PHASE_STALE = 4;
+  PROVIDER_SURFACE_BINDING_PHASE_ERROR = 5;
+}
+
+message ProviderSurfaceBindingStatus {
+  ProviderSurfaceBindingPhase phase = 1;
+  string reason = 2;
+}
+
+message ProviderSurfaceBindingView {
+  string display_name = 1;
+  string surface_id = 2;
+  reserved 6;
+  reserved "default_model_id";
+  string provider_credential_id = 13;
+  .provider.v1.ProviderSurfaceRuntime runtime = 14;
+  ProviderSurfaceBindingStatus status = 15;
+  string vendor_id = 16;
+  string provider_id = 17;
+  string provider_display_name = 18;
+}
+
+message UpsertProviderSurfaceBindingRequest {
+  string display_name = 1;
+  string surface_id = 2;
+  reserved 6;
+  reserved "default_model_id";
+  string provider_credential_id = 13;
+  .provider.v1.ProviderSurfaceRuntime runtime = 14;
+  string provider_id = 16;
+}
+
+message UpdateProviderRequest {
+  string provider_id = 1;
+  string display_name = 2;
+}
+
+message UpdateProviderResponse {
+  ProviderView provider = 1;
+}
+
+message ApiKeyAuthenticationUpdateMaterial {
+  string api_key = 1;
+}
+
+message CLIOAuthAuthenticationUpdateMaterial {}
+
+message UpdateProviderAuthenticationRequest {
+  string provider_id = 1;
+
+  oneof auth_material {
+    ApiKeyAuthenticationUpdateMaterial api_key = 2;
+    CLIOAuthAuthenticationUpdateMaterial cli_oauth = 3;
+  }
+}
+
+message UpdateProviderAuthenticationResponse {
+  oneof outcome {
+    ProviderView provider = 1;
+    ProviderConnectSessionView session = 2;
+  }
+}
+
+message SessionMaterial {
+  string schema_id = 1;
+  map<string, string> values = 2;
+  repeated string required_keys = 3;
+}
+
+message UpdateProviderObservabilityAuthenticationRequest {
+  string provider_id = 1;
+  SessionMaterial session_material = 2;
+}
+
+message UpdateProviderObservabilityAuthenticationResponse {
+  ProviderView provider = 1;
+}
+
+message DeleteProviderRequest {
+  string provider_id = 1;
+}
+
+message DeleteProviderResponse {
+  string status = 1;
+}
+
+message CreateProviderSurfaceBindingRequest {
+  UpsertProviderSurfaceBindingRequest surface = 1;
+}
+
+message CreateProviderSurfaceBindingResponse {
+  ProviderSurfaceBindingView surface = 1;
+}
+
+message UpdateProviderSurfaceBindingRequest {
+  string surface_id = 1;
+  UpsertProviderSurfaceBindingRequest surface = 2;
+}
+
+message UpdateProviderSurfaceBindingResponse {
+  ProviderSurfaceBindingView surface = 1;
+}
+
+message DeleteProviderSurfaceBindingRequest {
+  string surface_id = 1;
+}
+
+message DeleteProviderSurfaceBindingResponse {
+  string status = 1;
+}
+
+enum ProviderConnectSessionPhase {
+  PROVIDER_CONNECT_SESSION_PHASE_UNSPECIFIED = 0;
+  PROVIDER_CONNECT_SESSION_PHASE_PENDING = 1;
+  PROVIDER_CONNECT_SESSION_PHASE_AWAITING_USER = 2;
+  PROVIDER_CONNECT_SESSION_PHASE_PROCESSING = 3;
+  PROVIDER_CONNECT_SESSION_PHASE_SUCCEEDED = 4;
+  PROVIDER_CONNECT_SESSION_PHASE_FAILED = 5;
+  PROVIDER_CONNECT_SESSION_PHASE_EXPIRED = 6;
+  PROVIDER_CONNECT_SESSION_PHASE_CANCELED = 7;
+}
+
+enum ProviderAddMethod {
+  PROVIDER_ADD_METHOD_UNSPECIFIED = 0;
+  PROVIDER_ADD_METHOD_API_KEY = 1;
+  PROVIDER_ADD_METHOD_CLI_OAUTH = 2;
+}
+
+message ApiKeyConnectMaterial {
+  string api_key = 1;
+  string base_url = 2;
+  api_protocol.v1.Protocol protocol = 3;
+  repeated ProviderSurfaceModelCatalog surface_model_catalogs = 4;
+}
+
+message CLIOAuthConnectMaterial {}
+
+message ProviderSurfaceModelCatalog {
+  string surface_id = 1;
+  repeated .provider.v1.ProviderModelCatalogEntry models = 2;
+}
+
+message ConnectProviderRequest {
+  string vendor_id = 8;
+  string cli_id = 9;
+  string display_name = 3;
+  ProviderAddMethod add_method = 7;
+
+  oneof auth_material {
+    ApiKeyConnectMaterial api_key = 5;
+    CLIOAuthConnectMaterial cli_oauth = 6;
+  }
+}
+
+message ProviderConnectSessionView {
+  string session_id = 1;
+  string oauth_session_id = 2;
+  ProviderConnectSessionPhase phase = 3;
+  string display_name = 4;
+  string authorization_url = 5;
+  string user_code = 6;
+  string message = 7;
+  string error_message = 8;
+  ProviderView provider = 9;
+  ProviderAddMethod add_method = 10;
+  string vendor_id = 11;
+  string cli_id = 12;
+}
+
+message ConnectProviderResponse {
+  oneof outcome {
+    ProviderView provider = 1;
+    ProviderConnectSessionView session = 2;
+  }
+}
+
+message GetProviderConnectSessionRequest {
+  string session_id = 1;
+}
+
+message GetProviderConnectSessionResponse {
+  ProviderConnectSessionView session = 1;
+}
+
+enum ProviderOAuthObservabilityProbeOutcome {
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_UNSPECIFIED = 0;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_EXECUTED = 1;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_THROTTLED = 2;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_AUTH_BLOCKED = 3;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_UNSUPPORTED = 4;
+  PROVIDER_O_AUTH_OBSERVABILITY_PROBE_OUTCOME_FAILED = 5;
+}
+
+enum ProviderObservabilityProbeTrigger {
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_UNSPECIFIED = 0;
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_MANUAL = 1;
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_CONNECT = 2;
+  PROVIDER_OBSERVABILITY_PROBE_TRIGGER_SCHEDULE = 3;
+}
+
+message ProbeProviderObservabilityRequest {
+  string provider_id = 1;
+  ProviderObservabilityProbeTrigger trigger = 2;
+  repeated string provider_ids = 3;
+}
+
+message ProbeProviderObservabilityResponse {
+  string provider_id = 1;
+  string cli_id = 2;
+  ProviderOAuthObservabilityProbeOutcome outcome = 3;
+  string message = 4;
+  string next_allowed_at = 5;
+  string last_attempt_at = 6;
+  repeated string provider_ids = 7;
+  string workflow_id = 8;
+}
+
+message WatchProviderStatusEventsRequest {
+  repeated string provider_ids = 1;
+}
+
+message WatchProviderStatusEventsResponse {
+  ProviderStatusEvent event = 1;
+}
+
+enum ProviderStatusEventKind {
+  PROVIDER_STATUS_EVENT_KIND_UNSPECIFIED = 0;
+  PROVIDER_STATUS_EVENT_KIND_WORKFLOW = 1;
+  PROVIDER_STATUS_EVENT_KIND_SURFACE_BINDING_STATUS = 2;
+}
+
+enum ProviderWorkflowPhase {
+  PROVIDER_WORKFLOW_PHASE_UNSPECIFIED = 0;
+  PROVIDER_WORKFLOW_PHASE_PENDING = 1;
+  PROVIDER_WORKFLOW_PHASE_RUNNING = 2;
+  PROVIDER_WORKFLOW_PHASE_SUCCEEDED = 3;
+  PROVIDER_WORKFLOW_PHASE_FAILED = 4;
+  PROVIDER_WORKFLOW_PHASE_ERROR = 5;
+  PROVIDER_WORKFLOW_PHASE_CANCELED = 6;
+}
+
+message ProviderWorkflowStatus {
+  string workflow_id = 1;
+  string workflow_kind = 2;
+  ProviderWorkflowPhase phase = 3;
+  string message = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp finished_at = 6;
+}
+
+message ProviderStatusEvent {
+  string provider_id = 1;
+  string surface_id = 2;
+  ProviderStatusEventKind kind = 3;
+  ProviderWorkflowStatus workflow = 4;
+  ProviderSurfaceBindingStatus surface_binding_status = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+}
+
+message ListVendorsRequest {}
+
+message ListVendorsResponse {
+  repeated VendorView items = 1;
+}
+
+message VendorView {
+  string vendor_id = 1;
+  string display_name = 2;
+  string default_base_url = 3;
+  string protocol = 4;
+  string icon_url = 5;
+  repeated string aliases = 7;
+}
+
+message ListCLIDefinitionsRequest {}
+
+message ListCLIDefinitionsResponse {
+  repeated CLIDefinitionView items = 1;
+}
+
+message CLIDefinitionView {
+  string cli_id = 1;
+  string display_name = 2;
+  string icon_url = 3;
+  string website_url = 4;
+  repeated CLIContainerImageView container_images = 5;
+  string description = 6;
+  CLIDefinitionCapabilityView capabilities = 7;
+}
+
+message CLIContainerImageView {
+  string execution_class = 1;
+  string image = 2;
+  string cpu_request = 3;
+  string memory_request = 4;
+}
+
+message CLIDefinitionCapabilityView {
+  bool supports_streaming = 1;
+  bool supports_approval_mode = 2;
+  repeated string supported_protocols = 3;
+}
+
+message ListTemplatesRequest {}
+
+message ListTemplatesResponse {
+  repeated TemplateView items = 1;
+}
+
+message TemplateView {
+  string template_id = 1;
+  string display_name = 2;
+  string vendor = 3;
+  string protocol = 4;
+  string default_base_url = 5;
+  reserved 6;
+  reserved "default_model_id";
+  repeated string default_models = 7;
+  bool requires_credential = 8;
+}
+
+message ApplyTemplateRequest {
+  string template_id = 1;
+  string namespace = 2;
+  string display_name = 3;
+  string provider_id = 4;
+  reserved 6;
+  reserved "default_model_id";
+  repeated string allowed_model_ids = 7;
+  string provider_credential_id = 10;
+}
+
+message ApplyTemplateResult {
+  string template_id = 1;
+  string namespace = 2;
+  string display_name = 3;
+  string provider_id = 4;
+  repeated string applied_kinds = 5;
+  reserved 6;
+  reserved "default_model_id";
+}
+
+message ApplyTemplateResponse {
+  ApplyTemplateResult result = 1;
+}
+
+message BindProviderCatalogsRequest {}
+
+message BindProviderCatalogsResponse {
+  string status = 1;
+}

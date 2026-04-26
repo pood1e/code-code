@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package provider.v1;
+
+import "credential/v1/credential.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "api_protocol/v1/protocol.proto";
+import "model/v1/model.proto";
+
+option go_package = "code-code.internal/go-contract/provider/v1;providerv1";
+
+// ProviderSurface describes one stable provider integration surface.
+message ProviderSurface {
+  string surface_id = 1;
+  string display_name = 2;
+  repeated credential.v1.CredentialKind supported_credential_kinds = 3;
+  reserved 4;
+  reserved "supported_protocols";
+  ProviderCapabilities capabilities = 5;
+  ProviderSurfaceKind kind = 6;
+  reserved 7;
+  reserved "meta";
+  ProviderSurfaceAPISpec api = 8;
+  ProviderSurfaceProbes probes = 9;
+}
+
+message ProviderSurfaceAPISpec {
+  repeated api_protocol.v1.Protocol supported_protocols = 1;
+}
+
+message ProviderSurfaceProbes {
+  ProviderSurfaceModelCatalogProbe model_catalog = 1;
+  ProviderSurfaceQuotaProbe quota = 2;
+}
+
+message ProviderSurfaceModelCatalogProbe {
+  ProviderSurfaceModelCatalogProbeMethod method = 1;
+}
+
+enum ProviderSurfaceModelCatalogProbeMethod {
+  PROVIDER_SURFACE_MODEL_CATALOG_PROBE_METHOD_UNSPECIFIED = 0;
+  PROVIDER_SURFACE_MODEL_CATALOG_PROBE_METHOD_PROTOCOL_BEST_EFFORT = 1;
+  PROVIDER_SURFACE_MODEL_CATALOG_PROBE_METHOD_STATIC = 2;
+  PROVIDER_SURFACE_MODEL_CATALOG_PROBE_METHOD_ADAPTER = 3;
+}
+
+message ProviderSurfaceQuotaProbe {
+  string schema_id = 1;
+  repeated ProviderSurfaceProbeArg args = 2;
+  string display_name = 3;
+  string description = 4;
+}
+
+message ProviderSurfaceProbeArg {
+  string arg_id = 1;
+  string display_name = 2;
+  string description = 3;
+  bool required = 4;
+  bool sensitive = 5;
+  bool multiline = 6;
+  string placeholder = 7;
+}
+
+// ProviderSurfaceKind identifies the semantic kind of one provider surface.
+enum ProviderSurfaceKind {
+  PROVIDER_SURFACE_KIND_UNSPECIFIED = 0;
+  PROVIDER_SURFACE_KIND_API = 1;
+  PROVIDER_SURFACE_KIND_CLI = 2;
+  PROVIDER_SURFACE_KIND_WEB = 3;
+}
+
+// Provider describes one user-configured provider aggregate.
+message Provider {
+  string provider_id = 1;
+  string display_name = 2;
+  reserved 4;
+  reserved "vendor_id";
+  reserved 5, 6, 8;
+  reserved "provider_credential_id", "default_model_id", "model_catalog";
+  repeated ProviderSurfaceBinding surfaces = 7;
+}
+
+// ProviderCapabilities describes which capabilities one provider exposes natively.
+message ProviderCapabilities {
+  bool supports_model_override = 1;
+  reserved 2;
+  reserved "supports_available_model_discovery";
+  bool supports_model_catalog_probe = 3;
+  bool supports_quota_probe = 4;
+}
+
+// ProviderSurfaceBinding describes one configured provider surface.
+message ProviderSurfaceBinding {
+  string surface_id = 1;
+  reserved 3;
+  reserved "credential_ref";
+
+  reserved 4;
+  reserved "network_policy_ref";
+  reserved 5, 6;
+  reserved "protocol", "base_url";
+  reserved 7, 8;
+  reserved "fallback_models", "allowed_model_ids";
+  reserved 9;
+  reserved "default_model_id";
+  reserved 10;
+  reserved "selection_priority";
+
+  reserved 11;
+  reserved "vendor_account_ref";
+
+  ProviderCredentialRef provider_credential_ref = 12;
+
+  // Concrete callable runtime bound to this surface.
+  ProviderSurfaceRuntime runtime = 13;
+
+  reserved 14, 15, 16;
+  reserved "vendor_id", "provider_id", "provider_display_name";
+
+  ProviderSurfaceSourceRef source_ref = 17;
+}
+
+// ProviderSurfaceSourceRef identifies the package/source that owns surface
+// metadata and model catalog capability.
+message ProviderSurfaceSourceRef {
+  ProviderSurfaceSourceKind kind = 1;
+  // Package owner id, for example vendor_id or cli_id.
+  string id = 2;
+  // Package-local surface id.
+  string surface_id = 3;
+}
+
+enum ProviderSurfaceSourceKind {
+  PROVIDER_SURFACE_SOURCE_KIND_UNSPECIFIED = 0;
+  PROVIDER_SURFACE_SOURCE_KIND_VENDOR = 1;
+  PROVIDER_SURFACE_SOURCE_KIND_CLI = 2;
+}
+
+// ProviderCredentialRef references a provider credential by stable identity.
+message ProviderCredentialRef {
+  string provider_credential_id = 1;
+}
+
+// ProviderRuntimeRef references one callable surface inside one provider.
+message ProviderRuntimeRef {
+  string provider_id = 1;
+  string surface_id = 2;
+  oneof access {
+    ProviderRuntimeAPIRef api = 3;
+    ProviderRuntimeCLIRef cli = 4;
+  }
+}
+
+message ProviderRuntimeAPIRef {
+  api_protocol.v1.Protocol protocol = 1;
+}
+
+message ProviderRuntimeCLIRef {}
+
+message ProviderRunBinding {
+  string provider_id = 1;
+  credential.v1.CredentialGrantRef credential_grant_ref = 2;
+  string runtime_url = 3;
+  string materialization_key = 4;
+  string runtime_cli_id = 5;
+  string provider_model_id = 6;
+  string canonical_model_id = 7;
+  string source_model_id = 8;
+
+  oneof access {
+    ProviderRunAPIAccess api = 9;
+    ProviderRunCLIAccess cli = 10;
+  }
+}
+
+message ProviderRunAPIAccess {
+  api_protocol.v1.Protocol protocol = 1;
+}
+
+message ProviderRunCLIAccess {}
+
+// ProviderSurfaceRuntime describes how one configured provider surface is used.
+message ProviderSurfaceRuntime {
+  string display_name = 1;
+  ProviderSurfaceOrigin origin = 2;
+  reserved 3;
+  reserved "supports_dynamic_model_discovery";
+  ProviderModelCatalog catalog = 4;
+  oneof access {
+    ProviderAPISurfaceRuntime api = 5;
+    ProviderCLISurfaceRuntime cli = 6;
+  }
+  string model_catalog_probe_id = 10;
+  string quota_probe_id = 11;
+  string egress_ruleset_id = 12;
+  string mitm_id = 13;
+}
+
+message ProviderAPISurfaceRuntime {
+  api_protocol.v1.Protocol protocol = 1;
+  string base_url = 2;
+}
+
+message ProviderCLISurfaceRuntime {
+  string cli_id = 1;
+}
+
+// ProviderModelCatalogEntry describes one provider-local model entry plus one
+// optional canonical model binding.
+message ProviderModelCatalogEntry {
+  string provider_model_id = 1;
+  model.v1.ModelRef model_ref = 2;
+}
+
+// ProviderModelCatalog describes provider-callable model entries.
+message ProviderModelCatalog {
+  repeated ProviderModelCatalogEntry models = 1;
+  CatalogSource source = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  google.protobuf.Duration refresh_after = 4;
+}
+
+// ResolvedProviderSurface describes one final callable surface plus the
+// resolved auth material required to invoke it directly.
+message ResolvedProviderSurface {
+  ProviderSurfaceRuntime surface = 1;
+  credential.v1.ResolvedCredential auth = 2;
+}
+
+// ProviderSurfaceOrigin identifies whether a surface is derived from
+// platform metadata or defined manually by the user.
+enum ProviderSurfaceOrigin {
+  PROVIDER_SURFACE_ORIGIN_UNSPECIFIED = 0;
+  PROVIDER_SURFACE_ORIGIN_DERIVED = 1;
+  PROVIDER_SURFACE_ORIGIN_MANUAL = 2;
+}
+
+// CatalogSource identifies where one model catalog comes from.
+enum CatalogSource {
+  CATALOG_SOURCE_UNSPECIFIED = 0;
+  CATALOG_SOURCE_MODEL_SERVICE = 1;
+  CATALOG_SOURCE_PROTOCOL_QUERY = 2;
+  CATALOG_SOURCE_FALLBACK_CONFIG = 3;
+  CATALOG_SOURCE_VENDOR_PRESET = 4;
+}
+
+// ResolvedProviderModel describes the final provider-routed model entry used
+// for one call.
+message ResolvedProviderModel {
+  string surface_id = 1;
+  string provider_model_id = 3;
+  api_protocol.v1.Protocol protocol = 4;
+  string base_url = 5;
+  model.v1.ResolvedModel model = 6;
+  reserved 7;
+  reserved "provider_metadata";
+  CatalogSource source = 8;
+  ResolvedProviderSurface surface = 9;
+}

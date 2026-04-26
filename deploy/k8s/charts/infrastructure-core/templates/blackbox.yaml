@@ -1,0 +1,115 @@
+{{- if and .Values.prometheus.enabled .Values.blackbox.enabled .Values.healthChecks.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-exporter-config
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "blackbox-exporter" "componentLabel" "metrics") | nindent 4 }}
+data:
+  config.yml: |-
+    modules:
+      {{ .Values.blackbox.module }}:
+        prober: http
+        timeout: 5s
+        http:
+          method: GET
+          preferred_ip_protocol: ip4
+          valid_status_codes: []
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackbox-exporter
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "blackbox-exporter" "componentLabel" "metrics") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "blackbox-exporter") | nindent 4 }}
+  ports:
+    - name: metrics
+      port: 9115
+      targetPort: metrics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "blackbox-exporter" "componentLabel" "metrics") | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "blackbox-exporter") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "blackbox-exporter" "componentLabel" "metrics") | nindent 8 }}
+{{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: blackbox-exporter
+          image: {{ .Values.blackbox.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config.file=/etc/blackbox-exporter/config.yml
+            - --web.listen-address=:9115
+          ports:
+            - name: metrics
+              containerPort: 9115
+          volumeMounts:
+            - name: config
+              mountPath: /etc/blackbox-exporter
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            timeoutSeconds: 5
+            failureThreshold: 12
+          startupProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            timeoutSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+              ephemeral-storage: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+              ephemeral-storage: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: blackbox-exporter-config
+{{- end }}

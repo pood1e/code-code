@@ -1,0 +1,36 @@
+global:
+  resolve_timeout: 5m
+  wechat_api_url: https://qyapi.weixin.qq.com/cgi-bin/
+  wechat_api_secret_file: /etc/alertmanager-secrets/wechat-api-secret
+  wechat_api_corp_id: {{ .Values.alertmanager.wechat.corpId | quote }}
+templates:
+  - /etc/alertmanager/templates/*.tmpl
+route:
+  receiver: platform-wechat
+  group_by: ["alertname", "severity", "component"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - receiver: quiet
+      matchers:
+        - severity = "info"
+      continue: false
+    - receiver: platform-wechat
+      matchers:
+        - severity =~ "warning|critical"
+inhibit_rules:
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ["alertname", "component"]
+receivers:
+  - name: quiet
+  - name: platform-wechat
+    wechat_configs:
+      - send_resolved: true
+        message_type: markdown
+        agent_id: {{ .Values.alertmanager.wechat.agentId | quote }}
+        to_party: {{ .Values.alertmanager.wechat.partyId | quote }}
+        message: '{{ "{{" }} template "codecode.wechat.message" . {{ "}}" }}'

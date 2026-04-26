@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package agent.cap.v1;
+
+option go_package = "code-code.internal/go-contract/agent/cap/v1;capv1";
+
+// Capabilities describes platform features supported by an agent provider.
+message Capabilities {
+  bool resume = 1;
+  bool tools = 2;
+  bool instructions = 3;
+  bool resume_after_instruction_change = 4;
+  bool resume_after_tool_change = 5;
+  bool headless_compaction = 6;
+}
+
+// AgentResources is the agent resource snapshot applied before a run starts.
+message AgentResources {
+  string snapshot_id = 1;
+  repeated InstructionResource instructions = 2;
+  repeated ToolBinding tool_bindings = 3;
+}
+
+// InstructionResource provides instruction material to an agent provider.
+message InstructionResource {
+  InstructionKind kind = 1;
+  string name = 2;
+  string content = 3;
+}
+
+// InstructionKind identifies an instruction resource type.
+enum InstructionKind {
+  INSTRUCTION_KIND_UNSPECIFIED = 0;
+  INSTRUCTION_KIND_RULE = 1;
+  INSTRUCTION_KIND_SKILL = 2;
+}
+
+// ToolBinding binds a platform tool to an agent provider.
+message ToolBinding {
+  string name = 1;
+  ToolKind kind = 2;
+  string target = 3;
+}
+
+// ToolKind identifies a tool integration type.
+enum ToolKind {
+  TOOL_KIND_UNSPECIFIED = 0;
+  TOOL_KIND_MCP = 1;
+}
