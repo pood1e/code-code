@@ -1,0 +1,146 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+storage:
+  tsdb:
+    out_of_order_time_window: 30m
+otlp:
+  translation_strategy: UnderscoreEscapingWithoutSuffixes
+  keep_identifying_resource_attributes: true
+  promote_resource_attributes:
+    - service.instance.id
+    - service.name
+    - service.namespace
+    - service.version
+    - deployment.environment
+    - deployment.environment.name
+    - k8s.cluster.name
+    - k8s.container.name
+    - k8s.cronjob.name
+    - k8s.daemonset.name
+    - k8s.deployment.name
+    - k8s.job.name
+    - k8s.namespace.name
+    - k8s.pod.name
+    - k8s.replicaset.name
+    - k8s.statefulset.name
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:9093
+scrape_configs:
+  - job_name: kubernetes-pods
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - action: keep
+        regex: true
+        source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+      - action: drop
+        regex: true
+        source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_scrape_slow
+      - action: replace
+        regex: (https?)
+        source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_scheme
+        target_label: __scheme__
+      - action: replace
+        regex: (.+)
+        source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_path
+        target_label: __metrics_path__
+      - action: replace
+        regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+        replacement: '[$2]:$1'
+        source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_port
+          - __meta_kubernetes_pod_ip
+        target_label: __address__
+      - action: replace
+        regex: (\d+);((([0-9]+?)(\.|$)){4})
+        replacement: $2:$1
+        source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_port
+          - __meta_kubernetes_pod_ip
+        target_label: __address__
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_pod_name
+        target_label: pod
+      - action: drop
+        regex: Pending|Succeeded|Failed|Completed
+        source_labels:
+          - __meta_kubernetes_pod_phase
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_pod_node_name
+        target_label: node
+  - job_name: kubernetes-nodes-cadvisor
+    scheme: https
+    metrics_path: /metrics/cadvisor
+    authorization:
+      type: Bearer
+      credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    tls_config:
+      insecure_skip_verify: true
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_node_address_InternalIP
+        target_label: __address__
+        replacement: ${1}:10250
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_node_name
+        target_label: node
+{{- if and .Values.blackbox.enabled .Values.healthChecks.enabled }}
+  - job_name: platform-health
+    metrics_path: /probe
+    params:
+      module:
+        - {{ .Values.blackbox.module | quote }}
+    static_configs:
+      - targets:
+          - http://console-web.{{ .Values.global.platformNamespace }}.svc.cluster.local:8080/healthz
+        labels:
+          check: console-web-service
+      - targets:
+          - http://console-api.{{ .Values.global.platformNamespace }}.svc.cluster.local:8080/api/readyz
+        labels:
+          check: console-api-service
+      - targets:
+          - http://grafana.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:3000/api/health
+        labels:
+          check: grafana-service
+      - targets:
+          - http://kiali.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:20001/healthz
+        labels:
+          check: kiali-service
+{{- range .Values.healthChecks.additionalTargets }}
+      - targets:
+          - {{ .url | quote }}
+        labels:
+          check: {{ .name | quote }}
+{{- end }}
+    relabel_configs:
+      - source_labels:
+          - __address__
+        target_label: __param_target
+      - source_labels:
+          - __param_target
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:9115
+{{- end }}
+rule_files:
+  - /etc/prometheus-rules/*.yaml

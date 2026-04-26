@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: console
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - console.placeholder.invalid
+      secretName: console-tls-placeholder
+  rules:
+    - host: console.placeholder.invalid
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: console-api
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: console-web
+                port:
+                  number: 8080

@@ -1,0 +1,56 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:9090
+    isDefault: true
+{{- if .Values.loki.enabled }}
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:3100
+    jsonData:
+      maxLines: 1000
+      {{- if .Values.tempo.enabled }}
+      derivedFields:
+        - name: TraceID
+          matcherRegex: "(?:trace_id|traceid|traceID)[\"=: ]+\"?([A-Fa-f0-9]{32})"
+          datasourceUid: tempo
+          url: "$${__value.raw}"
+          urlDisplayLabel: View Trace
+      {{- end }}
+{{- end }}
+{{- if .Values.tempo.enabled }}
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:3200
+    jsonData:
+      serviceMap:
+        datasourceUid: prometheus
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        tags:
+          - key: service.name
+            value: service
+      {{- if .Values.loki.enabled }}
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        tags:
+          - key: k8s.namespace.name
+            value: namespace
+          - key: k8s.pod.name
+            value: pod
+        filterByTraceID: false
+        filterBySpanID: false
+        customQuery: false
+      {{- end }}
+{{- end }}

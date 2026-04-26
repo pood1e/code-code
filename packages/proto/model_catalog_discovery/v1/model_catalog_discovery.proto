@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package model_catalog_discovery.v1;
+
+option go_package = "code-code.internal/go-contract/model_catalog_discovery/v1;modelcatalogdiscoveryv1";
+
+// ModelCatalogDiscoveryOperation describes one HTTP model catalog discovery operation.
+message ModelCatalogDiscoveryOperation {
+  string path = 1;
+  repeated DiscoveryParameter query_parameters = 2;
+  ModelCatalogDiscoveryResponseKind response_kind = 3;
+  string base_url = 4;
+  repeated DiscoveryParameter request_headers = 5;
+  repeated DiscoveryParameter json_body_fields = 6;
+  DiscoveryHTTPMethod method = 7;
+  repeated ModelCatalogDiscoverySecurityRequirement security = 8;
+}
+
+message ModelCatalogDiscoverySecurityRequirement {
+  repeated ModelCatalogDiscoverySecurityScheme schemes = 1;
+}
+
+enum ModelCatalogDiscoverySecurityScheme {
+  MODEL_CATALOG_DISCOVERY_SECURITY_SCHEME_UNSPECIFIED = 0;
+  MODEL_CATALOG_DISCOVERY_SECURITY_SCHEME_ANONYMOUS = 1;
+  MODEL_CATALOG_DISCOVERY_SECURITY_SCHEME_API_KEY = 2;
+  MODEL_CATALOG_DISCOVERY_SECURITY_SCHEME_OAUTH = 3;
+  MODEL_CATALOG_DISCOVERY_SECURITY_SCHEME_SESSION = 4;
+}
+
+message DiscoveryParameter {
+  string name = 1;
+
+  oneof value {
+    string literal = 2;
+    DiscoveryDynamicValue dynamic_value = 3;
+  }
+}
+
+enum DiscoveryDynamicValue {
+  DISCOVERY_DYNAMIC_VALUE_UNSPECIFIED = 0;
+  DISCOVERY_DYNAMIC_VALUE_CLIENT_VERSION = 1;
+  DISCOVERY_DYNAMIC_VALUE_PROJECT_ID = 2;
+}
+
+enum DiscoveryHTTPMethod {
+  DISCOVERY_HTTP_METHOD_UNSPECIFIED = 0;
+  DISCOVERY_HTTP_METHOD_GET = 1;
+  DISCOVERY_HTTP_METHOD_POST = 2;
+}
+
+enum ModelCatalogDiscoveryResponseKind {
+  MODEL_CATALOG_DISCOVERY_RESPONSE_KIND_UNSPECIFIED = 0;
+  MODEL_CATALOG_DISCOVERY_RESPONSE_KIND_OPENAI_MODELS = 1;
+  MODEL_CATALOG_DISCOVERY_RESPONSE_KIND_CODEX_MODELS = 2;
+  MODEL_CATALOG_DISCOVERY_RESPONSE_KIND_GEMINI_QUOTA_BUCKETS = 3;
+  MODEL_CATALOG_DISCOVERY_RESPONSE_KIND_ANTIGRAVITY_MODELS_MAP = 4;
+  MODEL_CATALOG_DISCOVERY_RESPONSE_KIND_GEMINI_MODELS = 5;
+}

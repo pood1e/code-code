@@ -1,0 +1,58 @@
+{
+  "name": "@code-code/agent-contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "exports": {
+    "./agent/v1": "./dist/agent/v1/index.js",
+    "./agent/v1/core": "./dist/gen/agent/core/v1/agent_pb.js",
+    "./agent/v1/cap": "./dist/gen/agent/cap/v1/cap_pb.js",
+    "./agent/v1/policy": "./dist/gen/agent/policy/v1/policy_pb.js",
+    "./credential/v1": "./dist/credential/v1/index.js",
+    "./api-protocol/v1": "./dist/gen/api_protocol/v1/protocol_pb.js",
+    "./model/v1": "./dist/gen/model/v1/model_pb.js",
+    "./provider/v1": "./dist/gen/provider/v1/provider_pb.js",
+    "./observability/v1": "./dist/gen/observability/v1/observability_pb.js",
+    "./vendor-definition/v1": "./dist/gen/vendor_definition/v1/vendor_pb.js",
+    "./egress/v1": "./dist/gen/egress/v1/policy_pb.js",
+    "./platform/agent-session-action/v1": "./dist/gen/platform/agent_session_action/v1/agent_session_action_pb.js",
+    "./platform/agent-session/v1": "./dist/gen/platform/agent_session/v1/agent_session_pb.js",
+    "./platform/agent-run/v1": "./dist/gen/platform/agent_run/v1/agent_run_pb.js",
+    "./platform/agent-provider-binding/v1": "./dist/gen/platform/agent_provider_binding/v1/agent_provider_binding_pb.js",
+    "./platform/agent-profile/v1": "./dist/gen/platform/agent_profile/v1/agent_profile_pb.js",
+    "./platform/mcp/v1": "./dist/gen/platform/mcp/v1/mcp_pb.js",
+    "./platform/auth/v1": "./dist/gen/platform/auth/v1/auth_pb.js",
+    "./platform/chat/v1": "./dist/gen/platform/chat/v1/chat_service_pb.js",
+    "./platform/model/v1": "./dist/gen/platform/model/v1/model_service_pb.js",
+    "./platform/oauth/v1": "./dist/gen/platform/oauth/v1/oauth_pb.js",
+    "./platform/skill/v1": "./dist/gen/platform/skill/v1/skill_pb.js",
+    "./platform/rule/v1": "./dist/gen/platform/rule/v1/rule_pb.js",
+    "./platform/provider/v1": "./dist/gen/platform/provider/v1/provider_service_pb.js",
+    "./platform/support/v1": "./dist/gen/platform/support/v1/support_service_pb.js",
+    "./platform/management/v1": "./dist/gen/platform/management/v1/management_pb.js",
+    "./platform/workload-profile/v1": "./dist/gen/platform/workload_profile/v1/workload_profile_pb.js",
+    "./agent/v1/input": "./dist/gen/agent/input/v1/input_pb.js",
+    "./agent/v1/output": "./dist/gen/agent/output/v1/output_pb.js",
+    "./agent/v1/result": "./dist/gen/agent/result/v1/result_pb.js",
+    "./agent/v1/runtime-sidecar": "./dist/gen/agent/runtime_sidecar/v1/runtime_sidecar_pb.js",
+    "./platform/run-event/v1": "./dist/gen/platform/run_event/v1/run_event_pb.js"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.11.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.2"
+  }
+}

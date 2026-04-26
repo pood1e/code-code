@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package provider_card.v1;
+
+option go_package = "code-code.internal/go-contract/provider_card/v1;providercardv1";
+
+// ProviderCardCapability marks that one support surface owns a custom
+// provider-account card implementation.
+message ProviderCardCapability {
+  bool enabled = 1;
+}

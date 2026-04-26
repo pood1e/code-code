@@ -1,0 +1,70 @@
+global:
+  partOf: code-code
+  platformNamespace: code-code
+  infraNamespace: code-code-infra
+  observabilityNamespace: code-code-observability
+  observabilityAmbientPodOptOut: false
+  networkNamespace: code-code-net
+  runNamespace: code-code-runs
+  grafanaAdminSecretName: grafana-admin
+
+tempo:
+  enabled: false
+  image: grafana/tempo:2.10.4
+  dataSize: 2Gi
+
+loki:
+  enabled: false
+  image: grafana/loki:3.7.1
+  dataSize: 10Gi
+  storageClassName: ""
+  retentionPeriod: 168h
+
+alloy:
+  enabled: false
+  image: grafana/alloy:v1.15.1
+  clusterName: code-code-local
+  lokiWriteUrl: ""
+  collectClusterEvents: true
+
+grafana:
+  enabled: false
+  image: grafana/grafana:13.0.1
+  nodePort: 32030
+  rootUrl: /
+  anonymousOrgRole: Viewer
+  viewersCanEdit: false
+  exploreEnabled: true
+  ingress:
+    enabled: false
+    className: nginx
+    host: grafana.placeholder.invalid
+    path: /
+    tlsEnabled: true
+    tlsSecretName: grafana-tls-placeholder
+
+cloudflareDdns:
+  enabled: false
+  image: favonia/cloudflare-ddns:1.16.2
+  configMapName: cloudflare-ddns-config
+  secretName: cloudflare-ddns-token
+  domains: webhook.example.com
+  proxied: "true"
+  ip4Provider: cloudflare.trace
+  ip6Provider: none
+  updateCron: "@every 5m"
+  updateOnStart: "true"
+
+kiali:
+  enabled: false
+  name: kiali
+  nodePort: 32031
+  servicePort: 20001
+  webRoot: /
+  ingress:
+    enabled: false
+    className: nginx
+    host: kiali.placeholder.invalid
+    path: /
+    tlsEnabled: true
+    tlsSecretName: kiali-tls-placeholder

@@ -1,0 +1,71 @@
+policies:
+  - policyId: protocol.openai-compatible
+    rules:
+      - headerName: x-ratelimit-limit-requests
+        metricName: gen_ai.provider.runtime.rate_limit.limit
+        valueType: int64
+        labels:
+          - name: quota
+            value: requests
+      - headerName: x-ratelimit-remaining-requests
+        metricName: gen_ai.provider.runtime.rate_limit.remaining
+        valueType: int64
+        labels:
+          - name: quota
+            value: requests
+      - headerName: retry-after
+        metricName: gen_ai.provider.runtime.retry_after.seconds
+        valueType: duration_seconds
+  - policyId: protocol.openai-responses
+    rules:
+      - headerName: x-ratelimit-limit-requests
+        metricName: gen_ai.provider.runtime.rate_limit.limit
+        valueType: int64
+        labels:
+          - name: quota
+            value: requests
+      - headerName: x-ratelimit-remaining-requests
+        metricName: gen_ai.provider.runtime.rate_limit.remaining
+        valueType: int64
+        labels:
+          - name: quota
+            value: requests
+      - headerName: retry-after
+        metricName: gen_ai.provider.runtime.retry_after.seconds
+        valueType: duration_seconds
+  - policyId: cli.openai-oauth
+    rules:
+      - headerName: retry-after
+        metricName: gen_ai.provider.runtime.retry_after.seconds
+        valueType: duration_seconds
+  - policyId: cli.google-oauth
+    rules:
+      - headerName: retry-after
+        metricName: gen_ai.provider.runtime.retry_after.seconds
+        valueType: duration_seconds
+  - policyId: vendor.openrouter
+    rules:
+      - headerName: x-ratelimit-limit-requests
+        metricName: gen_ai.provider.runtime.rate_limit.limit
+        valueType: int64
+        labels:
+          - name: quota
+            value: requests
+      - headerName: x-ratelimit-remaining-requests
+        metricName: gen_ai.provider.runtime.rate_limit.remaining
+        valueType: int64
+        labels:
+          - name: quota
+            value: requests
+      - headerName: x-ratelimit-limit-tokens
+        metricName: gen_ai.provider.runtime.rate_limit.limit
+        valueType: int64
+        labels:
+          - name: quota
+            value: tokens
+      - headerName: x-ratelimit-remaining-tokens
+        metricName: gen_ai.provider.runtime.rate_limit.remaining
+        valueType: int64
+        labels:
+          - name: quota
+            value: tokens

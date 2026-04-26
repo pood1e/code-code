@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package platform.condition.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "code-code.internal/go-contract/platform/condition/v1;conditionv1";
+
+// ConditionStatus describes the truth status of one observed condition.
+enum ConditionStatus {
+  CONDITION_STATUS_UNSPECIFIED = 0;
+  CONDITION_STATUS_TRUE = 1;
+  CONDITION_STATUS_FALSE = 2;
+  CONDITION_STATUS_UNKNOWN = 3;
+}
+
+// Condition describes one observed condition for a platform resource.
+message Condition {
+  string type = 1;
+  ConditionStatus status = 2;
+  string reason = 3;
+  string message = 4;
+  int64 observed_generation = 5;
+  google.protobuf.Timestamp last_transition_time = 6;
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package api_protocol.v1;
+
+option go_package = "code-code.internal/go-contract/api_protocol/v1;apiprotocolv1";
+
+// Protocol identifies one remote API protocol.
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_OPENAI_RESPONSES = 1;
+  PROTOCOL_OPENAI_COMPATIBLE = 2;
+  PROTOCOL_ANTHROPIC = 3;
+  PROTOCOL_GEMINI = 4;
+}

@@ -1,0 +1,58 @@
+global:
+  partOf: code-code
+  infraNamespace: code-code-infra
+
+registry:
+  enabled: true
+  name: code-code-registry
+  image: registry:2.8.3
+  replicaCount: 1
+  port: 5000
+  service:
+    type: NodePort
+    nodePort: 30500
+  storage:
+    persistentVolumeClaim: ""
+  deleteEnabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+cache:
+  enabled: true
+  image: registry:2.8.3
+  replicaCount: 1
+  port: 5000
+  service:
+    type: NodePort
+  deleteEnabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  mirrors:
+    dockerIo:
+      enabled: true
+      name: code-code-cache-docker-io
+      remoteUrl: https://registry-1.docker.io
+      nodePort: 30502
+      persistentVolumeClaim: ""
+    registryK8sIo:
+      enabled: true
+      name: code-code-cache-registry-k8s-io
+      remoteUrl: https://registry.k8s.io
+      nodePort: 30503
+      persistentVolumeClaim: ""
+    quayIo:
+      enabled: true
+      name: code-code-cache-quay-io
+      remoteUrl: https://quay.io
+      nodePort: 30504
+      persistentVolumeClaim: ""

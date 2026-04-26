@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package platform.management.v1;
+
+import "agent/core/v1/agent.proto";
+import "api_protocol/v1/protocol.proto";
+import "platform/agent_run/v1/agent_run.proto";
+import "platform/agent_session/v1/agent_session.proto";
+import "platform/agent_session_action/v1/agent_session_action.proto";
+import "platform/run_event/v1/run_event.proto";
+
+option go_package = "code-code.internal/go-contract/platform/management/v1;managementv1";
+
+service AgentSessionManagementService {
+  rpc GetAgentSession(GetAgentSessionRequest) returns (GetAgentSessionResponse);
+  rpc CreateAgentSession(CreateAgentSessionRequest) returns (CreateAgentSessionResponse);
+  rpc UpdateAgentSession(UpdateAgentSessionRequest) returns (UpdateAgentSessionResponse);
+  rpc GetAgentSessionAction(GetAgentSessionActionRequest) returns (GetAgentSessionActionResponse);
+  rpc CreateAgentSessionAction(CreateAgentSessionActionRequest) returns (CreateAgentSessionActionResponse);
+  rpc ResetAgentSessionWarmState(ResetAgentSessionWarmStateRequest) returns (ResetAgentSessionWarmStateResponse);
+  rpc StopAgentSessionAction(StopAgentSessionActionRequest) returns (StopAgentSessionActionResponse);
+  rpc RetryAgentSessionAction(RetryAgentSessionActionRequest) returns (RetryAgentSessionActionResponse);
+  rpc GetAgentRun(GetAgentRunRequest) returns (GetAgentRunResponse);
+  rpc StreamAgentRunOutput(StreamAgentRunOutputRequest) returns (stream StreamAgentRunOutputResponse);
+  rpc ResolveAgentRunRuntimeContext(ResolveAgentRunRuntimeContextRequest) returns (ResolveAgentRunRuntimeContextResponse);
+  rpc RecordAgentRunResponseHeaders(RecordAgentRunResponseHeadersRequest) returns (RecordAgentRunResponseHeadersResponse);
+}
+
+message GetAgentSessionRequest {
+  string session_id = 1;
+}
+
+message GetAgentSessionResponse {
+  platform.agent_session.v1.AgentSessionState session = 1;
+}
+
+message CreateAgentSessionRequest {
+  platform.agent_session.v1.AgentSessionSpec session = 1;
+}
+
+message CreateAgentSessionResponse {
+  platform.agent_session.v1.AgentSessionState session = 1;
+}
+
+message UpdateAgentSessionRequest {
+  string session_id = 1;
+  platform.agent_session.v1.AgentSessionSpec session = 2;
+}
+
+message UpdateAgentSessionResponse {
+  platform.agent_session.v1.AgentSessionState session = 1;
+}
+
+message GetAgentSessionActionRequest {
+  string action_id = 1;
+}
+
+message GetAgentSessionActionResponse {
+  platform.agent_session_action.v1.AgentSessionActionState action = 1;
+}
+
+message CreateAgentSessionActionRequest {
+  string session_id = 1;
+  string action_id = 2;
+  string turn_id = 3;
+  agent.core.v1.RunRequest run_request = 4;
+}
+
+message CreateAgentSessionActionResponse {
+  platform.agent_session_action.v1.AgentSessionActionState action = 1;
+}
+
+message ResetAgentSessionWarmStateRequest {
+  string session_id = 1;
+  string action_id = 2;
+}
+
+message ResetAgentSessionWarmStateResponse {
+  platform.agent_session_action.v1.AgentSessionActionState action = 1;
+}
+
+message StopAgentSessionActionRequest {
+  string action_id = 1;
+}
+
+message StopAgentSessionActionResponse {
+  platform.agent_session_action.v1.AgentSessionActionState action = 1;
+}
+
+message RetryAgentSessionActionRequest {
+  string source_action_id = 1;
+  string new_turn_id = 2;
+}
+
+message RetryAgentSessionActionResponse {
+  platform.agent_session_action.v1.AgentSessionActionState action = 1;
+}
+
+message GetAgentRunRequest {
+  string run_id = 1;
+}
+
+message GetAgentRunResponse {
+  platform.agent_run.v1.AgentRunState run = 1;
+}
+
+message StreamAgentRunOutputRequest {
+  string run_id = 1;
+  uint64 after_sequence = 2;
+}
+
+message StreamAgentRunOutputResponse {
+  oneof event {
+    platform.run_event.v1.RunDeltaEvent delta = 1;
+    platform.run_event.v1.RunResultEvent result = 2;
+  }
+}
+
+message ResolveAgentRunRuntimeContextRequest {
+  oneof source {
+    string run_id = 1;
+    AgentRunPodRef pod = 2;
+    string workload_id = 3;
+  }
+}
+
+message ResolveAgentRunRuntimeContextResponse {
+  platform.agent_run.v1.AgentRunState run = 1;
+  AgentRunPodRef pod = 2;
+  AgentRunRuntimeMetadata metadata = 3;
+}
+
+message AgentRunPodRef {
+  string namespace = 1;
+  string name = 2;
+  string uid = 3;
+  string ip = 4;
+}
+
+message AgentRunRuntimeMetadata {
+  string provider_id = 1;
+  string cli_id = 2;
+  string image_id = 3;
+  string credential_id = 4;
+  string runtime_url = 5;
+  string auth_materialization_key = 6;
+  api_protocol.v1.Protocol protocol = 7;
+  string model_id = 8;
+  repeated string target_hosts = 9;
+  repeated string target_path_prefixes = 10;
+  repeated string request_header_names = 11;
+  string header_value_prefix = 12;
+  repeated AgentRunRuntimeHeaderReplacementRule request_header_replacement_rules = 13;
+  repeated AgentRunRuntimeHeaderReplacementRule response_header_replacement_rules = 14;
+  repeated platform.agent_run.v1.AgentRunResponseHeaderRule response_header_metric_rules = 15;
+  string egress_policy_id = 16;
+  string auth_policy_id = 17;
+  string header_metric_policy_id = 18;
+}
+
+message AgentRunRuntimeHeaderReplacementRule {
+  string mode = 1;
+  string header_name = 2;
+  string material_key = 3;
+  string header_value_prefix = 4;
+  string template = 5;
+}
+
+message RecordAgentRunResponseHeadersRequest {
+  oneof source {
+    string run_id = 1;
+    AgentRunPodRef pod = 2;
+    string workload_id = 3;
+  }
+  string target_host = 4;
+  string target_path = 5;
+  uint32 status_code = 6;
+  map<string, string> response_headers = 7;
+}
+
+message RecordAgentRunResponseHeadersResponse {
+  bool recorded = 1;
+  bool skipped = 2;
+}

@@ -1,0 +1,178 @@
+syntax = "proto3";
+
+package platform.agent_session_action.v1;
+
+import "agent/cap/v1/cap.proto";
+import "agent/core/v1/agent.proto";
+import "google/protobuf/timestamp.proto";
+import "provider/v1/provider.proto";
+import "platform/agent_run/v1/agent_run.proto";
+
+option go_package = "code-code.internal/go-contract/platform/agent_session_action/v1;agentsessionactionv1";
+
+// AgentSessionActionSpec describes one durable action in the serialization
+// domain of one AgentSession.
+message AgentSessionActionSpec {
+  string action_id = 1;
+  string session_id = 2;
+  AgentSessionActionType type = 3;
+  string turn_id = 4;
+  AgentSessionActionInputSnapshot input_snapshot = 5;
+  bool stop_requested = 6;
+}
+
+// AgentSessionActionInputSnapshot captures the frozen execution input for one
+// durable action.
+message AgentSessionActionInputSnapshot {
+  oneof snapshot {
+    AgentSessionRunTurnSnapshot run_turn = 1;
+    AgentSessionReloadSubjectSnapshot reload_subject = 2;
+    AgentSessionResetWarmStateSnapshot reset_warm_state = 3;
+  }
+}
+
+// AgentSessionRunTurnSnapshot captures the complete frozen execution input for
+// one accepted run_turn action.
+message AgentSessionRunTurnSnapshot {
+  agent.core.v1.RunRequest run_request = 1;
+  int64 session_generation = 2;
+  int64 runtime_config_generation = 3;
+  int64 resource_config_generation = 4;
+  int64 state_generation = 5;
+  string provider_id = 6;
+  string execution_class = 7;
+  string container_image = 8;
+  string cpu_request = 9;
+  string memory_request = 10;
+  platform.agent_run.v1.AgentRunAuthRequirement auth_requirement = 11;
+  repeated AgentSessionRuntimeCandidate runtime_candidates = 12;
+  agent.core.v1.RuntimeEnvironment runtime_environment = 13;
+  string workspace_id = 14;
+  string home_state_id = 15;
+  repeated platform.agent_run.v1.AgentRunPrepareJob prepare_jobs = 16;
+}
+
+// AgentSessionRuntimeCandidate captures one resolved runtime candidate frozen
+// into one run_turn snapshot.
+message AgentSessionRuntimeCandidate {
+  provider.v1.ResolvedProviderModel resolved_provider_model = 1;
+  platform.agent_run.v1.AgentRunAuthRequirement auth_requirement = 2;
+}
+
+// AgentSessionActionSubject identifies the session subject mutated by one
+// reload action.
+enum AgentSessionActionSubject {
+  AGENT_SESSION_ACTION_SUBJECT_UNSPECIFIED = 0;
+  AGENT_SESSION_ACTION_SUBJECT_RESOURCE_CONFIG = 1;
+  AGENT_SESSION_ACTION_SUBJECT_RULE = 2;
+  AGENT_SESSION_ACTION_SUBJECT_SKILL = 3;
+  AGENT_SESSION_ACTION_SUBJECT_MCP = 4;
+}
+
+// AgentSessionReloadSubjectSnapshot captures the frozen subject snapshot that
+// must be realized into one AgentSession serialization domain.
+message AgentSessionReloadSubjectSnapshot {
+  int64 session_generation = 1;
+  AgentSessionActionSubject subject = 2;
+  string snapshot_id = 3;
+  string subject_revision = 4;
+  agent.cap.v1.AgentResources resource_config = 5;
+}
+
+// AgentSessionResetWarmStateSnapshot captures the frozen warm-state reset input
+// for one session-scoped reset action.
+message AgentSessionResetWarmStateSnapshot {
+  int64 session_generation = 1;
+  string source_home_state_id = 2;
+  string target_home_state_id = 3;
+}
+
+// AgentSessionActionRef identifies one submitted durable action.
+message AgentSessionActionRef {
+  string action_id = 1;
+}
+
+// AgentSessionActionRunRef identifies the AgentRun created for one action.
+message AgentSessionActionRunRef {
+  string run_id = 1;
+}
+
+// AgentSessionActionType describes the kind of durable action saved for one
+// AgentSession.
+enum AgentSessionActionType {
+  AGENT_SESSION_ACTION_TYPE_UNSPECIFIED = 0;
+  AGENT_SESSION_ACTION_TYPE_RUN_TURN = 1;
+  AGENT_SESSION_ACTION_TYPE_RELOAD_SUBJECT = 3;
+  AGENT_SESSION_ACTION_TYPE_RESET_WARM_STATE = 5;
+  reserved 2, 4;
+  reserved "AGENT_SESSION_ACTION_TYPE_PREPARE_SUBJECT", "AGENT_SESSION_ACTION_TYPE_CLEANUP_SUBJECT";
+}
+
+// AgentSessionActionPhase describes the observed lifecycle phase of one durable
+// action.
+enum AgentSessionActionPhase {
+  AGENT_SESSION_ACTION_PHASE_UNSPECIFIED = 0;
+  AGENT_SESSION_ACTION_PHASE_PENDING = 1;
+  AGENT_SESSION_ACTION_PHASE_RUNNING = 2;
+  AGENT_SESSION_ACTION_PHASE_SUCCEEDED = 3;
+  AGENT_SESSION_ACTION_PHASE_FAILED = 4;
+  AGENT_SESSION_ACTION_PHASE_CANCELED = 5;
+}
+
+// AgentSessionActionFailureClass describes the current retry / failure class
+// observed for one durable action.
+enum AgentSessionActionFailureClass {
+  AGENT_SESSION_ACTION_FAILURE_CLASS_UNSPECIFIED = 0;
+  AGENT_SESSION_ACTION_FAILURE_CLASS_BLOCKED = 1;
+  AGENT_SESSION_ACTION_FAILURE_CLASS_TRANSIENT = 2;
+  AGENT_SESSION_ACTION_FAILURE_CLASS_PERMANENT = 3;
+  AGENT_SESSION_ACTION_FAILURE_CLASS_MANUAL_RETRY = 4;
+}
+
+// AgentSessionActionDisplayPhase provides a minimal user-facing projection for
+// one durable action.
+enum AgentSessionActionDisplayPhase {
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_UNSPECIFIED = 0;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_QUEUED = 1;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_RETRYING = 2;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_FALLBACKING = 3;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_RUNNING = 4;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_STOPPING = 5;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_STOPPED = 6;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_SUCCEEDED = 7;
+  AGENT_SESSION_ACTION_DISPLAY_PHASE_FAILED = 8;
+}
+
+// AgentSessionActionView provides the stable simplified action view for user
+// projection.
+message AgentSessionActionView {
+  AgentSessionActionDisplayPhase display_phase = 1;
+  bool can_stop = 2;
+  bool can_retry = 3;
+}
+
+// AgentSessionActionStatus describes observed summary state for one durable
+// action.
+message AgentSessionActionStatus {
+  string action_id = 1;
+  AgentSessionActionPhase phase = 2;
+  int64 observed_generation = 3;
+  string message = 4;
+  AgentSessionActionRunRef run = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  AgentSessionActionFailureClass failure_class = 8;
+  int32 retry_count = 9;
+  google.protobuf.Timestamp next_retry_at = 10;
+  AgentSessionActionView view = 11;
+  int32 attempt_count = 12;
+  int32 candidate_index = 13;
+}
+
+// AgentSessionActionState combines desired state and observed state for one
+// durable action.
+message AgentSessionActionState {
+  int64 generation = 1;
+  AgentSessionActionSpec spec = 2;
+  AgentSessionActionStatus status = 3;
+}

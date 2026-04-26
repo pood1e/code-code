@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package agent.result.v1;
+
+option go_package = "code-code.internal/go-contract/agent/result/v1;resultv1";
+
+// RunResult is the final outcome of one run.
+message RunResult {
+  RunStatus status = 1;
+  string resume_token = 2;
+  RunError error = 3;
+}
+
+// RunStatus identifies the final run state.
+enum RunStatus {
+  RUN_STATUS_UNSPECIFIED = 0;
+  RUN_STATUS_COMPLETED = 1;
+  RUN_STATUS_FAILED = 2;
+  RUN_STATUS_CANCELLED = 3;
+  RUN_STATUS_INTERRUPTED = 4;
+}
+
+// RunError carries structured failure information.
+message RunError {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+}

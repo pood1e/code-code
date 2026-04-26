@@ -1,0 +1,100 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: {{ .Values.global.infraNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "postgres" "componentLabel" "state-store") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "postgres") | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: {{ .Values.global.infraNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "postgres" "componentLabel" "state-store") | nindent 4 }}
+spec:
+  serviceName: postgres
+  replicas: 1
+  revisionHistoryLimit: 2
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "postgres" "componentLabel" "state-store") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: {{ .Values.global.postgresSecretName }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "code_code", "-d", "code_code"]
+            timeoutSeconds: 5
+            failureThreshold: 12
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "code_code", "-d", "code_code"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 240
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "code_code", "-d", "code_code"]
+            timeoutSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+              ephemeral-storage: 512Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+              ephemeral-storage: 1Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storageSize }}
+{{- end }}

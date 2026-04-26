@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package platform.agent_profile.v1;
+
+import "provider/v1/provider.proto";
+import "model/v1/model.proto";
+
+option go_package = "code-code.internal/go-contract/platform/agent_profile/v1;agentprofilev1";
+
+// AgentProfile describes one operator-managed default agent invocation profile.
+message AgentProfile {
+  string profile_id = 1;
+  string name = 2;
+  AgentSelectionStrategy selection_strategy = 3;
+  repeated string mcp_ids = 4;
+  repeated string skill_ids = 5;
+  repeated string rule_ids = 6;
+}
+
+// AgentSelectionStrategy describes the fixed provider identity and ordered
+// fallback policy used to resolve future runs.
+message AgentSelectionStrategy {
+  string provider_id = 1;
+  string execution_class = 2;
+  repeated AgentFallbackCandidate fallbacks = 3;
+}
+
+// AgentFallbackCandidate describes one ordered provider surface plus model
+// selector candidate.
+message AgentFallbackCandidate {
+  provider.v1.ProviderRuntimeRef provider_runtime_ref = 1;
+
+  oneof model_selector {
+    model.v1.ModelRef model_ref = 2;
+    string provider_model_id = 3;
+  }
+}

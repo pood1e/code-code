@@ -1,0 +1,187 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: code-code-prometheus
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes/metrics"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: code-code-prometheus
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: code-code-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: {{ .Values.global.observabilityNamespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 4 }}
+data:
+  prometheus.yml: |-
+{{ tpl (.Files.Get "files/prometheus/prometheus.yml") . | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 4 }}
+data:
+  platform-alerts.yaml: |-
+{{ .Files.Get "files/prometheus/platform-alerts.yaml" | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "prometheus") | nindent 4 }}
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 4 }}
+spec:
+  serviceName: prometheus
+  replicas: 1
+  revisionHistoryLimit: 2
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "prometheus") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "prometheus" "componentLabel" "metrics") | nindent 8 }}
+{{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}
+      annotations:
+        checksum/prometheus-config: {{ tpl (.Files.Get "files/prometheus/prometheus.yml") . | sha256sum }}
+        checksum/prometheus-rules: {{ .Files.Get "files/prometheus/platform-alerts.yaml" | sha256sum }}
+    spec:
+      serviceAccountName: prometheus
+      automountServiceAccountToken: true
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: prometheus
+          image: {{ .Values.prometheus.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --web.enable-lifecycle
+            - --web.enable-otlp-receiver
+            - --web.enable-remote-write-receiver
+          ports:
+            - name: http
+              containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+              readOnly: true
+            - name: rules
+              mountPath: /etc/prometheus-rules
+              readOnly: true
+            - name: data
+              mountPath: /prometheus
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          startupProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 240
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: 300m
+              memory: 384Mi
+              ephemeral-storage: 1Gi
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: rules
+          configMap:
+            name: prometheus-rules
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.prometheus.storageSize }}
+{{- end }}

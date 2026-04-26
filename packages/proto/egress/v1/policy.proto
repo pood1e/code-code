@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package egress.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "code-code.internal/go-contract/egress/v1;egressv1";
+
+// EgressPolicy declares one Istio-owned outbound policy intent.
+message EgressPolicy {
+  string policy_id = 1;
+  string display_name = 2;
+  repeated EgressProxy proxies = 4;
+  repeated EgressRule custom_rules = 5;
+  EgressExternalRuleSet external_rule_set = 6;
+}
+
+// EgressProxy declares one selectable HTTP proxy target.
+message EgressProxy {
+  string proxy_id = 1;
+  string display_name = 2;
+  EgressProxyProtocol protocol = 3;
+  string url = 4;
+}
+
+// EgressRule declares one user-controlled host matching rule.
+message EgressRule {
+  string rule_id = 1;
+  string display_name = 2;
+  EgressRuleMatch match = 3;
+  EgressAction action = 4;
+  string proxy_id = 5;
+}
+
+// EgressRuleMatch describes how one rule matches an outbound host.
+message EgressRuleMatch {
+  oneof kind {
+    string host_exact = 1;
+    // host_suffix matches the suffix domain itself and all subdomains.
+    // For example: host_suffix="example.com" matches example.com and
+    // api.example.com.
+    string host_suffix = 2;
+  }
+}
+
+// EgressExternalRuleSet declares the single user-configured AutoProxy source.
+message EgressExternalRuleSet {
+  string source_url = 1;
+  bool enabled = 2;
+  EgressAction action = 3;
+  string proxy_id = 4;
+}
+
+// EgressExternalRuleSetStatus stores the latest observed external rule load result.
+message EgressExternalRuleSetStatus {
+  EgressExternalRuleSetLoadPhase phase = 1;
+  string source_url = 2;
+  int32 loaded_host_count = 3;
+  int32 skipped_rule_count = 4;
+  string message = 5;
+  google.protobuf.Timestamp loaded_at = 6;
+}
+
+// EgressResourceRef references one Istio egress resource.
+message EgressResourceRef {
+  string kind = 1;
+  string namespace = 2;
+  string name = 3;
+}
+
+// EgressSyncStatus stores observed Istio egress sync state.
+message EgressSyncStatus {
+  EgressSyncPhase phase = 1;
+  string reason = 2;
+  int64 observed_generation = 3;
+  EgressResourceRef target_gateway = 4;
+  repeated EgressResourceRef applied_resources = 5;
+  google.protobuf.Timestamp last_synced_at = 6;
+}
+
+enum EgressAction {
+  EGRESS_ACTION_UNSPECIFIED = 0;
+  EGRESS_ACTION_DIRECT = 1;
+  EGRESS_ACTION_PROXY = 2;
+}
+
+enum EgressProxyProtocol {
+  EGRESS_PROXY_PROTOCOL_UNSPECIFIED = 0;
+  EGRESS_PROXY_PROTOCOL_HTTP = 1;
+}
+
+enum EgressExternalRuleSetLoadPhase {
+  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED = 0;
+  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_DISABLED = 1;
+  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_LOADED = 2;
+  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_NOT_LOADED = 3;
+  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_FAILED = 4;
+}
+
+enum EgressSyncPhase {
+  EGRESS_SYNC_PHASE_UNSPECIFIED = 0;
+  EGRESS_SYNC_PHASE_PENDING = 1;
+  EGRESS_SYNC_PHASE_SYNCED = 2;
+  EGRESS_SYNC_PHASE_FAILED = 3;
+}

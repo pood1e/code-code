@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package platform.oauth.v1;
+
+import "credential/v1/oauth_authorization_session.proto";
+
+option go_package = "code-code.internal/go-contract/platform/oauth/v1;oauthv1";
+
+service OAuthSessionService {
+  rpc StartOAuthAuthorizationSession(StartOAuthAuthorizationSessionRequest) returns (StartOAuthAuthorizationSessionResponse);
+  rpc GetOAuthAuthorizationSession(GetOAuthAuthorizationSessionRequest) returns (GetOAuthAuthorizationSessionResponse);
+  rpc CancelOAuthAuthorizationSession(CancelOAuthAuthorizationSessionRequest) returns (CancelOAuthAuthorizationSessionResponse);
+}
+
+service OAuthCallbackService {
+  rpc RecordOAuthCodeCallback(RecordOAuthCodeCallbackRequest) returns (RecordOAuthCodeCallbackResponse);
+}
+
+message StartOAuthAuthorizationSessionRequest {
+  string cli_id = 1;
+  credential.v1.OAuthAuthorizationFlow flow = 2;
+  reserved 3;
+  reserved "network_policy_id";
+  string target_credential_id = 4;
+  string target_display_name = 5;
+}
+
+message StartOAuthAuthorizationSessionResponse {
+  credential.v1.OAuthAuthorizationSessionState session = 1;
+}
+
+message GetOAuthAuthorizationSessionRequest {
+  string session_id = 1;
+}
+
+message GetOAuthAuthorizationSessionResponse {
+  credential.v1.OAuthAuthorizationSessionState session = 1;
+}
+
+message CancelOAuthAuthorizationSessionRequest {
+  string session_id = 1;
+}
+
+message CancelOAuthAuthorizationSessionResponse {
+  credential.v1.OAuthAuthorizationSessionState session = 1;
+}
+
+message RecordOAuthCodeCallbackRequest {
+  string provider_id = 1;
+  string code = 2;
+  string state = 3;
+  string provider_redirect_uri = 4;
+  string error = 5;
+  string error_description = 6;
+}
+
+message RecordOAuthCodeCallbackResponse {
+  string session_id = 1;
+}

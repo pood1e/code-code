@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package platform.notification.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "code-code.internal/go-contract/platform/notification/v1;notificationv1";
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_INFO = 1;
+  NOTIFICATION_TYPE_SUCCESS = 2;
+  NOTIFICATION_TYPE_WARNING = 3;
+  NOTIFICATION_TYPE_FAILURE = 4;
+}
+
+enum NotificationFormat {
+  NOTIFICATION_FORMAT_UNSPECIFIED = 0;
+  NOTIFICATION_FORMAT_MARKDOWN = 1;
+  NOTIFICATION_FORMAT_TEXT = 2;
+  NOTIFICATION_FORMAT_HTML = 3;
+}
+
+message NotificationRequest {
+  string event_id = 1;
+  string title = 2;
+  string body = 3;
+  NotificationType type = 4;
+  NotificationFormat format = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+}
+
+// InboundMessageEvent carries one verified inbound provider callback.
+message InboundMessageEvent {
+  string provider = 1;
+  google.protobuf.Timestamp received_at = 2;
+
+  oneof payload {
+    WeComInboundMessage wecom = 10;
+  }
+}
+
+// WeComInboundMessage carries one decrypted Enterprise WeChat callback message.
+message WeComInboundMessage {
+  string timestamp = 1;
+  string nonce = 2;
+  string receive_id = 3;
+  string message_xml = 4;
+  google.protobuf.Struct message = 5;
+}

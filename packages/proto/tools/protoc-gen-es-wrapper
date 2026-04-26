@@ -1,0 +1,3 @@
+#!/bin/sh
+LOCALSTORAGE_FILE="${TMPDIR:-/tmp}/code-code-protoc-gen-es.localstorage"
+exec /opt/homebrew/bin/node --localstorage-file="$LOCALSTORAGE_FILE" /opt/homebrew/lib/node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es "$@"

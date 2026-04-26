@@ -1,0 +1,380 @@
+syntax = "proto3";
+
+package platform.support.v1;
+
+import "credential/v1/credential.proto";
+import "credential/v1/oauth_authorization_session.proto";
+import "egress/v1/policy.proto";
+import "api_protocol/v1/protocol.proto";
+import "provider/v1/provider.proto";
+import "model_catalog_discovery/v1/model_catalog_discovery.proto";
+import "observability/v1/observability.proto";
+import "provider_card/v1/provider_card.proto";
+import "vendor_definition/v1/vendor.proto";
+
+option go_package = "code-code.internal/go-contract/platform/support/v1;supportv1";
+
+service SupportService {
+  rpc ListVendors(ListVendorsRequest) returns (ListVendorsResponse);
+  rpc GetVendor(GetVendorRequest) returns (GetVendorResponse);
+  rpc ListProviderSurfaces(ListProviderSurfacesRequest) returns (ListProviderSurfacesResponse);
+  rpc GetProviderSurface(GetProviderSurfaceRequest) returns (GetProviderSurfaceResponse);
+  rpc ListCLIs(ListCLIsRequest) returns (ListCLIsResponse);
+  rpc GetCLI(GetCLIRequest) returns (GetCLIResponse);
+  rpc ResolveProviderCapabilities(ResolveProviderCapabilitiesRequest) returns (ResolveProviderCapabilitiesResponse);
+}
+
+message ListVendorsRequest {}
+
+message ListVendorsResponse {
+  repeated Vendor items = 1;
+}
+
+message GetVendorRequest {
+  string vendor_id = 1;
+}
+
+message GetVendorResponse {
+  Vendor item = 1;
+}
+
+message ListProviderSurfacesRequest {}
+
+message ListProviderSurfacesResponse {
+  repeated provider.v1.ProviderSurface items = 1;
+}
+
+message GetProviderSurfaceRequest {
+  string surface_id = 1;
+}
+
+message GetProviderSurfaceResponse {
+  provider.v1.ProviderSurface item = 1;
+}
+
+message ListCLIsRequest {}
+
+message ListCLIsResponse {
+  repeated CLI items = 1;
+}
+
+message GetCLIRequest {
+  string cli_id = 1;
+}
+
+message GetCLIResponse {
+  CLI item = 1;
+}
+
+message ResolveProviderCapabilitiesRequest {
+  oneof subject {
+    ProviderCapabilitySubject provider = 1;
+    CustomAPICapabilitySubject custom_api = 2;
+    RuntimeCapabilitySubject runtime = 3;
+  }
+}
+
+message ProviderCapabilitySubject {
+  string provider_id = 1;
+  string surface_id = 2;
+  api_protocol.v1.Protocol protocol = 3;
+  string model = 4;
+  credential.v1.CredentialKind credential_kind = 5;
+  string runtime_url = 6;
+  CapabilityExecutionContext execution_context = 7;
+}
+
+message CustomAPICapabilitySubject {
+  string base_url = 1;
+  api_protocol.v1.Protocol protocol = 2;
+  credential.v1.CredentialKind credential_kind = 3;
+  CapabilityExecutionContext execution_context = 4;
+}
+
+message RuntimeCapabilitySubject {
+  string provider_id = 1;
+  string surface_id = 2;
+  api_protocol.v1.Protocol protocol = 3;
+  string model = 4;
+  credential.v1.CredentialKind credential_kind = 5;
+  string runtime_url = 6;
+  string auth_materialization_key = 7;
+  CapabilityExecutionContext execution_context = 8;
+}
+
+message ResolveProviderCapabilitiesResponse {
+  string egress_policy_id = 1;
+  string auth_policy_id = 2;
+  string header_metric_policy_id = 3;
+  string model_catalog_probe_id = 4;
+  string quota_probe_id = 5;
+  string auth_materialization_key = 6;
+  string resource_ref = 7;
+}
+
+enum CapabilityExecutionContext {
+  CAPABILITY_EXECUTION_CONTEXT_UNSPECIFIED = 0;
+  CAPABILITY_EXECUTION_CONTEXT_CONTROL_PLANE = 1;
+  CAPABILITY_EXECUTION_CONTEXT_AGENT_RUN = 2;
+}
+
+message Vendor {
+  vendor_definition.v1.Vendor vendor = 1;
+  repeated VendorProviderBinding provider_bindings = 2;
+}
+
+message ProviderSurfaceBinding {
+  string surface_id = 1;
+  string model_catalog_probe_id = 2;
+  string quota_probe_id = 3;
+  string egress_policy_id = 4;
+  string header_rewrite_policy_id = 5;
+}
+
+message ProviderSurfaceRuntimeTemplate {
+  string surface_id = 1;
+  provider.v1.ProviderSurfaceRuntime runtime = 2;
+  provider.v1.ProviderModelCatalog bootstrap_catalog = 3;
+}
+
+message VendorProviderBinding {
+  ProviderSurfaceBinding provider_binding = 1;
+  repeated ProviderSurfaceRuntimeTemplate surface_templates = 2;
+  VendorModelDiscovery model_discovery = 3;
+  observability.v1.ObservabilityCapability observability = 4;
+  provider_card.v1.ProviderCardCapability provider_card = 5;
+  egress.v1.EgressPolicy egress_policy = 6;
+}
+
+message VendorModelDiscovery {
+  string collector_id = 1;
+  int32 authority_priority = 2;
+
+  oneof strategy {
+    ActiveModelDiscovery active_discovery = 3;
+  }
+}
+
+message ActiveModelDiscovery {
+  repeated string surface_ids = 1;
+  model_catalog_discovery.v1.ModelCatalogDiscoveryOperation operation = 2;
+}
+
+message CLI {
+  string cli_id = 1;
+  string display_name = 2;
+  string icon_url = 3;
+  string vendor_id = 4;
+  OAuthSupport oauth = 5;
+  repeated APIKeyProtocolSupport api_key_protocols = 6;
+  string website_url = 7;
+  string github_url = 8;
+  repeated RuntimeCapability runtime_capabilities = 9;
+  egress.v1.EgressPolicy egress_policy = 10;
+  OfficialVersionSource official_version_source = 11;
+  repeated CLIContainerImage container_images = 12;
+  string description = 13;
+  CLICapability capability = 14;
+  reserved 15 to 19;
+}
+
+message CLIContainerImage {
+  string execution_class = 1;
+  string image = 2;
+  string cpu_request = 3;
+  string memory_request = 4;
+}
+
+message CLICapability {
+  bool supports_streaming = 1;
+  bool supports_approval_mode = 2;
+  repeated api_protocol.v1.Protocol supported_protocols = 3;
+}
+
+message OAuthSupport {
+  string display_name = 1;
+  credential.v1.OAuthAuthorizationFlow flow = 2;
+  bool supports_one_click_authorization = 3;
+  repeated credential.v1.CredentialPurpose supported_purposes = 4;
+  bool recommended = 5;
+  OAuthModelCatalog model_catalog = 6;
+  observability.v1.ObservabilityCapability observability = 7;
+  OAuthClient oauth_client = 8;
+  OAuthArtifactProjection artifact_projection = 9;
+  OAuthCodeFlow code_flow = 10;
+  OAuthDeviceFlow device_flow = 11;
+  CLIAuthMaterialization auth_materialization = 12;
+  repeated CredentialSubjectSummaryField subject_summary_fields = 13;
+  provider_card.v1.ProviderCardCapability provider_card = 14;
+  OAuthClientIdentity client_identity = 15;
+  ProviderSurfaceBinding provider_binding = 16;
+}
+
+message APIKeyProtocolSupport {
+  api_protocol.v1.Protocol protocol = 1;
+  string display_name = 2;
+  CLIAuthMaterialization auth_materialization = 3;
+}
+
+message RuntimeCapability {
+  RuntimeCapabilityKind kind = 1;
+  bool supported = 2;
+  string capability_key = 3;
+}
+
+message OAuthClient {
+  string client_id = 1;
+  repeated string scopes = 2;
+  OAuthPKCE pkce = 3;
+  string issuer = 4;
+  string resource_url = 5;
+}
+
+message OAuthPKCE {
+  bool required = 1;
+  OAuthCodeChallengeMethod challenge_method = 2;
+}
+
+message OAuthCodeFlow {
+  string authorization_url = 1;
+  string token_url = 2;
+  repeated OAuthRequestParameter authorization_parameters = 3;
+  OAuthCallbackDelivery callback_delivery = 4;
+  bool requires_state = 5;
+}
+
+message OAuthCallbackDelivery {
+  credential.v1.OAuthCallbackMode mode = 1;
+  string callback_provider_id = 2;
+  string provider_redirect_uri = 3;
+  string localhost_listen_host = 4;
+  uint32 localhost_listen_port = 5;
+  string localhost_callback_path = 6;
+}
+
+message OAuthDeviceFlow {
+  string device_authorization_url = 1;
+  string token_url = 2;
+  repeated OAuthRequestParameter device_authorization_parameters = 3;
+  bool use_verification_uri_complete = 4;
+  uint32 default_poll_interval_seconds = 5;
+  bool supports_slow_down = 6;
+}
+
+message OAuthRequestParameter {
+  string name = 1;
+  string value = 2;
+}
+
+message OAuthArtifactProjection {
+  repeated OAuthArtifactFieldMapping field_mappings = 1;
+}
+
+message OAuthArtifactFieldMapping {
+  OAuthArtifactTargetField target = 1;
+  OAuthArtifactSource source = 2;
+  string json_pointer = 3;
+  bool fallback_to_subject = 4;
+}
+
+message OAuthModelCatalog {
+  provider.v1.ProviderModelCatalog default_catalog = 1;
+  OAuthModelCatalogDiscovery authenticated_discovery = 2;
+}
+
+message OAuthModelCatalogDiscovery {
+  string collector_id = 1;
+  int32 authority_priority = 2;
+  model_catalog_discovery.v1.ModelCatalogDiscoveryOperation operation = 3;
+}
+
+message CLIAuthMaterialization {
+  string materialization_key = 1;
+  repeated RuntimeProjectionKind required_runtime_projections = 2;
+  RuntimeProjectionKind runtime_url_projection_kind = 3;
+  bool include_runtime_url_host = 4;
+  repeated string extra_target_hosts = 5;
+  RequestAuthInjection request_auth_injection = 6;
+  repeated string target_path_prefixes = 7;
+}
+
+message RequestAuthInjection {
+  repeated string header_names = 1;
+  string header_value_prefix = 2;
+}
+
+message OAuthClientIdentity {
+  string model_catalog_user_agent_template = 2;
+  string observability_user_agent_template = 3;
+}
+
+message OfficialVersionSource {
+  oneof source {
+    NPMRegistryVersionSource npm_dist_tag = 1;
+    HomebrewCaskVersionSource homebrew_cask = 2;
+  }
+}
+
+message NPMRegistryVersionSource {
+  string package_name = 1;
+  string dist_tag = 2;
+}
+
+message HomebrewCaskVersionSource {
+  string cask = 1;
+}
+
+message CredentialSubjectSummaryField {
+  string field_id = 1;
+  string label = 2;
+  CredentialSubjectSummarySource source = 3;
+  string json_pointer = 4;
+  CredentialSubjectSummaryValueFormat value_format = 5;
+  string secret_key = 6;
+}
+
+enum RuntimeProjectionKind {
+  RUNTIME_PROJECTION_KIND_UNSPECIFIED = 0;
+  RUNTIME_PROJECTION_KIND_BASE_URL = 1;
+  RUNTIME_PROJECTION_KIND_RESOURCE_URL = 2;
+}
+
+enum OAuthCodeChallengeMethod {
+  O_AUTH_CODE_CHALLENGE_METHOD_UNSPECIFIED = 0;
+  O_AUTH_CODE_CHALLENGE_METHOD_S256 = 1;
+}
+
+enum RuntimeCapabilityKind {
+  RUNTIME_CAPABILITY_KIND_UNSPECIFIED = 0;
+  RUNTIME_CAPABILITY_KIND_SKILL = 1;
+  RUNTIME_CAPABILITY_KIND_RULE = 2;
+  RUNTIME_CAPABILITY_KIND_MCP = 3;
+  RUNTIME_CAPABILITY_KIND_LSP = 4;
+}
+
+enum OAuthArtifactSource {
+  O_AUTH_ARTIFACT_SOURCE_UNSPECIFIED = 0;
+  O_AUTH_ARTIFACT_SOURCE_TOKEN_RESPONSE = 1;
+  O_AUTH_ARTIFACT_SOURCE_ID_TOKEN_CLAIMS = 2;
+}
+
+enum OAuthArtifactTargetField {
+  O_AUTH_ARTIFACT_TARGET_FIELD_UNSPECIFIED = 0;
+  O_AUTH_ARTIFACT_TARGET_FIELD_ACCOUNT_ID = 1;
+  O_AUTH_ARTIFACT_TARGET_FIELD_ACCOUNT_EMAIL = 2;
+}
+
+enum CredentialSubjectSummarySource {
+  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_UNSPECIFIED = 0;
+  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_EMAIL = 1;
+  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_ID = 2;
+  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_TOKEN_RESPONSE = 3;
+  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ID_TOKEN_CLAIMS = 4;
+  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_SECRET = 5;
+}
+
+enum CredentialSubjectSummaryValueFormat {
+  CREDENTIAL_SUBJECT_SUMMARY_VALUE_FORMAT_UNSPECIFIED = 0;
+  CREDENTIAL_SUBJECT_SUMMARY_VALUE_FORMAT_PLAIN_TEXT = 1;
+  CREDENTIAL_SUBJECT_SUMMARY_VALUE_FORMAT_MASK_EMAIL = 2;
+}

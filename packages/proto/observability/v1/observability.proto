@@ -1,0 +1,203 @@
+syntax = "proto3";
+
+package observability.v1;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "code-code.internal/go-contract/observability/v1;observabilityv1";
+
+// ObservabilityCapability describes a reusable observability capability block
+// hosted by one support surface.
+message ObservabilityCapability {
+  repeated ObservabilityProfile profiles = 1;
+}
+
+// ObservabilityProfile describes one coherent metric collection contract.
+message ObservabilityProfile {
+  string profile_id = 1;
+  string display_name = 2;
+
+  // Optional binding to host-package sub-surfaces. Semantics are defined by
+  // the host package. Empty means host-wide.
+  repeated string scope_ids = 3;
+
+  repeated ObservabilityMetric metrics = 4;
+
+  oneof collection {
+    ActiveQueryCollection active_query = 5;
+    ResponseHeaderCollection response_headers = 6;
+  }
+
+  // Stable metric queries consumed by availability judgment.
+  repeated MetricQuery metric_queries = 7;
+
+  // Subject-level availability judgment rules derived from declared queries.
+  AvailabilityJudgment availability_judgment = 8;
+}
+
+// ObservabilityMetric describes one OTel-style metric contract.
+message ObservabilityMetric {
+  string name = 1;
+  string description = 2;
+  string unit = 3;
+  ObservabilityMetricKind kind = 4;
+  ObservabilityMetricCategory category = 5;
+  repeated ObservabilityMetricAttribute attributes = 6;
+}
+
+// ObservabilityMetricKind identifies the instrument kind of one metric.
+enum ObservabilityMetricKind {
+  OBSERVABILITY_METRIC_KIND_UNSPECIFIED = 0;
+  OBSERVABILITY_METRIC_KIND_GAUGE = 1;
+  OBSERVABILITY_METRIC_KIND_COUNTER = 2;
+  OBSERVABILITY_METRIC_KIND_HISTOGRAM = 3;
+}
+
+// ObservabilityMetricCategory identifies the business category of one metric.
+enum ObservabilityMetricCategory {
+  OBSERVABILITY_METRIC_CATEGORY_UNSPECIFIED = 0;
+  OBSERVABILITY_METRIC_CATEGORY_QUOTA = 1;
+  OBSERVABILITY_METRIC_CATEGORY_USAGE = 2;
+  OBSERVABILITY_METRIC_CATEGORY_RATE_LIMIT = 3;
+}
+
+// ObservabilityMetricAttribute describes one metric attribute contract.
+message ObservabilityMetricAttribute {
+  string name = 1;
+  string description = 2;
+  ObservabilityAttributeRequirementLevel requirement_level = 3;
+}
+
+// ObservabilityAttributeRequirementLevel identifies how strongly one attribute
+// is expected to be present.
+enum ObservabilityAttributeRequirementLevel {
+  OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_UNSPECIFIED = 0;
+  OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_REQUIRED = 1;
+  OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_RECOMMENDED = 2;
+}
+
+// ActiveQueryCollection declares an active query collection policy.
+message ActiveQueryCollection {
+  google.protobuf.Duration minimum_poll_interval = 1;
+
+  // Dynamic parameters required by the collector when surface auth is not
+  // sufficient. Actual values are supplied by the host provider config.
+  repeated DynamicParameterDefinition dynamic_parameters = 2;
+
+  // Optional collector implementation key resolved by the host package.
+  // Empty means host-default active query execution.
+  string collector_id = 3;
+}
+
+// DynamicParameterDefinition describes one dynamically supplied parameter.
+message DynamicParameterDefinition {
+  string parameter_id = 1;
+  string display_name = 2;
+  string description = 3;
+  bool required = 4;
+  bool secret = 5;
+}
+
+// ResponseHeaderCollection declares how response headers map to metrics.
+message ResponseHeaderCollection {
+  repeated HeaderMetricMapping header_metric_mappings = 1;
+}
+
+// HeaderMetricMapping maps one response header to one declared metric.
+message HeaderMetricMapping {
+  string header_name = 1;
+  string metric_name = 2;
+  HeaderValueType value_type = 3;
+  repeated HeaderMetricLabel labels = 4;
+}
+
+// HeaderMetricLabel binds one fixed label value to one header-derived metric
+// sample.
+message HeaderMetricLabel {
+  string name = 1;
+  string value = 2;
+}
+
+// MetricQuery describes one stable metrics query statement.
+message MetricQuery {
+  string query_id = 1;
+  string display_name = 2;
+  MetricQueryLanguage language = 3;
+  string statement = 4;
+  repeated string metric_names = 5;
+  MetricQueryResultKind result_kind = 6;
+}
+
+// MetricQueryLanguage identifies the query language used by one metric query.
+enum MetricQueryLanguage {
+  METRIC_QUERY_LANGUAGE_UNSPECIFIED = 0;
+  METRIC_QUERY_LANGUAGE_PROMQL = 1;
+}
+
+// MetricQueryResultKind identifies the expected result shape of one query.
+enum MetricQueryResultKind {
+  METRIC_QUERY_RESULT_KIND_UNSPECIFIED = 0;
+  METRIC_QUERY_RESULT_KIND_SCALAR = 1;
+  METRIC_QUERY_RESULT_KIND_VECTOR = 2;
+  METRIC_QUERY_RESULT_KIND_RANGE_VECTOR = 3;
+}
+
+// AvailabilityJudgment describes how one subject's availability is derived
+// from declared metric queries.
+message AvailabilityJudgment {
+  AvailabilitySubjectKind subject_kind = 1;
+  string subject_label_key = 2;
+  repeated string query_ids = 3;
+  repeated AvailabilityRule rules = 4;
+}
+
+// AvailabilitySubjectKind identifies the entity type judged by one profile.
+enum AvailabilitySubjectKind {
+  AVAILABILITY_SUBJECT_KIND_UNSPECIFIED = 0;
+  AVAILABILITY_SUBJECT_KIND_MODEL = 1;
+}
+
+// AvailabilityRule maps one predicate set to one derived availability state.
+message AvailabilityRule {
+  string rule_id = 1;
+  string display_name = 2;
+  repeated AvailabilityPredicate all_of = 3;
+  AvailabilityState state = 4;
+}
+
+// AvailabilityPredicate compares one query result against one threshold.
+message AvailabilityPredicate {
+  string query_id = 1;
+  ComparisonOperator operator = 2;
+  double threshold = 3;
+}
+
+// AvailabilityState identifies the derived availability state of one subject.
+enum AvailabilityState {
+  AVAILABILITY_STATE_UNSPECIFIED = 0;
+  AVAILABILITY_STATE_AVAILABLE = 1;
+  AVAILABILITY_STATE_DEGRADED = 2;
+  AVAILABILITY_STATE_UNAVAILABLE = 3;
+}
+
+// ComparisonOperator identifies how one query result should be compared to a
+// threshold.
+enum ComparisonOperator {
+  COMPARISON_OPERATOR_UNSPECIFIED = 0;
+  COMPARISON_OPERATOR_LT = 1;
+  COMPARISON_OPERATOR_LTE = 2;
+  COMPARISON_OPERATOR_GT = 3;
+  COMPARISON_OPERATOR_GTE = 4;
+  COMPARISON_OPERATOR_EQ = 5;
+  COMPARISON_OPERATOR_NEQ = 6;
+}
+
+// HeaderValueType identifies how one header value should be parsed.
+enum HeaderValueType {
+  HEADER_VALUE_TYPE_UNSPECIFIED = 0;
+  HEADER_VALUE_TYPE_INT64 = 1;
+  HEADER_VALUE_TYPE_DOUBLE = 2;
+  HEADER_VALUE_TYPE_DURATION_SECONDS = 3;
+  HEADER_VALUE_TYPE_UNIX_SECONDS = 4;
+  HEADER_VALUE_TYPE_RFC3339_TIMESTAMP = 5;
+}

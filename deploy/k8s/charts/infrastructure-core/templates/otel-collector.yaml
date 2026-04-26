@@ -1,0 +1,145 @@
+{{- if .Values.otelCollector.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "otel-collector" "componentLabel" "observability") | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ printf "%s-otel-collector" .Release.Name }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "otel-collector" "componentLabel" "observability") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ printf "%s-otel-collector" .Release.Name }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "otel-collector" "componentLabel" "observability") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ printf "%s-otel-collector" .Release.Name }}
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: {{ .Values.global.observabilityNamespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "otel-collector" "componentLabel" "observability") | nindent 4 }}
+data:
+  collector.yaml: |-
+{{ tpl (.Files.Get "files/otel-collector/collector.yaml") . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "otel-collector" "componentLabel" "observability") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "otel-collector") | nindent 4 }}
+  ports:
+    - name: grpc-otlp
+      appProtocol: grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: http-otlp
+      appProtocol: http
+      port: 4318
+      targetPort: otlp-http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "otel-collector" "componentLabel" "observability") | nindent 4 }}
+spec:
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  replicas: 1
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "otel-collector") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "otel-collector" "componentLabel" "observability") | nindent 8 }}
+{{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}
+    spec:
+      serviceAccountName: otel-collector
+      terminationGracePeriodSeconds: 5
+      automountServiceAccountToken: true
+      containers:
+        - name: otel-collector
+          image: {{ .Values.otelCollector.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config=/etc/otelcol-contrib/collector.yaml
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol-contrib
+          startupProbe:
+            tcpSocket:
+              port: otlp-http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 240
+          readinessProbe:
+            tcpSocket:
+              port: otlp-http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: otlp-http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+              ephemeral-storage: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+              ephemeral-storage: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+{{- end }}

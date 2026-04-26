@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package vendor_definition.v1;
+
+option go_package = "code-code.internal/go-contract/vendor_definition/v1;vendordefinitionv1";
+
+// VendorRef references one vendor by stable identity.
+message VendorRef {
+  string vendor_id = 1;
+}
+
+// Vendor describes one AI service provider.
+message Vendor {
+  // Stable identifier aligned with ModelDefinition.vendor_id.
+  // Examples: "openai", "anthropic", "google", "deepseek".
+  string vendor_id = 1;
+
+  // Human-readable display name (e.g. "OpenAI").
+  string display_name = 2;
+
+  // Public vendor logo URL, typically hosted by the vendor website.
+  string icon_url = 3;
+
+  // Official website.
+  string website_url = 4;
+
+  // Short description.
+  string description = 5;
+
+  reserved 6;
+  reserved "kind";
+
+  // Stable alternate identifiers accepted from source catalogs.
+  repeated string aliases = 7;
+}

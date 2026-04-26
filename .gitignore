@@ -1,31 +1,60 @@
-node_modules
-dist
+/only_ref/
+/AGENTS.md
+/.codex/
+/.agent/
+/.npmrc
+/node_modules/
+/deploy/.release-tmp.*/
+/deploy/.release-partial.*/
+/tmp/
+/.local-bin/
+/deploy/secrets.env
+/deploy/local.proxy.env
+/deploy/local.proxy.sh
+/deploy/build.env
+/.cache/
+/CLAUDE.md
+/.claude/
+/GEMINI.md
+/console-api
+/platform-service
+/oauth-refresh-job
+/oauth-workflow-runner
+/scratch-sidebar-buttons.js
+/test_parse.go
+/plan.md
+/packages/platform-k8s/scratch.txt
+/packages/platform-k8s/update.patch
+/packages/platform-k8s/tmp_cli_runtime_query/
 .DS_Store
-.turbo
-coverage
-packages/backend/prisma/dev.db
-packages/backend/prisma/dev.db-journal
-packages/backend/prisma/test.db
-packages/backend/prisma/test.db-journal
-packages/backend/.env
-packages/frontend/tsconfig.tsbuildinfo
-.agent/
+deploy/k8s/infrastructure/minio/tenant-config.yaml
+deploy/k8s/infrastructure/minio/storage-user.yaml
+deploy/k8s/infrastructure/postgres/secret.yaml
+deploy/k8s/infrastructure/grafana/secret.yaml
+/.pnpm-store/
 
-AGENTS.md
-docs/design/
-docs/test_dir/
+# Tool-generated temporary files
+/.playwright-cli/
+/.tmp/
+/output/playwright/
+.tmp-*/
+tmp-sidecar-go.*
 
-# Playwright outputs
-test-results/
-playwright-report/
-blob-report/
-playwright/.cache/
-e2e.db
-e2e.db-journal
-packages/e2e/test-results/
-packages/e2e/playwright-report/
-packages/backend/prisma/e2e.db
-packages/backend/prisma/e2e.db-journal
+# Go package compiled binaries (outputs of local builds)
+packages/console-api/console-api
+packages/console-api/platform-chat-service
+packages/platform-k8s/platform-service
+packages/platform-k8s/envoy-auth-processor
 
-# Docker volumes
-data/
+# Rust/WASM local build outputs
+packages/platform-k8s/control-plane-egress-auth-wasm/target/
+packages/platform-k8s/egress-auth-wasm/target/
+
+# Frontend build caches and artifacts
+**/.turbo
+**/.vite
+**/*.tsbuildinfo
+**/coverage
+
+# Local environment files
+**/.env

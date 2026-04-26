@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package platform.run_event.v1;
+
+import "agent/output/v1/output.proto";
+import "agent/result/v1/result.proto";
+
+option go_package = "code-code.internal/go-contract/platform/run_event/v1;runeventv1";
+
+// RunDeltaEvent carries one live delta output emitted by one run.
+message RunDeltaEvent {
+  string session_id = 1;
+  string run_id = 2;
+  agent.output.v1.RunOutput output = 3;
+}
+
+// RunResultEvent carries one result payload emitted by one run.
+message RunResultEvent {
+  string session_id = 1;
+  string run_id = 2;
+
+  oneof payload {
+    agent.output.v1.RunOutput output = 3;
+    agent.result.v1.RunResult terminal_result = 4;
+  }
+}
+
+// RunStatusPhase is the low-frequency execution phase exported by the parsing
+// sidecar.
+enum RunStatusPhase {
+  RUN_STATUS_PHASE_UNSPECIFIED = 0;
+  RUN_STATUS_PHASE_STARTING = 1;
+  RUN_STATUS_PHASE_PARSER_READY = 2;
+  RUN_STATUS_PHASE_RUNNING = 3;
+  RUN_STATUS_PHASE_STOPPING = 4;
+  RUN_STATUS_PHASE_COMPLETED = 5;
+  RUN_STATUS_PHASE_FAILED = 6;
+  RUN_STATUS_PHASE_CANCELLED = 7;
+}
+
+// RunStatusEvent carries one low-frequency execution status transition.
+message RunStatusEvent {
+  string session_id = 1;
+  string run_id = 2;
+  RunStatusPhase phase = 3;
+  uint64 last_sequence = 4;
+  string message = 5;
+}

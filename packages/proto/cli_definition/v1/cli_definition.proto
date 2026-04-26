@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package cli_definition.v1;
+
+import "api_protocol/v1/protocol.proto";
+
+option go_package = "code-code.internal/go-contract/cli_definition/v1;clidefinitionv1";
+
+// CLIDefinition describes one agent CLI tool that can be scheduled by the
+// platform.
+message CLIDefinition {
+  // Stable identifier. Examples: "codex", "qwen-cli".
+  string cli_id = 1;
+
+  // Human-readable display name (e.g. "Codex CLI").
+  string display_name = 2;
+
+  // Public CLI logo URL, typically hosted by the CLI owner website.
+  string icon_url = 3;
+
+  // Official website.
+  string website_url = 4;
+
+  // Runnable image variants keyed by execution class.
+  repeated CLIContainerImage container_images = 5;
+
+  // Short description.
+  string description = 6;
+
+  // Capability declarations.
+  CLICapabilities capabilities = 7;
+}
+
+// CLIContainerImage describes one runnable image variant for one CLI.
+message CLIContainerImage {
+  // Stable execution class selector.
+  string execution_class = 1;
+
+  // Container image reference.
+  string image = 2;
+
+  // Default Kubernetes CPU request quantity.
+  string cpu_request = 3;
+
+  // Default Kubernetes memory request quantity.
+  string memory_request = 4;
+}
+
+// CLICapabilities declares which operational features one CLI supports.
+message CLICapabilities {
+  bool supports_streaming = 1;
+  bool supports_approval_mode = 2;
+  repeated api_protocol.v1.Protocol supported_protocols = 3;
+}

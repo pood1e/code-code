@@ -1,0 +1,123 @@
+{{- if .Values.tempo.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "tempo" "componentLabel" "tracing") | nindent 4 }}
+data:
+  tempo.yaml: |-
+{{ tpl (.Files.Get "files/tempo/tempo.yaml") . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "tempo" "componentLabel" "tracing") | nindent 4 }}
+spec:
+  selector:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "tempo") | nindent 4 }}
+  ports:
+    - name: http
+      port: 3200
+      targetPort: http
+    - name: grpc-otlp
+      appProtocol: grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: http-otlp
+      appProtocol: http
+      port: 4318
+      targetPort: otlp-http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: {{ .Values.global.observabilityNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "tempo" "componentLabel" "tracing") | nindent 4 }}
+spec:
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  replicas: 1
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "tempo") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/tempo-config: {{ tpl (.Files.Get "files/tempo/tempo.yaml") . | sha256sum }}
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "tempo" "componentLabel" "tracing") | nindent 8 }}
+{{ include "infrastructure.observabilityAmbientPodLabels" (dict "root" .) | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 5
+      automountServiceAccountToken: false
+      containers:
+        - name: tempo
+          image: {{ .Values.tempo.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - -config.file=/etc/tempo/tempo.yaml
+          ports:
+            - name: http
+              containerPort: 3200
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+          volumeMounts:
+            - name: config
+              mountPath: /etc/tempo
+              readOnly: true
+            - name: data
+              mountPath: /var/tempo
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 240
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            timeoutSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+              ephemeral-storage: 1Gi
+      volumes:
+        - name: config
+          configMap:
+            name: tempo-config
+        - name: data
+          emptyDir:
+            sizeLimit: {{ .Values.tempo.dataSize }}
+{{- end }}

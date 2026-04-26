@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package platform.domain_event.v1;
+
+import "cli_definition/v1/cli_definition.proto";
+import "credential/v1/credential.proto";
+import "credential/v1/oauth_authorization_session.proto";
+import "google/protobuf/timestamp.proto";
+import "model/v1/model.proto";
+import "platform/agent_run/v1/agent_run.proto";
+import "platform/agent_session/v1/agent_session.proto";
+import "platform/agent_session_action/v1/agent_session_action.proto";
+import "vendor_definition/v1/vendor.proto";
+
+option go_package = "code-code.internal/go-contract/platform/domain_event/v1;domaineventv1";
+
+// DomainEvent is the protobuf envelope published to the platform domain
+// JetStream stream.
+message DomainEvent {
+  string event_id = 1;
+  string event_type = 2;
+  string aggregate_type = 3;
+  string aggregate_id = 4;
+  int64 aggregate_version = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+  string producer = 7;
+
+  oneof payload {
+    AgentSessionEvent agent_session = 20;
+    AgentSessionActionEvent agent_session_action = 21;
+    AgentRunEvent agent_run = 22;
+    OAuthSessionEvent oauth_session = 23;
+    CredentialEvent credential = 24;
+    CatalogEvent catalog = 25;
+    CLIRuntimeEvent cli_runtime = 26;
+  }
+}
+
+enum DomainMutation {
+  DOMAIN_MUTATION_UNSPECIFIED = 0;
+  DOMAIN_MUTATION_CREATED = 1;
+  DOMAIN_MUTATION_UPDATED = 2;
+  DOMAIN_MUTATION_STATUS_UPDATED = 3;
+  DOMAIN_MUTATION_DELETED = 4;
+}
+
+message AgentSessionEvent {
+  DomainMutation mutation = 1;
+  platform.agent_session.v1.AgentSessionState state = 2;
+}
+
+message AgentSessionActionEvent {
+  DomainMutation mutation = 1;
+  platform.agent_session_action.v1.AgentSessionActionState state = 2;
+}
+
+message AgentRunEvent {
+  DomainMutation mutation = 1;
+  platform.agent_run.v1.AgentRunState state = 2;
+}
+
+message OAuthSessionEvent {
+  DomainMutation mutation = 1;
+  credential.v1.OAuthAuthorizationSessionState state = 2;
+}
+
+message CredentialEvent {
+  DomainMutation mutation = 1;
+  credential.v1.CredentialDefinition definition = 2;
+}
+
+enum CatalogKind {
+  CATALOG_KIND_UNSPECIFIED = 0;
+  CATALOG_KIND_CLI_DEFINITION = 1;
+  CATALOG_KIND_VENDOR_DEFINITION = 2;
+  CATALOG_KIND_MODEL_DEFINITION = 3;
+}
+
+message CatalogEvent {
+  DomainMutation mutation = 1;
+  CatalogKind kind = 2;
+  string catalog_id = 3;
+
+  oneof definition {
+    cli_definition.v1.CLIDefinition cli_definition = 10;
+    vendor_definition.v1.Vendor vendor_definition = 11;
+    model.v1.ModelDefinition model_definition = 12;
+  }
+}
+
+enum CLIRuntimeEventType {
+  CLI_RUNTIME_EVENT_TYPE_UNSPECIFIED = 0;
+  CLI_RUNTIME_EVENT_TYPE_IMAGE_BUILD_REQUESTED = 1;
+}
+
+message CLIRuntimeEvent {
+  CLIRuntimeEventType type = 1;
+  CLIImageBuildRequest image_build_request = 2;
+}
+
+message CLIImageBuildRequest {
+  string request_id = 1;
+  string cli_id = 2;
+  string cli_version = 3;
+  string previous_cli_version = 4;
+  string build_target = 5;
+  string image_repository = 6;
+  string image_tag = 7;
+  string image = 8;
+  string source_context = 9;
+  string source_revision = 10;
+}

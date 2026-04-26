@@ -1,0 +1,46 @@
+# global is the shared deployment configuration for platform-owned Istio resources.
+global:
+  # global.partOf is the shared app.kubernetes.io/part-of label value.
+  partOf: code-code
+  # global.platformNamespace is the namespace where platform services run.
+  platformNamespace: code-code
+  # global.runNamespace is the namespace where runtime jobs run.
+  runNamespace: code-code-runs
+  # global.infraNamespace is the namespace where infrastructure services run.
+  infraNamespace: code-code-infra
+  # global.observabilityNamespace is the namespace where observability services run.
+  observabilityNamespace: code-code-observability
+  # global.istioNamespace is the namespace where Istio control-plane resources live.
+  istioNamespace: istio-system
+  # global.certManagerNamespace is the namespace where cert-manager stores CA material.
+  certManagerNamespace: cert-manager
+  # global.egressNamespace is the namespace where the egress gateway lives.
+  egressNamespace: code-code-net
+  # global.egressGatewaySelector is the selector label value for WasmPlugin targeting.
+  egressGatewaySelector: code-code-egressgateway
+  # global.imageRegistry is the optional registry prefix used for Wasm OCI images.
+  imageRegistry: ""
+  # global.imageTag is the shared image tag for Wasm OCI images.
+  imageTag: "0.0.0"
+  # global.wasmRuntimeImageName is the runtime Wasm OCI image name.
+  wasmRuntimeImageName: agent-runtime-egress-auth-wasm
+  # global.wasmControlPlaneImageName is the control-plane Wasm OCI image name.
+  wasmControlPlaneImageName: control-plane-egress-auth-wasm
+
+# components controls which platform-owned Istio resources are rendered.
+components:
+  # components.egressCertificates controls ClusterIssuers, root CA, and trust bundle projection.
+  egressCertificates:
+    enabled: true
+  # components.waypoints controls the shared ambient waypoints.
+  waypoints:
+    enabled: true
+  # components.telemetry controls the mesh-default telemetry resource.
+  telemetry:
+    enabled: false
+  # components.controlPlaneEgress controls control-plane NetworkPolicy resources.
+  controlPlaneEgress:
+    enabled: true
+  # components.wasmPlugins controls the egress gateway WasmPlugin resources.
+  wasmPlugins:
+    enabled: true

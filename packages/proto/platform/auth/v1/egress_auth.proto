@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package platform.auth.v1;
+
+option go_package = "code-code.internal/go-contract/platform/auth/v1;authv1";
+
+message ResolveEgressRequestHeadersRequest {
+  string policy_id = 1;
+  string credential_id = 2;
+  string adapter_id = 3;
+  string target_host = 4;
+  string header_value_prefix = 5;
+  string origin = 6;
+  map<string, string> request_headers = 7;
+  repeated EgressSimpleReplacementRule simple_replacement_rules = 8;
+  repeated EgressHeaderReplacementItem headers = 9;
+  repeated string allowed_header_names = 10;
+  EgressRequestSource runtime_source = 11;
+  string target_path = 12;
+}
+
+message ResolveEgressResponseHeadersRequest {
+  string policy_id = 1;
+  string credential_id = 2;
+  string adapter_id = 3;
+  string target_host = 4;
+  string origin = 5;
+  map<string, string> request_headers = 6;
+  map<string, string> response_headers = 7;
+  repeated EgressSimpleReplacementRule simple_replacement_rules = 8;
+  repeated EgressHeaderReplacementItem headers = 9;
+  repeated string allowed_header_names = 10;
+  EgressRequestSource runtime_source = 11;
+  string target_path = 12;
+  uint32 status_code = 13;
+  string header_value_prefix = 14;
+}
+
+message EgressHeaderReplacementItem {
+  string name = 1;
+  string current_value = 2;
+}
+
+message EgressSimpleReplacementRule {
+  string mode = 1;
+  string header_name = 2;
+  string material_key = 3;
+  string header_value_prefix = 4;
+  string template = 5;
+}
+
+message ResolveEgressRequestHeadersResponse {
+  map<string, string> headers = 1;
+  repeated string remove_headers = 2;
+  string error = 3;
+  bool skipped = 4;
+}
+
+message ResolveEgressResponseHeadersResponse {
+  map<string, string> headers = 1;
+  repeated string remove_headers = 2;
+  string error = 3;
+  bool skipped = 4;
+}
+
+message EgressRequestSource {
+  oneof source {
+    EgressPodSource pod = 1;
+    string run_id = 2;
+    string workload_id = 3;
+  }
+}
+
+message EgressPodSource {
+  string namespace = 1;
+  string name = 2;
+  string uid = 3;
+  string ip = 4;
+}

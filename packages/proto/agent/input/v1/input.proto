@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package agent.input.v1;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "code-code.internal/go-contract/agent/input/v1;inputv1";
+
+// InputSchema describes provider-facing extension parameters.
+message InputSchema {
+  InputSchemaFormat format = 1;
+  google.protobuf.Struct schema = 2;
+  string json_schema_dialect = 3;
+}
+
+// InputSchemaFormat identifies the schema language used by InputSchema.
+enum InputSchemaFormat {
+  INPUT_SCHEMA_FORMAT_UNSPECIFIED = 0;
+  INPUT_SCHEMA_FORMAT_JSON_SCHEMA = 1;
+}
+
+// RunInput carries provider-facing input.
+message RunInput {
+  string text = 1;
+  google.protobuf.Struct parameters = 2;
+}

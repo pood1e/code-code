@@ -1,0 +1,82 @@
+{{- if .Values.cloudflareDdns.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cloudflareDdns.configMapName }}
+  namespace: {{ .Values.global.infraNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "cloudflare-ddns" "componentLabel" "dns-updater") | nindent 4 }}
+data:
+  DOMAINS: {{ .Values.cloudflareDdns.domains | quote }}
+  PROXIED: {{ .Values.cloudflareDdns.proxied | quote }}
+  IP4_PROVIDER: {{ .Values.cloudflareDdns.ip4Provider | quote }}
+  IP6_PROVIDER: {{ .Values.cloudflareDdns.ip6Provider | quote }}
+  UPDATE_CRON: {{ .Values.cloudflareDdns.updateCron | quote }}
+  UPDATE_ON_START: {{ .Values.cloudflareDdns.updateOnStart | quote }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-ddns
+  namespace: {{ .Values.global.infraNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "cloudflare-ddns" "componentLabel" "dns-updater") | nindent 4 }}
+spec:
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+{{ include "infrastructure.selectorLabels" (dict "root" . "name" "cloudflare-ddns") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "cloudflare-ddns" "componentLabel" "dns-updater") | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 5
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: cloudflare-ddns
+          image: {{ .Values.cloudflareDdns.image }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.cloudflareDdns.configMapName }}
+            - secretRef:
+                name: {{ .Values.cloudflareDdns.secretName }}
+          env:
+            - name: RECORD_COMMENT
+              value: managed-by-code-code-cloudflare-ddns
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+              ephemeral-storage: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+              ephemeral-storage: 128Mi
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+{{- end }}

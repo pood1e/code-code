@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package agent.core.v1;
+
+import "agent/cap/v1/cap.proto";
+import "agent/input/v1/input.proto";
+import "agent/policy/v1/policy.proto";
+import "provider/v1/provider.proto";
+
+option go_package = "code-code.internal/go-contract/agent/core/v1;corev1";
+
+// AgentDescriptor describes an agent provider that can be selected by the platform.
+message AgentDescriptor {
+  string provider_id = 1;
+  string display_name = 2;
+  agent.cap.v1.Capabilities capabilities = 3;
+  agent.input.v1.InputSchema input_schema = 4;
+  agent.policy.v1.ProviderFilter provider_filter = 5;
+}
+
+// RuntimeEnvironment describes the local runtime roots provided by the platform.
+message RuntimeEnvironment {
+  string workspace_dir = 1;
+  string data_dir = 2;
+}
+
+// RunRequest is the platform input for starting one run.
+message RunRequest {
+  string run_id = 1;
+  string trace_id = 2;
+  agent.input.v1.RunInput input = 3;
+  string resume_token = 4;
+  provider.v1.ResolvedProviderModel resolved_provider_model = 5;
+}

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package platform.egress.v1;
+
+import "platform/management/v1/management.proto";
+
+option go_package = "code-code.internal/go-contract/platform/egress/v1;egressservicev1";
+
+service EgressService {
+  rpc ListEgressPolicies(platform.management.v1.ListEgressPoliciesRequest) returns (platform.management.v1.ListEgressPoliciesResponse);
+  rpc UpdateEgressPolicy(platform.management.v1.UpdateEgressPolicyRequest) returns (platform.management.v1.UpdateEgressPolicyResponse);
+  rpc GetEgressRuntimePolicy(GetEgressRuntimePolicyRequest) returns (GetEgressRuntimePolicyResponse);
+}
+
+message GetEgressRuntimePolicyRequest {
+  string policy_id = 1;
+  string runtime_url = 2;
+}
+
+message GetEgressRuntimePolicyResponse {
+  EgressRuntimePolicy policy = 1;
+}
+
+message EgressRuntimePolicy {
+  string policy_id = 1;
+  repeated string target_hosts = 2;
+  repeated string target_path_prefixes = 3;
+}

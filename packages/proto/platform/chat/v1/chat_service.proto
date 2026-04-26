@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package platform.chat.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "platform/agent_session/v1/agent_session.proto";
+import "provider/v1/provider.proto";
+
+option go_package = "code-code.internal/go-contract/platform/chat/v1;chatv1";
+
+service ChatService {
+  rpc GetSessionRuntimeOptions(GetSessionRuntimeOptionsRequest) returns (GetSessionRuntimeOptionsResponse);
+  rpc ValidateInlineSpec(ValidateInlineSpecRequest) returns (ValidateInlineSpecResponse);
+  rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
+  rpc GetChat(GetChatRequest) returns (GetChatResponse);
+  rpc UpdateChatSessionSetup(UpdateChatSessionSetupRequest) returns (UpdateChatSessionSetupResponse);
+  rpc RenameChat(RenameChatRequest) returns (RenameChatResponse);
+  rpc ListChats(ListChatsRequest) returns (ListChatsResponse);
+  rpc ListChatMessages(ListChatMessagesRequest) returns (ListChatMessagesResponse);
+}
+
+message GetSessionRuntimeOptionsRequest {}
+
+message GetSessionRuntimeOptionsResponse {
+  repeated SessionRuntimeProviderOption items = 1;
+}
+
+message SessionRuntimeProviderOption {
+  string provider_id = 1;
+  string label = 2;
+  repeated string execution_classes = 3;
+  repeated SessionRuntimeSurfaceOption surfaces = 4;
+}
+
+message SessionRuntimeSurfaceOption {
+  reserved 1, 3, 4;
+  reserved "surface_id", "vendor_id", "default_model_id";
+  string label = 2;
+  repeated string models = 5;
+  provider.v1.ProviderRuntimeRef runtime_ref = 6;
+}
+
+message ValidateInlineSpecRequest {
+  platform.agent_session.v1.AgentSessionSpec spec = 1;
+}
+
+message ValidateInlineSpecResponse {}
+
+message Chat {
+  string chat_id = 1;
+  string scope_id = 2;
+  string display_name = 3;
+  string session_id = 4;
+  reserved 5;
+  platform.agent_session.v1.AgentSessionState session_state = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message CreateChatRequest {
+  string chat_id = 1;
+  string scope_id = 2;
+  string display_name = 3;
+  platform.agent_session.v1.AgentSessionSpec session = 4;
+}
+
+message CreateChatResponse {
+  Chat chat = 1;
+}
+
+message GetChatRequest {
+  string chat_id = 1;
+}
+
+message GetChatResponse {
+  Chat chat = 1;
+}
+
+message UpdateChatSessionSetupRequest {
+  string chat_id = 1;
+  platform.agent_session.v1.AgentSessionSpec session = 2;
+}
+
+message UpdateChatSessionSetupResponse {
+  Chat chat = 1;
+}
+
+message RenameChatRequest {
+  string chat_id = 1;
+  string display_name = 2;
+}
+
+message RenameChatResponse {
+  Chat chat = 1;
+}
+
+message ListChatsRequest {
+  string scope_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListChatsResponse {
+  repeated Chat chats = 1;
+  string next_page_token = 2;
+}
+
+message ListChatMessagesRequest {
+  string chat_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListChatMessagesResponse {
+  repeated google.protobuf.Struct messages = 1;
+  string next_page_token = 2;
+}

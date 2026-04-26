@@ -1,0 +1,6 @@
+packages:
+  - "../agent-contract"
+  - "app"
+  - "packages/*"
+
+injectWorkspacePackages: true

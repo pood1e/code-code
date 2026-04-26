@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package agent.output.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "code-code.internal/go-contract/agent/output/v1;outputv1";
+
+// RunOutput is one ordered AG-UI event emitted by a run.
+message RunOutput {
+  uint64 sequence = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  google.protobuf.Struct event = 3;
+}

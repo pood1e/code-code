@@ -1,0 +1,10 @@
+global:
+  imageRegistry: localhost:5001
+  imageTag: dev-local
+
+notificationDispatcher:
+  ingress:
+    tlsSecretName: platform-notifications-local-tls
+    hosts:
+      - notifications.localhost
+      - notifications-alt.localhost

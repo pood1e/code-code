@@ -1,0 +1,15 @@
+global:
+  imageRegistry: localhost:5001
+  imageTag: dev-local
+
+components:
+  egressCertificates:
+    enabled: true
+  waypoints:
+    enabled: true
+  telemetry:
+    enabled: false
+  controlPlaneEgress:
+    enabled: true
+  wasmPlugins:
+    enabled: true

@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alerting
+data:
+  alertmanager.yml: |-
+    global:
+      resolve_timeout: 5m
+      wechat_api_url: https://qyapi.weixin.qq.com/cgi-bin/
+      wechat_api_secret_file: /etc/alertmanager-secrets/wechat-api-secret
+      wechat_api_corp_id: "<REPLACE_WITH_WECHAT_CORP_ID>"
+    templates:
+      - /etc/alertmanager/templates/*.tmpl
+    route:
+      receiver: platform-wechat
+      group_by: ["alertname", "severity", "component"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        - receiver: quiet
+          matchers:
+            - severity = "info"
+          continue: false
+        - receiver: platform-wechat
+          matchers:
+            - severity =~ "warning|critical"
+    inhibit_rules:
+      - source_matchers:
+          - severity = "critical"
+        target_matchers:
+          - severity = "warning"
+        equal: ["alertname", "component"]
+    receivers:
+      - name: quiet
+      - name: platform-wechat
+        wechat_configs:
+          - send_resolved: true
+            message_type: markdown
+            agent_id: "<REPLACE_WITH_WECHAT_AGENT_ID>"
+            to_party: "<REPLACE_WITH_WECHAT_PARTY_ID>"
+            message: '{{ template "codecode.wechat.message" . }}'
+
+  wechat.tmpl: |-
+    {{ define "codecode.wechat.message" -}}
+    {{- if eq .Status "firing" -}}# Code Code alerts firing{{- else -}}# Code Code alerts resolved{{- end }}
+    {{ range .Alerts }}
+    > **{{ .Labels.alertname }}** ({{ .Labels.severity }})
+    > component: {{ .Labels.component }}
+    > {{ .Annotations.summary }}
+    {{- if .Annotations.description }}
+    > {{ .Annotations.description }}
+    {{- end }}
+    {{- if .Annotations.runbook_url }}
+    > runbook: {{ .Annotations.runbook_url }}
+    {{- end }}
+    {{ end -}}
+    {{ end }}

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cli-runtime-image-build-config
+data:
+  IMAGE_REGISTRY_PREFIX: ""
+  IMAGE_REGISTRY_LOOKUP_PREFIX: ""
+  IMAGE_REGISTRY_LOOKUP_INSECURE: "false"
+  SOURCE_CONTEXT: ""
+  SOURCE_REVISION: main

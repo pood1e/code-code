@@ -1,0 +1,38 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: agentrunresources.platform.code-code.internal
+spec:
+  group: platform.code-code.internal
+  names:
+    kind: AgentRunResource
+    listKind: AgentRunResourceList
+    plural: agentrunresources
+    singular: agentrunresource
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Workload
+          type: string
+          jsonPath: .status.workloadId
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

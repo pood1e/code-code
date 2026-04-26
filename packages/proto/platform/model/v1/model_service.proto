@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package platform.model.v1;
+
+import "credential/v1/credential.proto";
+import "api_protocol/v1/protocol.proto";
+import "model/v1/model.proto";
+
+option go_package = "code-code.internal/go-contract/platform/model/v1;modelservicev1";
+
+service ModelService {
+  rpc ListModelDefinitions(ListModelDefinitionsRequest) returns (ListModelDefinitionsResponse);
+  rpc GetOrFetchCatalogModels(GetOrFetchCatalogModelsRequest) returns (GetOrFetchCatalogModelsResponse);
+  rpc FetchCatalogModels(FetchCatalogModelsRequest) returns (FetchCatalogModelsResponse);
+  rpc SyncModelDefinitions(SyncModelDefinitionsRequest) returns (SyncModelDefinitionsResponse);
+}
+
+message ModelRegistryEntry {
+  .model.v1.ModelDefinition definition = 1;
+  .model.v1.ModelRef source_ref = 2;
+  repeated string badges = 3;
+  RegistryModelPricing pricing = 4;
+  repeated RegistryModelSource sources = 5;
+}
+
+message RegistryModelPricing {
+  string input = 1;
+  string output = 2;
+  string cache_read_input = 3;
+  string cache_write_input = 4;
+}
+
+message RegistryModelSource {
+  string source_id = 1;
+  string kind = 2;
+  bool is_direct = 3;
+  string source_model_id = 4;
+  .model.v1.ModelDefinition definition = 5;
+  repeated string badges = 6;
+  RegistryModelPricing pricing = 7;
+}
+
+message ListModelDefinitionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+}
+
+message ListModelDefinitionsResponse {
+  repeated ModelRegistryEntry items = 1;
+  string next_page_token = 2;
+  int64 total_count = 3;
+}
+
+message GetOrFetchCatalogModelsRequest {
+  string probe_id = 1;
+  ModelCatalogTarget target = 2;
+  credential.v1.CredentialRef auth_ref = 3;
+}
+
+message FetchCatalogModelsRequest {
+  string probe_id = 1;
+  ModelCatalogTarget target = 2;
+  credential.v1.CredentialRef auth_ref = 3;
+}
+
+message ModelCatalogTarget {
+  string target_id = 1;
+  string base_url = 2;
+  api_protocol.v1.Protocol protocol = 3;
+}
+
+message CatalogModel {
+  string source_model_id = 1;
+  .model.v1.ModelDefinition definition = 2;
+}
+
+message GetOrFetchCatalogModelsResponse {
+  repeated CatalogModel models = 1;
+}
+
+message FetchCatalogModelsResponse {
+  repeated CatalogModel models = 1;
+}
+
+message SyncModelDefinitionsRequest {}
+
+message SyncModelDefinitionsResponse {
+  string status = 1;
+}
