@@ -44,9 +44,9 @@ spec:
         - name: {{ $component.name }}
           image: {{ include "platform.image" (dict "root" $ "imageName" $component.imageName "imageRegistry" $component.imageRegistry "imageTag" $component.imageTag) }}
           imagePullPolicy: {{ default "IfNotPresent" $component.imagePullPolicy }}
-          {{- if or $component.env $component.egressTrustBundle $component.databaseUrl $component.internalActionToken }}
+          {{- if or $component.env $component.egressTrustBundle $component.databaseUrl $component.credentialEncryptionKey $component.internalActionToken }}
           env:
-{{ include "platform.renderEnv" (dict "root" $ "component" $component "env" $component.env "egressTrustBundle" $component.egressTrustBundle "databaseUrl" $component.databaseUrl "internalActionToken" $component.internalActionToken) | nindent 12 }}
+{{ include "platform.renderEnv" (dict "root" $ "component" $component "env" $component.env "egressTrustBundle" $component.egressTrustBundle "databaseUrl" $component.databaseUrl "credentialEncryptionKey" $component.credentialEncryptionKey "internalActionToken" $component.internalActionToken) | nindent 12 }}
           {{- if and $component.env (hasKey $component.env "OTEL_EXPORTER_OTLP_ENDPOINT") }}
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
               value: {{ default "grpc" $.Values.global.otlpProtocol | quote }}

@@ -81,6 +81,7 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.global.grafanaAdminSecretName }}
+                optional: true
           env:
             - name: GF_SERVER_ROOT_URL
               value: {{ .Values.grafana.rootUrl | quote }}

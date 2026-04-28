@@ -90,8 +90,8 @@ message ModelListFilter {
   repeated string vendor_ids = 1;
   // Exact model ID match.
   string model_id = 2;
-  // Substring search within model IDs (case-insensitive).
-  string model_id_query = 3;
+  // Substring search across model identity, display metadata, and source/service identity.
+  string query = 3;
   // Filter by source IDs (OR semantics).
   repeated string source_ids = 4;
   // Filter by badge.

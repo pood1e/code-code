@@ -1,5 +1,14 @@
 {{- if and .Values.prometheus.enabled .Values.blackbox.enabled .Values.providerHostTelemetry.enabled }}
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: provider-host-blackbox-exporter
+  namespace: {{ .Values.global.platformNamespace }}
+  labels:
+{{ include "infrastructure.labels" (dict "root" . "name" "provider-host-blackbox-exporter" "componentLabel" "metrics") | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provider-host-blackbox-exporter-config
@@ -53,6 +62,7 @@ spec:
       labels:
 {{ include "infrastructure.labels" (dict "root" . "name" "provider-host-blackbox-exporter" "componentLabel" "metrics") | nindent 8 }}
     spec:
+      serviceAccountName: provider-host-blackbox-exporter
       automountServiceAccountToken: false
       securityContext:
         fsGroup: 65534

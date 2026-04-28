@@ -11,7 +11,7 @@ export function buildStructuredFilter(
 ): ModelListFilter {
   return create(ModelListFilterSchema, {
     vendorIds: vendorIds.length > 0 ? vendorIds : undefined,
-    modelIdQuery: modelQuery.trim() || undefined,
+    query: modelQuery.trim() || undefined,
     sourceIds: sourceIds.length > 0 ? sourceIds : undefined,
     badge: badge.trim() || undefined,
     category: category.trim() || undefined,

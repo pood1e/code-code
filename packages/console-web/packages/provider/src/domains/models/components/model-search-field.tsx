@@ -8,8 +8,8 @@ type ModelSearchFieldProps = {
 export function ModelSearchField({ value, onChange }: ModelSearchFieldProps) {
   return (
     <SearchTextField
-      aria-label="Query model id"
-      placeholder="Search by name or model ID"
+      ariaLabel="Search models or services"
+      placeholder="Search models or services"
       size="2"
       value={value}
       onValueChange={onChange}

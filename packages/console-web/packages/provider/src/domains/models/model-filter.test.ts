@@ -5,13 +5,13 @@ describe("model filter helpers", () => {
   it("builds structured filters", () => {
     const filter = buildStructuredFilter(["openai", "anthropic"], "claude");
     expect(filter.vendorIds).toEqual(["openai", "anthropic"]);
-    expect(filter.modelIdQuery).toBe("claude");
+    expect(filter.query).toBe("claude");
   });
 
   it("includes source and badge in structured filter", () => {
     const filter = buildStructuredFilter(["openai"], "gpt-5", ["nvidia-integrate"], "free");
     expect(filter.vendorIds).toEqual(["openai"]);
-    expect(filter.modelIdQuery).toBe("gpt-5");
+    expect(filter.query).toBe("gpt-5");
     expect(filter.sourceIds).toEqual(["nvidia-integrate"]);
     expect(filter.badge).toBe("free");
   });
@@ -24,7 +24,7 @@ describe("model filter helpers", () => {
   it("builds empty structured filter when no params", () => {
     const filter = buildStructuredFilter([], "");
     expect(filter.vendorIds?.length ?? 0).toBe(0);
-    expect(filter.modelIdQuery).toBeFalsy();
+    expect(filter.query).toBeFalsy();
   });
 
   it("toggles selections", () => {

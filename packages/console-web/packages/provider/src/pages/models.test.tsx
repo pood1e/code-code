@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Theme } from "@radix-ui/themes";
 import { MemoryRouter } from "react-router-dom";
+import { ModelCategory } from "@code-code/agent-contract/model/v1";
 import { ModelsPage } from "./models";
 import { useModelRegistryState } from "../domains/models/use-model-registry-state";
 
@@ -18,6 +19,7 @@ function mockRegistryState(overrides?: Partial<ReturnType<typeof useModelRegistr
     handleCategoryChange: vi.fn(),
     handleClearAllFilters: vi.fn(),
     handleLifecycleToggle: vi.fn(),
+    handleModelQueryClear: vi.fn(),
     handleModelQueryChange: vi.fn(),
     handleNextPage: vi.fn(),
     handleSourceClear: vi.fn(),
@@ -64,11 +66,31 @@ describe("ModelsPage", () => {
 
     expect(screen.queryByText(/unbound/i)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Model catalog" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/search.+model id/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/search models or services/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Vendors" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Sources" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Services" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Availability" })).toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Vendor" })).not.toBeInTheDocument();
+  });
+
+  it("shows active search and category filters with clear actions", () => {
+    const handleModelQueryClear = vi.fn();
+    const handleCategoryChange = vi.fn();
+    mockRegistryState({
+      handleCategoryChange,
+      handleModelQueryClear,
+      modelQuery: "gpt 5",
+      selectedCategory: String(ModelCategory.CHAT),
+    });
+
+    render(<MemoryRouter><Theme><ModelsPage /></Theme></MemoryRouter>);
+
+    expect(screen.getByText("Search: gpt 5")).toBeInTheDocument();
+    expect(screen.getByText("Category: Chat")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter: Search: gpt 5" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter: Category: Chat" }));
+    expect(handleModelQueryClear).toHaveBeenCalledTimes(1);
+    expect(handleCategoryChange).toHaveBeenCalledWith("");
   });
 
   it("shows total pages when the API provides totalCount", () => {

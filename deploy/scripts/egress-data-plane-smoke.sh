@@ -14,8 +14,10 @@ workload_namespace="${PLATFORM_EGRESS_SMOKE_WORKLOAD_NAMESPACE:-code-code}"
 l7_service_account="${PLATFORM_EGRESS_SMOKE_L7_SERVICE_ACCOUNT:-l7-smoke-client}"
 l4_service_account="${PLATFORM_EGRESS_SMOKE_L4_SERVICE_ACCOUNT:-platform-support-service}"
 image="${PLATFORM_EGRESS_SMOKE_IMAGE:-busybox:1.36}"
-proxy_host="${PLATFORM_EGRESS_SMOKE_PROXY_HOST:-192.168.0.126}"
+proxy_host="${PLATFORM_EGRESS_SMOKE_PROXY_HOST:-}"
 proxy_port="${PLATFORM_EGRESS_SMOKE_PROXY_PORT:-10809}"
+proxy_access_set_id="${PLATFORM_EGRESS_SMOKE_PROXY_ACCESS_SET_ID:-support.proxy-preset.preset-proxy}"
+proxy_source_service_account="${PLATFORM_EGRESS_SMOKE_PROXY_SOURCE_SERVICE_ACCOUNT:-${workload_namespace}/${l4_service_account}}"
 l4_tcp_timeout="${PLATFORM_EGRESS_SMOKE_L4_TCP_TIMEOUT:-20}"
 l4_tcp_attempts="${PLATFORM_EGRESS_SMOKE_L4_TCP_ATTEMPTS:-3}"
 access_set_id="${PLATFORM_EGRESS_SMOKE_ACCESS_SET_ID:-support.external-rule-set.l7-smoke}"
@@ -67,10 +69,15 @@ requires_l7_access_set() {
 }
 
 resource_names_for_access_set() {
+  resource_names_for_access_set_id "$1" "${access_set_id}"
+}
+
+resource_names_for_access_set_id() {
   local kind="$1"
+  local requested_access_set_id="$2"
   "${kubectl_bin}" -n "${network_namespace}" get "${kind}" -o json | "${jq_bin}" -r \
-    --arg access_set_id "${access_set_id}" \
-    '.items[] | select((.metadata.annotations["egress.platform.code-code.internal/access-set-id"] // "") | contains($access_set_id)) | .metadata.name'
+    --arg access_set_id "${requested_access_set_id}" \
+    '.items[] | select(((.metadata.annotations["egress.platform.code-code.internal/access-set-id"] // "") | split(",") | index($access_set_id)) != null) | .metadata.name'
 }
 
 wait_for_route_accepted() {
@@ -203,6 +210,57 @@ require_dynamic_authz_policy() {
   echo "[egress-data-plane-smoke] ${policy_name} targets ${target_count} ServiceEntry resource(s)"
 }
 
+require_preset_proxy_pairing() {
+  mapfile -t proxy_service_entries < <(resource_names_for_access_set_id serviceentry "${proxy_access_set_id}")
+  if [[ "${#proxy_service_entries[@]}" -ne 1 ]]; then
+    "${kubectl_bin}" -n "${network_namespace}" get serviceentry,authorizationpolicy -o wide >&2 || true
+    echo "[egress-data-plane-smoke] preset proxy ${proxy_access_set_id} must map to exactly one ServiceEntry, got ${#proxy_service_entries[@]}" >&2
+    exit 1
+  fi
+
+  local service_entry="${proxy_service_entries[0]}"
+  local service_entry_json
+  service_entry_json="$("${kubectl_bin}" -n "${network_namespace}" get serviceentry "${service_entry}" -o json)"
+
+  local protocol_count
+  protocol_count="$(printf '%s' "${service_entry_json}" | "${jq_bin}" -r --argjson port "${proxy_port}" '[.spec.ports[]? | select(.number == $port and .protocol == "TCP")] | length')"
+  if [[ "${protocol_count}" == "0" ]]; then
+    printf '%s\n' "${service_entry_json}" | "${jq_bin}" . >&2
+    echo "[egress-data-plane-smoke] ServiceEntry/${service_entry} does not expose TCP ${proxy_port}" >&2
+    exit 1
+  fi
+
+  local connect_host="${proxy_host}"
+  if [[ -z "${connect_host}" ]]; then
+    connect_host="$(printf '%s' "${service_entry_json}" | "${jq_bin}" -r '.spec.addresses[0] // .spec.hosts[0] // ""')"
+    connect_host="${connect_host%%/*}"
+  fi
+  if [[ -z "${connect_host}" ]]; then
+    printf '%s\n' "${service_entry_json}" | "${jq_bin}" . >&2
+    echo "[egress-data-plane-smoke] ServiceEntry/${service_entry} has no host or address for proxy connection" >&2
+    exit 1
+  fi
+
+  local matching_authz_count
+  matching_authz_count="$("${kubectl_bin}" -n "${network_namespace}" get authorizationpolicy -o json | "${jq_bin}" -r \
+    --arg access_set_id "${proxy_access_set_id}" \
+    --arg service_entry "${service_entry}" \
+    --arg source_service_account "${proxy_source_service_account}" \
+    '[.items[]
+      | select(((.metadata.annotations["egress.platform.code-code.internal/access-set-id"] // "") | split(",") | index($access_set_id)) != null)
+      | select([.spec.targetRefs[]? | select(.group == "networking.istio.io" and .kind == "ServiceEntry" and .name == $service_entry)] | length > 0)
+      | select([.spec.rules[]?.from[]?.source.serviceAccounts[]? | select(. == $source_service_account)] | length > 0)
+    ] | length')"
+  if [[ "${matching_authz_count}" == "0" ]]; then
+    "${kubectl_bin}" -n "${network_namespace}" get authorizationpolicy -o yaml >&2 || true
+    echo "[egress-data-plane-smoke] no AuthorizationPolicy pairs ${proxy_access_set_id} with ServiceEntry/${service_entry} for ${proxy_source_service_account}" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "${connect_host}"
+  echo "[egress-data-plane-smoke] preset proxy ${proxy_access_set_id} pairs ServiceEntry/${service_entry} with ${proxy_source_service_account}" >&2
+}
+
 run_smoke_pod() {
   local pod_name="$1"
   local service_account="$2"
@@ -326,9 +384,10 @@ fi
 
 if has_check proxy; then
   echo "[egress-data-plane-smoke] preset proxy TCP smoke"
+  proxy_connect_host="$(require_preset_proxy_pairing)"
   run_smoke_pod "${proxy_pod}" "${l4_service_account}" "set -eu
-nc -vz -w 5 ${proxy_host} ${proxy_port}
-echo \"[proxy] ${proxy_host}:${proxy_port} ok\""
+nc -vz -w 5 ${proxy_connect_host} ${proxy_port}
+echo \"[proxy] ${proxy_connect_host}:${proxy_port} ok\""
 fi
 
 if has_check dynamic-authz; then

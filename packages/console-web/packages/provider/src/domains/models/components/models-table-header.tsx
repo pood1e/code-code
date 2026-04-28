@@ -5,6 +5,7 @@ export function ModelsTableHeader() {
     <Table.Header>
       <Table.Row>
         <Table.ColumnHeaderCell>Model</Table.ColumnHeaderCell>
+        <Table.ColumnHeaderCell>Services</Table.ColumnHeaderCell>
         <Table.ColumnHeaderCell>Capabilities</Table.ColumnHeaderCell>
         <Table.ColumnHeaderCell>Context Window</Table.ColumnHeaderCell>
         <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>

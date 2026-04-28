@@ -510,8 +510,8 @@ type ModelListFilter struct {
 	VendorIds []string `protobuf:"bytes,1,rep,name=vendor_ids,json=vendorIds,proto3" json:"vendor_ids,omitempty"`
 	// Exact model ID match.
 	ModelId string `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
-	// Substring search within model IDs (case-insensitive).
-	ModelIdQuery string `protobuf:"bytes,3,opt,name=model_id_query,json=modelIdQuery,proto3" json:"model_id_query,omitempty"`
+	// Substring search across model identity, display metadata, and source/service identity.
+	Query string `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
 	// Filter by source IDs (OR semantics).
 	SourceIds []string `protobuf:"bytes,4,rep,name=source_ids,json=sourceIds,proto3" json:"source_ids,omitempty"`
 	// Filter by badge.
@@ -568,9 +568,9 @@ func (x *ModelListFilter) GetModelId() string {
 	return ""
 }
 
-func (x *ModelListFilter) GetModelIdQuery() string {
+func (x *ModelListFilter) GetQuery() string {
 	if x != nil {
-		return x.ModelIdQuery
+		return x.Query
 	}
 	return ""
 }
@@ -1248,12 +1248,12 @@ const file_platform_model_v1_model_service_proto_rawDesc = "" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x16\n" +
 	"\x06filter\x18\x03 \x01(\tR\x06filter\x12O\n" +
-	"\x11structured_filter\x18\x04 \x01(\v2\".platform.model.v1.ModelListFilterR\x10structuredFilter\"\xfc\x01\n" +
+	"\x11structured_filter\x18\x04 \x01(\v2\".platform.model.v1.ModelListFilterR\x10structuredFilter\"\xec\x01\n" +
 	"\x0fModelListFilter\x12\x1d\n" +
 	"\n" +
 	"vendor_ids\x18\x01 \x03(\tR\tvendorIds\x12\x19\n" +
-	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12$\n" +
-	"\x0emodel_id_query\x18\x03 \x01(\tR\fmodelIdQuery\x12\x1d\n" +
+	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12\x14\n" +
+	"\x05query\x18\x03 \x01(\tR\x05query\x12\x1d\n" +
 	"\n" +
 	"source_ids\x18\x04 \x03(\tR\tsourceIds\x12\x14\n" +
 	"\x05badge\x18\x05 \x01(\tR\x05badge\x12\x1a\n" +

@@ -1,7 +1,7 @@
 import type { VendorView } from "@code-code/agent-contract/platform/provider/v1";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useMemo } from "react";
-import { Box, Button, Flex, Heading, ScrollArea, Separator, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Checkbox, Flex, Heading, ScrollArea, Text } from "@radix-ui/themes";
 import { SoftBadge } from "@code-code/console-web-ui";
 import { SOURCE_BADGE_FREE } from "../source-badges";
 import type { ModelAvailabilityFilter } from "../use-model-registry-state";
@@ -18,6 +18,7 @@ type ModelFacetSidebarProps = {
   onVendorToggle: (value: string) => void;
   selectedSourceIds: string[];
   selectedVendorIds: string[];
+  sticky?: boolean;
   vendors: VendorView[];
   vendorsLoading?: boolean;
 };
@@ -32,6 +33,7 @@ export function ModelFacetSidebar({
   onVendorToggle,
   selectedSourceIds,
   selectedVendorIds,
+  sticky = true,
   vendors,
   vendorsLoading,
 }: ModelFacetSidebarProps) {
@@ -39,7 +41,7 @@ export function ModelFacetSidebar({
   const sourceOptions = useMemo(buildSourceOptions, []);
 
   return (
-    <Flex direction="column" gap="5" style={{ position: "sticky", top: "var(--space-4)" }}>
+    <Flex direction="column" gap="4" style={sticky ? { ...facetShellStyle, ...stickyFacetStyle } : facetShellStyle}>
       <FacetSection
         title="Vendors"
         summary={selectedVendorIds.length === 0 ? "All" : `${selectedVendorIds.length} selected`}
@@ -56,20 +58,18 @@ export function ModelFacetSidebar({
               {vendorOptions.map((option) => {
                 const selected = selectedVendorIds.includes(option.value);
                 return (
-                  <Flex align="center" gap="1" key={option.value}>
-                    <Button
-                      aria-pressed={selected}
-                      color="gray"
-                      onClick={() => onVendorToggle(option.value)}
-                      size="2"
-                      style={vendorButtonStyle}
-                      variant={selected ? "soft" : "ghost"}
-                    >
+                  <Flex align="center" gap="1" key={option.value} style={facetOptionWrapStyle}>
+                    <label style={selected ? selectedFacetOptionStyle : facetOptionStyle}>
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={() => onVendorToggle(option.value)}
+                        size="1"
+                      />
                       <VendorAvatar displayName={option.label} iconUrl={option.iconUrl} size="1" />
                       <Text as="div" size="2" truncate style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
                         {option.label}
                       </Text>
-                    </Button>
+                    </label>
                     <Button color="gray" onClick={() => onVendorSetOnly(option.value)} size="1" variant="ghost">
                       Only
                     </Button>
@@ -82,7 +82,7 @@ export function ModelFacetSidebar({
       </FacetSection>
 
       <FacetSection
-        title="Sources"
+        title="Services"
         summary={selectedSourceIds.length === 0 ? "All" : `${selectedSourceIds.length} selected`}
         onClear={onSourceClear}
         clearDisabled={selectedSourceIds.length === 0}
@@ -91,17 +91,17 @@ export function ModelFacetSidebar({
           {sourceOptions.map((option) => {
             const selected = selectedSourceIds.includes(option.value);
             return (
-              <Button
-                aria-pressed={selected}
-                color="gray"
+              <label
                 key={option.value}
-                onClick={() => onSourceToggle(option.value)}
-                size="2"
-                style={facetButtonStyle}
-                variant={selected ? "soft" : "ghost"}
+                style={selected ? selectedFacetOptionStyle : facetOptionStyle}
               >
+                <Checkbox
+                  checked={selected}
+                  onCheckedChange={() => onSourceToggle(option.value)}
+                  size="1"
+                />
                 <Text size="2">{option.label}</Text>
-              </Button>
+              </label>
             );
           })}
         </Flex>
@@ -113,16 +113,14 @@ export function ModelFacetSidebar({
         onClear={() => onAvailabilityChange("")}
         clearDisabled={availabilityFilter === ""}
       >
-        <Button
-          aria-pressed={availabilityFilter === SOURCE_BADGE_FREE}
-          color="gray"
-          onClick={() => onAvailabilityChange(availabilityFilter === SOURCE_BADGE_FREE ? "" : SOURCE_BADGE_FREE)}
-          size="2"
-          style={facetButtonStyle}
-          variant={availabilityFilter === SOURCE_BADGE_FREE ? "soft" : "ghost"}
-        >
+        <label style={availabilityFilter === SOURCE_BADGE_FREE ? selectedFacetOptionStyle : facetOptionStyle}>
+          <Checkbox
+            checked={availabilityFilter === SOURCE_BADGE_FREE}
+            onCheckedChange={(checked) => onAvailabilityChange(checked === true ? SOURCE_BADGE_FREE : "")}
+            size="1"
+          />
           <SoftBadge color="green" highContrast={false} label="Free" size="1" />
-        </Button>
+        </label>
       </FacetSection>
     </Flex>
   );
@@ -138,31 +136,54 @@ type FacetSectionProps = {
 
 function FacetSection({ children, clearDisabled, onClear, summary, title }: FacetSectionProps) {
   return (
-    <Flex direction="column" gap="3">
+    <Flex direction="column" gap="2">
       <Flex align="center" justify="between" gap="3">
-        <Box>
+        <Flex align="center" gap="2" minWidth="0">
           <Heading as="h2" size="2" weight="medium">{title}</Heading>
-          <Text color="gray" size="1">{summary}</Text>
-        </Box>
+          <Badge color={summary === "All" ? "gray" : "teal"} size="1" variant="soft">{summary}</Badge>
+        </Flex>
         <Button color="gray" disabled={clearDisabled} onClick={onClear} size="1" variant="ghost">
           Clear
         </Button>
       </Flex>
-      <Separator size="4" />
       {children}
     </Flex>
   );
 }
 
-const facetButtonStyle = {
-  justifyContent: "start",
-  minHeight: 44,
+const facetShellStyle: CSSProperties = {
+  backgroundColor: "var(--gray-a2)",
+  border: "1px solid var(--gray-a4)",
+  borderRadius: "var(--radius-3)",
+  padding: "var(--space-3)",
+};
+
+const facetOptionWrapStyle: CSSProperties = {
+  minWidth: 0,
   width: "100%",
 };
 
-const vendorButtonStyle = {
+const facetOptionStyle: CSSProperties = {
+  alignItems: "center",
+  borderRadius: "var(--radius-2)",
+  color: "var(--gray-12)",
+  cursor: "pointer",
+  display: "flex",
   flex: 1,
-  justifyContent: "start",
+  gap: "var(--space-2)",
   minHeight: 44,
   minWidth: 0,
+  padding: "0 var(--space-2)",
+  width: "100%",
+};
+
+const selectedFacetOptionStyle: CSSProperties = {
+  ...facetOptionStyle,
+  backgroundColor: "var(--teal-a3)",
+  color: "var(--teal-12)",
+};
+
+const stickyFacetStyle: CSSProperties = {
+  position: "sticky",
+  top: "var(--space-4)",
 };

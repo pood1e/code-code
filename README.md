@@ -46,7 +46,7 @@ make smoke-ingress
 
 ## 部署入口
 
-- `deploy/Makefile`: 单一部署入口，负责 `build`、`push`、`deploy`、`lint`、`template`、`validate`、`test`、`smoke-ingress`、`scripts-check`、`package-all`、`docs`
+- `deploy/Makefile`: 单一部署入口，负责 `build`、`push`、`deploy`、`kiali-operator-up`、`infrastructure-addons-up`、`lint`、`template`、`validate`、`test`、`smoke-ingress`、`scripts-check`、`package-all`、`docs`
 - `deploy/charts/`: 7 个 Helm charts，README 由 `helm-docs` 生成
 - `deploy/values/`: 共用 values 文件
 - `docs/deploy/README.md`: 部署流程、镜像构建、registry、故障排查
@@ -56,7 +56,7 @@ make smoke-ingress
 - `platform`: 核心业务服务、console ingress、运行时 RBAC、CRD
 - `platform-notifications`: 通知子系统
 - `infrastructure-core`: Postgres、NATS、OTel Collector、Prometheus、Alertmanager
-- `infrastructure-addons`: Grafana、Tempo、Loki、Alloy、Kiali、cloudflare-ddns
+- `infrastructure-addons`: Grafana、Tempo、Loki、Alloy、Kiali CR/Route、cloudflare-ddns；启用 Kiali 时使用 `make -C deploy infrastructure-addons-up`
 - `istio-platform`: 平台托管的 Istio Ambient 资源
 - `cluster-bootstrap`: 命名空间和 Gateway API v1.4.0 Experimental CRD
 - `dev-image-infra`: 开发/内网环境 registry 和 pull-through cache

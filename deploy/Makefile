@@ -100,6 +100,24 @@ KIALI_URL ?= http://kiali.192.168.0.126.nip.io:30599/
 KIALI_BASE_URL ?= http://kiali.192.168.0.126.nip.io:30599
 ANALYZE_NAMESPACES ?= code-code code-code-net code-code-console code-code-showcase code-code-observability
 
+KIALI_OPERATOR_RELEASE ?= kiali-operator
+KIALI_OPERATOR_NAMESPACE ?= code-code-observability
+KIALI_OPERATOR_CHART ?= kiali/kiali-operator
+KIALI_OPERATOR_VERSION ?= 2.25.0
+KIALI_OPERATOR_VERSION_ARG = $(if $(KIALI_OPERATOR_VERSION),--version "$(KIALI_OPERATOR_VERSION)")
+KIALI_OPERATOR_IMAGE_REPO ?= quay.io/kiali/kiali-operator
+KIALI_OPERATOR_IMAGE_TAG ?= v2.25.0
+KIALI_OPERATOR_IMAGE_PULL_POLICY ?= IfNotPresent
+KIALI_OPERATOR_TIMEOUT ?= 10m
+KIALI_OPERATOR_HELM_ARGS ?=
+
+INFRASTRUCTURE_ADDONS_RELEASE ?= code-code-infrastructure-addons
+INFRASTRUCTURE_ADDONS_NAMESPACE ?= code-code
+INFRASTRUCTURE_ADDONS_CHART ?= $(DEPLOY_DIR)/charts/infrastructure-addons
+INFRASTRUCTURE_ADDONS_VALUES ?= $(DEPLOY_DIR)/charts/infrastructure-addons/examples/observability.yaml
+INFRASTRUCTURE_ADDONS_TIMEOUT ?= 10m
+INFRASTRUCTURE_ADDONS_HELM_ARGS ?=
+
 ##@ General
 
 .PHONY: help
@@ -232,6 +250,33 @@ deploy: _require_current_chart_path ## helm upgrade --install --atomic --wait（
 		--atomic --wait --timeout "$(TIMEOUT)" \
 		-f "$(VALUES_PATH)" \
 		$(HELM_SET_IMAGE)
+
+.PHONY: kiali-operator-up
+kiali-operator-up: ## 安装/更新官方 Kiali Operator（Kiali CR/Route 的前置依赖）
+	$(HELM) upgrade --install "$(KIALI_OPERATOR_RELEASE)" "$(KIALI_OPERATOR_CHART)" \
+		$(KIALI_OPERATOR_VERSION_ARG) \
+		--namespace "$(KIALI_OPERATOR_NAMESPACE)" \
+		--create-namespace \
+		--set image.repo='$(KIALI_OPERATOR_IMAGE_REPO)' \
+		--set image.tag='$(KIALI_OPERATOR_IMAGE_TAG)' \
+		--set image.pullPolicy='$(KIALI_OPERATOR_IMAGE_PULL_POLICY)' \
+		--set cr.create=false \
+		--set allowAdHocKialiImage=true \
+		--set securityContext.runAsNonRoot=true \
+		--set securityContext.allowPrivilegeEscalation=false \
+		--set 'securityContext.capabilities.drop[0]=ALL' \
+		--set securityContext.seccompProfile.type=RuntimeDefault \
+		--wait --timeout "$(KIALI_OPERATOR_TIMEOUT)" \
+		$(KIALI_OPERATOR_HELM_ARGS)
+
+.PHONY: infrastructure-addons-up
+infrastructure-addons-up: kiali-operator-up ## 安装/更新 observability addons；启用 Kiali 时自动先装官方 Kiali Operator
+	$(HELM) upgrade --install "$(INFRASTRUCTURE_ADDONS_RELEASE)" "$(INFRASTRUCTURE_ADDONS_CHART)" \
+		--namespace "$(INFRASTRUCTURE_ADDONS_NAMESPACE)" \
+		--create-namespace \
+		--atomic --wait --timeout "$(INFRASTRUCTURE_ADDONS_TIMEOUT)" \
+		-f "$(INFRASTRUCTURE_ADDONS_VALUES)" \
+		$(INFRASTRUCTURE_ADDONS_HELM_ARGS)
 
 .PHONY: test
 test: ## helm test（chart 内置连通性 smoke test）

@@ -16,38 +16,40 @@ type ModelsTableProps = {
 
 export function ModelsTable({ models, vendorsById, selectedSourceIds, hasActiveFilters, onClearFilters }: ModelsTableProps) {
   return (
-    <Table.Root>
-      <ModelsTableHeader />
-      <Table.Body>
-        {models.length === 0 ? (
-          <Table.Row>
-            <Table.Cell colSpan={5}>
-              <NoDataCallout>
-                {hasActiveFilters
-                  ? "No models match your current filters."
-                  : "No models found."}
-                {hasActiveFilters && onClearFilters ? (
-                  <Box mt="2">
-                    <Button size="1" variant="soft" color="gray" onClick={onClearFilters}>
-                      Clear all filters
-                    </Button>
-                  </Box>
-                ) : null}
-              </NoDataCallout>
-            </Table.Cell>
-          </Table.Row>
-        ) : (
-          models.map((model) => (
-            <ModelRow
-              key={`${model.definition?.vendorId || "unknown"}:${model.definition?.modelId || "unknown"}`}
-              model={model}
-              vendor={vendorsById[vendorLookupKey(model.definition?.vendorId || "")]}
-              vendorsById={vendorsById}
-              selectedSourceIds={selectedSourceIds}
-            />
-          ))
-        )}
-      </Table.Body>
-    </Table.Root>
+    <Box style={{ overflowX: "auto" }}>
+      <Table.Root style={{ minWidth: 840 }}>
+        <ModelsTableHeader />
+        <Table.Body>
+          {models.length === 0 ? (
+            <Table.Row>
+              <Table.Cell colSpan={6}>
+                <NoDataCallout>
+                  {hasActiveFilters
+                    ? "No models match your current filters."
+                    : "No models found."}
+                  {hasActiveFilters && onClearFilters ? (
+                    <Box mt="2">
+                      <Button size="1" variant="soft" color="gray" onClick={onClearFilters}>
+                        Clear all filters
+                      </Button>
+                    </Box>
+                  ) : null}
+                </NoDataCallout>
+              </Table.Cell>
+            </Table.Row>
+          ) : (
+            models.map((model) => (
+              <ModelRow
+                key={`${model.definition?.vendorId || "unknown"}:${model.definition?.modelId || "unknown"}`}
+                model={model}
+                vendor={vendorsById[vendorLookupKey(model.definition?.vendorId || "")]}
+                vendorsById={vendorsById}
+                selectedSourceIds={selectedSourceIds}
+              />
+            ))
+          )}
+        </Table.Body>
+      </Table.Root>
+    </Box>
   );
 }

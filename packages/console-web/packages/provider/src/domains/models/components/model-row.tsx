@@ -9,9 +9,9 @@ import { EMPTY_VALUE } from "./model-detail-formatters";
 import { LifecycleBadge } from "./lifecycle-badge";
 import { ModelDetailsDialog } from "./model-details-dialog";
 import { formatTokenSize, getVendorLabel } from "./model-formatters";
+import { modelServiceLabelViews } from "./model-service-labels";
 import { VendorAvatar } from "./vendor-avatar";
 import { formatSourcePricing } from "../source-pricing";
-import { sourceOptionLabel } from "./model-table-filter-options";
 import type { ModelVersion } from "@code-code/agent-contract/model/v1";
 
 type ModelRowProps = {
@@ -33,13 +33,7 @@ export function ModelRow({
   const vendorLabel = vendor?.displayName || getVendorLabel(definition);
   const showSeparateModelId = definition.displayName && definition.displayName !== definition.modelId;
   const pricingSummary = formatSourcePricing(model.pricing);
-  const matchedSourceIds = selectedSourceIds.length === 0
-    ? []
-    : Array.from(new Set(
-        model.sources
-          .map((source) => source.sourceId)
-          .filter((sourceId): sourceId is string => Boolean(sourceId && selectedSourceIds.includes(sourceId)))
-      ));
+  const serviceLabels = modelServiceLabelViews(model.sources, selectedSourceIds);
 
   const contextLabel = formatContextLabel(definition);
 
@@ -58,12 +52,25 @@ export function ModelRow({
             <SourceBadge badges={model.badges} />
             <LifecycleBadge status={definition.lifecycleStatus} />
             <CategoryBadge category={definition.category} />
-            {matchedSourceIds.map((sourceId) => (
-              <SoftBadge key={sourceId} size="1" color="gray" label={sourceOptionLabel(sourceId)} />
-            ))}
           </Flex>
         </Flex>
       </Table.RowHeaderCell>
+      <Table.Cell>
+        <Flex gap="1" wrap="wrap">
+          {serviceLabels.labels.length === 0 ? (
+            <Text size="2" color="gray">{EMPTY_VALUE}</Text>
+          ) : (
+            <>
+              {serviceLabels.labels.map((service) => (
+                <SoftBadge key={service.key} size="1" color="gray" label={service.label} />
+              ))}
+              {serviceLabels.hiddenCount > 0 ? (
+                <SoftBadge color="gray" label={`+${serviceLabels.hiddenCount}`} size="1" />
+              ) : null}
+            </>
+          )}
+        </Flex>
+      </Table.Cell>
       <Table.Cell>
         <Flex gap="1" wrap="wrap">
           {definition.capabilities.map((capability) => (

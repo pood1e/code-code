@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_MODEL_PAGE_SIZE, useModels, useVendors } from "./api";
 import { buildStructuredFilter, toggleSelected } from "./model-filter";
 import { SOURCE_BADGE_FREE } from "./source-badges";
@@ -19,6 +19,12 @@ export function useModelRegistryState() {
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageTokens, setPageTokens] = useState(FIRST_PAGE_TOKENS);
+
+  useEffect(() => () => {
+    if (debounceTimer.current !== undefined) {
+      clearTimeout(debounceTimer.current);
+    }
+  }, []);
 
   const vendors = useVendors();
   const models = useModels({
@@ -55,6 +61,14 @@ export function useModelRegistryState() {
     },
     [resetPagination]
   );
+  const handleModelQueryClear = useCallback(() => {
+    if (debounceTimer.current !== undefined) {
+      clearTimeout(debounceTimer.current);
+    }
+    setModelQuery("");
+    setDebouncedQuery("");
+    resetPagination();
+  }, [resetPagination]);
   const handleVendorToggle = useCallback((value: string) => {
     setVendorIds((current) => toggleSelected(current, value));
     resetPagination();
@@ -92,6 +106,11 @@ export function useModelRegistryState() {
     setSourceIds([]);
     setAvailabilityFilter("");
     setSelectedCategory("");
+    setModelQuery("");
+    setDebouncedQuery("");
+    if (debounceTimer.current !== undefined) {
+      clearTimeout(debounceTimer.current);
+    }
     resetPagination();
   }, [resetPagination]);
   const vendorsById = useMemo(() => buildVendorIndex(vendors.vendors), [vendors.vendors]);
@@ -100,6 +119,7 @@ export function useModelRegistryState() {
     handleAvailabilityChange,
     handleCategoryChange,
     handleLifecycleToggle,
+    handleModelQueryClear,
     handleModelQueryChange,
     handleNextPage,
     handleSourceClear,

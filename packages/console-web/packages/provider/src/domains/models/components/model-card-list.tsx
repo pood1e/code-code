@@ -13,7 +13,7 @@ import { formatShape } from "./model-detail-formatters";
 import { formatTokenSize, getVendorLabel } from "./model-formatters";
 import { LifecycleBadge } from "./lifecycle-badge";
 import { ModelDetailsDialog } from "./model-details-dialog";
-import { sourceOptionLabel } from "./model-table-filter-options";
+import { modelServiceLabelViews } from "./model-service-labels";
 import { SourceBadge } from "./source-badge";
 import { VendorAvatar } from "./vendor-avatar";
 
@@ -93,14 +93,10 @@ const ModelCard = memo(function ModelCard({ model, onOpen, selectedSourceIds, ve
   const pricingSummary = formatSourcePricing(model.pricing);
   const contextWindow = formatTokenSize(definition.contextSpec?.maxContextTokens);
   const shapeSummary = formatShapeSummary(definition);
-  const matchedSourceIds = useMemo(() => {
-    if (selectedSourceIds.length === 0) return [];
-    return Array.from(new Set(
-      model.sources
-        .map((source) => source.sourceId)
-        .filter((sourceId): sourceId is string => Boolean(sourceId && selectedSourceIds.includes(sourceId)))
-    ));
-  }, [model.sources, selectedSourceIds]);
+  const serviceLabels = useMemo(
+    () => modelServiceLabelViews(model.sources, selectedSourceIds),
+    [model.sources, selectedSourceIds]
+  );
 
   const metadataBadges: { key: string; label: string }[] = [];
   if (contextWindow !== "Unknown") {
@@ -125,9 +121,6 @@ const ModelCard = memo(function ModelCard({ model, onOpen, selectedSourceIds, ve
             <SourceBadge badges={model.badges} />
             <LifecycleBadge status={definition.lifecycleStatus} />
             <CategoryBadge category={definition.category} />
-            {matchedSourceIds.map((sourceId) => (
-              <SoftBadge key={sourceId} size="1" color="gray" label={sourceOptionLabel(sourceId)} />
-            ))}
           </Flex>
 
           <Box style={{ minWidth: 0 }}>
@@ -144,8 +137,14 @@ const ModelCard = memo(function ModelCard({ model, onOpen, selectedSourceIds, ve
             ) : null}
           </Box>
 
-          {(metadataBadges.length > 0 || pricingSummary) ? (
+          {(serviceLabels.labels.length > 0 || metadataBadges.length > 0 || pricingSummary) ? (
             <Flex align="center" gap="2" wrap="wrap">
+              {serviceLabels.labels.map((service) => (
+                <SoftBadge key={service.key} size="1" color="gray" label={service.label} />
+              ))}
+              {serviceLabels.hiddenCount > 0 ? (
+                <SoftBadge color="gray" label={`+${serviceLabels.hiddenCount} services`} size="1" />
+              ) : null}
               {metadataBadges.map((badge) => (
                 <SoftBadge key={badge.key} color="gray" label={badge.label} size="1" />
               ))}

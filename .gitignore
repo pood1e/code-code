@@ -65,3 +65,4 @@ packages/platform-k8s/egress-auth-wasm/target/
 
 # Local environment files
 **/.env
+/.agents/
