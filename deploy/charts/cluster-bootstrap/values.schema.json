@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "partOf": { "type": "string", "minLength": 1 },
+        "platformNamespace": { "type": "string", "minLength": 1 },
+        "consoleNamespace": { "type": "string", "minLength": 1 },
+        "showcaseNamespace": { "type": "string", "minLength": 1 },
+        "infraNamespace": { "type": "string", "minLength": 1 },
+        "observabilityNamespace": { "type": "string", "minLength": 1 },
+        "networkNamespace": { "type": "string", "minLength": 1 },
+        "runNamespace": { "type": "string", "minLength": 1 }
+      },
+      "required": [
+        "partOf",
+        "platformNamespace",
+        "consoleNamespace",
+        "showcaseNamespace",
+        "infraNamespace",
+        "observabilityNamespace",
+        "networkNamespace",
+        "runNamespace"
+      ]
+    },
+    "namespaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      },
+      "required": ["enabled"]
+    }
+  },
+  "required": ["global", "namespaces"]
+}

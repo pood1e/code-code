@@ -13,8 +13,8 @@ uses registered OAuth observability collectors when config does not inject overr
 `oauth.RegisteredCodeFlowAuthorizers`
 builds all registered code-flow authorizers for session runtime assembly.
 
-`authservice/credentials.applySpecializedOAuthSecretData`
-dispatches to registered CLI secret-data appliers.
+`authservice/credentials.applySpecializedOAuthValues`
+dispatches to registered CLI material value appliers.
 
 `authservice/credentials.resolveCLIOAuthProbeBaseURLs`
 dispatches to registered CLI probe base-url resolvers.

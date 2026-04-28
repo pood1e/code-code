@@ -2,7 +2,7 @@
 
 ## responsibility
 
-`packages/platform-k8s/clidefinitions/codeassist` owns Google Code Assist HTTP request construction and response parsing shared by auth credential import and provider observability.
+`packages/platform-k8s/internal/supportservice/clidefinitions/codeassist` owns Google Code Assist HTTP request construction and response parsing shared by auth credential import and provider observability.
 
 ## key methods
 

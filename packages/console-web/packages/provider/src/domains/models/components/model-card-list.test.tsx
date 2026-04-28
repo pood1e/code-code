@@ -17,7 +17,7 @@ describe("ModelCardList", () => {
         modelId: "cohere-command-r",
         displayName: "Cohere Command R",
         capabilities: [ModelCapability.TOOL_CALLING],
-        contextWindowTokens: 128000n,
+        contextSpec: { maxContextTokens: 128000n },
         primaryShape: ModelShape.CHAT_COMPLETIONS,
         inputModalities: [Modality.TEXT],
         outputModalities: [Modality.TEXT],

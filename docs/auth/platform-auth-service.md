@@ -2,9 +2,14 @@
 
 `platform-auth-service` owns auth-material writes, OAuth authorization sessions, and auth execution actions.
 
-It is the only runtime that creates, updates, deletes, refreshes, enriches, or reads auth-backed `CredentialDefinition`, `OAuthAuthorizationSession`, and Secret data.
+It is the only runtime that creates, updates, deletes, refreshes, enriches, or reads auth-backed `CredentialDefinition`, `OAuthAuthorizationSession`, and credential material.
 
-Other platform services use auth-service gRPC actions and do not read credential Secret material directly.
+Other platform services use auth-service gRPC actions and do not read credential material directly from Kubernetes.
+
+Credential material readback is policy-scoped. Callers must identify the
+support-owned active query policy through `CredentialMaterialReadPolicyRef`;
+auth-service validates the requested material keys against that policy before
+returning values.
 
 ## external actions
 
@@ -31,13 +36,13 @@ Other platform services use auth-service gRPC actions and do not read credential
 
 API key, session, and OAuth credentials use separate write and runtime handlers instead of a generic `kind` switch in the auth orchestration path.
 
-The service is stateless: service-owned Postgres state and Secrets are the source of truth for auth data; Kubernetes resources stay Kubernetes-owned.
+The service is stateless: service-owned Postgres state is the source of truth for credential definitions and encrypted credential material. Kubernetes Secrets are used only for OAuth authorization sessions and runtime-scoped projections.
 
 The service owns bounded background tasks for scheduled refresh and OAuth session scans. Temporal Schedules trigger those tasks through service-owned workflows/actions.
 
 OAuth authorization session progress and cleanup are rebuilt from service-owned state and session Secrets.
 
-AgentRun auth preparation is a session/runtime prepare job. It creates only runtime-scoped fake auth context; Envoy-side processing reads the source Secret when replacing headers.
+AgentRun auth preparation is a session/runtime prepare job. It creates only runtime-scoped fake auth context; L7 auth processing resolves real material through auth-service.
 
 Auth-bound model catalog discovery is a model-service responsibility and must use Envoy-side header injection.
 

@@ -101,7 +101,7 @@ describe("provider-model", () => {
           surfaceId: "surface-b",
           status: {
             phase: ProviderSurfaceBindingPhase.ERROR,
-            reason: "backing secret missing",
+            reason: "credential material missing",
           },
         }),
       ],

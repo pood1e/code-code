@@ -15,9 +15,9 @@
 
 - `MaterialReady` is derived only from credential-owned truth:
 - credential definition state
-- backing `Secret`
-- API key credential is ready when backing secret contains non-empty `api_key`
-- OAuth credential is ready when backing secret contains non-empty `access_token`
+- encrypted material store
+- API key credential is ready when material contains non-empty `api_key`
+- OAuth credential is ready when material contains non-empty `access_token`
 - OAuth `expires_at` is optional; when present it must parse as RFC3339
 - refresh lifecycle remains separate:
 - `OAuthRefreshReady` expresses refresh job state

@@ -11,6 +11,7 @@ import { resolveProviderCardOwner } from "../provider-card-capability";
 import { resolveProviderCardRenderer } from "../provider-card-registry";
 import { useProviderActiveQueryStatusFromObservability } from "../provider-active-query-status";
 import { providerModel } from "../provider-model";
+import { providerHostTelemetryLatencyLabel, providerHostTelemetryStatus } from "../provider-host-telemetry";
 import { resolveProviderActiveQueryOwner } from "../provider-observability-visualization";
 import { resolveProviderOwnerObservabilityModel, type ProviderOwnerObservabilityModel } from "../provider-owner-observability-model";
 import type { ProviderWorkflowStatusView } from "../provider-workflow-status-view";
@@ -25,8 +26,9 @@ type Props = {
   vendorIconUrl?: string;
   workflowStatus?: ProviderWorkflowStatusView;
   isProbingActiveQuery?: boolean;
-  onOpen: (provider: ProviderView) => void;
-  onProbeActiveQuery: (provider: ProviderView) => void;
+  readonly?: boolean;
+  onOpen?: (provider: ProviderView) => void;
+  onProbeActiveQuery?: (provider: ProviderView) => void;
 };
 
 export function ProviderCard({
@@ -39,6 +41,7 @@ export function ProviderCard({
   vendorIconUrl,
   workflowStatus,
   isProbingActiveQuery,
+  readonly = false,
 }: Props) {
   const providerViewModel = providerModel(provider);
   const authLabel = providerViewModel.authenticationLabel();
@@ -99,7 +102,7 @@ export function ProviderCard({
           <SoftBadge color="gray" label={authLabel} />
         </Flex>
       )}
-      actions={hasActiveQuery ? (
+      actions={!readonly && hasActiveQuery ? (
         <Flex gap="2" align="center">
           <ProviderActionIconButton
             label="Probe active query"
@@ -107,7 +110,7 @@ export function ProviderCard({
             disabled={Boolean(isProbingActiveQuery)}
             onClick={(event: MouseEvent) => {
               event?.stopPropagation();
-              onProbeActiveQuery(provider);
+              onProbeActiveQuery?.(provider);
             }}
             onKeyDown={(event: KeyboardEvent) => event.stopPropagation()}
           >
@@ -116,15 +119,15 @@ export function ProviderCard({
         </Flex>
       ) : null}
       cardSize="2"
-      style={{ cursor: "pointer" }}
-      cardProps={{
+      style={readonly ? undefined : { cursor: "pointer" }}
+      cardProps={readonly ? undefined : {
         role: "button",
         tabIndex: 0,
-        onClick: () => onOpen(provider),
+        onClick: () => onOpen?.(provider),
         onKeyDown: (event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            onOpen(provider);
+            onOpen?.(provider);
           }
         },
       }}
@@ -152,6 +155,7 @@ export function ProviderCard({
       <Text size="1" color="gray" mt="3" as="div">
         {providerViewModel.operationalSummary()}
       </Text>
+      <ProviderHostTelemetry telemetry={provider.hostTelemetry} />
       {surfaceLabels.length > 0 || protocolLabels.length > 0 ? (
         <Flex mt="3" gap="1" wrap="wrap">
           {surfaceLabels.map((label) => (
@@ -188,6 +192,25 @@ export function ProviderCard({
         </Text>
       ) : null}
     </SurfaceSectionCard>
+  );
+}
+
+function ProviderHostTelemetry({ telemetry }: { telemetry: ProviderView["hostTelemetry"] }) {
+  if (!telemetry || telemetry.length === 0) {
+    return null;
+  }
+  return (
+    <Flex mt="3" gap="2" align="center" wrap="wrap">
+      {telemetry.map((item) => {
+        const status = providerHostTelemetryStatus(item);
+        const latency = providerHostTelemetryLatencyLabel(item);
+        return (
+          <Flex key={`${item.scheme}:${item.host}:${item.port}`} align="center" gap="1">
+            <StatusBadge color={status.color} label={latency ? `${status.label} ${latency}` : status.label} />
+          </Flex>
+        );
+      })}
+    </Flex>
   );
 }
 

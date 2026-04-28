@@ -37,4 +37,4 @@
 - `PollAuthorizationSession(sessionID) -> result`
   作用：轮询一次 device authorization flow。
 
-Provider-specific 实现在 `platform-k8s/authservice/oauth` 包中注册。
+Provider-specific 实现在 `platform-k8s/internal/authservice/oauth` 包中注册。

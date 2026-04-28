@@ -4,7 +4,6 @@ import { useProviderObservability } from "./api-observability";
 import type { ProviderObservability } from "./api-types";
 import type { ProviderStatusView } from "./provider-model";
 import { providerModel } from "./provider-model";
-import { providerObservabilityAuthPresentation } from "./provider-observability-auth-presentation";
 import { resolveProviderOwnerObservabilityModel, type ProviderObservabilityOwner } from "./provider-owner-observability-model";
 import { resolveProviderObservabilityOwner } from "./provider-observability-visualization";
 
@@ -114,11 +113,7 @@ function authBlockedReason(
   if (owner?.kind !== "vendor") {
     return "";
   }
-  const presentation = providerObservabilityAuthPresentation(owner.vendorId);
-  if (presentation?.separateProviderUpdate) {
-    return `${presentation.fieldLabel} needs refresh.`;
-  }
-  return "";
+  return "Observability authentication needs refresh.";
 }
 
 function useRelativeNow(enabled: boolean) {

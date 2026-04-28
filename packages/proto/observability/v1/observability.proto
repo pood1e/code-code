@@ -25,7 +25,7 @@ message ObservabilityProfile {
 
   oneof collection {
     ActiveQueryCollection active_query = 5;
-    ResponseHeaderCollection response_headers = 6;
+    PassiveHttpTelemetryCollection passive_http = 6;
   }
 
   // Stable metric queries consumed by availability judgment.
@@ -87,6 +87,19 @@ message ActiveQueryCollection {
   // Optional collector implementation key resolved by the host package.
   // Empty means host-default active query execution.
   string collector_id = 3;
+
+  // Explicit credential values that the collector may persist after a
+  // successful query. The collector must ignore all undeclared values.
+  repeated CredentialBackfillRule credential_backfills = 4;
+
+  // Optional schema-driven form used to collect management-plane credential
+  // inputs required by this active query.
+  ActiveQueryInputForm input_form = 5;
+
+  // Explicit non-secret material keys the collector may read back on later
+  // runs. Secret tokens/cookies should stay behind authservice/egress auth and
+  // must not be listed here.
+  repeated string material_read_fields = 6;
 }
 
 // DynamicParameterDefinition describes one dynamically supplied parameter.
@@ -98,24 +111,133 @@ message DynamicParameterDefinition {
   bool secret = 5;
 }
 
-// ResponseHeaderCollection declares how response headers map to metrics.
-message ResponseHeaderCollection {
-  repeated HeaderMetricMapping header_metric_mappings = 1;
+// ActiveQueryInputForm describes provider-owned credential inputs needed by one
+// active query. UI clients render this schema instead of hard-coding per-vendor
+// fields.
+message ActiveQueryInputForm {
+  string schema_id = 1;
+  string title = 2;
+  string action_label = 3;
+  string description = 4;
+  repeated ActiveQueryInputField fields = 5;
 }
 
-// HeaderMetricMapping maps one response header to one declared metric.
-message HeaderMetricMapping {
-  string header_name = 1;
-  string metric_name = 2;
-  HeaderValueType value_type = 3;
-  repeated HeaderMetricLabel labels = 4;
+// ActiveQueryInputField describes one operator-supplied input field.
+message ActiveQueryInputField {
+  string field_id = 1;
+  string label = 2;
+  string description = 3;
+  string placeholder = 4;
+  bool required = 5;
+  bool sensitive = 6;
+  ActiveQueryInputControl control = 7;
+  ActiveQueryInputPersistence persistence = 8;
+  string target_field_id = 9;
+  ActiveQueryInputValueTransform transform = 10;
+  string default_value = 11;
 }
 
-// HeaderMetricLabel binds one fixed label value to one header-derived metric
-// sample.
-message HeaderMetricLabel {
+// ActiveQueryInputControl identifies the preferred UI control for one input.
+enum ActiveQueryInputControl {
+  ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED = 0;
+  ACTIVE_QUERY_INPUT_CONTROL_TEXT = 1;
+  ACTIVE_QUERY_INPUT_CONTROL_PASSWORD = 2;
+  ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA = 3;
+}
+
+// ActiveQueryInputPersistence describes whether a submitted field is persisted
+// into provider observability credential material.
+enum ActiveQueryInputPersistence {
+  ACTIVE_QUERY_INPUT_PERSISTENCE_UNSPECIFIED = 0;
+  ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL = 1;
+  ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT = 2;
+}
+
+// ActiveQueryInputValueTransform describes a built-in normalization applied to
+// an input value before it is persisted.
+enum ActiveQueryInputValueTransform {
+  ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED = 0;
+  ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY = 1;
+  ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE = 2;
+}
+
+// CredentialBackfillRule declares one credential value that may be persisted
+// from an active query result.
+message CredentialBackfillRule {
+  string rule_id = 1;
+  CredentialBackfillSource source = 2;
+  string source_name = 3;
+  string target_material_key = 4;
+  bool required = 5;
+  // If true, this persisted value may be read back by the same active query
+  // collector on later runs. Leave false for token/cookie/session material that
+  // should remain write-only outside authservice.
+  bool readable = 6;
+}
+
+// CredentialBackfillSource identifies where a credential backfill value comes
+// from. Collectors remain responsible for parsing provider-specific formats.
+enum CredentialBackfillSource {
+  CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED = 0;
+  CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT = 1;
+  CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_HEADER = 2;
+  CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_COOKIE = 3;
+}
+
+// PassiveHttpTelemetryCollection declares how an official HTTP telemetry stream
+// is selected, sanitized, and converted into metrics.
+message PassiveHttpTelemetryCollection {
+  TelemetryCapturePoint capture_point = 1;
+  repeated HttpTelemetrySelector selectors = 2;
+  repeated HttpHeaderTelemetryTransform transforms = 3;
+  HeaderRedactionPolicy redaction = 4;
+  bool emit_access_log = 5;
+}
+
+// TelemetryCapturePoint identifies the L7 proxy point that owns capture.
+enum TelemetryCapturePoint {
+  TELEMETRY_CAPTURE_POINT_UNSPECIFIED = 0;
+  TELEMETRY_CAPTURE_POINT_EGRESS = 1;
+  TELEMETRY_CAPTURE_POINT_DESTINATION_WAYPOINT = 2;
+}
+
+// HttpTelemetrySelector narrows the HTTP stream handled by one profile.
+message HttpTelemetrySelector {
+  repeated string hostnames = 1;
+  repeated string path_prefixes = 2;
+  repeated string methods = 3;
+  repeated uint32 status_codes = 4;
+}
+
+// HttpHeaderTelemetryTransform maps one selected HTTP header to one metric.
+message HttpHeaderTelemetryTransform {
+  HttpHeaderSource source = 1;
+  string header_name = 2;
+  string metric_name = 3;
+  HeaderValueType value_type = 4;
+  repeated TelemetryMetricLabel labels = 5;
+}
+
+// HttpHeaderSource identifies the HTTP header bag used by one transform.
+enum HttpHeaderSource {
+  HTTP_HEADER_SOURCE_UNSPECIFIED = 0;
+  HTTP_HEADER_SOURCE_REQUEST = 1;
+  HTTP_HEADER_SOURCE_RESPONSE = 2;
+}
+
+// TelemetryMetricLabel binds one fixed metric label value to one telemetry
+// transform.
+message TelemetryMetricLabel {
   string name = 1;
   string value = 2;
+}
+
+// HeaderRedactionPolicy describes how raw header values are protected before
+// leaving the collector pipeline.
+message HeaderRedactionPolicy {
+  bool drop_raw_headers = 1;
+  repeated string hash_headers = 2;
+  repeated string redact_headers = 3;
 }
 
 // MetricQuery describes one stable metrics query statement.

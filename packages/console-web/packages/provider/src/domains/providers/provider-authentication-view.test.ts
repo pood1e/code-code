@@ -12,10 +12,10 @@ describe("provider-authentication-view", () => {
       color: "green",
       reason: "",
     });
-    expect(providerAuthenticationStatus(false, "backing secret missing")).toMatchObject({
+    expect(providerAuthenticationStatus(false, "credential material missing")).toMatchObject({
       label: "Needs Attention",
       color: "red",
-      reason: "backing secret missing",
+      reason: "credential material missing",
     });
     expect(providerAuthenticationStatus(undefined, "")).toMatchObject({
       label: "Unknown",

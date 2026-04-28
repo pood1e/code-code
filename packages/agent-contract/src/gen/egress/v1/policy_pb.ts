@@ -12,11 +12,9 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file egress/v1/policy.proto.
  */
 export const file_egress_v1_policy: GenFile = /*@__PURE__*/
-  fileDesc("ChZlZ3Jlc3MvdjEvcG9saWN5LnByb3RvEgllZ3Jlc3MudjEiygEKDEVncmVzc1BvbGljeRIRCglwb2xpY3lfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEicKB3Byb3hpZXMYBCADKAsyFi5lZ3Jlc3MudjEuRWdyZXNzUHJveHkSKwoMY3VzdG9tX3J1bGVzGAUgAygLMhUuZWdyZXNzLnYxLkVncmVzc1J1bGUSOwoRZXh0ZXJuYWxfcnVsZV9zZXQYBiABKAsyIC5lZ3Jlc3MudjEuRWdyZXNzRXh0ZXJuYWxSdWxlU2V0InQKC0VncmVzc1Byb3h5EhAKCHByb3h5X2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIwCghwcm90b2NvbBgDIAEoDjIeLmVncmVzcy52MS5FZ3Jlc3NQcm94eVByb3RvY29sEgsKA3VybBgEIAEoCSKZAQoKRWdyZXNzUnVsZRIPCgdydWxlX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIpCgVtYXRjaBgDIAEoCzIaLmVncmVzcy52MS5FZ3Jlc3NSdWxlTWF0Y2gSJwoGYWN0aW9uGAQgASgOMhcuZWdyZXNzLnYxLkVncmVzc0FjdGlvbhIQCghwcm94eV9pZBgFIAEoCSJGCg9FZ3Jlc3NSdWxlTWF0Y2gSFAoKaG9zdF9leGFjdBgBIAEoCUgAEhUKC2hvc3Rfc3VmZml4GAIgASgJSABCBgoEa2luZCJ3ChVFZ3Jlc3NFeHRlcm5hbFJ1bGVTZXQSEgoKc291cmNlX3VybBgBIAEoCRIPCgdlbmFibGVkGAIgASgIEicKBmFjdGlvbhgDIAEoDjIXLmVncmVzcy52MS5FZ3Jlc3NBY3Rpb24SEAoIcHJveHlfaWQYBCABKAki4gEKG0VncmVzc0V4dGVybmFsUnVsZVNldFN0YXR1cxI4CgVwaGFzZRgBIAEoDjIpLmVncmVzcy52MS5FZ3Jlc3NFeHRlcm5hbFJ1bGVTZXRMb2FkUGhhc2USEgoKc291cmNlX3VybBgCIAEoCRIZChFsb2FkZWRfaG9zdF9jb3VudBgDIAEoBRIaChJza2lwcGVkX3J1bGVfY291bnQYBCABKAUSDwoHbWVzc2FnZRgFIAEoCRItCglsb2FkZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkIKEUVncmVzc1Jlc291cmNlUmVmEgwKBGtpbmQYASABKAkSEQoJbmFtZXNwYWNlGAIgASgJEgwKBG5hbWUYAyABKAkijQIKEEVncmVzc1N5bmNTdGF0dXMSKQoFcGhhc2UYASABKA4yGi5lZ3Jlc3MudjEuRWdyZXNzU3luY1BoYXNlEg4KBnJlYXNvbhgCIAEoCRIbChNvYnNlcnZlZF9nZW5lcmF0aW9uGAMgASgDEjQKDnRhcmdldF9nYXRld2F5GAQgASgLMhwuZWdyZXNzLnYxLkVncmVzc1Jlc291cmNlUmVmEjcKEWFwcGxpZWRfcmVzb3VyY2VzGAUgAygLMhwuZWdyZXNzLnYxLkVncmVzc1Jlc291cmNlUmVmEjIKDmxhc3Rfc3luY2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCpgCgxFZ3Jlc3NBY3Rpb24SHQoZRUdSRVNTX0FDVElPTl9VTlNQRUNJRklFRBAAEhgKFEVHUkVTU19BQ1RJT05fRElSRUNUEAESFwoTRUdSRVNTX0FDVElPTl9QUk9YWRACKlwKE0VncmVzc1Byb3h5UHJvdG9jb2wSJQohRUdSRVNTX1BST1hZX1BST1RPQ09MX1VOU1BFQ0lGSUVEEAASHgoaRUdSRVNTX1BST1hZX1BST1RPQ09MX0hUVFAQASqbAgoeRWdyZXNzRXh0ZXJuYWxSdWxlU2V0TG9hZFBoYXNlEjMKL0VHUkVTU19FWFRFUk5BTF9SVUxFX1NFVF9MT0FEX1BIQVNFX1VOU1BFQ0lGSUVEEAASMAosRUdSRVNTX0VYVEVSTkFMX1JVTEVfU0VUX0xPQURfUEhBU0VfRElTQUJMRUQQARIuCipFR1JFU1NfRVhURVJOQUxfUlVMRV9TRVRfTE9BRF9QSEFTRV9MT0FERUQQAhIyCi5FR1JFU1NfRVhURVJOQUxfUlVMRV9TRVRfTE9BRF9QSEFTRV9OT1RfTE9BREVEEAMSLgoqRUdSRVNTX0VYVEVSTkFMX1JVTEVfU0VUX0xPQURfUEhBU0VfRkFJTEVEEAQqjwEKD0VncmVzc1N5bmNQaGFzZRIhCh1FR1JFU1NfU1lOQ19QSEFTRV9VTlNQRUNJRklFRBAAEh0KGUVHUkVTU19TWU5DX1BIQVNFX1BFTkRJTkcQARIcChhFR1JFU1NfU1lOQ19QSEFTRV9TWU5DRUQQAhIcChhFR1JFU1NfU1lOQ19QSEFTRV9GQUlMRUQQA0IzWjFjb2RlLWNvZGUuaW50ZXJuYWwvZ28tY29udHJhY3QvZWdyZXNzL3YxO2VncmVzc3YxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChZlZ3Jlc3MvdjEvcG9saWN5LnByb3RvEgllZ3Jlc3MudjEiagoMRWdyZXNzUG9saWN5EhEKCXBvbGljeV9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSMQoLYWNjZXNzX3NldHMYAyADKAsyHC5lZ3Jlc3MudjEuRXh0ZXJuYWxBY2Nlc3NTZXQi+wEKEUV4dGVybmFsQWNjZXNzU2V0EhUKDWFjY2Vzc19zZXRfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEhUKDW93bmVyX3NlcnZpY2UYAyABKAkSEQoJcG9saWN5X2lkGAQgASgJEi8KDmV4dGVybmFsX3J1bGVzGAUgAygLMhcuZWdyZXNzLnYxLkV4dGVybmFsUnVsZRItCg1zZXJ2aWNlX3J1bGVzGAYgAygLMhYuZWdyZXNzLnYxLlNlcnZpY2VSdWxlEi8KC2h0dHBfcm91dGVzGAcgAygLMhouZWdyZXNzLnYxLkh0dHBFZ3Jlc3NSb3V0ZSKCAgoMRXh0ZXJuYWxSdWxlEhgKEGV4dGVybmFsX3J1bGVfaWQYASABKAkSFgoOZGVzdGluYXRpb25faWQYAiABKAkSFAoMZGlzcGxheV9uYW1lGAMgASgJEigKCmhvc3RfbWF0Y2gYBCABKAsyFC5lZ3Jlc3MudjEuSG9zdE1hdGNoEgwKBHBvcnQYBSABKAUSKwoIcHJvdG9jb2wYBiABKA4yGS5lZ3Jlc3MudjEuRWdyZXNzUHJvdG9jb2wSLwoKcmVzb2x1dGlvbhgHIAEoDjIbLmVncmVzcy52MS5FZ3Jlc3NSZXNvbHV0aW9uEhQKDGFkZHJlc3NfY2lkchgJIAEoCSJfCgtTZXJ2aWNlUnVsZRIXCg9zZXJ2aWNlX3J1bGVfaWQYASABKAkSFgoOZGVzdGluYXRpb25faWQYAiABKAkSHwoXc291cmNlX3NlcnZpY2VfYWNjb3VudHMYAyADKAkioAIKD0h0dHBFZ3Jlc3NSb3V0ZRIQCghyb3V0ZV9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSFgoOZGVzdGluYXRpb25faWQYAyABKAkSKgoHbWF0Y2hlcxgEIAMoCzIZLmVncmVzcy52MS5IdHRwUm91dGVNYXRjaBI0Cg9yZXF1ZXN0X2hlYWRlcnMYBSABKAsyGy5lZ3Jlc3MudjEuSHR0cEhlYWRlclBvbGljeRI1ChByZXNwb25zZV9oZWFkZXJzGAYgASgLMhsuZWdyZXNzLnYxLkh0dHBIZWFkZXJQb2xpY3kSFgoOYXV0aF9wb2xpY3lfaWQYByABKAkSHAoUZHluYW1pY19oZWFkZXJfYXV0aHoYCCABKAgiOAoOSHR0cFJvdXRlTWF0Y2gSFQoNcGF0aF9wcmVmaXhlcxgBIAMoCRIPCgdtZXRob2RzGAIgAygJInQKEEh0dHBIZWFkZXJQb2xpY3kSJwoDYWRkGAEgAygLMhouZWdyZXNzLnYxLkh0dHBIZWFkZXJWYWx1ZRInCgNzZXQYAiADKAsyGi5lZ3Jlc3MudjEuSHR0cEhlYWRlclZhbHVlEg4KBnJlbW92ZRgDIAMoCSIuCg9IdHRwSGVhZGVyVmFsdWUSDAoEbmFtZRgBIAEoCRINCgV2YWx1ZRgCIAEoCSJCCglIb3N0TWF0Y2gSFAoKaG9zdF9leGFjdBgBIAEoCUgAEhcKDWhvc3Rfd2lsZGNhcmQYAiABKAlIAEIGCgRraW5kIkIKEUVncmVzc1Jlc291cmNlUmVmEgwKBGtpbmQYASABKAkSEQoJbmFtZXNwYWNlGAIgASgJEgwKBG5hbWUYAyABKAkijQIKEEVncmVzc1N5bmNTdGF0dXMSKQoFcGhhc2UYASABKA4yGi5lZ3Jlc3MudjEuRWdyZXNzU3luY1BoYXNlEg4KBnJlYXNvbhgCIAEoCRIbChNvYnNlcnZlZF9nZW5lcmF0aW9uGAMgASgDEjQKDnRhcmdldF9nYXRld2F5GAQgASgLMhwuZWdyZXNzLnYxLkVncmVzc1Jlc291cmNlUmVmEjcKEWFwcGxpZWRfcmVzb3VyY2VzGAUgAygLMhwuZWdyZXNzLnYxLkVncmVzc1Jlc291cmNlUmVmEjIKDmxhc3Rfc3luY2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCqYAQoORWdyZXNzUHJvdG9jb2wSHwobRUdSRVNTX1BST1RPQ09MX1VOU1BFQ0lGSUVEEAASGAoURUdSRVNTX1BST1RPQ09MX0hUVFAQARIXChNFR1JFU1NfUFJPVE9DT0xfVExTEAISFwoTRUdSRVNTX1BST1RPQ09MX1RDUBADEhkKFUVHUkVTU19QUk9UT0NPTF9IVFRQUxAEKo8BChBFZ3Jlc3NSZXNvbHV0aW9uEiEKHUVHUkVTU19SRVNPTFVUSU9OX1VOU1BFQ0lGSUVEEAASGQoVRUdSRVNTX1JFU09MVVRJT05fRE5TEAESIQodRUdSRVNTX1JFU09MVVRJT05fRFlOQU1JQ19ETlMQAhIaChZFR1JFU1NfUkVTT0xVVElPTl9OT05FEAMqjwEKD0VncmVzc1N5bmNQaGFzZRIhCh1FR1JFU1NfU1lOQ19QSEFTRV9VTlNQRUNJRklFRBAAEh0KGUVHUkVTU19TWU5DX1BIQVNFX1BFTkRJTkcQARIcChhFR1JFU1NfU1lOQ19QSEFTRV9TWU5DRUQQAhIcChhFR1JFU1NfU1lOQ19QSEFTRV9GQUlMRUQQA0IzWjFjb2RlLWNvZGUuaW50ZXJuYWwvZ28tY29udHJhY3QvZWdyZXNzL3YxO2VncmVzc3YxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
- * EgressPolicy declares one Istio-owned outbound policy intent.
- *
  * @generated from message egress.v1.EgressPolicy
  */
 export type EgressPolicy = Message<"egress.v1.EgressPolicy"> & {
@@ -31,19 +29,9 @@ export type EgressPolicy = Message<"egress.v1.EgressPolicy"> & {
   displayName: string;
 
   /**
-   * @generated from field: repeated egress.v1.EgressProxy proxies = 4;
+   * @generated from field: repeated egress.v1.ExternalAccessSet access_sets = 3;
    */
-  proxies: EgressProxy[];
-
-  /**
-   * @generated from field: repeated egress.v1.EgressRule custom_rules = 5;
-   */
-  customRules: EgressRule[];
-
-  /**
-   * @generated from field: egress.v1.EgressExternalRuleSet external_rule_set = 6;
-   */
-  externalRuleSet?: EgressExternalRuleSet;
+  accessSets: ExternalAccessSet[];
 };
 
 /**
@@ -54,15 +42,13 @@ export const EgressPolicySchema: GenMessage<EgressPolicy> = /*@__PURE__*/
   messageDesc(file_egress_v1_policy, 0);
 
 /**
- * EgressProxy declares one selectable HTTP proxy target.
- *
- * @generated from message egress.v1.EgressProxy
+ * @generated from message egress.v1.ExternalAccessSet
  */
-export type EgressProxy = Message<"egress.v1.EgressProxy"> & {
+export type ExternalAccessSet = Message<"egress.v1.ExternalAccessSet"> & {
   /**
-   * @generated from field: string proxy_id = 1;
+   * @generated from field: string access_set_id = 1;
    */
-  proxyId: string;
+  accessSetId: string;
 
   /**
    * @generated from field: string display_name = 2;
@@ -70,33 +56,125 @@ export type EgressProxy = Message<"egress.v1.EgressProxy"> & {
   displayName: string;
 
   /**
-   * @generated from field: egress.v1.EgressProxyProtocol protocol = 3;
+   * @generated from field: string owner_service = 3;
    */
-  protocol: EgressProxyProtocol;
+  ownerService: string;
 
   /**
-   * @generated from field: string url = 4;
+   * @generated from field: string policy_id = 4;
    */
-  url: string;
+  policyId: string;
+
+  /**
+   * @generated from field: repeated egress.v1.ExternalRule external_rules = 5;
+   */
+  externalRules: ExternalRule[];
+
+  /**
+   * @generated from field: repeated egress.v1.ServiceRule service_rules = 6;
+   */
+  serviceRules: ServiceRule[];
+
+  /**
+   * @generated from field: repeated egress.v1.HttpEgressRoute http_routes = 7;
+   */
+  httpRoutes: HttpEgressRoute[];
 };
 
 /**
- * Describes the message egress.v1.EgressProxy.
- * Use `create(EgressProxySchema)` to create a new message.
+ * Describes the message egress.v1.ExternalAccessSet.
+ * Use `create(ExternalAccessSetSchema)` to create a new message.
  */
-export const EgressProxySchema: GenMessage<EgressProxy> = /*@__PURE__*/
+export const ExternalAccessSetSchema: GenMessage<ExternalAccessSet> = /*@__PURE__*/
   messageDesc(file_egress_v1_policy, 1);
 
 /**
- * EgressRule declares one user-controlled host matching rule.
- *
- * @generated from message egress.v1.EgressRule
+ * @generated from message egress.v1.ExternalRule
  */
-export type EgressRule = Message<"egress.v1.EgressRule"> & {
+export type ExternalRule = Message<"egress.v1.ExternalRule"> & {
   /**
-   * @generated from field: string rule_id = 1;
+   * @generated from field: string external_rule_id = 1;
    */
-  ruleId: string;
+  externalRuleId: string;
+
+  /**
+   * @generated from field: string destination_id = 2;
+   */
+  destinationId: string;
+
+  /**
+   * @generated from field: string display_name = 3;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: egress.v1.HostMatch host_match = 4;
+   */
+  hostMatch?: HostMatch;
+
+  /**
+   * @generated from field: int32 port = 5;
+   */
+  port: number;
+
+  /**
+   * @generated from field: egress.v1.EgressProtocol protocol = 6;
+   */
+  protocol: EgressProtocol;
+
+  /**
+   * @generated from field: egress.v1.EgressResolution resolution = 7;
+   */
+  resolution: EgressResolution;
+
+  /**
+   * @generated from field: string address_cidr = 9;
+   */
+  addressCidr: string;
+};
+
+/**
+ * Describes the message egress.v1.ExternalRule.
+ * Use `create(ExternalRuleSchema)` to create a new message.
+ */
+export const ExternalRuleSchema: GenMessage<ExternalRule> = /*@__PURE__*/
+  messageDesc(file_egress_v1_policy, 2);
+
+/**
+ * @generated from message egress.v1.ServiceRule
+ */
+export type ServiceRule = Message<"egress.v1.ServiceRule"> & {
+  /**
+   * @generated from field: string service_rule_id = 1;
+   */
+  serviceRuleId: string;
+
+  /**
+   * @generated from field: string destination_id = 2;
+   */
+  destinationId: string;
+
+  /**
+   * @generated from field: repeated string source_service_accounts = 3;
+   */
+  sourceServiceAccounts: string[];
+};
+
+/**
+ * Describes the message egress.v1.ServiceRule.
+ * Use `create(ServiceRuleSchema)` to create a new message.
+ */
+export const ServiceRuleSchema: GenMessage<ServiceRule> = /*@__PURE__*/
+  messageDesc(file_egress_v1_policy, 3);
+
+/**
+ * @generated from message egress.v1.HttpEgressRoute
+ */
+export type HttpEgressRoute = Message<"egress.v1.HttpEgressRoute"> & {
+  /**
+   * @generated from field: string route_id = 1;
+   */
+  routeId: string;
 
   /**
    * @generated from field: string display_name = 2;
@@ -104,36 +182,120 @@ export type EgressRule = Message<"egress.v1.EgressRule"> & {
   displayName: string;
 
   /**
-   * @generated from field: egress.v1.EgressRuleMatch match = 3;
+   * @generated from field: string destination_id = 3;
    */
-  match?: EgressRuleMatch;
+  destinationId: string;
 
   /**
-   * @generated from field: egress.v1.EgressAction action = 4;
+   * @generated from field: repeated egress.v1.HttpRouteMatch matches = 4;
    */
-  action: EgressAction;
+  matches: HttpRouteMatch[];
 
   /**
-   * @generated from field: string proxy_id = 5;
+   * @generated from field: egress.v1.HttpHeaderPolicy request_headers = 5;
    */
-  proxyId: string;
+  requestHeaders?: HttpHeaderPolicy;
+
+  /**
+   * @generated from field: egress.v1.HttpHeaderPolicy response_headers = 6;
+   */
+  responseHeaders?: HttpHeaderPolicy;
+
+  /**
+   * @generated from field: string auth_policy_id = 7;
+   */
+  authPolicyId: string;
+
+  /**
+   * @generated from field: bool dynamic_header_authz = 8;
+   */
+  dynamicHeaderAuthz: boolean;
 };
 
 /**
- * Describes the message egress.v1.EgressRule.
- * Use `create(EgressRuleSchema)` to create a new message.
+ * Describes the message egress.v1.HttpEgressRoute.
+ * Use `create(HttpEgressRouteSchema)` to create a new message.
  */
-export const EgressRuleSchema: GenMessage<EgressRule> = /*@__PURE__*/
-  messageDesc(file_egress_v1_policy, 2);
+export const HttpEgressRouteSchema: GenMessage<HttpEgressRoute> = /*@__PURE__*/
+  messageDesc(file_egress_v1_policy, 4);
 
 /**
- * EgressRuleMatch describes how one rule matches an outbound host.
- *
- * @generated from message egress.v1.EgressRuleMatch
+ * @generated from message egress.v1.HttpRouteMatch
  */
-export type EgressRuleMatch = Message<"egress.v1.EgressRuleMatch"> & {
+export type HttpRouteMatch = Message<"egress.v1.HttpRouteMatch"> & {
   /**
-   * @generated from oneof egress.v1.EgressRuleMatch.kind
+   * @generated from field: repeated string path_prefixes = 1;
+   */
+  pathPrefixes: string[];
+
+  /**
+   * @generated from field: repeated string methods = 2;
+   */
+  methods: string[];
+};
+
+/**
+ * Describes the message egress.v1.HttpRouteMatch.
+ * Use `create(HttpRouteMatchSchema)` to create a new message.
+ */
+export const HttpRouteMatchSchema: GenMessage<HttpRouteMatch> = /*@__PURE__*/
+  messageDesc(file_egress_v1_policy, 5);
+
+/**
+ * @generated from message egress.v1.HttpHeaderPolicy
+ */
+export type HttpHeaderPolicy = Message<"egress.v1.HttpHeaderPolicy"> & {
+  /**
+   * @generated from field: repeated egress.v1.HttpHeaderValue add = 1;
+   */
+  add: HttpHeaderValue[];
+
+  /**
+   * @generated from field: repeated egress.v1.HttpHeaderValue set = 2;
+   */
+  set: HttpHeaderValue[];
+
+  /**
+   * @generated from field: repeated string remove = 3;
+   */
+  remove: string[];
+};
+
+/**
+ * Describes the message egress.v1.HttpHeaderPolicy.
+ * Use `create(HttpHeaderPolicySchema)` to create a new message.
+ */
+export const HttpHeaderPolicySchema: GenMessage<HttpHeaderPolicy> = /*@__PURE__*/
+  messageDesc(file_egress_v1_policy, 6);
+
+/**
+ * @generated from message egress.v1.HttpHeaderValue
+ */
+export type HttpHeaderValue = Message<"egress.v1.HttpHeaderValue"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string value = 2;
+   */
+  value: string;
+};
+
+/**
+ * Describes the message egress.v1.HttpHeaderValue.
+ * Use `create(HttpHeaderValueSchema)` to create a new message.
+ */
+export const HttpHeaderValueSchema: GenMessage<HttpHeaderValue> = /*@__PURE__*/
+  messageDesc(file_egress_v1_policy, 7);
+
+/**
+ * @generated from message egress.v1.HostMatch
+ */
+export type HostMatch = Message<"egress.v1.HostMatch"> & {
+  /**
+   * @generated from oneof egress.v1.HostMatch.kind
    */
   kind: {
     /**
@@ -143,105 +305,21 @@ export type EgressRuleMatch = Message<"egress.v1.EgressRuleMatch"> & {
     case: "hostExact";
   } | {
     /**
-     * host_suffix matches the suffix domain itself and all subdomains.
-     * For example: host_suffix="example.com" matches example.com and
-     * api.example.com.
-     *
-     * @generated from field: string host_suffix = 2;
+     * @generated from field: string host_wildcard = 2;
      */
     value: string;
-    case: "hostSuffix";
+    case: "hostWildcard";
   } | { case: undefined; value?: undefined };
 };
 
 /**
- * Describes the message egress.v1.EgressRuleMatch.
- * Use `create(EgressRuleMatchSchema)` to create a new message.
+ * Describes the message egress.v1.HostMatch.
+ * Use `create(HostMatchSchema)` to create a new message.
  */
-export const EgressRuleMatchSchema: GenMessage<EgressRuleMatch> = /*@__PURE__*/
-  messageDesc(file_egress_v1_policy, 3);
+export const HostMatchSchema: GenMessage<HostMatch> = /*@__PURE__*/
+  messageDesc(file_egress_v1_policy, 8);
 
 /**
- * EgressExternalRuleSet declares the single user-configured AutoProxy source.
- *
- * @generated from message egress.v1.EgressExternalRuleSet
- */
-export type EgressExternalRuleSet = Message<"egress.v1.EgressExternalRuleSet"> & {
-  /**
-   * @generated from field: string source_url = 1;
-   */
-  sourceUrl: string;
-
-  /**
-   * @generated from field: bool enabled = 2;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: egress.v1.EgressAction action = 3;
-   */
-  action: EgressAction;
-
-  /**
-   * @generated from field: string proxy_id = 4;
-   */
-  proxyId: string;
-};
-
-/**
- * Describes the message egress.v1.EgressExternalRuleSet.
- * Use `create(EgressExternalRuleSetSchema)` to create a new message.
- */
-export const EgressExternalRuleSetSchema: GenMessage<EgressExternalRuleSet> = /*@__PURE__*/
-  messageDesc(file_egress_v1_policy, 4);
-
-/**
- * EgressExternalRuleSetStatus stores the latest observed external rule load result.
- *
- * @generated from message egress.v1.EgressExternalRuleSetStatus
- */
-export type EgressExternalRuleSetStatus = Message<"egress.v1.EgressExternalRuleSetStatus"> & {
-  /**
-   * @generated from field: egress.v1.EgressExternalRuleSetLoadPhase phase = 1;
-   */
-  phase: EgressExternalRuleSetLoadPhase;
-
-  /**
-   * @generated from field: string source_url = 2;
-   */
-  sourceUrl: string;
-
-  /**
-   * @generated from field: int32 loaded_host_count = 3;
-   */
-  loadedHostCount: number;
-
-  /**
-   * @generated from field: int32 skipped_rule_count = 4;
-   */
-  skippedRuleCount: number;
-
-  /**
-   * @generated from field: string message = 5;
-   */
-  message: string;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp loaded_at = 6;
-   */
-  loadedAt?: Timestamp;
-};
-
-/**
- * Describes the message egress.v1.EgressExternalRuleSetStatus.
- * Use `create(EgressExternalRuleSetStatusSchema)` to create a new message.
- */
-export const EgressExternalRuleSetStatusSchema: GenMessage<EgressExternalRuleSetStatus> = /*@__PURE__*/
-  messageDesc(file_egress_v1_policy, 5);
-
-/**
- * EgressResourceRef references one Istio egress resource.
- *
  * @generated from message egress.v1.EgressResourceRef
  */
 export type EgressResourceRef = Message<"egress.v1.EgressResourceRef"> & {
@@ -266,11 +344,9 @@ export type EgressResourceRef = Message<"egress.v1.EgressResourceRef"> & {
  * Use `create(EgressResourceRefSchema)` to create a new message.
  */
 export const EgressResourceRefSchema: GenMessage<EgressResourceRef> = /*@__PURE__*/
-  messageDesc(file_egress_v1_policy, 6);
+  messageDesc(file_egress_v1_policy, 9);
 
 /**
- * EgressSyncStatus stores observed Istio egress sync state.
- *
  * @generated from message egress.v1.EgressSyncStatus
  */
 export type EgressSyncStatus = Message<"egress.v1.EgressSyncStatus"> & {
@@ -310,90 +386,74 @@ export type EgressSyncStatus = Message<"egress.v1.EgressSyncStatus"> & {
  * Use `create(EgressSyncStatusSchema)` to create a new message.
  */
 export const EgressSyncStatusSchema: GenMessage<EgressSyncStatus> = /*@__PURE__*/
-  messageDesc(file_egress_v1_policy, 7);
+  messageDesc(file_egress_v1_policy, 10);
 
 /**
- * @generated from enum egress.v1.EgressAction
+ * @generated from enum egress.v1.EgressProtocol
  */
-export enum EgressAction {
+export enum EgressProtocol {
   /**
-   * @generated from enum value: EGRESS_ACTION_UNSPECIFIED = 0;
+   * @generated from enum value: EGRESS_PROTOCOL_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: EGRESS_ACTION_DIRECT = 1;
+   * @generated from enum value: EGRESS_PROTOCOL_HTTP = 1;
    */
-  DIRECT = 1,
+  HTTP = 1,
 
   /**
-   * @generated from enum value: EGRESS_ACTION_PROXY = 2;
+   * @generated from enum value: EGRESS_PROTOCOL_TLS = 2;
    */
-  PROXY = 2,
+  TLS = 2,
+
+  /**
+   * @generated from enum value: EGRESS_PROTOCOL_TCP = 3;
+   */
+  TCP = 3,
+
+  /**
+   * @generated from enum value: EGRESS_PROTOCOL_HTTPS = 4;
+   */
+  HTTPS = 4,
 }
 
 /**
- * Describes the enum egress.v1.EgressAction.
+ * Describes the enum egress.v1.EgressProtocol.
  */
-export const EgressActionSchema: GenEnum<EgressAction> = /*@__PURE__*/
+export const EgressProtocolSchema: GenEnum<EgressProtocol> = /*@__PURE__*/
   enumDesc(file_egress_v1_policy, 0);
 
 /**
- * @generated from enum egress.v1.EgressProxyProtocol
+ * @generated from enum egress.v1.EgressResolution
  */
-export enum EgressProxyProtocol {
+export enum EgressResolution {
   /**
-   * @generated from enum value: EGRESS_PROXY_PROTOCOL_UNSPECIFIED = 0;
+   * @generated from enum value: EGRESS_RESOLUTION_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: EGRESS_PROXY_PROTOCOL_HTTP = 1;
+   * @generated from enum value: EGRESS_RESOLUTION_DNS = 1;
    */
-  HTTP = 1,
+  DNS = 1,
+
+  /**
+   * @generated from enum value: EGRESS_RESOLUTION_DYNAMIC_DNS = 2;
+   */
+  DYNAMIC_DNS = 2,
+
+  /**
+   * @generated from enum value: EGRESS_RESOLUTION_NONE = 3;
+   */
+  NONE = 3,
 }
 
 /**
- * Describes the enum egress.v1.EgressProxyProtocol.
+ * Describes the enum egress.v1.EgressResolution.
  */
-export const EgressProxyProtocolSchema: GenEnum<EgressProxyProtocol> = /*@__PURE__*/
+export const EgressResolutionSchema: GenEnum<EgressResolution> = /*@__PURE__*/
   enumDesc(file_egress_v1_policy, 1);
-
-/**
- * @generated from enum egress.v1.EgressExternalRuleSetLoadPhase
- */
-export enum EgressExternalRuleSetLoadPhase {
-  /**
-   * @generated from enum value: EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_DISABLED = 1;
-   */
-  DISABLED = 1,
-
-  /**
-   * @generated from enum value: EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_LOADED = 2;
-   */
-  LOADED = 2,
-
-  /**
-   * @generated from enum value: EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_NOT_LOADED = 3;
-   */
-  NOT_LOADED = 3,
-
-  /**
-   * @generated from enum value: EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_FAILED = 4;
-   */
-  FAILED = 4,
-}
-
-/**
- * Describes the enum egress.v1.EgressExternalRuleSetLoadPhase.
- */
-export const EgressExternalRuleSetLoadPhaseSchema: GenEnum<EgressExternalRuleSetLoadPhase> = /*@__PURE__*/
-  enumDesc(file_egress_v1_policy, 2);
 
 /**
  * @generated from enum egress.v1.EgressSyncPhase
@@ -424,5 +484,5 @@ export enum EgressSyncPhase {
  * Describes the enum egress.v1.EgressSyncPhase.
  */
 export const EgressSyncPhaseSchema: GenEnum<EgressSyncPhase> = /*@__PURE__*/
-  enumDesc(file_egress_v1_policy, 3);
+  enumDesc(file_egress_v1_policy, 2);
 

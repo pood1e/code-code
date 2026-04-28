@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package platform.model.v1;
+
+import "model/v1/model.proto";
+import "platform/model/v1/model_service.proto";
+
+option go_package = "code-code.internal/go-contract/platform/model/v1;modelservicev1";
+
+// CollectedModelSource describes one source observation during model collection.
+// This is the internal collection-layer counterpart of RegistryModelSource,
+// carrying additional fields needed by the merge pipeline.
+message CollectedModelSource {
+  string vendor_id = 1;
+  string model_id = 2;
+  string source_id = 3;
+  string source_model_id = 4;
+  string display_name = 5;
+  bool is_direct = 6;
+  RegistryModelSourceKind kind = 7;
+  repeated string badges = 8;
+  PricingSummary pricing = 9;
+  // Merge priority: higher values win when merging duplicate sources.
+  int32 authority_priority = 10;
+  // Per-source definition metadata overlay.
+  .model.v1.ModelVersion definition = 11;
+}
+
+// CollectedModelEntry is the boundary type between source collectors and
+// the sync/merge layer. Each source normalize function produces entries
+// grouped by vendor.
+message CollectedModelEntry {
+  .model.v1.ModelVersion definition = 1;
+  PricingSummary pricing = 2;
+  repeated CollectedModelSource sources = 3;
+  repeated string badges = 4;
+}

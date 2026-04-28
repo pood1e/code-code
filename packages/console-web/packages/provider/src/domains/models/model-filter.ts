@@ -1,63 +1,22 @@
-type ModelRefLike = {
-  vendorId?: string;
-  modelId?: string;
-};
+import { create } from "@bufbuild/protobuf";
+import { ModelListFilterSchema, type ModelListFilter } from "@code-code/agent-contract/platform/model/v1";
 
-export function buildFilter(
+export function buildStructuredFilter(
   vendorIds: string[],
   modelQuery: string,
   sourceIds: string[] = [],
-  badge = ""
-) {
-  const clauses: string[] = [];
-  const query = sanitizeFilterValue(modelQuery);
-  if (query) {
-    clauses.push(`model_id_query=${query}`);
-  }
-  if (vendorIds.length > 0) {
-    clauses.push(`vendor_id=${vendorIds.join(",")}`);
-  }
-  if (sourceIds.length > 0) {
-    clauses.push(`source_id=${sourceIds.join(",")}`);
-  }
-  if (badge.trim()) {
-    clauses.push(`badge=${sanitizeFilterValue(badge)}`);
-  }
-  return clauses.join(" AND ");
-}
-
-export function buildDirectFilter(
-  vendorIds: string[],
-  modelQuery: string,
-  sourceIds: string[] = [],
-  badge = ""
-) {
-  const clauses = ["source_ref=null"];
-  const base = buildFilter(vendorIds, modelQuery, sourceIds, badge);
-  if (base) {
-    clauses.push(base);
-  }
-  return clauses.join(" AND ");
-}
-
-export function buildRelatedBatchFilter(refs: ModelRefLike[]) {
-  const vendorIds = Array.from(new Set(
-    refs.map((ref) => sanitizeFilterValue(ref.vendorId || "")).filter(Boolean)
-  ));
-  const modelIds = Array.from(new Set(
-    refs.map((ref) => sanitizeFilterValue(ref.modelId || "")).filter(Boolean)
-  ));
-  if (vendorIds.length === 0 || modelIds.length === 0) {
-    return "";
-  }
-  return [
-    `source_vendor_id=${vendorIds.join(",")}`,
-    `source_model_id=${modelIds.join(",")}`,
-  ].join(" AND ");
-}
-
-function sanitizeFilterValue(value: string) {
-  return value.trim().replace(/[,\n\r]+/g, " ").replace(/\bAND\b/gi, " ");
+  badge = "",
+  category = "",
+  hideDeprecated = false,
+): ModelListFilter {
+  return create(ModelListFilterSchema, {
+    vendorIds: vendorIds.length > 0 ? vendorIds : undefined,
+    modelIdQuery: modelQuery.trim() || undefined,
+    sourceIds: sourceIds.length > 0 ? sourceIds : undefined,
+    badge: badge.trim() || undefined,
+    category: category.trim() || undefined,
+    lifecycleStatusExclude: hideDeprecated ? ["deprecated", "eol", "blocked"] : undefined,
+  });
 }
 
 export function toggleSelected(values: string[], value: string) {

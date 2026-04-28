@@ -6,7 +6,6 @@ key fields or methods
 - `registerDefinitionSourceCollector(spec)`
 - `registeredDefinitionSourceCollectors()`
 - `lookupDefinitionSourceCollector(sourceID)`
-- `DefinitionSyncReconciler.sourceEndpoints`
 
 implementation notes
 - each concrete source registers its own collector, collection order, authority priority, and preset-source flag

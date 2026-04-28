@@ -16,8 +16,8 @@ describe("provider-status-view", () => {
     expect(
       providerStatusReason(
         ProviderSurfaceBindingPhase.INVALID_CONFIG,
-        "backing secret missing",
+        "credential material missing",
       ),
-    ).toBe("backing secret missing");
+    ).toBe("credential material missing");
   });
 });

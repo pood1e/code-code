@@ -120,7 +120,7 @@ session 关联的敏感 `Secret` 只保存：
 规则：
 
 - 敏感材料不进入 `spec` 或 `status`。
-- `refresh_token` 可以短暂存在于 session Secret，但导入成功后必须迁入正式 credential backing Secret。
+- `refresh_token` 可以短暂存在于 session Secret，但导入成功后必须迁入 auth service 拥有的长期 credential material store。
 - session terminal 后必须删除 session Secret。
 
 ## Execution Boundary

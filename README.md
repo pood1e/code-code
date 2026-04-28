@@ -2,7 +2,7 @@
 
 内部 AI Agent 平台仓库，当前主线是 **Helm-first 部署** 与 **Kubernetes/Temporal 编排**。
 
-详细架构说明请看 [PROJECT.md](./PROJECT.md)，领域设计文档入口请看 [docs/README.md](./docs/README.md)。
+详细架构说明请看 [PROJECT.md](./PROJECT.md)，领域设计文档入口请看 [docs/README.md](./docs/README.md)。部署入口和 chart 文档请看 [docs/deploy/README.md](./docs/deploy/README.md)。
 
 ## 仓库结构
 
@@ -10,10 +10,10 @@
 - `packages/console-api`: 控制台 BFF（Go）
 - `packages/console-web`: 控制台前端（React）
 - `packages/proto`: 跨语言 protobuf 合约
-- `deploy/`: 镜像构建与 Helm/K8s 部署脚本
+- `deploy/`: 镜像构建、Helm chart、values、部署入口 Makefile
 - `docs/`: 设计文档与边界说明
 
-## 快速开始（本地）
+## 本地部署快速开始
 
 前置条件（最小集）：
 
@@ -22,55 +22,55 @@
 - `bash`
 - 可用容器引擎（`docker` 或 `nerdctl`，用于本地构建镜像）
 
-常用流程：
+从仓库根目录执行：
 
 ```bash
-# 1) 初始化本地 registry 等依赖
-deploy/local.sh setup
+cd deploy
+cp .env.example .env
 
-# 2) 一键本地开发部署（按需 build/push/deploy）
-deploy/dev.sh up
+# 1) 启动集群内 registry 和 pull-through cache
+make registry-up
 
-# 3) 查看状态
-deploy/dev.sh status
+# 2) 构建并推送镜像
+IMAGE_REGISTRY=<cluster-reachable-registry>/ IMAGE_TAG=dev-local make push
+
+# 3) 通过 Helm 部署主平台 chart
+IMAGE_REGISTRY=<cluster-reachable-registry>/ IMAGE_TAG=dev-local make deploy
+
+# 4) 运行 chart 内置 smoke test
+make test
+make smoke-ingress
 ```
 
-如果只想执行某一步：
+例如目标机是 `192.168.0.126` 时，可使用 `IMAGE_REGISTRY=192.168.0.126:30500/`。
 
-```bash
-deploy/dev.sh build
-deploy/dev.sh push
-deploy/dev.sh deploy
-```
+## 部署入口
 
-## 访问入口（默认）
+- `deploy/Makefile`: 单一部署入口，负责 `build`、`push`、`deploy`、`lint`、`template`、`validate`、`test`、`smoke-ingress`、`scripts-check`、`package-all`、`docs`
+- `deploy/charts/`: 7 个 Helm charts，README 由 `helm-docs` 生成
+- `deploy/values/`: 共用 values 文件
+- `docs/deploy/README.md`: 部署流程、镜像构建、registry、故障排查
 
-- `console.localhost`
-- `kiali.localhost`
-- `grafana.localhost`
+## 主要 Charts
 
-如需绑定到固定局域网 IP，可设置 `LOCAL_INGRESS_BIND_IP`，脚本会生成 `*.nip.io` 主机名。
-
-## 部署脚本
-
-- `deploy/dev.sh`: 开发入口脚本（setup/build/push/deploy/addon/status/logs）
-- `deploy/local.sh`: 本地环境初始化（registry、Colima inotify 参数等）
-- `deploy/release.sh`: CI/发布向脚本（build/push/deploy/validate/package-charts）
-
-## Helm Charts（deploy/k8s/charts）
-
-- `platform`: 核心业务服务与 CRD
-- `istio-platform`: 网格相关资源（waypoint/telemetry/wasm 等）
-- `infrastructure-core`: Postgres/NATS/Prometheus/OTel 等核心依赖
-- `infrastructure-addons`: Grafana/Kiali/Tempo/Loki/Alloy/Cloudflare-DDNS 等
-- `cluster-bootstrap`: 命名空间与集群基础资源
-- `cluster-addons`: 集群附加组件（如 metrics-server）
-- `dev-image-infra`: 开发环境镜像基础设施（registry/cache）
+- `platform`: 核心业务服务、console ingress、运行时 RBAC、CRD
 - `platform-notifications`: 通知子系统
+- `infrastructure-core`: Postgres、NATS、OTel Collector、Prometheus、Alertmanager
+- `infrastructure-addons`: Grafana、Tempo、Loki、Alloy、Kiali、cloudflare-ddns
+- `istio-platform`: 平台托管的 Istio Ambient 资源
+- `cluster-bootstrap`: 命名空间和 Gateway API v1.4.0 Experimental CRD
+- `dev-image-infra`: 开发/内网环境 registry 和 pull-through cache
 
-## 校验
+## 常用校验
 
 ```bash
-deploy/release.sh validate
+cd deploy
+make lint
+make template
+make validate
+make validate-all
+make scripts-check
+make package-all
+make bake-check
+make docs
 ```
-

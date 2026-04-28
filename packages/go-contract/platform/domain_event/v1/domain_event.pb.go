@@ -671,7 +671,7 @@ type CatalogEvent struct {
 	//
 	//	*CatalogEvent_CliDefinition
 	//	*CatalogEvent_VendorDefinition
-	//	*CatalogEvent_ModelDefinition
+	//	*CatalogEvent_ModelVersion
 	Definition    isCatalogEvent_Definition `protobuf_oneof:"definition"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -753,10 +753,10 @@ func (x *CatalogEvent) GetVendorDefinition() *v15.Vendor {
 	return nil
 }
 
-func (x *CatalogEvent) GetModelDefinition() *v16.ModelDefinition {
+func (x *CatalogEvent) GetModelVersion() *v16.ModelVersion {
 	if x != nil {
-		if x, ok := x.Definition.(*CatalogEvent_ModelDefinition); ok {
-			return x.ModelDefinition
+		if x, ok := x.Definition.(*CatalogEvent_ModelVersion); ok {
+			return x.ModelVersion
 		}
 	}
 	return nil
@@ -774,15 +774,15 @@ type CatalogEvent_VendorDefinition struct {
 	VendorDefinition *v15.Vendor `protobuf:"bytes,11,opt,name=vendor_definition,json=vendorDefinition,proto3,oneof"`
 }
 
-type CatalogEvent_ModelDefinition struct {
-	ModelDefinition *v16.ModelDefinition `protobuf:"bytes,12,opt,name=model_definition,json=modelDefinition,proto3,oneof"`
+type CatalogEvent_ModelVersion struct {
+	ModelVersion *v16.ModelVersion `protobuf:"bytes,12,opt,name=model_version,json=modelVersion,proto3,oneof"`
 }
 
 func (*CatalogEvent_CliDefinition) isCatalogEvent_Definition() {}
 
 func (*CatalogEvent_VendorDefinition) isCatalogEvent_Definition() {}
 
-func (*CatalogEvent_ModelDefinition) isCatalogEvent_Definition() {}
+func (*CatalogEvent_ModelVersion) isCatalogEvent_Definition() {}
 
 type CLIRuntimeEvent struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
@@ -994,7 +994,7 @@ const file_platform_domain_event_v1_domain_event_proto_rawDesc = "" +
 	"\bmutation\x18\x01 \x01(\x0e2(.platform.domain_event.v1.DomainMutationR\bmutation\x12C\n" +
 	"\n" +
 	"definition\x18\x02 \x01(\v2#.credential.v1.CredentialDefinitionR\n" +
-	"definition\"\x9c\x03\n" +
+	"definition\"\x93\x03\n" +
 	"\fCatalogEvent\x12D\n" +
 	"\bmutation\x18\x01 \x01(\x0e2(.platform.domain_event.v1.DomainMutationR\bmutation\x129\n" +
 	"\x04kind\x18\x02 \x01(\x0e2%.platform.domain_event.v1.CatalogKindR\x04kind\x12\x1d\n" +
@@ -1002,8 +1002,8 @@ const file_platform_domain_event_v1_domain_event_proto_rawDesc = "" +
 	"catalog_id\x18\x03 \x01(\tR\tcatalogId\x12I\n" +
 	"\x0ecli_definition\x18\n" +
 	" \x01(\v2 .cli_definition.v1.CLIDefinitionH\x00R\rcliDefinition\x12K\n" +
-	"\x11vendor_definition\x18\v \x01(\v2\x1c.vendor_definition.v1.VendorH\x00R\x10vendorDefinition\x12F\n" +
-	"\x10model_definition\x18\f \x01(\v2\x19.model.v1.ModelDefinitionH\x00R\x0fmodelDefinitionB\f\n" +
+	"\x11vendor_definition\x18\v \x01(\v2\x1c.vendor_definition.v1.VendorH\x00R\x10vendorDefinition\x12=\n" +
+	"\rmodel_version\x18\f \x01(\v2\x16.model.v1.ModelVersionH\x00R\fmodelVersionB\f\n" +
 	"\n" +
 	"definition\"\xb4\x01\n" +
 	"\x0fCLIRuntimeEvent\x12A\n" +
@@ -1073,7 +1073,7 @@ var file_platform_domain_event_v1_domain_event_proto_goTypes = []any{
 	(*v13.CredentialDefinition)(nil),           // 17: credential.v1.CredentialDefinition
 	(*v14.CLIDefinition)(nil),                  // 18: cli_definition.v1.CLIDefinition
 	(*v15.Vendor)(nil),                         // 19: vendor_definition.v1.Vendor
-	(*v16.ModelDefinition)(nil),                // 20: model.v1.ModelDefinition
+	(*v16.ModelVersion)(nil),                   // 20: model.v1.ModelVersion
 }
 var file_platform_domain_event_v1_domain_event_proto_depIdxs = []int32{
 	12, // 0: platform.domain_event.v1.DomainEvent.occurred_at:type_name -> google.protobuf.Timestamp
@@ -1098,7 +1098,7 @@ var file_platform_domain_event_v1_domain_event_proto_depIdxs = []int32{
 	1,  // 19: platform.domain_event.v1.CatalogEvent.kind:type_name -> platform.domain_event.v1.CatalogKind
 	18, // 20: platform.domain_event.v1.CatalogEvent.cli_definition:type_name -> cli_definition.v1.CLIDefinition
 	19, // 21: platform.domain_event.v1.CatalogEvent.vendor_definition:type_name -> vendor_definition.v1.Vendor
-	20, // 22: platform.domain_event.v1.CatalogEvent.model_definition:type_name -> model.v1.ModelDefinition
+	20, // 22: platform.domain_event.v1.CatalogEvent.model_version:type_name -> model.v1.ModelVersion
 	2,  // 23: platform.domain_event.v1.CLIRuntimeEvent.type:type_name -> platform.domain_event.v1.CLIRuntimeEventType
 	11, // 24: platform.domain_event.v1.CLIRuntimeEvent.image_build_request:type_name -> platform.domain_event.v1.CLIImageBuildRequest
 	25, // [25:25] is the sub-list for method output_type
@@ -1125,7 +1125,7 @@ func file_platform_domain_event_v1_domain_event_proto_init() {
 	file_platform_domain_event_v1_domain_event_proto_msgTypes[6].OneofWrappers = []any{
 		(*CatalogEvent_CliDefinition)(nil),
 		(*CatalogEvent_VendorDefinition)(nil),
-		(*CatalogEvent_ModelDefinition)(nil),
+		(*CatalogEvent_ModelVersion)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

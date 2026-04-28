@@ -1,7 +1,7 @@
 import { Badge, Card, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { PolicySummary } from "./network-egress-policy-card-summary";
 import { PolicyBlock, badgeStyle, rowStyle, wrapTextStyle, WrappingCode } from "./network-egress-policy-rows";
-import type { IstioEgressPolicy } from "./network-types";
+import type { ExternalAccessSet, IstioEgressPolicy } from "./network-types";
 
 export function PolicyDetails({ policy }: { policy: IstioEgressPolicy }) {
   const resourceCounts = summarizeResources(policy);
@@ -12,18 +12,12 @@ export function PolicyDetails({ policy }: { policy: IstioEgressPolicy }) {
         <Flex justify="between" align="start" gap="3" wrap="wrap">
           <Flex direction="column" gap="1">
             <Heading as="h2" size="4" weight="medium">{policy.displayName}</Heading>
-            <Text size="2" color="gray">Effective result (read-only).</Text>
+            <Text size="2" color="gray">Effective result after egressservice sync.</Text>
           </Flex>
           <Badge color={syncStatusColor(policy.sync.status)} variant="soft">{policy.sync.status}</Badge>
         </Flex>
 
         <PolicySummary policy={policy} />
-
-        <PolicyBlock title="What this means">
-          <Text size="2" color="gray" style={wrapTextStyle}>
-            Rules are configured in the Rules tab. This page only shows what is currently in effect.
-          </Text>
-        </PolicyBlock>
 
         <PolicyBlock title="Current status">
           <Grid columns={{ initial: "1", md: "120px minmax(0, 1fr)" }} gap="2" style={rowStyle}>
@@ -31,63 +25,23 @@ export function PolicyDetails({ policy }: { policy: IstioEgressPolicy }) {
             <Text size="2" color="gray" style={wrapTextStyle}>{policy.sync.reason || "No status message."}</Text>
           </Grid>
           <Grid columns={{ initial: "1", md: "120px minmax(0, 1fr)" }} gap="2" style={rowStyle}>
-            <Badge variant="soft" style={badgeStyle}>updated</Badge>
-            <Text size="2" color="gray">
-              generation {policy.sync.observedGeneration}{policy.sync.lastSyncedAt ? ` / ${policy.sync.lastSyncedAt}` : ""}
-            </Text>
+            <Badge variant="soft" style={badgeStyle}>gateway</Badge>
+            <WrappingCode>{`${policy.sync.targetGateway.namespace}/${policy.sync.targetGateway.name}`}</WrappingCode>
           </Grid>
         </PolicyBlock>
 
-        <PolicyBlock title="Custom rules in effect">
-          {(policy.rules ?? []).length > 0 ? (
-            (policy.rules ?? []).map((rule, index) => (
-              <Grid
-                key={`${rule.id}-${index}`}
-                columns={{ initial: "1", md: "72px 140px minmax(0, 1fr)" }}
-                gap="2"
-                style={rowStyle}
-              >
-                <Badge color={rule.action === "proxy" ? "blue" : "green"} variant="soft" style={badgeStyle}>{rule.action}</Badge>
-                <Text size="2" color="gray">{rule.action === "proxy" ? proxyLabel(policy, rule.proxyId) : "direct"}</Text>
-                <WrappingCode>{rule.match}</WrappingCode>
-              </Grid>
-            ))
+        <PolicyBlock title="External access sets">
+          {policy.accessSets.length > 0 ? (
+            policy.accessSets.map((accessSet) => <AccessSetBlock key={accessSet.id} accessSet={accessSet} />)
           ) : (
-            <Text size="2" color="gray" style={wrapTextStyle}>No custom rules. Traffic uses default behavior.</Text>
+            <Text size="2" color="gray" style={wrapTextStyle}>No external access sets declared.</Text>
           )}
         </PolicyBlock>
 
-        <PolicyBlock title="External AutoProxy rule set">
-          <Grid columns={{ initial: "1", md: "120px minmax(0, 1fr)" }} gap="2" style={rowStyle}>
-            <Badge color={policy.externalRuleSet.enabled ? "blue" : "gray"} variant="soft" style={badgeStyle}>
-              {policy.externalRuleSet.enabled ? policy.externalRuleSet.action : "off"}
-            </Badge>
-            <Text size="2" color="gray">
-              {policy.externalRuleSet.enabled
-                ? `${policy.externalRuleSetStatus.loadedHostCount} hosts loaded`
-                : "External rule set disabled"}
-            </Text>
-          </Grid>
-          {policy.externalRuleSet.sourceUrl ? (
-            <Grid columns={{ initial: "1", md: "120px minmax(0, 1fr)" }} gap="2" style={rowStyle}>
-              <Badge variant="soft" style={badgeStyle}>source</Badge>
-              <WrappingCode>{policy.externalRuleSet.sourceUrl}</WrappingCode>
-            </Grid>
-          ) : null}
-          {policy.externalRuleSetStatus.message ? (
-            <Grid columns={{ initial: "1", md: "120px minmax(0, 1fr)" }} gap="2" style={rowStyle}>
-              <Badge color={policy.externalRuleSetStatus.phase === "failed" ? "red" : "gray"} variant="soft" style={badgeStyle}>
-                {policy.externalRuleSetStatus.phase}
-              </Badge>
-              <Text size="2" color="gray" style={wrapTextStyle}>{policy.externalRuleSetStatus.message}</Text>
-            </Grid>
-          ) : null}
-        </PolicyBlock>
-
-        <PolicyBlock title="System resources (count)">
+        <PolicyBlock title="System resources">
           {resourceCounts.length > 0 ? (
             resourceCounts.map((item) => (
-              <Grid key={item.kind} columns={{ initial: "1", md: "120px minmax(0, 1fr)" }} gap="2" style={rowStyle}>
+              <Grid key={item.kind} columns={{ initial: "1", md: "150px minmax(0, 1fr)" }} gap="2" style={rowStyle}>
                 <Badge variant="soft" style={badgeStyle}>{item.kind}</Badge>
                 <Text size="2" color="gray">{item.count}</Text>
               </Grid>
@@ -101,8 +55,40 @@ export function PolicyDetails({ policy }: { policy: IstioEgressPolicy }) {
   );
 }
 
-function proxyLabel(policy: IstioEgressPolicy, proxyId: string) {
-  return policy.proxies?.find((proxy) => proxy.id === proxyId)?.name ?? proxyId;
+function AccessSetBlock({ accessSet }: { accessSet: ExternalAccessSet }) {
+  const serviceAccountsByDestination = new Map(
+    accessSet.serviceRules.map((rule) => [rule.destinationId, rule.sourceServiceAccounts])
+  );
+  return (
+    <Flex direction="column" gap="2">
+      <Flex justify="between" gap="3" wrap="wrap">
+        <Text size="2" weight="medium">{accessSet.displayName}</Text>
+        <Badge variant="soft">{accessSet.ownerService || "unknown owner"}</Badge>
+      </Flex>
+      {accessSet.externalRules.map((rule) => (
+        <Grid
+          key={rule.id}
+          columns={{ initial: "1", md: "76px 96px minmax(0, 1fr)" }}
+          gap="2"
+          style={rowStyle}
+        >
+          <Badge color={rule.hostKind === "wildcard" ? "amber" : "blue"} variant="soft" style={badgeStyle}>
+            {rule.protocol}
+          </Badge>
+          <Text size="2" color="gray">{rule.resolution}</Text>
+          <Flex direction="column" gap="1">
+            <WrappingCode>{`${rule.host}:${rule.port}`}</WrappingCode>
+            <Text size="1" color="gray" style={wrapTextStyle}>
+              {[
+                (serviceAccountsByDestination.get(rule.destinationId) ?? []).join(", ") || "deny all",
+                rule.addressCidr
+              ].filter(Boolean).join(" / ")}
+            </Text>
+          </Flex>
+        </Grid>
+      ))}
+    </Flex>
+  );
 }
 
 function syncStatusColor(status: IstioEgressPolicy["sync"]["status"]) {

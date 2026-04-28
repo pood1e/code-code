@@ -2,13 +2,9 @@
 // @generated from file platform/model/v1/model_service.proto (package platform.model.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { CredentialRef } from "../../../credential/v1/credential_pb";
-import { file_credential_v1_credential } from "../../../credential/v1/credential_pb";
-import type { Protocol } from "../../../api_protocol/v1/protocol_pb";
-import { file_api_protocol_v1_protocol } from "../../../api_protocol/v1/protocol_pb";
-import type { ModelDefinition, ModelRef } from "../../../model/v1/model_pb";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { ModelRef, ModelVersion } from "../../../model/v1/model_pb";
 import { file_model_v1_model } from "../../../model/v1/model_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -16,18 +12,22 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file platform/model/v1/model_service.proto.
  */
 export const file_platform_model_v1_model_service: GenFile = /*@__PURE__*/
-  fileDesc("CiVwbGF0Zm9ybS9tb2RlbC92MS9tb2RlbF9zZXJ2aWNlLnByb3RvEhFwbGF0Zm9ybS5tb2RlbC52MSLuAQoSTW9kZWxSZWdpc3RyeUVudHJ5Ei0KCmRlZmluaXRpb24YASABKAsyGS5tb2RlbC52MS5Nb2RlbERlZmluaXRpb24SJgoKc291cmNlX3JlZhgCIAEoCzISLm1vZGVsLnYxLk1vZGVsUmVmEg4KBmJhZGdlcxgDIAMoCRI4CgdwcmljaW5nGAQgASgLMicucGxhdGZvcm0ubW9kZWwudjEuUmVnaXN0cnlNb2RlbFByaWNpbmcSNwoHc291cmNlcxgFIAMoCzImLnBsYXRmb3JtLm1vZGVsLnYxLlJlZ2lzdHJ5TW9kZWxTb3VyY2UiagoUUmVnaXN0cnlNb2RlbFByaWNpbmcSDQoFaW5wdXQYASABKAkSDgoGb3V0cHV0GAIgASgJEhgKEGNhY2hlX3JlYWRfaW5wdXQYAyABKAkSGQoRY2FjaGVfd3JpdGVfaW5wdXQYBCABKAki2wEKE1JlZ2lzdHJ5TW9kZWxTb3VyY2USEQoJc291cmNlX2lkGAEgASgJEgwKBGtpbmQYAiABKAkSEQoJaXNfZGlyZWN0GAMgASgIEhcKD3NvdXJjZV9tb2RlbF9pZBgEIAEoCRItCgpkZWZpbml0aW9uGAUgASgLMhkubW9kZWwudjEuTW9kZWxEZWZpbml0aW9uEg4KBmJhZGdlcxgGIAMoCRI4CgdwcmljaW5nGAcgASgLMicucGxhdGZvcm0ubW9kZWwudjEuUmVnaXN0cnlNb2RlbFByaWNpbmciVAobTGlzdE1vZGVsRGVmaW5pdGlvbnNSZXF1ZXN0EhEKCXBhZ2Vfc2l6ZRgBIAEoBRISCgpwYWdlX3Rva2VuGAIgASgJEg4KBmZpbHRlchgDIAEoCSKCAQocTGlzdE1vZGVsRGVmaW5pdGlvbnNSZXNwb25zZRI0CgVpdGVtcxgBIAMoCzIlLnBsYXRmb3JtLm1vZGVsLnYxLk1vZGVsUmVnaXN0cnlFbnRyeRIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkSEwoLdG90YWxfY291bnQYAyABKAMimQEKHkdldE9yRmV0Y2hDYXRhbG9nTW9kZWxzUmVxdWVzdBIQCghwcm9iZV9pZBgBIAEoCRI1CgZ0YXJnZXQYAiABKAsyJS5wbGF0Zm9ybS5tb2RlbC52MS5Nb2RlbENhdGFsb2dUYXJnZXQSLgoIYXV0aF9yZWYYAyABKAsyHC5jcmVkZW50aWFsLnYxLkNyZWRlbnRpYWxSZWYilAEKGUZldGNoQ2F0YWxvZ01vZGVsc1JlcXVlc3QSEAoIcHJvYmVfaWQYASABKAkSNQoGdGFyZ2V0GAIgASgLMiUucGxhdGZvcm0ubW9kZWwudjEuTW9kZWxDYXRhbG9nVGFyZ2V0Ei4KCGF1dGhfcmVmGAMgASgLMhwuY3JlZGVudGlhbC52MS5DcmVkZW50aWFsUmVmImYKEk1vZGVsQ2F0YWxvZ1RhcmdldBIRCgl0YXJnZXRfaWQYASABKAkSEAoIYmFzZV91cmwYAiABKAkSKwoIcHJvdG9jb2wYAyABKA4yGS5hcGlfcHJvdG9jb2wudjEuUHJvdG9jb2wiVgoMQ2F0YWxvZ01vZGVsEhcKD3NvdXJjZV9tb2RlbF9pZBgBIAEoCRItCgpkZWZpbml0aW9uGAIgASgLMhkubW9kZWwudjEuTW9kZWxEZWZpbml0aW9uIlIKH0dldE9yRmV0Y2hDYXRhbG9nTW9kZWxzUmVzcG9uc2USLwoGbW9kZWxzGAEgAygLMh8ucGxhdGZvcm0ubW9kZWwudjEuQ2F0YWxvZ01vZGVsIk0KGkZldGNoQ2F0YWxvZ01vZGVsc1Jlc3BvbnNlEi8KBm1vZGVscxgBIAMoCzIfLnBsYXRmb3JtLm1vZGVsLnYxLkNhdGFsb2dNb2RlbCIdChtTeW5jTW9kZWxEZWZpbml0aW9uc1JlcXVlc3QiLgocU3luY01vZGVsRGVmaW5pdGlvbnNSZXNwb25zZRIOCgZzdGF0dXMYASABKAky9gMKDE1vZGVsU2VydmljZRJ3ChRMaXN0TW9kZWxEZWZpbml0aW9ucxIuLnBsYXRmb3JtLm1vZGVsLnYxLkxpc3RNb2RlbERlZmluaXRpb25zUmVxdWVzdBovLnBsYXRmb3JtLm1vZGVsLnYxLkxpc3RNb2RlbERlZmluaXRpb25zUmVzcG9uc2USgAEKF0dldE9yRmV0Y2hDYXRhbG9nTW9kZWxzEjEucGxhdGZvcm0ubW9kZWwudjEuR2V0T3JGZXRjaENhdGFsb2dNb2RlbHNSZXF1ZXN0GjIucGxhdGZvcm0ubW9kZWwudjEuR2V0T3JGZXRjaENhdGFsb2dNb2RlbHNSZXNwb25zZRJxChJGZXRjaENhdGFsb2dNb2RlbHMSLC5wbGF0Zm9ybS5tb2RlbC52MS5GZXRjaENhdGFsb2dNb2RlbHNSZXF1ZXN0Gi0ucGxhdGZvcm0ubW9kZWwudjEuRmV0Y2hDYXRhbG9nTW9kZWxzUmVzcG9uc2USdwoUU3luY01vZGVsRGVmaW5pdGlvbnMSLi5wbGF0Zm9ybS5tb2RlbC52MS5TeW5jTW9kZWxEZWZpbml0aW9uc1JlcXVlc3QaLy5wbGF0Zm9ybS5tb2RlbC52MS5TeW5jTW9kZWxEZWZpbml0aW9uc1Jlc3BvbnNlQkFaP2NvZGUtY29kZS5pbnRlcm5hbC9nby1jb250cmFjdC9wbGF0Zm9ybS9tb2RlbC92MTttb2RlbHNlcnZpY2V2MWIGcHJvdG8z", [file_credential_v1_credential, file_api_protocol_v1_protocol, file_model_v1_model]);
+  fileDesc("CiVwbGF0Zm9ybS9tb2RlbC92MS9tb2RlbF9zZXJ2aWNlLnByb3RvEhFwbGF0Zm9ybS5tb2RlbC52MSLlAQoSTW9kZWxSZWdpc3RyeUVudHJ5EioKCmRlZmluaXRpb24YASABKAsyFi5tb2RlbC52MS5Nb2RlbFZlcnNpb24SJgoKc291cmNlX3JlZhgCIAEoCzISLm1vZGVsLnYxLk1vZGVsUmVmEg4KBmJhZGdlcxgDIAMoCRIyCgdwcmljaW5nGAQgASgLMiEucGxhdGZvcm0ubW9kZWwudjEuUHJpY2luZ1N1bW1hcnkSNwoHc291cmNlcxgFIAMoCzImLnBsYXRmb3JtLm1vZGVsLnYxLlJlZ2lzdHJ5TW9kZWxTb3VyY2UijAIKDlByaWNpbmdTdW1tYXJ5Eg0KBWlucHV0GAEgASgJEg4KBm91dHB1dBgCIAEoCRIYChBjYWNoZV9yZWFkX2lucHV0GAMgASgJEhkKEWNhY2hlX3dyaXRlX2lucHV0GAQgASgJEhEKCXJlYXNvbmluZxgFIAEoCRITCgtpbWFnZV9pbnB1dBgGIAEoCRITCgthdWRpb19pbnB1dBgHIAEoCRIUCgxhdWRpb19vdXRwdXQYCCABKAkSDwoHcmVxdWVzdBgJIAEoCRIQCghjdXJyZW5jeRgKIAEoCRIwCgpwcmljZV90eXBlGAsgASgOMhwucGxhdGZvcm0ubW9kZWwudjEuUHJpY2VUeXBlIv4BChNSZWdpc3RyeU1vZGVsU291cmNlEhEKCXNvdXJjZV9pZBgBIAEoCRI4CgRraW5kGAIgASgOMioucGxhdGZvcm0ubW9kZWwudjEuUmVnaXN0cnlNb2RlbFNvdXJjZUtpbmQSEQoJaXNfZGlyZWN0GAMgASgIEhcKD3NvdXJjZV9tb2RlbF9pZBgEIAEoCRIqCgpkZWZpbml0aW9uGAUgASgLMhYubW9kZWwudjEuTW9kZWxWZXJzaW9uEg4KBmJhZGdlcxgGIAMoCRIyCgdwcmljaW5nGAcgASgLMiEucGxhdGZvcm0ubW9kZWwudjEuUHJpY2luZ1N1bW1hcnkiiQEKEUxpc3RNb2RlbHNSZXF1ZXN0EhEKCXBhZ2Vfc2l6ZRgBIAEoBRISCgpwYWdlX3Rva2VuGAIgASgJEg4KBmZpbHRlchgDIAEoCRI9ChFzdHJ1Y3R1cmVkX2ZpbHRlchgEIAEoCzIiLnBsYXRmb3JtLm1vZGVsLnYxLk1vZGVsTGlzdEZpbHRlciKmAQoPTW9kZWxMaXN0RmlsdGVyEhIKCnZlbmRvcl9pZHMYASADKAkSEAoIbW9kZWxfaWQYAiABKAkSFgoObW9kZWxfaWRfcXVlcnkYAyABKAkSEgoKc291cmNlX2lkcxgEIAMoCRINCgViYWRnZRgFIAEoCRIQCghjYXRlZ29yeRgGIAEoCRIgChhsaWZlY3ljbGVfc3RhdHVzX2V4Y2x1ZGUYByADKAkieAoSTGlzdE1vZGVsc1Jlc3BvbnNlEjQKBWl0ZW1zGAEgAygLMiUucGxhdGZvcm0ubW9kZWwudjEuTW9kZWxSZWdpc3RyeUVudHJ5EhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRITCgt0b3RhbF9jb3VudBgDIAEoAyJGChZSZXNvbHZlTW9kZWxSZWZSZXF1ZXN0EhkKEW1vZGVsX2lkX29yX2FsaWFzGAEgASgJEhEKCXZlbmRvcl9pZBgCIAEoCSI6ChdSZXNvbHZlTW9kZWxSZWZSZXNwb25zZRIfCgNyZWYYASABKAsyEi5tb2RlbC52MS5Nb2RlbFJlZiI5ChZHZXRNb2RlbFZlcnNpb25SZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLm1vZGVsLnYxLk1vZGVsUmVmIk4KF0dldE1vZGVsVmVyc2lvblJlc3BvbnNlEjMKBGl0ZW0YASABKAsyJS5wbGF0Zm9ybS5tb2RlbC52MS5Nb2RlbFJlZ2lzdHJ5RW50cnkiHQobU3luY01vZGVsRGVmaW5pdGlvbnNSZXF1ZXN0Ii4KHFN5bmNNb2RlbERlZmluaXRpb25zUmVzcG9uc2USDgoGc3RhdHVzGAEgASgJIqMBCglNb2RlbENhcmQSFgoOc2NoZW1hX3ZlcnNpb24YASABKAkSFQoNbWV0YWRhdGFfanNvbhgCIAEoCRIVCg1tYXJrZG93bl9ib2R5GAMgASgJEhMKC3NvdXJjZV90eXBlGAQgASgJEhIKCnNvdXJjZV91cmwYBSABKAkSFQoNcmV2aWV3X3N0YXR1cxgGIAEoCRIQCghyZXZpZXdlchgHIAEoCSI2ChNHZXRNb2RlbENhcmRSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLm1vZGVsLnYxLk1vZGVsUmVmIkIKFEdldE1vZGVsQ2FyZFJlc3BvbnNlEioKBGNhcmQYASABKAsyHC5wbGF0Zm9ybS5tb2RlbC52MS5Nb2RlbENhcmQidwoMT3JnYW5pemF0aW9uEhAKCG9yZ19jb2RlGAEgASgJEhAKCG9yZ19uYW1lGAIgASgJEhEKCW9yZ19yb2xlcxgDIAMoCRIPCgdjb3VudHJ5GAQgASgJEg8KB3dlYnNpdGUYBSABKAkSDgoGc3RhdHVzGAYgASgJKp8BCglQcmljZVR5cGUSGgoWUFJJQ0VfVFlQRV9VTlNQRUNJRklFRBAAEhwKGFBSSUNFX1RZUEVfVkVORE9SX1BVQkxJQxABEhsKF1BSSUNFX1RZUEVfQ0xPVURfUFVCTElDEAISHQoZUFJJQ0VfVFlQRV9BR0VOVF9DT05UUkFDVBADEhwKGFBSSUNFX1RZUEVfSU5URVJOQUxfQ09TVBAEKpcBChdSZWdpc3RyeU1vZGVsU291cmNlS2luZBIqCiZSRUdJU1RSWV9NT0RFTF9TT1VSQ0VfS0lORF9VTlNQRUNJRklFRBAAEiUKIVJFR0lTVFJZX01PREVMX1NPVVJDRV9LSU5EX1BSRVNFVBABEikKJVJFR0lTVFJZX01PREVMX1NPVVJDRV9LSU5EX0RJU0NPVkVSRUQQAjKXBAoMTW9kZWxTZXJ2aWNlElkKCkxpc3RNb2RlbHMSJC5wbGF0Zm9ybS5tb2RlbC52MS5MaXN0TW9kZWxzUmVxdWVzdBolLnBsYXRmb3JtLm1vZGVsLnYxLkxpc3RNb2RlbHNSZXNwb25zZRJoCg9SZXNvbHZlTW9kZWxSZWYSKS5wbGF0Zm9ybS5tb2RlbC52MS5SZXNvbHZlTW9kZWxSZWZSZXF1ZXN0GioucGxhdGZvcm0ubW9kZWwudjEuUmVzb2x2ZU1vZGVsUmVmUmVzcG9uc2USaAoPR2V0TW9kZWxWZXJzaW9uEikucGxhdGZvcm0ubW9kZWwudjEuR2V0TW9kZWxWZXJzaW9uUmVxdWVzdBoqLnBsYXRmb3JtLm1vZGVsLnYxLkdldE1vZGVsVmVyc2lvblJlc3BvbnNlEncKFFN5bmNNb2RlbERlZmluaXRpb25zEi4ucGxhdGZvcm0ubW9kZWwudjEuU3luY01vZGVsRGVmaW5pdGlvbnNSZXF1ZXN0Gi8ucGxhdGZvcm0ubW9kZWwudjEuU3luY01vZGVsRGVmaW5pdGlvbnNSZXNwb25zZRJfCgxHZXRNb2RlbENhcmQSJi5wbGF0Zm9ybS5tb2RlbC52MS5HZXRNb2RlbENhcmRSZXF1ZXN0GicucGxhdGZvcm0ubW9kZWwudjEuR2V0TW9kZWxDYXJkUmVzcG9uc2VCQVo/Y29kZS1jb2RlLmludGVybmFsL2dvLWNvbnRyYWN0L3BsYXRmb3JtL21vZGVsL3YxO21vZGVsc2VydmljZXYxYgZwcm90bzM", [file_model_v1_model]);
 
 /**
  * @generated from message platform.model.v1.ModelRegistryEntry
  */
 export type ModelRegistryEntry = Message<"platform.model.v1.ModelRegistryEntry"> & {
   /**
-   * @generated from field: model.v1.ModelDefinition definition = 1;
+   * Canonical stable model identity and metadata.
+   *
+   * @generated from field: model.v1.ModelVersion definition = 1;
    */
-  definition?: ModelDefinition;
+  definition?: ModelVersion;
 
   /**
+   * Optional upstream canonical source reference for proxy/derived models.
+   *
    * @generated from field: model.v1.ModelRef source_ref = 2;
    */
   sourceRef?: ModelRef;
@@ -38,11 +38,13 @@ export type ModelRegistryEntry = Message<"platform.model.v1.ModelRegistryEntry">
   badges: string[];
 
   /**
-   * @generated from field: platform.model.v1.RegistryModelPricing pricing = 4;
+   * @generated from field: platform.model.v1.PricingSummary pricing = 4;
    */
-  pricing?: RegistryModelPricing;
+  pricing?: PricingSummary;
 
   /**
+   * Source-scoped observations (callable ids, source-local pricing/badges).
+   *
    * @generated from field: repeated platform.model.v1.RegistryModelSource sources = 5;
    */
   sources: RegistryModelSource[];
@@ -56,9 +58,12 @@ export const ModelRegistryEntrySchema: GenMessage<ModelRegistryEntry> = /*@__PUR
   messageDesc(file_platform_model_v1_model_service, 0);
 
 /**
- * @generated from message platform.model.v1.RegistryModelPricing
+ * PricingSummary describes per-unit pricing for one model or offering.
+ * Prices are string-encoded decimals per 1M tokens unless otherwise noted.
+ *
+ * @generated from message platform.model.v1.PricingSummary
  */
-export type RegistryModelPricing = Message<"platform.model.v1.RegistryModelPricing"> & {
+export type PricingSummary = Message<"platform.model.v1.PricingSummary"> & {
   /**
    * @generated from field: string input = 1;
    */
@@ -78,13 +83,62 @@ export type RegistryModelPricing = Message<"platform.model.v1.RegistryModelPrici
    * @generated from field: string cache_write_input = 4;
    */
   cacheWriteInput: string;
+
+  /**
+   * Reasoning/thinking token price per 1M tokens.
+   *
+   * @generated from field: string reasoning = 5;
+   */
+  reasoning: string;
+
+  /**
+   * Image input price per image.
+   *
+   * @generated from field: string image_input = 6;
+   */
+  imageInput: string;
+
+  /**
+   * Audio input price per 1M tokens.
+   *
+   * @generated from field: string audio_input = 7;
+   */
+  audioInput: string;
+
+  /**
+   * Audio output price per 1M tokens.
+   *
+   * @generated from field: string audio_output = 8;
+   */
+  audioOutput: string;
+
+  /**
+   * Per-request fixed price.
+   *
+   * @generated from field: string request = 9;
+   */
+  request: string;
+
+  /**
+   * ISO 4217 currency code (default "USD").
+   *
+   * @generated from field: string currency = 10;
+   */
+  currency: string;
+
+  /**
+   * Price type classification.
+   *
+   * @generated from field: platform.model.v1.PriceType price_type = 11;
+   */
+  priceType: PriceType;
 };
 
 /**
- * Describes the message platform.model.v1.RegistryModelPricing.
- * Use `create(RegistryModelPricingSchema)` to create a new message.
+ * Describes the message platform.model.v1.PricingSummary.
+ * Use `create(PricingSummarySchema)` to create a new message.
  */
-export const RegistryModelPricingSchema: GenMessage<RegistryModelPricing> = /*@__PURE__*/
+export const PricingSummarySchema: GenMessage<PricingSummary> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 1);
 
 /**
@@ -92,14 +146,16 @@ export const RegistryModelPricingSchema: GenMessage<RegistryModelPricing> = /*@_
  */
 export type RegistryModelSource = Message<"platform.model.v1.RegistryModelSource"> & {
   /**
+   * Source family identity (for example "openrouter", "github-models").
+   *
    * @generated from field: string source_id = 1;
    */
   sourceId: string;
 
   /**
-   * @generated from field: string kind = 2;
+   * @generated from field: platform.model.v1.RegistryModelSourceKind kind = 2;
    */
-  kind: string;
+  kind: RegistryModelSourceKind;
 
   /**
    * @generated from field: bool is_direct = 3;
@@ -107,14 +163,16 @@ export type RegistryModelSource = Message<"platform.model.v1.RegistryModelSource
   isDirect: boolean;
 
   /**
+   * Exact source-native callable slug. This is not canonical model identity.
+   *
    * @generated from field: string source_model_id = 4;
    */
   sourceModelId: string;
 
   /**
-   * @generated from field: model.v1.ModelDefinition definition = 5;
+   * @generated from field: model.v1.ModelVersion definition = 5;
    */
-  definition?: ModelDefinition;
+  definition?: ModelVersion;
 
   /**
    * @generated from field: repeated string badges = 6;
@@ -122,9 +180,9 @@ export type RegistryModelSource = Message<"platform.model.v1.RegistryModelSource
   badges: string[];
 
   /**
-   * @generated from field: platform.model.v1.RegistryModelPricing pricing = 7;
+   * @generated from field: platform.model.v1.PricingSummary pricing = 7;
    */
-  pricing?: RegistryModelPricing;
+  pricing?: PricingSummary;
 };
 
 /**
@@ -135,9 +193,9 @@ export const RegistryModelSourceSchema: GenMessage<RegistryModelSource> = /*@__P
   messageDesc(file_platform_model_v1_model_service, 2);
 
 /**
- * @generated from message platform.model.v1.ListModelDefinitionsRequest
+ * @generated from message platform.model.v1.ListModelsRequest
  */
-export type ListModelDefinitionsRequest = Message<"platform.model.v1.ListModelDefinitionsRequest"> & {
+export type ListModelsRequest = Message<"platform.model.v1.ListModelsRequest"> & {
   /**
    * @generated from field: int32 page_size = 1;
    */
@@ -149,22 +207,94 @@ export type ListModelDefinitionsRequest = Message<"platform.model.v1.ListModelDe
   pageToken: string;
 
   /**
+   * Deprecated: use structured_filter instead.
+   *
    * @generated from field: string filter = 3;
    */
   filter: string;
+
+  /**
+   * Structured filter for model list queries.
+   *
+   * @generated from field: platform.model.v1.ModelListFilter structured_filter = 4;
+   */
+  structuredFilter?: ModelListFilter;
 };
 
 /**
- * Describes the message platform.model.v1.ListModelDefinitionsRequest.
- * Use `create(ListModelDefinitionsRequestSchema)` to create a new message.
+ * Describes the message platform.model.v1.ListModelsRequest.
+ * Use `create(ListModelsRequestSchema)` to create a new message.
  */
-export const ListModelDefinitionsRequestSchema: GenMessage<ListModelDefinitionsRequest> = /*@__PURE__*/
+export const ListModelsRequestSchema: GenMessage<ListModelsRequest> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 3);
 
 /**
- * @generated from message platform.model.v1.ListModelDefinitionsResponse
+ * ModelListFilter defines structured filter parameters for listing models.
+ *
+ * @generated from message platform.model.v1.ModelListFilter
  */
-export type ListModelDefinitionsResponse = Message<"platform.model.v1.ListModelDefinitionsResponse"> & {
+export type ModelListFilter = Message<"platform.model.v1.ModelListFilter"> & {
+  /**
+   * Filter by vendor IDs (OR semantics).
+   *
+   * @generated from field: repeated string vendor_ids = 1;
+   */
+  vendorIds: string[];
+
+  /**
+   * Exact model ID match.
+   *
+   * @generated from field: string model_id = 2;
+   */
+  modelId: string;
+
+  /**
+   * Substring search within model IDs (case-insensitive).
+   *
+   * @generated from field: string model_id_query = 3;
+   */
+  modelIdQuery: string;
+
+  /**
+   * Filter by source IDs (OR semantics).
+   *
+   * @generated from field: repeated string source_ids = 4;
+   */
+  sourceIds: string[];
+
+  /**
+   * Filter by badge.
+   *
+   * @generated from field: string badge = 5;
+   */
+  badge: string;
+
+  /**
+   * Filter by category.
+   *
+   * @generated from field: string category = 6;
+   */
+  category: string;
+
+  /**
+   * Exclude models with these lifecycle statuses.
+   *
+   * @generated from field: repeated string lifecycle_status_exclude = 7;
+   */
+  lifecycleStatusExclude: string[];
+};
+
+/**
+ * Describes the message platform.model.v1.ModelListFilter.
+ * Use `create(ModelListFilterSchema)` to create a new message.
+ */
+export const ModelListFilterSchema: GenMessage<ModelListFilter> = /*@__PURE__*/
+  messageDesc(file_platform_model_v1_model_service, 4);
+
+/**
+ * @generated from message platform.model.v1.ListModelsResponse
+ */
+export type ListModelsResponse = Message<"platform.model.v1.ListModelsResponse"> & {
   /**
    * @generated from field: repeated platform.model.v1.ModelRegistryEntry items = 1;
    */
@@ -182,148 +312,90 @@ export type ListModelDefinitionsResponse = Message<"platform.model.v1.ListModelD
 };
 
 /**
- * Describes the message platform.model.v1.ListModelDefinitionsResponse.
- * Use `create(ListModelDefinitionsResponseSchema)` to create a new message.
+ * Describes the message platform.model.v1.ListModelsResponse.
+ * Use `create(ListModelsResponseSchema)` to create a new message.
  */
-export const ListModelDefinitionsResponseSchema: GenMessage<ListModelDefinitionsResponse> = /*@__PURE__*/
-  messageDesc(file_platform_model_v1_model_service, 4);
-
-/**
- * @generated from message platform.model.v1.GetOrFetchCatalogModelsRequest
- */
-export type GetOrFetchCatalogModelsRequest = Message<"platform.model.v1.GetOrFetchCatalogModelsRequest"> & {
-  /**
-   * @generated from field: string probe_id = 1;
-   */
-  probeId: string;
-
-  /**
-   * @generated from field: platform.model.v1.ModelCatalogTarget target = 2;
-   */
-  target?: ModelCatalogTarget;
-
-  /**
-   * @generated from field: credential.v1.CredentialRef auth_ref = 3;
-   */
-  authRef?: CredentialRef;
-};
-
-/**
- * Describes the message platform.model.v1.GetOrFetchCatalogModelsRequest.
- * Use `create(GetOrFetchCatalogModelsRequestSchema)` to create a new message.
- */
-export const GetOrFetchCatalogModelsRequestSchema: GenMessage<GetOrFetchCatalogModelsRequest> = /*@__PURE__*/
+export const ListModelsResponseSchema: GenMessage<ListModelsResponse> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 5);
 
 /**
- * @generated from message platform.model.v1.FetchCatalogModelsRequest
+ * @generated from message platform.model.v1.ResolveModelRefRequest
  */
-export type FetchCatalogModelsRequest = Message<"platform.model.v1.FetchCatalogModelsRequest"> & {
+export type ResolveModelRefRequest = Message<"platform.model.v1.ResolveModelRefRequest"> & {
   /**
-   * @generated from field: string probe_id = 1;
+   * Canonical model_id or known alias within one vendor scope.
+   *
+   * @generated from field: string model_id_or_alias = 1;
    */
-  probeId: string;
+  modelIdOrAlias: string;
 
   /**
-   * @generated from field: platform.model.v1.ModelCatalogTarget target = 2;
+   * Optional vendor scope for disambiguation.
+   *
+   * @generated from field: string vendor_id = 2;
    */
-  target?: ModelCatalogTarget;
-
-  /**
-   * @generated from field: credential.v1.CredentialRef auth_ref = 3;
-   */
-  authRef?: CredentialRef;
+  vendorId: string;
 };
 
 /**
- * Describes the message platform.model.v1.FetchCatalogModelsRequest.
- * Use `create(FetchCatalogModelsRequestSchema)` to create a new message.
+ * Describes the message platform.model.v1.ResolveModelRefRequest.
+ * Use `create(ResolveModelRefRequestSchema)` to create a new message.
  */
-export const FetchCatalogModelsRequestSchema: GenMessage<FetchCatalogModelsRequest> = /*@__PURE__*/
+export const ResolveModelRefRequestSchema: GenMessage<ResolveModelRefRequest> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 6);
 
 /**
- * @generated from message platform.model.v1.ModelCatalogTarget
+ * @generated from message platform.model.v1.ResolveModelRefResponse
  */
-export type ModelCatalogTarget = Message<"platform.model.v1.ModelCatalogTarget"> & {
+export type ResolveModelRefResponse = Message<"platform.model.v1.ResolveModelRefResponse"> & {
   /**
-   * @generated from field: string target_id = 1;
+   * Canonical resolved model ref only.
+   *
+   * @generated from field: model.v1.ModelRef ref = 1;
    */
-  targetId: string;
-
-  /**
-   * @generated from field: string base_url = 2;
-   */
-  baseUrl: string;
-
-  /**
-   * @generated from field: api_protocol.v1.Protocol protocol = 3;
-   */
-  protocol: Protocol;
+  ref?: ModelRef;
 };
 
 /**
- * Describes the message platform.model.v1.ModelCatalogTarget.
- * Use `create(ModelCatalogTargetSchema)` to create a new message.
+ * Describes the message platform.model.v1.ResolveModelRefResponse.
+ * Use `create(ResolveModelRefResponseSchema)` to create a new message.
  */
-export const ModelCatalogTargetSchema: GenMessage<ModelCatalogTarget> = /*@__PURE__*/
+export const ResolveModelRefResponseSchema: GenMessage<ResolveModelRefResponse> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 7);
 
 /**
- * @generated from message platform.model.v1.CatalogModel
+ * @generated from message platform.model.v1.GetModelVersionRequest
  */
-export type CatalogModel = Message<"platform.model.v1.CatalogModel"> & {
+export type GetModelVersionRequest = Message<"platform.model.v1.GetModelVersionRequest"> & {
   /**
-   * @generated from field: string source_model_id = 1;
+   * @generated from field: model.v1.ModelRef ref = 1;
    */
-  sourceModelId: string;
-
-  /**
-   * @generated from field: model.v1.ModelDefinition definition = 2;
-   */
-  definition?: ModelDefinition;
+  ref?: ModelRef;
 };
 
 /**
- * Describes the message platform.model.v1.CatalogModel.
- * Use `create(CatalogModelSchema)` to create a new message.
+ * Describes the message platform.model.v1.GetModelVersionRequest.
+ * Use `create(GetModelVersionRequestSchema)` to create a new message.
  */
-export const CatalogModelSchema: GenMessage<CatalogModel> = /*@__PURE__*/
+export const GetModelVersionRequestSchema: GenMessage<GetModelVersionRequest> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 8);
 
 /**
- * @generated from message platform.model.v1.GetOrFetchCatalogModelsResponse
+ * @generated from message platform.model.v1.GetModelVersionResponse
  */
-export type GetOrFetchCatalogModelsResponse = Message<"platform.model.v1.GetOrFetchCatalogModelsResponse"> & {
+export type GetModelVersionResponse = Message<"platform.model.v1.GetModelVersionResponse"> & {
   /**
-   * @generated from field: repeated platform.model.v1.CatalogModel models = 1;
+   * @generated from field: platform.model.v1.ModelRegistryEntry item = 1;
    */
-  models: CatalogModel[];
+  item?: ModelRegistryEntry;
 };
 
 /**
- * Describes the message platform.model.v1.GetOrFetchCatalogModelsResponse.
- * Use `create(GetOrFetchCatalogModelsResponseSchema)` to create a new message.
+ * Describes the message platform.model.v1.GetModelVersionResponse.
+ * Use `create(GetModelVersionResponseSchema)` to create a new message.
  */
-export const GetOrFetchCatalogModelsResponseSchema: GenMessage<GetOrFetchCatalogModelsResponse> = /*@__PURE__*/
+export const GetModelVersionResponseSchema: GenMessage<GetModelVersionResponse> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 9);
-
-/**
- * @generated from message platform.model.v1.FetchCatalogModelsResponse
- */
-export type FetchCatalogModelsResponse = Message<"platform.model.v1.FetchCatalogModelsResponse"> & {
-  /**
-   * @generated from field: repeated platform.model.v1.CatalogModel models = 1;
-   */
-  models: CatalogModel[];
-};
-
-/**
- * Describes the message platform.model.v1.FetchCatalogModelsResponse.
- * Use `create(FetchCatalogModelsResponseSchema)` to create a new message.
- */
-export const FetchCatalogModelsResponseSchema: GenMessage<FetchCatalogModelsResponse> = /*@__PURE__*/
-  messageDesc(file_platform_model_v1_model_service, 10);
 
 /**
  * @generated from message platform.model.v1.SyncModelDefinitionsRequest
@@ -336,7 +408,7 @@ export type SyncModelDefinitionsRequest = Message<"platform.model.v1.SyncModelDe
  * Use `create(SyncModelDefinitionsRequestSchema)` to create a new message.
  */
 export const SyncModelDefinitionsRequestSchema: GenMessage<SyncModelDefinitionsRequest> = /*@__PURE__*/
-  messageDesc(file_platform_model_v1_model_service, 11);
+  messageDesc(file_platform_model_v1_model_service, 10);
 
 /**
  * @generated from message platform.model.v1.SyncModelDefinitionsResponse
@@ -353,35 +425,239 @@ export type SyncModelDefinitionsResponse = Message<"platform.model.v1.SyncModelD
  * Use `create(SyncModelDefinitionsResponseSchema)` to create a new message.
  */
 export const SyncModelDefinitionsResponseSchema: GenMessage<SyncModelDefinitionsResponse> = /*@__PURE__*/
+  messageDesc(file_platform_model_v1_model_service, 11);
+
+/**
+ * ModelCard describes structured documentation for a model.
+ *
+ * @generated from message platform.model.v1.ModelCard
+ */
+export type ModelCard = Message<"platform.model.v1.ModelCard"> & {
+  /**
+   * @generated from field: string schema_version = 1;
+   */
+  schemaVersion: string;
+
+  /**
+   * Structured metadata as JSON (capabilities, modalities, context, safety).
+   *
+   * @generated from field: string metadata_json = 2;
+   */
+  metadataJson: string;
+
+  /**
+   * Markdown body with standardized sections.
+   *
+   * @generated from field: string markdown_body = 3;
+   */
+  markdownBody: string;
+
+  /**
+   * Source of the card content.
+   *
+   * @generated from field: string source_type = 4;
+   */
+  sourceType: string;
+
+  /**
+   * URL to the original source.
+   *
+   * @generated from field: string source_url = 5;
+   */
+  sourceUrl: string;
+
+  /**
+   * Review workflow status.
+   *
+   * @generated from field: string review_status = 6;
+   */
+  reviewStatus: string;
+
+  /**
+   * Reviewer identifier.
+   *
+   * @generated from field: string reviewer = 7;
+   */
+  reviewer: string;
+};
+
+/**
+ * Describes the message platform.model.v1.ModelCard.
+ * Use `create(ModelCardSchema)` to create a new message.
+ */
+export const ModelCardSchema: GenMessage<ModelCard> = /*@__PURE__*/
   messageDesc(file_platform_model_v1_model_service, 12);
+
+/**
+ * @generated from message platform.model.v1.GetModelCardRequest
+ */
+export type GetModelCardRequest = Message<"platform.model.v1.GetModelCardRequest"> & {
+  /**
+   * @generated from field: model.v1.ModelRef ref = 1;
+   */
+  ref?: ModelRef;
+};
+
+/**
+ * Describes the message platform.model.v1.GetModelCardRequest.
+ * Use `create(GetModelCardRequestSchema)` to create a new message.
+ */
+export const GetModelCardRequestSchema: GenMessage<GetModelCardRequest> = /*@__PURE__*/
+  messageDesc(file_platform_model_v1_model_service, 13);
+
+/**
+ * @generated from message platform.model.v1.GetModelCardResponse
+ */
+export type GetModelCardResponse = Message<"platform.model.v1.GetModelCardResponse"> & {
+  /**
+   * @generated from field: platform.model.v1.ModelCard card = 1;
+   */
+  card?: ModelCard;
+};
+
+/**
+ * Describes the message platform.model.v1.GetModelCardResponse.
+ * Use `create(GetModelCardResponseSchema)` to create a new message.
+ */
+export const GetModelCardResponseSchema: GenMessage<GetModelCardResponse> = /*@__PURE__*/
+  messageDesc(file_platform_model_v1_model_service, 14);
+
+/**
+ * Organization represents a business entity (model owner, hosting provider,
+ * reseller, billing party).
+ *
+ * @generated from message platform.model.v1.Organization
+ */
+export type Organization = Message<"platform.model.v1.Organization"> & {
+  /**
+   * @generated from field: string org_code = 1;
+   */
+  orgCode: string;
+
+  /**
+   * @generated from field: string org_name = 2;
+   */
+  orgName: string;
+
+  /**
+   * @generated from field: repeated string org_roles = 3;
+   */
+  orgRoles: string[];
+
+  /**
+   * @generated from field: string country = 4;
+   */
+  country: string;
+
+  /**
+   * @generated from field: string website = 5;
+   */
+  website: string;
+
+  /**
+   * @generated from field: string status = 6;
+   */
+  status: string;
+};
+
+/**
+ * Describes the message platform.model.v1.Organization.
+ * Use `create(OrganizationSchema)` to create a new message.
+ */
+export const OrganizationSchema: GenMessage<Organization> = /*@__PURE__*/
+  messageDesc(file_platform_model_v1_model_service, 15);
+
+/**
+ * PriceType classifies the origin and scope of a price.
+ *
+ * @generated from enum platform.model.v1.PriceType
+ */
+export enum PriceType {
+  /**
+   * @generated from enum value: PRICE_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PRICE_TYPE_VENDOR_PUBLIC = 1;
+   */
+  VENDOR_PUBLIC = 1,
+
+  /**
+   * @generated from enum value: PRICE_TYPE_CLOUD_PUBLIC = 2;
+   */
+  CLOUD_PUBLIC = 2,
+
+  /**
+   * @generated from enum value: PRICE_TYPE_AGENT_CONTRACT = 3;
+   */
+  AGENT_CONTRACT = 3,
+
+  /**
+   * @generated from enum value: PRICE_TYPE_INTERNAL_COST = 4;
+   */
+  INTERNAL_COST = 4,
+}
+
+/**
+ * Describes the enum platform.model.v1.PriceType.
+ */
+export const PriceTypeSchema: GenEnum<PriceType> = /*@__PURE__*/
+  enumDesc(file_platform_model_v1_model_service, 0);
+
+/**
+ * @generated from enum platform.model.v1.RegistryModelSourceKind
+ */
+export enum RegistryModelSourceKind {
+  /**
+   * @generated from enum value: REGISTRY_MODEL_SOURCE_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: REGISTRY_MODEL_SOURCE_KIND_PRESET = 1;
+   */
+  PRESET = 1,
+
+  /**
+   * @generated from enum value: REGISTRY_MODEL_SOURCE_KIND_DISCOVERED = 2;
+   */
+  DISCOVERED = 2,
+}
+
+/**
+ * Describes the enum platform.model.v1.RegistryModelSourceKind.
+ */
+export const RegistryModelSourceKindSchema: GenEnum<RegistryModelSourceKind> = /*@__PURE__*/
+  enumDesc(file_platform_model_v1_model_service, 1);
 
 /**
  * @generated from service platform.model.v1.ModelService
  */
 export const ModelService: GenService<{
   /**
-   * @generated from rpc platform.model.v1.ModelService.ListModelDefinitions
+   * @generated from rpc platform.model.v1.ModelService.ListModels
    */
-  listModelDefinitions: {
+  listModels: {
     methodKind: "unary";
-    input: typeof ListModelDefinitionsRequestSchema;
-    output: typeof ListModelDefinitionsResponseSchema;
+    input: typeof ListModelsRequestSchema;
+    output: typeof ListModelsResponseSchema;
   },
   /**
-   * @generated from rpc platform.model.v1.ModelService.GetOrFetchCatalogModels
+   * @generated from rpc platform.model.v1.ModelService.ResolveModelRef
    */
-  getOrFetchCatalogModels: {
+  resolveModelRef: {
     methodKind: "unary";
-    input: typeof GetOrFetchCatalogModelsRequestSchema;
-    output: typeof GetOrFetchCatalogModelsResponseSchema;
+    input: typeof ResolveModelRefRequestSchema;
+    output: typeof ResolveModelRefResponseSchema;
   },
   /**
-   * @generated from rpc platform.model.v1.ModelService.FetchCatalogModels
+   * @generated from rpc platform.model.v1.ModelService.GetModelVersion
    */
-  fetchCatalogModels: {
+  getModelVersion: {
     methodKind: "unary";
-    input: typeof FetchCatalogModelsRequestSchema;
-    output: typeof FetchCatalogModelsResponseSchema;
+    input: typeof GetModelVersionRequestSchema;
+    output: typeof GetModelVersionResponseSchema;
   },
   /**
    * @generated from rpc platform.model.v1.ModelService.SyncModelDefinitions
@@ -390,6 +666,14 @@ export const ModelService: GenService<{
     methodKind: "unary";
     input: typeof SyncModelDefinitionsRequestSchema;
     output: typeof SyncModelDefinitionsResponseSchema;
+  },
+  /**
+   * @generated from rpc platform.model.v1.ModelService.GetModelCard
+   */
+  getModelCard: {
+    methodKind: "unary";
+    input: typeof GetModelCardRequestSchema;
+    output: typeof GetModelCardResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_platform_model_v1_model_service, 0);

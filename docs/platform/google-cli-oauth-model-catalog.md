@@ -6,7 +6,7 @@
 
 - `oauth.model_catalog.default_catalog`
 - `modelcatalogsources/clis`
-- `credential secret.project_id`
+- credential material `project_id`
 
 ## notes
 

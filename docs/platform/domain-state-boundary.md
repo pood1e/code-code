@@ -33,7 +33,8 @@ The migration now replaces each caller with an explicit owner API:
 - `AgentSession`, `AgentSessionAction`, and `AgentRun`: `packages/session` and
   agent-runtime repositories own desired/status state.
 - `CredentialDefinition` and OAuth sessions: auth-service repositories own state;
-  Kubernetes Secrets carry credential material only.
+  long-lived credential material lives in the encrypted material store, not
+  Kubernetes Secrets.
 - `ModelDefinition`: model-service owns canonical catalog rows through
   `models.PostgresRegistryStore`; management list paths read the
   Postgres read model directly.

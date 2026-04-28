@@ -9,12 +9,22 @@ import (
 )
 
 var (
-	promMetricNamePattern     = regexp.MustCompile(`^[a-zA-Z_:][a-zA-Z0-9_:]*$`)
-	semanticMetricNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`)
-	attributeNamePattern      = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$`)
-	metricUnitPattern         = regexp.MustCompile(`^(1|%|[a-zA-Z][a-zA-Z0-9./%-]*|\{[a-z][a-z0-9_.-]*\})$`)
-	collectorIDPattern        = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
+	promMetricNamePattern        = regexp.MustCompile(`^[a-zA-Z_:][a-zA-Z0-9_:]*$`)
+	semanticMetricNamePattern    = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`)
+	attributeNamePattern         = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$`)
+	metricUnitPattern            = regexp.MustCompile(`^(1|%|[a-zA-Z][a-zA-Z0-9./%-]*|\{[a-z][a-z0-9_.-]*\})$`)
+	collectorIDPattern           = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
+	credentialMaterialKeyPattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
+	httpHeaderNamePattern        = regexp.MustCompile(`^[a-z0-9][a-z0-9!#$%&'*+.^_` + "`" + `|~-]*$`)
 )
+
+var sensitiveHeaderNames = map[string]struct{}{
+	"authorization":       {},
+	"cookie":              {},
+	"proxy-authorization": {},
+	"set-cookie":          {},
+	"x-api-key":           {},
+}
 
 // ValidateCapability validates one observability capability block.
 func ValidateCapability(capability *ObservabilityCapability) error {
@@ -82,18 +92,18 @@ func ValidateProfile(profile *ObservabilityProfile) error {
 	}
 
 	activeQuery := profile.GetActiveQuery()
-	responseHeaders := profile.GetResponseHeaders()
+	passiveHTTP := profile.GetPassiveHttp()
 	switch {
-	case activeQuery != nil && responseHeaders != nil:
-		return fmt.Errorf("observabilityv1: profile collection must be either active_query or response_headers")
-	case activeQuery == nil && responseHeaders == nil:
+	case activeQuery != nil && passiveHTTP != nil:
+		return fmt.Errorf("observabilityv1: profile collection must be either active_query or passive_http")
+	case activeQuery == nil && passiveHTTP == nil:
 		return fmt.Errorf("observabilityv1: profile collection is empty")
 	case activeQuery != nil:
 		if err := validateActiveQuery(activeQuery); err != nil {
 			return err
 		}
-	case responseHeaders != nil:
-		if err := validateResponseHeaders(responseHeaders, metricNames, metricAttributeNames); err != nil {
+	case passiveHTTP != nil:
+		if err := validatePassiveHTTP(passiveHTTP, metricNames, metricAttributeNames); err != nil {
 			return err
 		}
 	}
@@ -239,6 +249,176 @@ func validateActiveQuery(collection *ActiveQueryCollection) error {
 			return fmt.Errorf("observabilityv1: dynamic parameter %q display name is empty", parameterID)
 		}
 	}
+	if err := validateCredentialBackfills(collection.GetCredentialBackfills()); err != nil {
+		return err
+	}
+	if err := validateMaterialReadFields(collection.GetMaterialReadFields()); err != nil {
+		return err
+	}
+	if err := validateActiveQueryInputForm(collection.GetInputForm()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateMaterialReadFields(fields []string) error {
+	seen := make(map[string]struct{}, len(fields))
+	for _, raw := range fields {
+		field := strings.TrimSpace(raw)
+		if field == "" {
+			return fmt.Errorf("observabilityv1: active query material_read_fields contains empty field")
+		}
+		if !credentialMaterialKeyPattern.MatchString(field) {
+			return fmt.Errorf("observabilityv1: active query material_read_fields field %q is invalid", field)
+		}
+		if _, exists := seen[field]; exists {
+			return fmt.Errorf("observabilityv1: duplicate active query material_read_fields field %q", field)
+		}
+		seen[field] = struct{}{}
+	}
+	return nil
+}
+
+func validateActiveQueryInputForm(form *ActiveQueryInputForm) error {
+	if form == nil {
+		return nil
+	}
+	schemaID := strings.TrimSpace(form.GetSchemaId())
+	if schemaID == "" {
+		return fmt.Errorf("observabilityv1: active query input form schema_id is empty")
+	}
+	if !collectorIDPattern.MatchString(schemaID) {
+		return fmt.Errorf("observabilityv1: active query input form schema_id %q is invalid", schemaID)
+	}
+	if strings.TrimSpace(form.GetTitle()) == "" {
+		return fmt.Errorf("observabilityv1: active query input form title is empty")
+	}
+	if strings.TrimSpace(form.GetActionLabel()) == "" {
+		return fmt.Errorf("observabilityv1: active query input form action_label is empty")
+	}
+	if len(form.GetFields()) == 0 {
+		return fmt.Errorf("observabilityv1: active query input form fields are empty")
+	}
+
+	fieldIDs := make(map[string]struct{}, len(form.GetFields()))
+	storedFieldIDs := make(map[string]struct{}, len(form.GetFields()))
+	for _, field := range form.GetFields() {
+		if field == nil {
+			return fmt.Errorf("observabilityv1: active query input field is nil")
+		}
+		fieldID := strings.TrimSpace(field.GetFieldId())
+		if fieldID == "" {
+			return fmt.Errorf("observabilityv1: active query input field id is empty")
+		}
+		if !credentialMaterialKeyPattern.MatchString(fieldID) {
+			return fmt.Errorf("observabilityv1: active query input field id %q is invalid", fieldID)
+		}
+		if _, exists := fieldIDs[fieldID]; exists {
+			return fmt.Errorf("observabilityv1: duplicate active query input field id %q", fieldID)
+		}
+		fieldIDs[fieldID] = struct{}{}
+		if strings.TrimSpace(field.GetLabel()) == "" {
+			return fmt.Errorf("observabilityv1: active query input field %q label is empty", fieldID)
+		}
+		if field.GetControl() == ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED {
+			return fmt.Errorf("observabilityv1: active query input field %q control is unspecified", fieldID)
+		}
+		if field.GetSensitive() && strings.TrimSpace(field.GetDefaultValue()) != "" {
+			return fmt.Errorf("observabilityv1: active query input field %q default_value is not allowed for sensitive fields", fieldID)
+		}
+		switch field.GetPersistence() {
+		case ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL:
+			if strings.TrimSpace(field.GetTargetFieldId()) != "" {
+				return fmt.Errorf("observabilityv1: stored active query input field %q target_field_id must be empty", fieldID)
+			}
+			if transform := field.GetTransform(); transform != ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED &&
+				transform != ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY {
+				return fmt.Errorf("observabilityv1: stored active query input field %q transform must be identity", fieldID)
+			}
+			storedFieldIDs[fieldID] = struct{}{}
+		case ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT:
+			if field.GetRequired() {
+				return fmt.Errorf("observabilityv1: transient active query input field %q must not be required", fieldID)
+			}
+			targetFieldID := strings.TrimSpace(field.GetTargetFieldId())
+			if targetFieldID == "" {
+				return fmt.Errorf("observabilityv1: transient active query input field %q target_field_id is empty", fieldID)
+			}
+			if !credentialMaterialKeyPattern.MatchString(targetFieldID) {
+				return fmt.Errorf("observabilityv1: transient active query input field %q target_field_id %q is invalid", fieldID, targetFieldID)
+			}
+			if field.GetTransform() == ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED ||
+				field.GetTransform() == ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY {
+				return fmt.Errorf("observabilityv1: transient active query input field %q transform is required", fieldID)
+			}
+		default:
+			return fmt.Errorf("observabilityv1: active query input field %q persistence is unspecified", fieldID)
+		}
+	}
+	for _, field := range form.GetFields() {
+		if field.GetPersistence() != ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT {
+			continue
+		}
+		targetFieldID := strings.TrimSpace(field.GetTargetFieldId())
+		if _, exists := storedFieldIDs[targetFieldID]; !exists {
+			return fmt.Errorf("observabilityv1: transient active query input field %q target_field_id %q does not reference a stored field", field.GetFieldId(), targetFieldID)
+		}
+	}
+	return nil
+}
+
+func validateCredentialBackfills(rules []*CredentialBackfillRule) error {
+	ruleIDs := make(map[string]struct{}, len(rules))
+	targetKeys := make(map[string]struct{}, len(rules))
+	for _, rule := range rules {
+		if rule == nil {
+			return fmt.Errorf("observabilityv1: credential backfill rule is nil")
+		}
+		ruleID := strings.TrimSpace(rule.GetRuleId())
+		if ruleID == "" {
+			return fmt.Errorf("observabilityv1: credential backfill rule id is empty")
+		}
+		if !collectorIDPattern.MatchString(ruleID) {
+			return fmt.Errorf("observabilityv1: credential backfill rule id %q is invalid", ruleID)
+		}
+		if _, exists := ruleIDs[ruleID]; exists {
+			return fmt.Errorf("observabilityv1: duplicate credential backfill rule id %q", ruleID)
+		}
+		ruleIDs[ruleID] = struct{}{}
+
+		source := rule.GetSource()
+		if source == CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED {
+			return fmt.Errorf("observabilityv1: credential backfill %q source is unspecified", ruleID)
+		}
+		sourceName := strings.TrimSpace(rule.GetSourceName())
+		if sourceName == "" {
+			return fmt.Errorf("observabilityv1: credential backfill %q source_name is empty", ruleID)
+		}
+		if strings.ContainsAny(sourceName, " \t\r\n") {
+			return fmt.Errorf("observabilityv1: credential backfill %q source_name contains whitespace", ruleID)
+		}
+		if source == CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_HEADER {
+			headerName := strings.ToLower(sourceName)
+			if headerName != sourceName {
+				return fmt.Errorf("observabilityv1: credential backfill %q response header source_name must be lower-case", ruleID)
+			}
+			if err := validateHTTPHeaderName(headerName); err != nil {
+				return fmt.Errorf("observabilityv1: credential backfill %q response header: %w", ruleID, err)
+			}
+		}
+
+		targetKey := strings.TrimSpace(rule.GetTargetMaterialKey())
+		if targetKey == "" {
+			return fmt.Errorf("observabilityv1: credential backfill %q target_material_key is empty", ruleID)
+		}
+		if !credentialMaterialKeyPattern.MatchString(targetKey) {
+			return fmt.Errorf("observabilityv1: credential backfill %q target_material_key %q is invalid", ruleID, targetKey)
+		}
+		if _, exists := targetKeys[targetKey]; exists {
+			return fmt.Errorf("observabilityv1: duplicate credential backfill target_material_key %q", targetKey)
+		}
+		targetKeys[targetKey] = struct{}{}
+	}
 	return nil
 }
 
@@ -255,65 +435,144 @@ func validatePositiveDuration(value *durationpb.Duration) error {
 	return nil
 }
 
-func validateResponseHeaders(collection *ResponseHeaderCollection, metricNames map[string]struct{}, metricAttributeNames map[string]map[string]struct{}) error {
+func validatePassiveHTTP(collection *PassiveHttpTelemetryCollection, metricNames map[string]struct{}, metricAttributeNames map[string]map[string]struct{}) error {
 	if collection == nil {
-		return fmt.Errorf("observabilityv1: response header collection is nil")
+		return fmt.Errorf("observabilityv1: passive http collection is nil")
 	}
-	if len(collection.GetHeaderMetricMappings()) == 0 {
-		return fmt.Errorf("observabilityv1: response header collection mappings are empty")
+	if collection.GetCapturePoint() == TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_UNSPECIFIED {
+		return fmt.Errorf("observabilityv1: passive http capture_point is unspecified")
 	}
-	headerNames := make(map[string]struct{}, len(collection.GetHeaderMetricMappings()))
-	for _, mapping := range collection.GetHeaderMetricMappings() {
-		if mapping == nil {
-			return fmt.Errorf("observabilityv1: header metric mapping is nil")
+	if len(collection.GetTransforms()) == 0 {
+		return fmt.Errorf("observabilityv1: passive http transforms are empty")
+	}
+	for index, selector := range collection.GetSelectors() {
+		if selector == nil {
+			return fmt.Errorf("observabilityv1: passive http selector %d is nil", index)
 		}
-		headerName := strings.TrimSpace(mapping.GetHeaderName())
-		if headerName == "" {
-			return fmt.Errorf("observabilityv1: header metric mapping header name is empty")
+		if err := validatePassiveHTTPSelector(index, selector); err != nil {
+			return err
 		}
-		if headerName != strings.ToLower(headerName) {
-			return fmt.Errorf("observabilityv1: header metric mapping header %q must be lower-case", headerName)
+	}
+	transformKeys := make(map[string]struct{}, len(collection.GetTransforms()))
+	for _, transform := range collection.GetTransforms() {
+		if transform == nil {
+			return fmt.Errorf("observabilityv1: passive http transform is nil")
 		}
-		if _, exists := headerNames[headerName]; exists {
-			return fmt.Errorf("observabilityv1: duplicate response header mapping %q", headerName)
+		source := transform.GetSource()
+		if source == HttpHeaderSource_HTTP_HEADER_SOURCE_UNSPECIFIED {
+			return fmt.Errorf("observabilityv1: passive http transform source is unspecified")
 		}
-		headerNames[headerName] = struct{}{}
-		metricName := strings.TrimSpace(mapping.GetMetricName())
+		headerName := strings.ToLower(strings.TrimSpace(transform.GetHeaderName()))
+		if err := validateHTTPHeaderName(headerName); err != nil {
+			return fmt.Errorf("observabilityv1: passive http transform header: %w", err)
+		}
+		if isSensitiveHeaderName(headerName) {
+			return fmt.Errorf("observabilityv1: passive http transform header %q is sensitive", headerName)
+		}
+		key := source.String() + "\x00" + headerName + "\x00" + strings.TrimSpace(transform.GetMetricName())
+		if _, exists := transformKeys[key]; exists {
+			return fmt.Errorf("observabilityv1: duplicate passive http transform for header %q", headerName)
+		}
+		transformKeys[key] = struct{}{}
+		metricName := strings.TrimSpace(transform.GetMetricName())
 		if metricName == "" {
-			return fmt.Errorf("observabilityv1: header metric mapping %q metric name is empty", headerName)
+			return fmt.Errorf("observabilityv1: passive http transform %q metric name is empty", headerName)
 		}
 		if _, exists := metricNames[metricName]; !exists {
-			return fmt.Errorf("observabilityv1: header metric mapping %q references unknown metric %q", headerName, metricName)
+			return fmt.Errorf("observabilityv1: passive http transform %q references unknown metric %q", headerName, metricName)
 		}
-		if mapping.GetValueType() == HeaderValueType_HEADER_VALUE_TYPE_UNSPECIFIED {
-			return fmt.Errorf("observabilityv1: header metric mapping %q value type is unspecified", headerName)
+		if transform.GetValueType() == HeaderValueType_HEADER_VALUE_TYPE_UNSPECIFIED {
+			return fmt.Errorf("observabilityv1: passive http transform %q value type is unspecified", headerName)
 		}
 		declaredAttributes := metricAttributeNames[metricName]
-		labelNames := make(map[string]struct{}, len(mapping.GetLabels()))
-		for _, label := range mapping.GetLabels() {
+		labelNames := make(map[string]struct{}, len(transform.GetLabels()))
+		for _, label := range transform.GetLabels() {
 			if label == nil {
-				return fmt.Errorf("observabilityv1: header metric mapping %q label is nil", headerName)
+				return fmt.Errorf("observabilityv1: passive http transform %q label is nil", headerName)
 			}
 			labelName := strings.TrimSpace(label.GetName())
 			if labelName == "" {
-				return fmt.Errorf("observabilityv1: header metric mapping %q label name is empty", headerName)
+				return fmt.Errorf("observabilityv1: passive http transform %q label name is empty", headerName)
 			}
 			if !attributeNamePattern.MatchString(labelName) {
-				return fmt.Errorf("observabilityv1: header metric mapping %q label %q must use lower_snake or dot.namespace style", headerName, labelName)
+				return fmt.Errorf("observabilityv1: passive http transform %q label %q must use lower_snake or dot.namespace style", headerName, labelName)
 			}
 			if _, exists := labelNames[labelName]; exists {
-				return fmt.Errorf("observabilityv1: header metric mapping %q has duplicate label %q", headerName, labelName)
+				return fmt.Errorf("observabilityv1: passive http transform %q has duplicate label %q", headerName, labelName)
 			}
 			labelNames[labelName] = struct{}{}
 			if strings.TrimSpace(label.GetValue()) == "" {
-				return fmt.Errorf("observabilityv1: header metric mapping %q label %q value is empty", headerName, labelName)
+				return fmt.Errorf("observabilityv1: passive http transform %q label %q value is empty", headerName, labelName)
 			}
 			if _, exists := declaredAttributes[labelName]; !exists {
-				return fmt.Errorf("observabilityv1: header metric mapping %q label %q is not declared by metric %q", headerName, labelName, metricName)
+				return fmt.Errorf("observabilityv1: passive http transform %q label %q is not declared by metric %q", headerName, labelName, metricName)
 			}
 		}
 	}
+	redaction := collection.GetRedaction()
+	if redaction == nil {
+		return fmt.Errorf("observabilityv1: passive http redaction is required")
+	}
+	if !redaction.GetDropRawHeaders() {
+		return fmt.Errorf("observabilityv1: passive http redaction must drop raw headers")
+	}
+	redactionHeaders := append(append([]string(nil), redaction.GetHashHeaders()...), redaction.GetRedactHeaders()...)
+	redactionHeaderNames := make(map[string]struct{}, len(redactionHeaders))
+	for _, headerName := range redactionHeaders {
+		headerName = strings.ToLower(strings.TrimSpace(headerName))
+		if err := validateHTTPHeaderName(headerName); err != nil {
+			return fmt.Errorf("observabilityv1: passive http redaction header: %w", err)
+		}
+		if _, exists := redactionHeaderNames[headerName]; exists {
+			return fmt.Errorf("observabilityv1: passive http redaction header %q is duplicated", headerName)
+		}
+		redactionHeaderNames[headerName] = struct{}{}
+	}
 	return nil
+}
+
+func validatePassiveHTTPSelector(index int, selector *HttpTelemetrySelector) error {
+	for _, method := range selector.GetMethods() {
+		method = strings.TrimSpace(method)
+		if method == "" || method != strings.ToUpper(method) {
+			return fmt.Errorf("observabilityv1: passive http selector %d method %q must be upper-case", index, method)
+		}
+	}
+	for _, prefix := range selector.GetPathPrefixes() {
+		prefix = strings.TrimSpace(prefix)
+		if prefix == "" || !strings.HasPrefix(prefix, "/") {
+			return fmt.Errorf("observabilityv1: passive http selector %d path_prefix %q must start with /", index, prefix)
+		}
+	}
+	for _, status := range selector.GetStatusCodes() {
+		if status < 100 || status > 599 {
+			return fmt.Errorf("observabilityv1: passive http selector %d status_code %d is invalid", index, status)
+		}
+	}
+	for _, hostname := range selector.GetHostnames() {
+		if strings.TrimSpace(hostname) == "" {
+			return fmt.Errorf("observabilityv1: passive http selector %d hostname is empty", index)
+		}
+	}
+	return nil
+}
+
+func validateHTTPHeaderName(value string) error {
+	if value == "" {
+		return fmt.Errorf("header name is empty")
+	}
+	if value != strings.ToLower(value) {
+		return fmt.Errorf("header %q must be lower-case", value)
+	}
+	if !httpHeaderNamePattern.MatchString(value) {
+		return fmt.Errorf("header %q is invalid", value)
+	}
+	return nil
+}
+
+func isSensitiveHeaderName(value string) bool {
+	_, ok := sensitiveHeaderNames[strings.ToLower(strings.TrimSpace(value))]
+	return ok
 }
 
 func validateMetricQuery(query *MetricQuery, metricNames map[string]struct{}) error {

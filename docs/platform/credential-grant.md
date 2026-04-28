@@ -17,4 +17,4 @@
 
 ## implementation notes
 
-Secret values stay in Kubernetes Secret material owned by auth service. Provider service and runtime services use grant ids and generation only. Refresh creates a new observed generation when material changes.
+Credential values stay in auth-service-owned encrypted material storage. Kubernetes Secrets are runtime projections only. Provider service and runtime services use grant ids and generation; any material readback must be explicitly declared by support-owned policy. Refresh creates a new observed generation when material changes.

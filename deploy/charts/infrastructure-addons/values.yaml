@@ -1,0 +1,121 @@
+global:
+  partOf: code-code
+  platformNamespace: code-code
+  infraNamespace: code-code-infra
+  observabilityNamespace: code-code-observability
+  # -- Opt out observability pods from ambient sidecar enrollment when required.
+  observabilityAmbientPodOptOut: false
+  networkNamespace: code-code-net
+  runNamespace: code-code-runs
+  # -- Secret name holding Grafana admin credentials.
+  grafanaAdminSecretName: grafana-admin
+
+tempo:
+  # -- Enable or disable Tempo.
+  enabled: false
+  image: grafana/tempo:2.10.4
+  # -- PVC size for Tempo data storage.
+  dataSize: 2Gi
+
+loki:
+  # -- Enable or disable Loki.
+  enabled: false
+  image: grafana/loki:3.7.1
+  # -- PVC size for Loki data storage.
+  dataSize: 10Gi
+  # -- StorageClass override for Loki PVCs; empty uses the cluster default.
+  storageClassName: ""
+  # -- Retention period passed to the single-binary Loki config.
+  retentionPeriod: 168h
+
+alloy:
+  # -- Enable or disable Alloy log collection.
+  enabled: false
+  image: grafana/alloy:v1.15.1
+  # -- Cluster name label attached to Alloy-emitted telemetry.
+  clusterName: code-code-local
+  # -- Override the Loki write URL; empty targets the in-cluster Loki service.
+  lokiWriteUrl: ""
+  # -- Collect Kubernetes event logs in addition to pod logs.
+  collectClusterEvents: true
+
+grafana:
+  # -- Enable or disable Grafana.
+  enabled: false
+  image: grafana/grafana:13.0.1
+  service:
+    # -- Grafana Service type.
+    type: ClusterIP
+    # -- NodePort exposed only when grafana.service.type is NodePort.
+    nodePort: 32030
+  # -- Public Grafana URL used by Kiali external links.
+  publicUrl: ""
+  # -- Root URL passed to Grafana for subpath deployments.
+  rootUrl: /
+  # -- Anonymous org role for local or shared dashboards.
+  anonymousOrgRole: Viewer
+  # -- Allow viewers to edit panels in local debugging setups.
+  viewersCanEdit: false
+  # -- Toggle the Grafana Explore UI.
+  exploreEnabled: true
+  route:
+    # -- Publish Grafana through a Gateway API HTTPRoute.
+    enabled: false
+    # -- External host served by the Grafana HTTPRoute.
+    host: grafana.placeholder.invalid
+    # -- Additional hosts served by the Grafana HTTPRoute.
+    extraHosts: []
+    # -- Path prefix served by the Grafana HTTPRoute.
+    path: /
+    parentRef:
+      # -- Gateway name used by the Grafana HTTPRoute.
+      name: platform-ingress
+      # -- Gateway namespace used by the Grafana HTTPRoute.
+      namespace: code-code-net
+      # -- Gateway listener section used by the Grafana HTTPRoute.
+      sectionName: http
+
+cloudflareDdns:
+  # -- Enable or disable cloudflare-ddns.
+  enabled: false
+  image: favonia/cloudflare-ddns:1.16.2
+  configMapName: cloudflare-ddns-config
+  # -- Secret name holding the Cloudflare API token.
+  secretName: cloudflare-ddns-token
+  # -- Comma-separated hostnames updated by cloudflare-ddns.
+  domains: webhook.example.com
+  proxied: "true"
+  ip4Provider: cloudflare.trace
+  ip6Provider: none
+  updateCron: "@every 5m"
+  updateOnStart: "true"
+
+kiali:
+  # -- Enable or disable Kiali resources.
+  enabled: false
+  name: kiali
+  service:
+    # -- Kiali Service type.
+    type: ClusterIP
+    # -- Kiali HTTP service port.
+    port: 20001
+    # -- NodePort exposed only when kiali.service.type is NodePort.
+    nodePort: 32031
+  # -- Kiali web root for subpath deployments.
+  webRoot: /
+  route:
+    # -- Publish Kiali through a Gateway API HTTPRoute.
+    enabled: false
+    # -- External host served by the Kiali HTTPRoute.
+    host: kiali.placeholder.invalid
+    # -- Additional hosts served by the Kiali HTTPRoute.
+    extraHosts: []
+    # -- Path prefix served by the Kiali HTTPRoute.
+    path: /
+    parentRef:
+      # -- Gateway name used by the Kiali HTTPRoute.
+      name: platform-ingress
+      # -- Gateway namespace used by the Kiali HTTPRoute.
+      namespace: code-code-net
+      # -- Gateway listener section used by the Kiali HTTPRoute.
+      sectionName: http

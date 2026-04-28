@@ -1,19 +1,19 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { DEFAULT_MODEL_PAGE_SIZE, useModels, useVendors } from "./api";
-import { buildDirectFilter, buildRelatedBatchFilter, toggleSelected } from "./model-filter";
-import { groupProxyModels } from "./proxy-model-groups";
+import { buildStructuredFilter, toggleSelected } from "./model-filter";
 import { SOURCE_BADGE_FREE } from "./source-badges";
 import { buildVendorIndex } from "./vendor-index";
 
 const FIRST_PAGE_TOKENS = [""];
 const SEARCH_DEBOUNCE_MS = 300;
-const AGGREGATED_PROXY_PAGE_SIZE = 100;
 export type ModelAvailabilityFilter = "" | typeof SOURCE_BADGE_FREE;
 
 export function useModelRegistryState() {
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [sourceIds, setSourceIds] = useState<string[]>([]);
   const [availabilityFilter, setAvailabilityFilter] = useState<ModelAvailabilityFilter>("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [hideDeprecated, setHideDeprecated] = useState(true);
   const [modelQuery, setModelQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -22,23 +22,10 @@ export function useModelRegistryState() {
 
   const vendors = useVendors();
   const models = useModels({
-    filter: buildDirectFilter(vendorIds, debouncedQuery, sourceIds, availabilityFilter),
+    structuredFilter: buildStructuredFilter(vendorIds, debouncedQuery, sourceIds, availabilityFilter, selectedCategory, hideDeprecated),
     pageSize: DEFAULT_MODEL_PAGE_SIZE,
     pageToken: pageTokens[pageIndex]
   });
-  const relatedProxyModels = useModels({
-    filter: buildRelatedBatchFilter(
-      models.models.map((row) => ({
-        vendorId: row.definition?.vendorId,
-        modelId: row.definition?.modelId,
-      }))
-    ),
-    pageSize: AGGREGATED_PROXY_PAGE_SIZE,
-  }, models.models.length > 0);
-  const proxyGroups = useMemo(
-    () => groupProxyModels(models.models, relatedProxyModels.models),
-    [models.models, relatedProxyModels.models]
-  );
   const totalPages = useMemo(
     () => estimateTotalPages(models.totalCount, models.nextPageToken, pageIndex),
     [models.totalCount, models.nextPageToken, pageIndex]
@@ -92,16 +79,27 @@ export function useModelRegistryState() {
     setAvailabilityFilter(value);
     resetPagination();
   }, [resetPagination]);
+  const handleCategoryChange = useCallback((value: string) => {
+    setSelectedCategory(value);
+    resetPagination();
+  }, [resetPagination]);
+  const handleLifecycleToggle = useCallback((value: boolean) => {
+    setHideDeprecated(value);
+    resetPagination();
+  }, [resetPagination]);
   const handleClearAllFilters = useCallback(() => {
     setVendorIds([]);
     setSourceIds([]);
     setAvailabilityFilter("");
+    setSelectedCategory("");
     resetPagination();
   }, [resetPagination]);
   const vendorsById = useMemo(() => buildVendorIndex(vendors.vendors), [vendors.vendors]);
   return {
     availabilityFilter,
     handleAvailabilityChange,
+    handleCategoryChange,
+    handleLifecycleToggle,
     handleModelQueryChange,
     handleNextPage,
     handleSourceClear,
@@ -110,11 +108,11 @@ export function useModelRegistryState() {
     handleVendorClear,
     handleVendorSetOnly,
     handleVendorToggle,
+    hideDeprecated,
     modelQuery,
     models,
     pageIndex,
-    proxyGroups,
-    proxyModels: relatedProxyModels,
+    selectedCategory,
     sourceIds,
     totalPages,
     setPageIndex,

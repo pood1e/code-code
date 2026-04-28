@@ -25,6 +25,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type CredentialMaterialReadPolicyKind int32
+
+const (
+	CredentialMaterialReadPolicyKind_CREDENTIAL_MATERIAL_READ_POLICY_KIND_UNSPECIFIED            CredentialMaterialReadPolicyKind = 0
+	CredentialMaterialReadPolicyKind_CREDENTIAL_MATERIAL_READ_POLICY_KIND_CLI_OAUTH_ACTIVE_QUERY CredentialMaterialReadPolicyKind = 1
+	CredentialMaterialReadPolicyKind_CREDENTIAL_MATERIAL_READ_POLICY_KIND_VENDOR_ACTIVE_QUERY    CredentialMaterialReadPolicyKind = 2
+)
+
+// Enum value maps for CredentialMaterialReadPolicyKind.
+var (
+	CredentialMaterialReadPolicyKind_name = map[int32]string{
+		0: "CREDENTIAL_MATERIAL_READ_POLICY_KIND_UNSPECIFIED",
+		1: "CREDENTIAL_MATERIAL_READ_POLICY_KIND_CLI_OAUTH_ACTIVE_QUERY",
+		2: "CREDENTIAL_MATERIAL_READ_POLICY_KIND_VENDOR_ACTIVE_QUERY",
+	}
+	CredentialMaterialReadPolicyKind_value = map[string]int32{
+		"CREDENTIAL_MATERIAL_READ_POLICY_KIND_UNSPECIFIED":            0,
+		"CREDENTIAL_MATERIAL_READ_POLICY_KIND_CLI_OAUTH_ACTIVE_QUERY": 1,
+		"CREDENTIAL_MATERIAL_READ_POLICY_KIND_VENDOR_ACTIVE_QUERY":    2,
+	}
+)
+
+func (x CredentialMaterialReadPolicyKind) Enum() *CredentialMaterialReadPolicyKind {
+	p := new(CredentialMaterialReadPolicyKind)
+	*p = x
+	return p
+}
+
+func (x CredentialMaterialReadPolicyKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CredentialMaterialReadPolicyKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_platform_auth_v1_auth_proto_enumTypes[0].Descriptor()
+}
+
+func (CredentialMaterialReadPolicyKind) Type() protoreflect.EnumType {
+	return &file_platform_auth_v1_auth_proto_enumTypes[0]
+}
+
+func (x CredentialMaterialReadPolicyKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CredentialMaterialReadPolicyKind.Descriptor instead.
+func (CredentialMaterialReadPolicyKind) EnumDescriptor() ([]byte, []int) {
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{0}
+}
+
 type ListCredentialsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -665,6 +714,281 @@ func (x *UpdateSessionCredentialResponse) GetStatus() string {
 	return ""
 }
 
+type MergeCredentialMaterialValuesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CredentialId  string                 `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
+	Values        map[string]string      `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MergeCredentialMaterialValuesRequest) Reset() {
+	*x = MergeCredentialMaterialValuesRequest{}
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MergeCredentialMaterialValuesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MergeCredentialMaterialValuesRequest) ProtoMessage() {}
+
+func (x *MergeCredentialMaterialValuesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MergeCredentialMaterialValuesRequest.ProtoReflect.Descriptor instead.
+func (*MergeCredentialMaterialValuesRequest) Descriptor() ([]byte, []int) {
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *MergeCredentialMaterialValuesRequest) GetCredentialId() string {
+	if x != nil {
+		return x.CredentialId
+	}
+	return ""
+}
+
+func (x *MergeCredentialMaterialValuesRequest) GetValues() map[string]string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+type MergeCredentialMaterialValuesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MergeCredentialMaterialValuesResponse) Reset() {
+	*x = MergeCredentialMaterialValuesResponse{}
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MergeCredentialMaterialValuesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MergeCredentialMaterialValuesResponse) ProtoMessage() {}
+
+func (x *MergeCredentialMaterialValuesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MergeCredentialMaterialValuesResponse.ProtoReflect.Descriptor instead.
+func (*MergeCredentialMaterialValuesResponse) Descriptor() ([]byte, []int) {
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *MergeCredentialMaterialValuesResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type ReadCredentialMaterialFieldsRequest struct {
+	state         protoimpl.MessageState           `protogen:"open.v1"`
+	CredentialId  string                           `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
+	FieldIds      []string                         `protobuf:"bytes,2,rep,name=field_ids,json=fieldIds,proto3" json:"field_ids,omitempty"`
+	PolicyRef     *CredentialMaterialReadPolicyRef `protobuf:"bytes,3,opt,name=policy_ref,json=policyRef,proto3" json:"policy_ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadCredentialMaterialFieldsRequest) Reset() {
+	*x = ReadCredentialMaterialFieldsRequest{}
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadCredentialMaterialFieldsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadCredentialMaterialFieldsRequest) ProtoMessage() {}
+
+func (x *ReadCredentialMaterialFieldsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadCredentialMaterialFieldsRequest.ProtoReflect.Descriptor instead.
+func (*ReadCredentialMaterialFieldsRequest) Descriptor() ([]byte, []int) {
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ReadCredentialMaterialFieldsRequest) GetCredentialId() string {
+	if x != nil {
+		return x.CredentialId
+	}
+	return ""
+}
+
+func (x *ReadCredentialMaterialFieldsRequest) GetFieldIds() []string {
+	if x != nil {
+		return x.FieldIds
+	}
+	return nil
+}
+
+func (x *ReadCredentialMaterialFieldsRequest) GetPolicyRef() *CredentialMaterialReadPolicyRef {
+	if x != nil {
+		return x.PolicyRef
+	}
+	return nil
+}
+
+type ReadCredentialMaterialFieldsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Values        map[string]string      `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadCredentialMaterialFieldsResponse) Reset() {
+	*x = ReadCredentialMaterialFieldsResponse{}
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadCredentialMaterialFieldsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadCredentialMaterialFieldsResponse) ProtoMessage() {}
+
+func (x *ReadCredentialMaterialFieldsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadCredentialMaterialFieldsResponse.ProtoReflect.Descriptor instead.
+func (*ReadCredentialMaterialFieldsResponse) Descriptor() ([]byte, []int) {
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ReadCredentialMaterialFieldsResponse) GetValues() map[string]string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+type CredentialMaterialReadPolicyRef struct {
+	state protoimpl.MessageState           `protogen:"open.v1"`
+	Kind  CredentialMaterialReadPolicyKind `protobuf:"varint,1,opt,name=kind,proto3,enum=platform.auth.v1.CredentialMaterialReadPolicyKind" json:"kind,omitempty"`
+	// owner_id is the support-owned policy subject. For CLI active queries this is
+	// cli_id; for vendor active queries this is vendor_id.
+	OwnerId string `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	// surface_id narrows vendor active query policy to one provider surface
+	// binding. CLI active queries may leave this empty.
+	SurfaceId string `protobuf:"bytes,3,opt,name=surface_id,json=surfaceId,proto3" json:"surface_id,omitempty"`
+	// collector_id is the active query collector implementation that is requesting
+	// material readback. When set, authservice verifies it matches the support
+	// policy before releasing material values.
+	CollectorId   string `protobuf:"bytes,4,opt,name=collector_id,json=collectorId,proto3" json:"collector_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CredentialMaterialReadPolicyRef) Reset() {
+	*x = CredentialMaterialReadPolicyRef{}
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialMaterialReadPolicyRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialMaterialReadPolicyRef) ProtoMessage() {}
+
+func (x *CredentialMaterialReadPolicyRef) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CredentialMaterialReadPolicyRef.ProtoReflect.Descriptor instead.
+func (*CredentialMaterialReadPolicyRef) Descriptor() ([]byte, []int) {
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *CredentialMaterialReadPolicyRef) GetKind() CredentialMaterialReadPolicyKind {
+	if x != nil {
+		return x.Kind
+	}
+	return CredentialMaterialReadPolicyKind_CREDENTIAL_MATERIAL_READ_POLICY_KIND_UNSPECIFIED
+}
+
+func (x *CredentialMaterialReadPolicyRef) GetOwnerId() string {
+	if x != nil {
+		return x.OwnerId
+	}
+	return ""
+}
+
+func (x *CredentialMaterialReadPolicyRef) GetSurfaceId() string {
+	if x != nil {
+		return x.SurfaceId
+	}
+	return ""
+}
+
+func (x *CredentialMaterialReadPolicyRef) GetCollectorId() string {
+	if x != nil {
+		return x.CollectorId
+	}
+	return ""
+}
+
 type CreateOAuthCredentialRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CredentialId  string                 `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
@@ -685,7 +1009,7 @@ type CreateOAuthCredentialRequest struct {
 
 func (x *CreateOAuthCredentialRequest) Reset() {
 	*x = CreateOAuthCredentialRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[10]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -697,7 +1021,7 @@ func (x *CreateOAuthCredentialRequest) String() string {
 func (*CreateOAuthCredentialRequest) ProtoMessage() {}
 
 func (x *CreateOAuthCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[10]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -710,7 +1034,7 @@ func (x *CreateOAuthCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateOAuthCredentialRequest.ProtoReflect.Descriptor instead.
 func (*CreateOAuthCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{10}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CreateOAuthCredentialRequest) GetCredentialId() string {
@@ -807,7 +1131,7 @@ type CreateOAuthCredentialResponse struct {
 
 func (x *CreateOAuthCredentialResponse) Reset() {
 	*x = CreateOAuthCredentialResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[11]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -819,7 +1143,7 @@ func (x *CreateOAuthCredentialResponse) String() string {
 func (*CreateOAuthCredentialResponse) ProtoMessage() {}
 
 func (x *CreateOAuthCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[11]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -832,7 +1156,7 @@ func (x *CreateOAuthCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateOAuthCredentialResponse.ProtoReflect.Descriptor instead.
 func (*CreateOAuthCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{11}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CreateOAuthCredentialResponse) GetCredential() *v1.CredentialView {
@@ -869,7 +1193,7 @@ type UpdateOAuthCredentialRequest struct {
 
 func (x *UpdateOAuthCredentialRequest) Reset() {
 	*x = UpdateOAuthCredentialRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[12]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -881,7 +1205,7 @@ func (x *UpdateOAuthCredentialRequest) String() string {
 func (*UpdateOAuthCredentialRequest) ProtoMessage() {}
 
 func (x *UpdateOAuthCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[12]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -894,7 +1218,7 @@ func (x *UpdateOAuthCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateOAuthCredentialRequest.ProtoReflect.Descriptor instead.
 func (*UpdateOAuthCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{12}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *UpdateOAuthCredentialRequest) GetCredentialId() string {
@@ -991,7 +1315,7 @@ type UpdateOAuthCredentialResponse struct {
 
 func (x *UpdateOAuthCredentialResponse) Reset() {
 	*x = UpdateOAuthCredentialResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[13]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1003,7 +1327,7 @@ func (x *UpdateOAuthCredentialResponse) String() string {
 func (*UpdateOAuthCredentialResponse) ProtoMessage() {}
 
 func (x *UpdateOAuthCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[13]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1016,7 +1340,7 @@ func (x *UpdateOAuthCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateOAuthCredentialResponse.ProtoReflect.Descriptor instead.
 func (*UpdateOAuthCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{13}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *UpdateOAuthCredentialResponse) GetCredential() *v1.CredentialView {
@@ -1043,7 +1367,7 @@ type RenameCredentialRequest struct {
 
 func (x *RenameCredentialRequest) Reset() {
 	*x = RenameCredentialRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[14]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1055,7 +1379,7 @@ func (x *RenameCredentialRequest) String() string {
 func (*RenameCredentialRequest) ProtoMessage() {}
 
 func (x *RenameCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[14]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1068,7 +1392,7 @@ func (x *RenameCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameCredentialRequest.ProtoReflect.Descriptor instead.
 func (*RenameCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{14}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *RenameCredentialRequest) GetCredentialId() string {
@@ -1095,7 +1419,7 @@ type RenameCredentialResponse struct {
 
 func (x *RenameCredentialResponse) Reset() {
 	*x = RenameCredentialResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[15]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1107,7 +1431,7 @@ func (x *RenameCredentialResponse) String() string {
 func (*RenameCredentialResponse) ProtoMessage() {}
 
 func (x *RenameCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[15]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1120,7 +1444,7 @@ func (x *RenameCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameCredentialResponse.ProtoReflect.Descriptor instead.
 func (*RenameCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{15}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RenameCredentialResponse) GetCredential() *v1.CredentialView {
@@ -1146,7 +1470,7 @@ type DeleteCredentialRequest struct {
 
 func (x *DeleteCredentialRequest) Reset() {
 	*x = DeleteCredentialRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[16]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1158,7 +1482,7 @@ func (x *DeleteCredentialRequest) String() string {
 func (*DeleteCredentialRequest) ProtoMessage() {}
 
 func (x *DeleteCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[16]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1171,7 +1495,7 @@ func (x *DeleteCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCredentialRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{16}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *DeleteCredentialRequest) GetCredentialId() string {
@@ -1191,7 +1515,7 @@ type DeleteCredentialResponse struct {
 
 func (x *DeleteCredentialResponse) Reset() {
 	*x = DeleteCredentialResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[17]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1203,7 +1527,7 @@ func (x *DeleteCredentialResponse) String() string {
 func (*DeleteCredentialResponse) ProtoMessage() {}
 
 func (x *DeleteCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[17]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1216,7 +1540,7 @@ func (x *DeleteCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCredentialResponse.ProtoReflect.Descriptor instead.
 func (*DeleteCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{17}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DeleteCredentialResponse) GetCredential() *v1.CredentialView {
@@ -1250,7 +1574,7 @@ type OAuthArtifact struct {
 
 func (x *OAuthArtifact) Reset() {
 	*x = OAuthArtifact{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[18]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1262,7 +1586,7 @@ func (x *OAuthArtifact) String() string {
 func (*OAuthArtifact) ProtoMessage() {}
 
 func (x *OAuthArtifact) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[18]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1275,7 +1599,7 @@ func (x *OAuthArtifact) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OAuthArtifact.ProtoReflect.Descriptor instead.
 func (*OAuthArtifact) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{18}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *OAuthArtifact) GetAccessToken() string {
@@ -1353,7 +1677,7 @@ type ImportOAuthCredentialRequest struct {
 
 func (x *ImportOAuthCredentialRequest) Reset() {
 	*x = ImportOAuthCredentialRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[19]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1365,7 +1689,7 @@ func (x *ImportOAuthCredentialRequest) String() string {
 func (*ImportOAuthCredentialRequest) ProtoMessage() {}
 
 func (x *ImportOAuthCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[19]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1378,7 +1702,7 @@ func (x *ImportOAuthCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportOAuthCredentialRequest.ProtoReflect.Descriptor instead.
 func (*ImportOAuthCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{19}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ImportOAuthCredentialRequest) GetCliId() string {
@@ -1418,7 +1742,7 @@ type ImportOAuthCredentialResponse struct {
 
 func (x *ImportOAuthCredentialResponse) Reset() {
 	*x = ImportOAuthCredentialResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[20]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1430,7 +1754,7 @@ func (x *ImportOAuthCredentialResponse) String() string {
 func (*ImportOAuthCredentialResponse) ProtoMessage() {}
 
 func (x *ImportOAuthCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[20]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1443,7 +1767,7 @@ func (x *ImportOAuthCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportOAuthCredentialResponse.ProtoReflect.Descriptor instead.
 func (*ImportOAuthCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{20}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ImportOAuthCredentialResponse) GetDefinition() *v11.CredentialDefinition {
@@ -1464,7 +1788,7 @@ type EnsureFreshRequest struct {
 
 func (x *EnsureFreshRequest) Reset() {
 	*x = EnsureFreshRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[21]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1476,7 +1800,7 @@ func (x *EnsureFreshRequest) String() string {
 func (*EnsureFreshRequest) ProtoMessage() {}
 
 func (x *EnsureFreshRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[21]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1489,7 +1813,7 @@ func (x *EnsureFreshRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnsureFreshRequest.ProtoReflect.Descriptor instead.
 func (*EnsureFreshRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{21}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *EnsureFreshRequest) GetCredentialId() string {
@@ -1526,7 +1850,7 @@ type EnsureFreshResponse struct {
 
 func (x *EnsureFreshResponse) Reset() {
 	*x = EnsureFreshResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[22]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1538,7 +1862,7 @@ func (x *EnsureFreshResponse) String() string {
 func (*EnsureFreshResponse) ProtoMessage() {}
 
 func (x *EnsureFreshResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[22]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1551,7 +1875,7 @@ func (x *EnsureFreshResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnsureFreshResponse.ProtoReflect.Descriptor instead.
 func (*EnsureFreshResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{22}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *EnsureFreshResponse) GetOutcome() string {
@@ -1597,7 +1921,7 @@ type RefreshOAuthDueRequest struct {
 
 func (x *RefreshOAuthDueRequest) Reset() {
 	*x = RefreshOAuthDueRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[23]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1609,7 +1933,7 @@ func (x *RefreshOAuthDueRequest) String() string {
 func (*RefreshOAuthDueRequest) ProtoMessage() {}
 
 func (x *RefreshOAuthDueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[23]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1622,7 +1946,7 @@ func (x *RefreshOAuthDueRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshOAuthDueRequest.ProtoReflect.Descriptor instead.
 func (*RefreshOAuthDueRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{23}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{28}
 }
 
 type ScanOAuthSessionsRequest struct {
@@ -1633,7 +1957,7 @@ type ScanOAuthSessionsRequest struct {
 
 func (x *ScanOAuthSessionsRequest) Reset() {
 	*x = ScanOAuthSessionsRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[24]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1645,7 +1969,7 @@ func (x *ScanOAuthSessionsRequest) String() string {
 func (*ScanOAuthSessionsRequest) ProtoMessage() {}
 
 func (x *ScanOAuthSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[24]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1658,7 +1982,7 @@ func (x *ScanOAuthSessionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanOAuthSessionsRequest.ProtoReflect.Descriptor instead.
 func (*ScanOAuthSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{24}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{29}
 }
 
 type RefreshOAuthDueResponse struct {
@@ -1670,7 +1994,7 @@ type RefreshOAuthDueResponse struct {
 
 func (x *RefreshOAuthDueResponse) Reset() {
 	*x = RefreshOAuthDueResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[25]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1682,7 +2006,7 @@ func (x *RefreshOAuthDueResponse) String() string {
 func (*RefreshOAuthDueResponse) ProtoMessage() {}
 
 func (x *RefreshOAuthDueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[25]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1695,7 +2019,7 @@ func (x *RefreshOAuthDueResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshOAuthDueResponse.ProtoReflect.Descriptor instead.
 func (*RefreshOAuthDueResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{25}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *RefreshOAuthDueResponse) GetStatus() string {
@@ -1714,7 +2038,7 @@ type ScanOAuthSessionsResponse struct {
 
 func (x *ScanOAuthSessionsResponse) Reset() {
 	*x = ScanOAuthSessionsResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[26]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1726,7 +2050,7 @@ func (x *ScanOAuthSessionsResponse) String() string {
 func (*ScanOAuthSessionsResponse) ProtoMessage() {}
 
 func (x *ScanOAuthSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[26]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1739,7 +2063,7 @@ func (x *ScanOAuthSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanOAuthSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ScanOAuthSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{26}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ScanOAuthSessionsResponse) GetStatus() string {
@@ -1758,7 +2082,7 @@ type GetCredentialSubjectSummaryRequest struct {
 
 func (x *GetCredentialSubjectSummaryRequest) Reset() {
 	*x = GetCredentialSubjectSummaryRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[27]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1770,7 +2094,7 @@ func (x *GetCredentialSubjectSummaryRequest) String() string {
 func (*GetCredentialSubjectSummaryRequest) ProtoMessage() {}
 
 func (x *GetCredentialSubjectSummaryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[27]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1783,7 +2107,7 @@ func (x *GetCredentialSubjectSummaryRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use GetCredentialSubjectSummaryRequest.ProtoReflect.Descriptor instead.
 func (*GetCredentialSubjectSummaryRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{27}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetCredentialSubjectSummaryRequest) GetCredentialId() string {
@@ -1802,7 +2126,7 @@ type GetCredentialSubjectSummaryResponse struct {
 
 func (x *GetCredentialSubjectSummaryResponse) Reset() {
 	*x = GetCredentialSubjectSummaryResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[28]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1814,7 +2138,7 @@ func (x *GetCredentialSubjectSummaryResponse) String() string {
 func (*GetCredentialSubjectSummaryResponse) ProtoMessage() {}
 
 func (x *GetCredentialSubjectSummaryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[28]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1827,7 +2151,7 @@ func (x *GetCredentialSubjectSummaryResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use GetCredentialSubjectSummaryResponse.ProtoReflect.Descriptor instead.
 func (*GetCredentialSubjectSummaryResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{28}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetCredentialSubjectSummaryResponse) GetFields() []*v1.CredentialSubjectSummaryFieldView {
@@ -1846,7 +2170,7 @@ type GetCredentialRuntimeProjectionRequest struct {
 
 func (x *GetCredentialRuntimeProjectionRequest) Reset() {
 	*x = GetCredentialRuntimeProjectionRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[29]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1858,7 +2182,7 @@ func (x *GetCredentialRuntimeProjectionRequest) String() string {
 func (*GetCredentialRuntimeProjectionRequest) ProtoMessage() {}
 
 func (x *GetCredentialRuntimeProjectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[29]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1871,7 +2195,7 @@ func (x *GetCredentialRuntimeProjectionRequest) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use GetCredentialRuntimeProjectionRequest.ProtoReflect.Descriptor instead.
 func (*GetCredentialRuntimeProjectionRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{29}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetCredentialRuntimeProjectionRequest) GetCredentialId() string {
@@ -1887,14 +2211,13 @@ type CredentialRuntimeProjection struct {
 	CredentialKind v11.CredentialKind     `protobuf:"varint,2,opt,name=credential_kind,json=credentialKind,proto3,enum=credential.v1.CredentialKind" json:"credential_kind,omitempty"`
 	VendorId       string                 `protobuf:"bytes,3,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
 	CliId          string                 `protobuf:"bytes,4,opt,name=cli_id,json=cliId,proto3" json:"cli_id,omitempty"`
-	SecretName     string                 `protobuf:"bytes,5,opt,name=secret_name,json=secretName,proto3" json:"secret_name,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CredentialRuntimeProjection) Reset() {
 	*x = CredentialRuntimeProjection{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[30]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1906,7 +2229,7 @@ func (x *CredentialRuntimeProjection) String() string {
 func (*CredentialRuntimeProjection) ProtoMessage() {}
 
 func (x *CredentialRuntimeProjection) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[30]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1919,7 +2242,7 @@ func (x *CredentialRuntimeProjection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CredentialRuntimeProjection.ProtoReflect.Descriptor instead.
 func (*CredentialRuntimeProjection) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{30}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *CredentialRuntimeProjection) GetCredentialId() string {
@@ -1950,13 +2273,6 @@ func (x *CredentialRuntimeProjection) GetCliId() string {
 	return ""
 }
 
-func (x *CredentialRuntimeProjection) GetSecretName() string {
-	if x != nil {
-		return x.SecretName
-	}
-	return ""
-}
-
 type GetCredentialRuntimeProjectionResponse struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Credential    *CredentialRuntimeProjection `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
@@ -1966,7 +2282,7 @@ type GetCredentialRuntimeProjectionResponse struct {
 
 func (x *GetCredentialRuntimeProjectionResponse) Reset() {
 	*x = GetCredentialRuntimeProjectionResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[31]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1978,7 +2294,7 @@ func (x *GetCredentialRuntimeProjectionResponse) String() string {
 func (*GetCredentialRuntimeProjectionResponse) ProtoMessage() {}
 
 func (x *GetCredentialRuntimeProjectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[31]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1991,7 +2307,7 @@ func (x *GetCredentialRuntimeProjectionResponse) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use GetCredentialRuntimeProjectionResponse.ProtoReflect.Descriptor instead.
 func (*GetCredentialRuntimeProjectionResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{31}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *GetCredentialRuntimeProjectionResponse) GetCredential() *CredentialRuntimeProjection {
@@ -2013,7 +2329,7 @@ type GetEgressAuthPolicyRequest struct {
 
 func (x *GetEgressAuthPolicyRequest) Reset() {
 	*x = GetEgressAuthPolicyRequest{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[32]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2025,7 +2341,7 @@ func (x *GetEgressAuthPolicyRequest) String() string {
 func (*GetEgressAuthPolicyRequest) ProtoMessage() {}
 
 func (x *GetEgressAuthPolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[32]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2038,7 +2354,7 @@ func (x *GetEgressAuthPolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEgressAuthPolicyRequest.ProtoReflect.Descriptor instead.
 func (*GetEgressAuthPolicyRequest) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{32}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetEgressAuthPolicyRequest) GetPolicyId() string {
@@ -2070,22 +2386,26 @@ func (x *GetEgressAuthPolicyRequest) GetProtocol() v12.Protocol {
 }
 
 type GetEgressAuthPolicyResponse struct {
-	state                    protoimpl.MessageState         `protogen:"open.v1"`
-	PolicyId                 string                         `protobuf:"bytes,1,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
-	MaterializationKey       string                         `protobuf:"bytes,2,opt,name=materialization_key,json=materializationKey,proto3" json:"materialization_key,omitempty"`
-	AdapterId                string                         `protobuf:"bytes,3,opt,name=adapter_id,json=adapterId,proto3" json:"adapter_id,omitempty"`
-	RequestReplacementRules  []*EgressSimpleReplacementRule `protobuf:"bytes,4,rep,name=request_replacement_rules,json=requestReplacementRules,proto3" json:"request_replacement_rules,omitempty"`
-	ResponseReplacementRules []*EgressSimpleReplacementRule `protobuf:"bytes,5,rep,name=response_replacement_rules,json=responseReplacementRules,proto3" json:"response_replacement_rules,omitempty"`
-	RequestHeaderNames       []string                       `protobuf:"bytes,6,rep,name=request_header_names,json=requestHeaderNames,proto3" json:"request_header_names,omitempty"`
-	ResponseHeaderNames      []string                       `protobuf:"bytes,7,rep,name=response_header_names,json=responseHeaderNames,proto3" json:"response_header_names,omitempty"`
-	HeaderValuePrefix        string                         `protobuf:"bytes,8,opt,name=header_value_prefix,json=headerValuePrefix,proto3" json:"header_value_prefix,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	state                      protoimpl.MessageState         `protogen:"open.v1"`
+	PolicyId                   string                         `protobuf:"bytes,1,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
+	MaterializationKey         string                         `protobuf:"bytes,2,opt,name=materialization_key,json=materializationKey,proto3" json:"materialization_key,omitempty"`
+	AdapterId                  string                         `protobuf:"bytes,3,opt,name=adapter_id,json=adapterId,proto3" json:"adapter_id,omitempty"`
+	RequestReplacementRules    []*EgressSimpleReplacementRule `protobuf:"bytes,4,rep,name=request_replacement_rules,json=requestReplacementRules,proto3" json:"request_replacement_rules,omitempty"`
+	ResponseReplacementRules   []*EgressSimpleReplacementRule `protobuf:"bytes,5,rep,name=response_replacement_rules,json=responseReplacementRules,proto3" json:"response_replacement_rules,omitempty"`
+	RequestHeaderNames         []string                       `protobuf:"bytes,6,rep,name=request_header_names,json=requestHeaderNames,proto3" json:"request_header_names,omitempty"`
+	ResponseHeaderNames        []string                       `protobuf:"bytes,7,rep,name=response_header_names,json=responseHeaderNames,proto3" json:"response_header_names,omitempty"`
+	HeaderValuePrefix          string                         `protobuf:"bytes,8,opt,name=header_value_prefix,json=headerValuePrefix,proto3" json:"header_value_prefix,omitempty"`
+	ExtensionProviderName      string                         `protobuf:"bytes,9,opt,name=extension_provider_name,json=extensionProviderName,proto3" json:"extension_provider_name,omitempty"`
+	HeadersToUpstreamOnAllow   []string                       `protobuf:"bytes,10,rep,name=headers_to_upstream_on_allow,json=headersToUpstreamOnAllow,proto3" json:"headers_to_upstream_on_allow,omitempty"`
+	HeadersToDownstreamOnAllow []string                       `protobuf:"bytes,11,rep,name=headers_to_downstream_on_allow,json=headersToDownstreamOnAllow,proto3" json:"headers_to_downstream_on_allow,omitempty"`
+	HeadersToDownstreamOnDeny  []string                       `protobuf:"bytes,12,rep,name=headers_to_downstream_on_deny,json=headersToDownstreamOnDeny,proto3" json:"headers_to_downstream_on_deny,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *GetEgressAuthPolicyResponse) Reset() {
 	*x = GetEgressAuthPolicyResponse{}
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[33]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2097,7 +2417,7 @@ func (x *GetEgressAuthPolicyResponse) String() string {
 func (*GetEgressAuthPolicyResponse) ProtoMessage() {}
 
 func (x *GetEgressAuthPolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_auth_v1_auth_proto_msgTypes[33]
+	mi := &file_platform_auth_v1_auth_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2110,7 +2430,7 @@ func (x *GetEgressAuthPolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEgressAuthPolicyResponse.ProtoReflect.Descriptor instead.
 func (*GetEgressAuthPolicyResponse) Descriptor() ([]byte, []int) {
-	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{33}
+	return file_platform_auth_v1_auth_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GetEgressAuthPolicyResponse) GetPolicyId() string {
@@ -2167,6 +2487,34 @@ func (x *GetEgressAuthPolicyResponse) GetHeaderValuePrefix() string {
 		return x.HeaderValuePrefix
 	}
 	return ""
+}
+
+func (x *GetEgressAuthPolicyResponse) GetExtensionProviderName() string {
+	if x != nil {
+		return x.ExtensionProviderName
+	}
+	return ""
+}
+
+func (x *GetEgressAuthPolicyResponse) GetHeadersToUpstreamOnAllow() []string {
+	if x != nil {
+		return x.HeadersToUpstreamOnAllow
+	}
+	return nil
+}
+
+func (x *GetEgressAuthPolicyResponse) GetHeadersToDownstreamOnAllow() []string {
+	if x != nil {
+		return x.HeadersToDownstreamOnAllow
+	}
+	return nil
+}
+
+func (x *GetEgressAuthPolicyResponse) GetHeadersToDownstreamOnDeny() []string {
+	if x != nil {
+		return x.HeadersToDownstreamOnDeny
+	}
+	return nil
 }
 
 var File_platform_auth_v1_auth_proto protoreflect.FileDescriptor
@@ -2232,7 +2580,31 @@ const file_platform_auth_v1_auth_proto_rawDesc = "" +
 	"\n" +
 	"credential\x18\x01 \x01(\v2&.platform.management.v1.CredentialViewR\n" +
 	"credential\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\"\xa8\x03\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"\xe2\x01\n" +
+	"$MergeCredentialMaterialValuesRequest\x12#\n" +
+	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\x12Z\n" +
+	"\x06values\x18\x02 \x03(\v2B.platform.auth.v1.MergeCredentialMaterialValuesRequest.ValuesEntryR\x06values\x1a9\n" +
+	"\vValuesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"?\n" +
+	"%MergeCredentialMaterialValuesResponse\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\"\xb9\x01\n" +
+	"#ReadCredentialMaterialFieldsRequest\x12#\n" +
+	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\x12\x1b\n" +
+	"\tfield_ids\x18\x02 \x03(\tR\bfieldIds\x12P\n" +
+	"\n" +
+	"policy_ref\x18\x03 \x01(\v21.platform.auth.v1.CredentialMaterialReadPolicyRefR\tpolicyRef\"\xbd\x01\n" +
+	"$ReadCredentialMaterialFieldsResponse\x12Z\n" +
+	"\x06values\x18\x01 \x03(\v2B.platform.auth.v1.ReadCredentialMaterialFieldsResponse.ValuesEntryR\x06values\x1a9\n" +
+	"\vValuesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc6\x01\n" +
+	"\x1fCredentialMaterialReadPolicyRef\x12F\n" +
+	"\x04kind\x18\x01 \x01(\x0e22.platform.auth.v1.CredentialMaterialReadPolicyKindR\x04kind\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1d\n" +
+	"\n" +
+	"surface_id\x18\x03 \x01(\tR\tsurfaceId\x12!\n" +
+	"\fcollector_id\x18\x04 \x01(\tR\vcollectorId\"\xa8\x03\n" +
 	"\x1cCreateOAuthCredentialRequest\x12#\n" +
 	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x18\n" +
@@ -2336,14 +2708,12 @@ const file_platform_auth_v1_auth_proto_rawDesc = "" +
 	"#GetCredentialSubjectSummaryResponse\x12Q\n" +
 	"\x06fields\x18\x01 \x03(\v29.platform.management.v1.CredentialSubjectSummaryFieldViewR\x06fields\"L\n" +
 	"%GetCredentialRuntimeProjectionRequest\x12#\n" +
-	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\"\xdf\x01\n" +
+	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\"\xbe\x01\n" +
 	"\x1bCredentialRuntimeProjection\x12#\n" +
 	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\x12F\n" +
 	"\x0fcredential_kind\x18\x02 \x01(\x0e2\x1d.credential.v1.CredentialKindR\x0ecredentialKind\x12\x1b\n" +
 	"\tvendor_id\x18\x03 \x01(\tR\bvendorId\x12\x15\n" +
-	"\x06cli_id\x18\x04 \x01(\tR\x05cliId\x12\x1f\n" +
-	"\vsecret_name\x18\x05 \x01(\tR\n" +
-	"secretName\"w\n" +
+	"\x06cli_id\x18\x04 \x01(\tR\x05cliId\"w\n" +
 	"&GetCredentialRuntimeProjectionResponse\x12M\n" +
 	"\n" +
 	"credential\x18\x01 \x01(\v2-.platform.auth.v1.CredentialRuntimeProjectionR\n" +
@@ -2352,7 +2722,7 @@ const file_platform_auth_v1_auth_proto_rawDesc = "" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12/\n" +
 	"\x13materialization_key\x18\x02 \x01(\tR\x12materializationKey\x12F\n" +
 	"\x0fcredential_kind\x18\x03 \x01(\x0e2\x1d.credential.v1.CredentialKindR\x0ecredentialKind\x125\n" +
-	"\bprotocol\x18\x04 \x01(\x0e2\x19.api_protocol.v1.ProtocolR\bprotocol\"\xf8\x03\n" +
+	"\bprotocol\x18\x04 \x01(\x0e2\x19.api_protocol.v1.ProtocolR\bprotocol\"\xf6\x05\n" +
 	"\x1bGetEgressAuthPolicyResponse\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12/\n" +
 	"\x13materialization_key\x18\x02 \x01(\tR\x12materializationKey\x12\x1d\n" +
@@ -2362,13 +2732,24 @@ const file_platform_auth_v1_auth_proto_rawDesc = "" +
 	"\x1aresponse_replacement_rules\x18\x05 \x03(\v2-.platform.auth.v1.EgressSimpleReplacementRuleR\x18responseReplacementRules\x120\n" +
 	"\x14request_header_names\x18\x06 \x03(\tR\x12requestHeaderNames\x122\n" +
 	"\x15response_header_names\x18\a \x03(\tR\x13responseHeaderNames\x12.\n" +
-	"\x13header_value_prefix\x18\b \x01(\tR\x11headerValuePrefix2\x99\x11\n" +
+	"\x13header_value_prefix\x18\b \x01(\tR\x11headerValuePrefix\x126\n" +
+	"\x17extension_provider_name\x18\t \x01(\tR\x15extensionProviderName\x12>\n" +
+	"\x1cheaders_to_upstream_on_allow\x18\n" +
+	" \x03(\tR\x18headersToUpstreamOnAllow\x12B\n" +
+	"\x1eheaders_to_downstream_on_allow\x18\v \x03(\tR\x1aheadersToDownstreamOnAllow\x12@\n" +
+	"\x1dheaders_to_downstream_on_deny\x18\f \x03(\tR\x19headersToDownstreamOnDeny*\xd7\x01\n" +
+	" CredentialMaterialReadPolicyKind\x124\n" +
+	"0CREDENTIAL_MATERIAL_READ_POLICY_KIND_UNSPECIFIED\x10\x00\x12?\n" +
+	";CREDENTIAL_MATERIAL_READ_POLICY_KIND_CLI_OAUTH_ACTIVE_QUERY\x10\x01\x12<\n" +
+	"8CREDENTIAL_MATERIAL_READ_POLICY_KIND_VENDOR_ACTIVE_QUERY\x10\x022\xbc\x13\n" +
 	"\vAuthService\x12f\n" +
 	"\x0fListCredentials\x12(.platform.auth.v1.ListCredentialsRequest\x1a).platform.auth.v1.ListCredentialsResponse\x12{\n" +
 	"\x16CreateAPIKeyCredential\x12/.platform.auth.v1.CreateAPIKeyCredentialRequest\x1a0.platform.auth.v1.CreateAPIKeyCredentialResponse\x12{\n" +
 	"\x16UpdateAPIKeyCredential\x12/.platform.auth.v1.UpdateAPIKeyCredentialRequest\x1a0.platform.auth.v1.UpdateAPIKeyCredentialResponse\x12~\n" +
 	"\x17CreateSessionCredential\x120.platform.auth.v1.CreateSessionCredentialRequest\x1a1.platform.auth.v1.CreateSessionCredentialResponse\x12~\n" +
-	"\x17UpdateSessionCredential\x120.platform.auth.v1.UpdateSessionCredentialRequest\x1a1.platform.auth.v1.UpdateSessionCredentialResponse\x12x\n" +
+	"\x17UpdateSessionCredential\x120.platform.auth.v1.UpdateSessionCredentialRequest\x1a1.platform.auth.v1.UpdateSessionCredentialResponse\x12\x90\x01\n" +
+	"\x1dMergeCredentialMaterialValues\x126.platform.auth.v1.MergeCredentialMaterialValuesRequest\x1a7.platform.auth.v1.MergeCredentialMaterialValuesResponse\x12\x8d\x01\n" +
+	"\x1cReadCredentialMaterialFields\x125.platform.auth.v1.ReadCredentialMaterialFieldsRequest\x1a6.platform.auth.v1.ReadCredentialMaterialFieldsResponse\x12x\n" +
 	"\x15CreateOAuthCredential\x12..platform.auth.v1.CreateOAuthCredentialRequest\x1a/.platform.auth.v1.CreateOAuthCredentialResponse\x12x\n" +
 	"\x15UpdateOAuthCredential\x12..platform.auth.v1.UpdateOAuthCredentialRequest\x1a/.platform.auth.v1.UpdateOAuthCredentialResponse\x12i\n" +
 	"\x10RenameCredential\x12).platform.auth.v1.RenameCredentialRequest\x1a*.platform.auth.v1.RenameCredentialResponse\x12i\n" +
@@ -2395,124 +2776,141 @@ func file_platform_auth_v1_auth_proto_rawDescGZIP() []byte {
 	return file_platform_auth_v1_auth_proto_rawDescData
 }
 
-var file_platform_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_platform_auth_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_platform_auth_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
 var file_platform_auth_v1_auth_proto_goTypes = []any{
-	(*ListCredentialsRequest)(nil),                 // 0: platform.auth.v1.ListCredentialsRequest
-	(*ListCredentialsResponse)(nil),                // 1: platform.auth.v1.ListCredentialsResponse
-	(*CreateAPIKeyCredentialRequest)(nil),          // 2: platform.auth.v1.CreateAPIKeyCredentialRequest
-	(*CreateAPIKeyCredentialResponse)(nil),         // 3: platform.auth.v1.CreateAPIKeyCredentialResponse
-	(*UpdateAPIKeyCredentialRequest)(nil),          // 4: platform.auth.v1.UpdateAPIKeyCredentialRequest
-	(*UpdateAPIKeyCredentialResponse)(nil),         // 5: platform.auth.v1.UpdateAPIKeyCredentialResponse
-	(*CreateSessionCredentialRequest)(nil),         // 6: platform.auth.v1.CreateSessionCredentialRequest
-	(*CreateSessionCredentialResponse)(nil),        // 7: platform.auth.v1.CreateSessionCredentialResponse
-	(*UpdateSessionCredentialRequest)(nil),         // 8: platform.auth.v1.UpdateSessionCredentialRequest
-	(*UpdateSessionCredentialResponse)(nil),        // 9: platform.auth.v1.UpdateSessionCredentialResponse
-	(*CreateOAuthCredentialRequest)(nil),           // 10: platform.auth.v1.CreateOAuthCredentialRequest
-	(*CreateOAuthCredentialResponse)(nil),          // 11: platform.auth.v1.CreateOAuthCredentialResponse
-	(*UpdateOAuthCredentialRequest)(nil),           // 12: platform.auth.v1.UpdateOAuthCredentialRequest
-	(*UpdateOAuthCredentialResponse)(nil),          // 13: platform.auth.v1.UpdateOAuthCredentialResponse
-	(*RenameCredentialRequest)(nil),                // 14: platform.auth.v1.RenameCredentialRequest
-	(*RenameCredentialResponse)(nil),               // 15: platform.auth.v1.RenameCredentialResponse
-	(*DeleteCredentialRequest)(nil),                // 16: platform.auth.v1.DeleteCredentialRequest
-	(*DeleteCredentialResponse)(nil),               // 17: platform.auth.v1.DeleteCredentialResponse
-	(*OAuthArtifact)(nil),                          // 18: platform.auth.v1.OAuthArtifact
-	(*ImportOAuthCredentialRequest)(nil),           // 19: platform.auth.v1.ImportOAuthCredentialRequest
-	(*ImportOAuthCredentialResponse)(nil),          // 20: platform.auth.v1.ImportOAuthCredentialResponse
-	(*EnsureFreshRequest)(nil),                     // 21: platform.auth.v1.EnsureFreshRequest
-	(*EnsureFreshResponse)(nil),                    // 22: platform.auth.v1.EnsureFreshResponse
-	(*RefreshOAuthDueRequest)(nil),                 // 23: platform.auth.v1.RefreshOAuthDueRequest
-	(*ScanOAuthSessionsRequest)(nil),               // 24: platform.auth.v1.ScanOAuthSessionsRequest
-	(*RefreshOAuthDueResponse)(nil),                // 25: platform.auth.v1.RefreshOAuthDueResponse
-	(*ScanOAuthSessionsResponse)(nil),              // 26: platform.auth.v1.ScanOAuthSessionsResponse
-	(*GetCredentialSubjectSummaryRequest)(nil),     // 27: platform.auth.v1.GetCredentialSubjectSummaryRequest
-	(*GetCredentialSubjectSummaryResponse)(nil),    // 28: platform.auth.v1.GetCredentialSubjectSummaryResponse
-	(*GetCredentialRuntimeProjectionRequest)(nil),  // 29: platform.auth.v1.GetCredentialRuntimeProjectionRequest
-	(*CredentialRuntimeProjection)(nil),            // 30: platform.auth.v1.CredentialRuntimeProjection
-	(*GetCredentialRuntimeProjectionResponse)(nil), // 31: platform.auth.v1.GetCredentialRuntimeProjectionResponse
-	(*GetEgressAuthPolicyRequest)(nil),             // 32: platform.auth.v1.GetEgressAuthPolicyRequest
-	(*GetEgressAuthPolicyResponse)(nil),            // 33: platform.auth.v1.GetEgressAuthPolicyResponse
-	nil,                                            // 34: platform.auth.v1.CreateSessionCredentialRequest.ValuesEntry
-	nil,                                            // 35: platform.auth.v1.UpdateSessionCredentialRequest.ValuesEntry
-	(*v1.CredentialView)(nil),                      // 36: platform.management.v1.CredentialView
-	(*timestamppb.Timestamp)(nil),                  // 37: google.protobuf.Timestamp
-	(*v11.CredentialDefinition)(nil),               // 38: credential.v1.CredentialDefinition
-	(*v1.CredentialSubjectSummaryFieldView)(nil),   // 39: platform.management.v1.CredentialSubjectSummaryFieldView
-	(v11.CredentialKind)(0),                        // 40: credential.v1.CredentialKind
-	(v12.Protocol)(0),                              // 41: api_protocol.v1.Protocol
-	(*EgressSimpleReplacementRule)(nil),            // 42: platform.auth.v1.EgressSimpleReplacementRule
-	(*ResolveEgressRequestHeadersRequest)(nil),     // 43: platform.auth.v1.ResolveEgressRequestHeadersRequest
-	(*ResolveEgressResponseHeadersRequest)(nil),    // 44: platform.auth.v1.ResolveEgressResponseHeadersRequest
-	(*ResolveEgressRequestHeadersResponse)(nil),    // 45: platform.auth.v1.ResolveEgressRequestHeadersResponse
-	(*ResolveEgressResponseHeadersResponse)(nil),   // 46: platform.auth.v1.ResolveEgressResponseHeadersResponse
+	(CredentialMaterialReadPolicyKind)(0),          // 0: platform.auth.v1.CredentialMaterialReadPolicyKind
+	(*ListCredentialsRequest)(nil),                 // 1: platform.auth.v1.ListCredentialsRequest
+	(*ListCredentialsResponse)(nil),                // 2: platform.auth.v1.ListCredentialsResponse
+	(*CreateAPIKeyCredentialRequest)(nil),          // 3: platform.auth.v1.CreateAPIKeyCredentialRequest
+	(*CreateAPIKeyCredentialResponse)(nil),         // 4: platform.auth.v1.CreateAPIKeyCredentialResponse
+	(*UpdateAPIKeyCredentialRequest)(nil),          // 5: platform.auth.v1.UpdateAPIKeyCredentialRequest
+	(*UpdateAPIKeyCredentialResponse)(nil),         // 6: platform.auth.v1.UpdateAPIKeyCredentialResponse
+	(*CreateSessionCredentialRequest)(nil),         // 7: platform.auth.v1.CreateSessionCredentialRequest
+	(*CreateSessionCredentialResponse)(nil),        // 8: platform.auth.v1.CreateSessionCredentialResponse
+	(*UpdateSessionCredentialRequest)(nil),         // 9: platform.auth.v1.UpdateSessionCredentialRequest
+	(*UpdateSessionCredentialResponse)(nil),        // 10: platform.auth.v1.UpdateSessionCredentialResponse
+	(*MergeCredentialMaterialValuesRequest)(nil),   // 11: platform.auth.v1.MergeCredentialMaterialValuesRequest
+	(*MergeCredentialMaterialValuesResponse)(nil),  // 12: platform.auth.v1.MergeCredentialMaterialValuesResponse
+	(*ReadCredentialMaterialFieldsRequest)(nil),    // 13: platform.auth.v1.ReadCredentialMaterialFieldsRequest
+	(*ReadCredentialMaterialFieldsResponse)(nil),   // 14: platform.auth.v1.ReadCredentialMaterialFieldsResponse
+	(*CredentialMaterialReadPolicyRef)(nil),        // 15: platform.auth.v1.CredentialMaterialReadPolicyRef
+	(*CreateOAuthCredentialRequest)(nil),           // 16: platform.auth.v1.CreateOAuthCredentialRequest
+	(*CreateOAuthCredentialResponse)(nil),          // 17: platform.auth.v1.CreateOAuthCredentialResponse
+	(*UpdateOAuthCredentialRequest)(nil),           // 18: platform.auth.v1.UpdateOAuthCredentialRequest
+	(*UpdateOAuthCredentialResponse)(nil),          // 19: platform.auth.v1.UpdateOAuthCredentialResponse
+	(*RenameCredentialRequest)(nil),                // 20: platform.auth.v1.RenameCredentialRequest
+	(*RenameCredentialResponse)(nil),               // 21: platform.auth.v1.RenameCredentialResponse
+	(*DeleteCredentialRequest)(nil),                // 22: platform.auth.v1.DeleteCredentialRequest
+	(*DeleteCredentialResponse)(nil),               // 23: platform.auth.v1.DeleteCredentialResponse
+	(*OAuthArtifact)(nil),                          // 24: platform.auth.v1.OAuthArtifact
+	(*ImportOAuthCredentialRequest)(nil),           // 25: platform.auth.v1.ImportOAuthCredentialRequest
+	(*ImportOAuthCredentialResponse)(nil),          // 26: platform.auth.v1.ImportOAuthCredentialResponse
+	(*EnsureFreshRequest)(nil),                     // 27: platform.auth.v1.EnsureFreshRequest
+	(*EnsureFreshResponse)(nil),                    // 28: platform.auth.v1.EnsureFreshResponse
+	(*RefreshOAuthDueRequest)(nil),                 // 29: platform.auth.v1.RefreshOAuthDueRequest
+	(*ScanOAuthSessionsRequest)(nil),               // 30: platform.auth.v1.ScanOAuthSessionsRequest
+	(*RefreshOAuthDueResponse)(nil),                // 31: platform.auth.v1.RefreshOAuthDueResponse
+	(*ScanOAuthSessionsResponse)(nil),              // 32: platform.auth.v1.ScanOAuthSessionsResponse
+	(*GetCredentialSubjectSummaryRequest)(nil),     // 33: platform.auth.v1.GetCredentialSubjectSummaryRequest
+	(*GetCredentialSubjectSummaryResponse)(nil),    // 34: platform.auth.v1.GetCredentialSubjectSummaryResponse
+	(*GetCredentialRuntimeProjectionRequest)(nil),  // 35: platform.auth.v1.GetCredentialRuntimeProjectionRequest
+	(*CredentialRuntimeProjection)(nil),            // 36: platform.auth.v1.CredentialRuntimeProjection
+	(*GetCredentialRuntimeProjectionResponse)(nil), // 37: platform.auth.v1.GetCredentialRuntimeProjectionResponse
+	(*GetEgressAuthPolicyRequest)(nil),             // 38: platform.auth.v1.GetEgressAuthPolicyRequest
+	(*GetEgressAuthPolicyResponse)(nil),            // 39: platform.auth.v1.GetEgressAuthPolicyResponse
+	nil,                                            // 40: platform.auth.v1.CreateSessionCredentialRequest.ValuesEntry
+	nil,                                            // 41: platform.auth.v1.UpdateSessionCredentialRequest.ValuesEntry
+	nil,                                            // 42: platform.auth.v1.MergeCredentialMaterialValuesRequest.ValuesEntry
+	nil,                                            // 43: platform.auth.v1.ReadCredentialMaterialFieldsResponse.ValuesEntry
+	(*v1.CredentialView)(nil),                      // 44: platform.management.v1.CredentialView
+	(*timestamppb.Timestamp)(nil),                  // 45: google.protobuf.Timestamp
+	(*v11.CredentialDefinition)(nil),               // 46: credential.v1.CredentialDefinition
+	(*v1.CredentialSubjectSummaryFieldView)(nil),   // 47: platform.management.v1.CredentialSubjectSummaryFieldView
+	(v11.CredentialKind)(0),                        // 48: credential.v1.CredentialKind
+	(v12.Protocol)(0),                              // 49: api_protocol.v1.Protocol
+	(*EgressSimpleReplacementRule)(nil),            // 50: platform.auth.v1.EgressSimpleReplacementRule
+	(*ResolveEgressRequestHeadersRequest)(nil),     // 51: platform.auth.v1.ResolveEgressRequestHeadersRequest
+	(*ResolveEgressResponseHeadersRequest)(nil),    // 52: platform.auth.v1.ResolveEgressResponseHeadersRequest
+	(*ResolveEgressRequestHeadersResponse)(nil),    // 53: platform.auth.v1.ResolveEgressRequestHeadersResponse
+	(*ResolveEgressResponseHeadersResponse)(nil),   // 54: platform.auth.v1.ResolveEgressResponseHeadersResponse
 }
 var file_platform_auth_v1_auth_proto_depIdxs = []int32{
-	36, // 0: platform.auth.v1.ListCredentialsResponse.items:type_name -> platform.management.v1.CredentialView
-	36, // 1: platform.auth.v1.CreateAPIKeyCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	36, // 2: platform.auth.v1.UpdateAPIKeyCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	34, // 3: platform.auth.v1.CreateSessionCredentialRequest.values:type_name -> platform.auth.v1.CreateSessionCredentialRequest.ValuesEntry
-	36, // 4: platform.auth.v1.CreateSessionCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	35, // 5: platform.auth.v1.UpdateSessionCredentialRequest.values:type_name -> platform.auth.v1.UpdateSessionCredentialRequest.ValuesEntry
-	36, // 6: platform.auth.v1.UpdateSessionCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	37, // 7: platform.auth.v1.CreateOAuthCredentialRequest.expires_at:type_name -> google.protobuf.Timestamp
-	36, // 8: platform.auth.v1.CreateOAuthCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	37, // 9: platform.auth.v1.UpdateOAuthCredentialRequest.expires_at:type_name -> google.protobuf.Timestamp
-	36, // 10: platform.auth.v1.UpdateOAuthCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	36, // 11: platform.auth.v1.RenameCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	36, // 12: platform.auth.v1.DeleteCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
-	37, // 13: platform.auth.v1.OAuthArtifact.expires_at:type_name -> google.protobuf.Timestamp
-	18, // 14: platform.auth.v1.ImportOAuthCredentialRequest.artifact:type_name -> platform.auth.v1.OAuthArtifact
-	38, // 15: platform.auth.v1.ImportOAuthCredentialResponse.definition:type_name -> credential.v1.CredentialDefinition
-	37, // 16: platform.auth.v1.EnsureFreshResponse.expires_at:type_name -> google.protobuf.Timestamp
-	37, // 17: platform.auth.v1.EnsureFreshResponse.next_refresh_after:type_name -> google.protobuf.Timestamp
-	37, // 18: platform.auth.v1.EnsureFreshResponse.last_refreshed_at:type_name -> google.protobuf.Timestamp
-	39, // 19: platform.auth.v1.GetCredentialSubjectSummaryResponse.fields:type_name -> platform.management.v1.CredentialSubjectSummaryFieldView
-	40, // 20: platform.auth.v1.CredentialRuntimeProjection.credential_kind:type_name -> credential.v1.CredentialKind
-	30, // 21: platform.auth.v1.GetCredentialRuntimeProjectionResponse.credential:type_name -> platform.auth.v1.CredentialRuntimeProjection
-	40, // 22: platform.auth.v1.GetEgressAuthPolicyRequest.credential_kind:type_name -> credential.v1.CredentialKind
-	41, // 23: platform.auth.v1.GetEgressAuthPolicyRequest.protocol:type_name -> api_protocol.v1.Protocol
-	42, // 24: platform.auth.v1.GetEgressAuthPolicyResponse.request_replacement_rules:type_name -> platform.auth.v1.EgressSimpleReplacementRule
-	42, // 25: platform.auth.v1.GetEgressAuthPolicyResponse.response_replacement_rules:type_name -> platform.auth.v1.EgressSimpleReplacementRule
-	0,  // 26: platform.auth.v1.AuthService.ListCredentials:input_type -> platform.auth.v1.ListCredentialsRequest
-	2,  // 27: platform.auth.v1.AuthService.CreateAPIKeyCredential:input_type -> platform.auth.v1.CreateAPIKeyCredentialRequest
-	4,  // 28: platform.auth.v1.AuthService.UpdateAPIKeyCredential:input_type -> platform.auth.v1.UpdateAPIKeyCredentialRequest
-	6,  // 29: platform.auth.v1.AuthService.CreateSessionCredential:input_type -> platform.auth.v1.CreateSessionCredentialRequest
-	8,  // 30: platform.auth.v1.AuthService.UpdateSessionCredential:input_type -> platform.auth.v1.UpdateSessionCredentialRequest
-	10, // 31: platform.auth.v1.AuthService.CreateOAuthCredential:input_type -> platform.auth.v1.CreateOAuthCredentialRequest
-	12, // 32: platform.auth.v1.AuthService.UpdateOAuthCredential:input_type -> platform.auth.v1.UpdateOAuthCredentialRequest
-	14, // 33: platform.auth.v1.AuthService.RenameCredential:input_type -> platform.auth.v1.RenameCredentialRequest
-	16, // 34: platform.auth.v1.AuthService.DeleteCredential:input_type -> platform.auth.v1.DeleteCredentialRequest
-	19, // 35: platform.auth.v1.AuthService.ImportOAuthCredential:input_type -> platform.auth.v1.ImportOAuthCredentialRequest
-	21, // 36: platform.auth.v1.AuthService.EnsureFresh:input_type -> platform.auth.v1.EnsureFreshRequest
-	23, // 37: platform.auth.v1.AuthService.RefreshOAuthDue:input_type -> platform.auth.v1.RefreshOAuthDueRequest
-	24, // 38: platform.auth.v1.AuthService.ScanOAuthSessions:input_type -> platform.auth.v1.ScanOAuthSessionsRequest
-	27, // 39: platform.auth.v1.AuthService.GetCredentialSubjectSummary:input_type -> platform.auth.v1.GetCredentialSubjectSummaryRequest
-	29, // 40: platform.auth.v1.AuthService.GetCredentialRuntimeProjection:input_type -> platform.auth.v1.GetCredentialRuntimeProjectionRequest
-	32, // 41: platform.auth.v1.AuthService.GetEgressAuthPolicy:input_type -> platform.auth.v1.GetEgressAuthPolicyRequest
-	43, // 42: platform.auth.v1.AuthService.ResolveEgressRequestHeaders:input_type -> platform.auth.v1.ResolveEgressRequestHeadersRequest
-	44, // 43: platform.auth.v1.AuthService.ResolveEgressResponseHeaders:input_type -> platform.auth.v1.ResolveEgressResponseHeadersRequest
-	1,  // 44: platform.auth.v1.AuthService.ListCredentials:output_type -> platform.auth.v1.ListCredentialsResponse
-	3,  // 45: platform.auth.v1.AuthService.CreateAPIKeyCredential:output_type -> platform.auth.v1.CreateAPIKeyCredentialResponse
-	5,  // 46: platform.auth.v1.AuthService.UpdateAPIKeyCredential:output_type -> platform.auth.v1.UpdateAPIKeyCredentialResponse
-	7,  // 47: platform.auth.v1.AuthService.CreateSessionCredential:output_type -> platform.auth.v1.CreateSessionCredentialResponse
-	9,  // 48: platform.auth.v1.AuthService.UpdateSessionCredential:output_type -> platform.auth.v1.UpdateSessionCredentialResponse
-	11, // 49: platform.auth.v1.AuthService.CreateOAuthCredential:output_type -> platform.auth.v1.CreateOAuthCredentialResponse
-	13, // 50: platform.auth.v1.AuthService.UpdateOAuthCredential:output_type -> platform.auth.v1.UpdateOAuthCredentialResponse
-	15, // 51: platform.auth.v1.AuthService.RenameCredential:output_type -> platform.auth.v1.RenameCredentialResponse
-	17, // 52: platform.auth.v1.AuthService.DeleteCredential:output_type -> platform.auth.v1.DeleteCredentialResponse
-	20, // 53: platform.auth.v1.AuthService.ImportOAuthCredential:output_type -> platform.auth.v1.ImportOAuthCredentialResponse
-	22, // 54: platform.auth.v1.AuthService.EnsureFresh:output_type -> platform.auth.v1.EnsureFreshResponse
-	25, // 55: platform.auth.v1.AuthService.RefreshOAuthDue:output_type -> platform.auth.v1.RefreshOAuthDueResponse
-	26, // 56: platform.auth.v1.AuthService.ScanOAuthSessions:output_type -> platform.auth.v1.ScanOAuthSessionsResponse
-	28, // 57: platform.auth.v1.AuthService.GetCredentialSubjectSummary:output_type -> platform.auth.v1.GetCredentialSubjectSummaryResponse
-	31, // 58: platform.auth.v1.AuthService.GetCredentialRuntimeProjection:output_type -> platform.auth.v1.GetCredentialRuntimeProjectionResponse
-	33, // 59: platform.auth.v1.AuthService.GetEgressAuthPolicy:output_type -> platform.auth.v1.GetEgressAuthPolicyResponse
-	45, // 60: platform.auth.v1.AuthService.ResolveEgressRequestHeaders:output_type -> platform.auth.v1.ResolveEgressRequestHeadersResponse
-	46, // 61: platform.auth.v1.AuthService.ResolveEgressResponseHeaders:output_type -> platform.auth.v1.ResolveEgressResponseHeadersResponse
-	44, // [44:62] is the sub-list for method output_type
-	26, // [26:44] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	44, // 0: platform.auth.v1.ListCredentialsResponse.items:type_name -> platform.management.v1.CredentialView
+	44, // 1: platform.auth.v1.CreateAPIKeyCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	44, // 2: platform.auth.v1.UpdateAPIKeyCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	40, // 3: platform.auth.v1.CreateSessionCredentialRequest.values:type_name -> platform.auth.v1.CreateSessionCredentialRequest.ValuesEntry
+	44, // 4: platform.auth.v1.CreateSessionCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	41, // 5: platform.auth.v1.UpdateSessionCredentialRequest.values:type_name -> platform.auth.v1.UpdateSessionCredentialRequest.ValuesEntry
+	44, // 6: platform.auth.v1.UpdateSessionCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	42, // 7: platform.auth.v1.MergeCredentialMaterialValuesRequest.values:type_name -> platform.auth.v1.MergeCredentialMaterialValuesRequest.ValuesEntry
+	15, // 8: platform.auth.v1.ReadCredentialMaterialFieldsRequest.policy_ref:type_name -> platform.auth.v1.CredentialMaterialReadPolicyRef
+	43, // 9: platform.auth.v1.ReadCredentialMaterialFieldsResponse.values:type_name -> platform.auth.v1.ReadCredentialMaterialFieldsResponse.ValuesEntry
+	0,  // 10: platform.auth.v1.CredentialMaterialReadPolicyRef.kind:type_name -> platform.auth.v1.CredentialMaterialReadPolicyKind
+	45, // 11: platform.auth.v1.CreateOAuthCredentialRequest.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 12: platform.auth.v1.CreateOAuthCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	45, // 13: platform.auth.v1.UpdateOAuthCredentialRequest.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 14: platform.auth.v1.UpdateOAuthCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	44, // 15: platform.auth.v1.RenameCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	44, // 16: platform.auth.v1.DeleteCredentialResponse.credential:type_name -> platform.management.v1.CredentialView
+	45, // 17: platform.auth.v1.OAuthArtifact.expires_at:type_name -> google.protobuf.Timestamp
+	24, // 18: platform.auth.v1.ImportOAuthCredentialRequest.artifact:type_name -> platform.auth.v1.OAuthArtifact
+	46, // 19: platform.auth.v1.ImportOAuthCredentialResponse.definition:type_name -> credential.v1.CredentialDefinition
+	45, // 20: platform.auth.v1.EnsureFreshResponse.expires_at:type_name -> google.protobuf.Timestamp
+	45, // 21: platform.auth.v1.EnsureFreshResponse.next_refresh_after:type_name -> google.protobuf.Timestamp
+	45, // 22: platform.auth.v1.EnsureFreshResponse.last_refreshed_at:type_name -> google.protobuf.Timestamp
+	47, // 23: platform.auth.v1.GetCredentialSubjectSummaryResponse.fields:type_name -> platform.management.v1.CredentialSubjectSummaryFieldView
+	48, // 24: platform.auth.v1.CredentialRuntimeProjection.credential_kind:type_name -> credential.v1.CredentialKind
+	36, // 25: platform.auth.v1.GetCredentialRuntimeProjectionResponse.credential:type_name -> platform.auth.v1.CredentialRuntimeProjection
+	48, // 26: platform.auth.v1.GetEgressAuthPolicyRequest.credential_kind:type_name -> credential.v1.CredentialKind
+	49, // 27: platform.auth.v1.GetEgressAuthPolicyRequest.protocol:type_name -> api_protocol.v1.Protocol
+	50, // 28: platform.auth.v1.GetEgressAuthPolicyResponse.request_replacement_rules:type_name -> platform.auth.v1.EgressSimpleReplacementRule
+	50, // 29: platform.auth.v1.GetEgressAuthPolicyResponse.response_replacement_rules:type_name -> platform.auth.v1.EgressSimpleReplacementRule
+	1,  // 30: platform.auth.v1.AuthService.ListCredentials:input_type -> platform.auth.v1.ListCredentialsRequest
+	3,  // 31: platform.auth.v1.AuthService.CreateAPIKeyCredential:input_type -> platform.auth.v1.CreateAPIKeyCredentialRequest
+	5,  // 32: platform.auth.v1.AuthService.UpdateAPIKeyCredential:input_type -> platform.auth.v1.UpdateAPIKeyCredentialRequest
+	7,  // 33: platform.auth.v1.AuthService.CreateSessionCredential:input_type -> platform.auth.v1.CreateSessionCredentialRequest
+	9,  // 34: platform.auth.v1.AuthService.UpdateSessionCredential:input_type -> platform.auth.v1.UpdateSessionCredentialRequest
+	11, // 35: platform.auth.v1.AuthService.MergeCredentialMaterialValues:input_type -> platform.auth.v1.MergeCredentialMaterialValuesRequest
+	13, // 36: platform.auth.v1.AuthService.ReadCredentialMaterialFields:input_type -> platform.auth.v1.ReadCredentialMaterialFieldsRequest
+	16, // 37: platform.auth.v1.AuthService.CreateOAuthCredential:input_type -> platform.auth.v1.CreateOAuthCredentialRequest
+	18, // 38: platform.auth.v1.AuthService.UpdateOAuthCredential:input_type -> platform.auth.v1.UpdateOAuthCredentialRequest
+	20, // 39: platform.auth.v1.AuthService.RenameCredential:input_type -> platform.auth.v1.RenameCredentialRequest
+	22, // 40: platform.auth.v1.AuthService.DeleteCredential:input_type -> platform.auth.v1.DeleteCredentialRequest
+	25, // 41: platform.auth.v1.AuthService.ImportOAuthCredential:input_type -> platform.auth.v1.ImportOAuthCredentialRequest
+	27, // 42: platform.auth.v1.AuthService.EnsureFresh:input_type -> platform.auth.v1.EnsureFreshRequest
+	29, // 43: platform.auth.v1.AuthService.RefreshOAuthDue:input_type -> platform.auth.v1.RefreshOAuthDueRequest
+	30, // 44: platform.auth.v1.AuthService.ScanOAuthSessions:input_type -> platform.auth.v1.ScanOAuthSessionsRequest
+	33, // 45: platform.auth.v1.AuthService.GetCredentialSubjectSummary:input_type -> platform.auth.v1.GetCredentialSubjectSummaryRequest
+	35, // 46: platform.auth.v1.AuthService.GetCredentialRuntimeProjection:input_type -> platform.auth.v1.GetCredentialRuntimeProjectionRequest
+	38, // 47: platform.auth.v1.AuthService.GetEgressAuthPolicy:input_type -> platform.auth.v1.GetEgressAuthPolicyRequest
+	51, // 48: platform.auth.v1.AuthService.ResolveEgressRequestHeaders:input_type -> platform.auth.v1.ResolveEgressRequestHeadersRequest
+	52, // 49: platform.auth.v1.AuthService.ResolveEgressResponseHeaders:input_type -> platform.auth.v1.ResolveEgressResponseHeadersRequest
+	2,  // 50: platform.auth.v1.AuthService.ListCredentials:output_type -> platform.auth.v1.ListCredentialsResponse
+	4,  // 51: platform.auth.v1.AuthService.CreateAPIKeyCredential:output_type -> platform.auth.v1.CreateAPIKeyCredentialResponse
+	6,  // 52: platform.auth.v1.AuthService.UpdateAPIKeyCredential:output_type -> platform.auth.v1.UpdateAPIKeyCredentialResponse
+	8,  // 53: platform.auth.v1.AuthService.CreateSessionCredential:output_type -> platform.auth.v1.CreateSessionCredentialResponse
+	10, // 54: platform.auth.v1.AuthService.UpdateSessionCredential:output_type -> platform.auth.v1.UpdateSessionCredentialResponse
+	12, // 55: platform.auth.v1.AuthService.MergeCredentialMaterialValues:output_type -> platform.auth.v1.MergeCredentialMaterialValuesResponse
+	14, // 56: platform.auth.v1.AuthService.ReadCredentialMaterialFields:output_type -> platform.auth.v1.ReadCredentialMaterialFieldsResponse
+	17, // 57: platform.auth.v1.AuthService.CreateOAuthCredential:output_type -> platform.auth.v1.CreateOAuthCredentialResponse
+	19, // 58: platform.auth.v1.AuthService.UpdateOAuthCredential:output_type -> platform.auth.v1.UpdateOAuthCredentialResponse
+	21, // 59: platform.auth.v1.AuthService.RenameCredential:output_type -> platform.auth.v1.RenameCredentialResponse
+	23, // 60: platform.auth.v1.AuthService.DeleteCredential:output_type -> platform.auth.v1.DeleteCredentialResponse
+	26, // 61: platform.auth.v1.AuthService.ImportOAuthCredential:output_type -> platform.auth.v1.ImportOAuthCredentialResponse
+	28, // 62: platform.auth.v1.AuthService.EnsureFresh:output_type -> platform.auth.v1.EnsureFreshResponse
+	31, // 63: platform.auth.v1.AuthService.RefreshOAuthDue:output_type -> platform.auth.v1.RefreshOAuthDueResponse
+	32, // 64: platform.auth.v1.AuthService.ScanOAuthSessions:output_type -> platform.auth.v1.ScanOAuthSessionsResponse
+	34, // 65: platform.auth.v1.AuthService.GetCredentialSubjectSummary:output_type -> platform.auth.v1.GetCredentialSubjectSummaryResponse
+	37, // 66: platform.auth.v1.AuthService.GetCredentialRuntimeProjection:output_type -> platform.auth.v1.GetCredentialRuntimeProjectionResponse
+	39, // 67: platform.auth.v1.AuthService.GetEgressAuthPolicy:output_type -> platform.auth.v1.GetEgressAuthPolicyResponse
+	53, // 68: platform.auth.v1.AuthService.ResolveEgressRequestHeaders:output_type -> platform.auth.v1.ResolveEgressRequestHeadersResponse
+	54, // 69: platform.auth.v1.AuthService.ResolveEgressResponseHeaders:output_type -> platform.auth.v1.ResolveEgressResponseHeadersResponse
+	50, // [50:70] is the sub-list for method output_type
+	30, // [30:50] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_platform_auth_v1_auth_proto_init() }
@@ -2526,13 +2924,14 @@ func file_platform_auth_v1_auth_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_platform_auth_v1_auth_proto_rawDesc), len(file_platform_auth_v1_auth_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   36,
+			NumEnums:      1,
+			NumMessages:   43,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_platform_auth_v1_auth_proto_goTypes,
 		DependencyIndexes: file_platform_auth_v1_auth_proto_depIdxs,
+		EnumInfos:         file_platform_auth_v1_auth_proto_enumTypes,
 		MessageInfos:      file_platform_auth_v1_auth_proto_msgTypes,
 	}.Build()
 	File_platform_auth_v1_auth_proto = out.File

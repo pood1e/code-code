@@ -42,7 +42,7 @@
 - `ResourceConfigReady=True`
 - 当前没有 active run
 
-本 reconciliation 由 domain event consumer 触发，通过 `AgentRun`、registered CLI catalogs、`ProviderSurfaceBinding`、`CredentialDefinition` 与 credential Secret 变更刷新 readiness 投影。会触发实际 state mutation 的动作仍由 `AgentSessionAction` 串行域承载。
+本 reconciliation 由 domain event consumer 触发，通过 `AgentRun`、registered CLI catalogs、`ProviderSurfaceBinding`、`CredentialDefinition` 与 credential material 变更刷新 readiness 投影。会触发实际 state mutation 的动作仍由 `AgentSessionAction` 串行域承载。
 
 当 `spec.resource_config` 的局部 revision 变化时，controller 会自动 ensure：
 

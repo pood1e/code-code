@@ -1,6 +1,9 @@
 packages:
   - "../agent-contract"
   - "app"
+  - "showcase"
   - "packages/*"
 
 injectWorkspacePackages: true
+syncInjectedDepsAfterScripts:
+  - build

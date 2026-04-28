@@ -1,0 +1,8 @@
+{{- if .Values.notificationDispatcher.enabled }}
+{{- $dispatcher := .Values.notificationDispatcher -}}
+{{ include "platform.notificationService" (dict "root" . "name" $dispatcher.appriseApi.name "componentLabel" "notification-sender" "port" 8000) }}
+---
+{{ include "platform.notificationService" (dict "root" . "name" $dispatcher.wecomCallbackAdapter.name "componentLabel" "inbound-message-adapter" "port" 8080) }}
+---
+{{ include "platform.notificationService" (dict "root" . "name" $dispatcher.wecomRobotDefaultCallbackAdapter.name "componentLabel" "inbound-message-adapter" "port" 8080) }}
+{{- end }}

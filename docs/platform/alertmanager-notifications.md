@@ -13,8 +13,8 @@ Notification channel configuration is infrastructure state. It must not become p
 Kubernetes surface:
 
 - `alertmanager.code-code-observability.svc.cluster.local:9093`
-- `alertmanager-headless.code-code-infra.svc.cluster.local`
-- `alertmanager-0.alertmanager-headless.code-code-infra.svc.cluster.local:9093`
+- `alertmanager-headless.code-code-observability.svc.cluster.local`
+- `alertmanager-0.alertmanager-headless.code-code-observability.svc.cluster.local:9093`
 - `prom/alertmanager:v0.32.0`
 - `/etc/alertmanager/alertmanager.yml`
 - `/etc/alertmanager/templates/*.tmpl`
@@ -36,7 +36,7 @@ Receiver surface:
 
 ## Implementation Notes
 
-Render Alertmanager from `deploy/k8s/charts/infrastructure`, keep `alertmanager-receivers` as an out-of-band Secret, and validate it through `deploy/release.sh validate`.
+Render Alertmanager from `deploy/charts/infrastructure-core`, keep `alertmanager-receivers` as an out-of-band Secret, and validate the chart with `helm lint deploy/charts/infrastructure-core` plus `helm template`. The receiver Secret mount is optional so local development can start without notification credentials; production notification delivery still requires the external Secret.
 
 Run a single replica for the MVP. Use a PVC so silences and notification log survive Pod restart. If production HA is needed, run 2-3 replicas, configure Alertmanager peer gossip, and configure Prometheus to send alerts to every Alertmanager pod DNS name rather than through a load balancer.
 
@@ -56,7 +56,7 @@ StatefulSet container:
 - security: `automountServiceAccountToken: false`, `allowPrivilegeEscalation: false`, `capabilities.drop: ["ALL"]`, `readOnlyRootFilesystem: true`, `runAsNonRoot: true`, `seccompProfile: RuntimeDefault`
 - resources: start near Prometheus scale, then tune from usage
 
-Extend `deploy/k8s/infrastructure/prometheus/configmap.yaml` with:
+Extend the Prometheus ConfigMap in `deploy/charts/infrastructure-core/templates/prometheus/` with:
 
 - `alerting.alertmanagers`
 - `rule_files`
@@ -66,7 +66,7 @@ Prometheus Kubernetes wiring:
 
 - Mount rule files from a separate `prometheus-rules` ConfigMap at `/etc/prometheus-rules`.
 - MVP target: `alertmanager.code-code-observability.svc.cluster.local:9093`.
-- HA targets: `alertmanager-0.alertmanager-headless.code-code-infra.svc.cluster.local:9093`, `alertmanager-1...`, `alertmanager-2...`.
+- HA targets: `alertmanager-0.alertmanager-headless.code-code-observability.svc.cluster.local:9093`, `alertmanager-1...`, `alertmanager-2...`.
 - Platform-owned metrics enter Prometheus through OTLP; scrape-based self metrics are not part of the MVP path.
 
 Start with a minimal rule pack:
@@ -88,8 +88,8 @@ Enterprise WeChat group message push should be implemented later as a small adap
 Config and secret rollout:
 
 - Mount ConfigMap and Secret as directories, not `subPath`, so projected files can refresh.
-- After receiver or route changes, run `kubectl -n code-code-infra rollout restart statefulset/alertmanager` or POST `/-/reload` after Kubernetes projects the updated files.
-- After Prometheus rule changes, run `kubectl -n code-code-infra rollout restart statefulset/prometheus` or POST Prometheus `/-/reload`.
+- After receiver or route changes, run `kubectl -n code-code-observability rollout restart statefulset/alertmanager` or POST `/-/reload` after Kubernetes projects the updated files.
+- After Prometheus rule changes, run `kubectl -n code-code-observability rollout restart statefulset/prometheus` or POST Prometheus `/-/reload`.
 
 Network:
 
@@ -101,7 +101,7 @@ Validation:
 
 - `amtool check-config` for `alertmanager.yml`
 - `promtool check config` and `promtool check rules` for Prometheus config and rule files
-- `deploy/release.sh validate`
+- `helm lint deploy/charts/infrastructure-core`
 - synthetic always-firing test alert to verify one Enterprise WeChat receiver before enabling production rules
 
 References:

@@ -8,7 +8,7 @@
 
 ## external surface
 
-- `packages/platform-k8s/vendors/capabilitypackages` service registry
+- `packages/platform-k8s/internal/supportservice/vendors/support` service registry
 - `vendorCapabilityPackage.observability`
 - `observability.profiles[].active_query.collector_id = minimax-remains`
 - `GET https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains`

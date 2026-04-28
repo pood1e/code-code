@@ -30,7 +30,6 @@ const (
 	AgentSessionManagementService_GetAgentRun_FullMethodName                   = "/platform.management.v1.AgentSessionManagementService/GetAgentRun"
 	AgentSessionManagementService_StreamAgentRunOutput_FullMethodName          = "/platform.management.v1.AgentSessionManagementService/StreamAgentRunOutput"
 	AgentSessionManagementService_ResolveAgentRunRuntimeContext_FullMethodName = "/platform.management.v1.AgentSessionManagementService/ResolveAgentRunRuntimeContext"
-	AgentSessionManagementService_RecordAgentRunResponseHeaders_FullMethodName = "/platform.management.v1.AgentSessionManagementService/RecordAgentRunResponseHeaders"
 )
 
 // AgentSessionManagementServiceClient is the client API for AgentSessionManagementService service.
@@ -48,7 +47,6 @@ type AgentSessionManagementServiceClient interface {
 	GetAgentRun(ctx context.Context, in *GetAgentRunRequest, opts ...grpc.CallOption) (*GetAgentRunResponse, error)
 	StreamAgentRunOutput(ctx context.Context, in *StreamAgentRunOutputRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamAgentRunOutputResponse], error)
 	ResolveAgentRunRuntimeContext(ctx context.Context, in *ResolveAgentRunRuntimeContextRequest, opts ...grpc.CallOption) (*ResolveAgentRunRuntimeContextResponse, error)
-	RecordAgentRunResponseHeaders(ctx context.Context, in *RecordAgentRunResponseHeadersRequest, opts ...grpc.CallOption) (*RecordAgentRunResponseHeadersResponse, error)
 }
 
 type agentSessionManagementServiceClient struct {
@@ -178,16 +176,6 @@ func (c *agentSessionManagementServiceClient) ResolveAgentRunRuntimeContext(ctx 
 	return out, nil
 }
 
-func (c *agentSessionManagementServiceClient) RecordAgentRunResponseHeaders(ctx context.Context, in *RecordAgentRunResponseHeadersRequest, opts ...grpc.CallOption) (*RecordAgentRunResponseHeadersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RecordAgentRunResponseHeadersResponse)
-	err := c.cc.Invoke(ctx, AgentSessionManagementService_RecordAgentRunResponseHeaders_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AgentSessionManagementServiceServer is the server API for AgentSessionManagementService service.
 // All implementations must embed UnimplementedAgentSessionManagementServiceServer
 // for forward compatibility.
@@ -203,7 +191,6 @@ type AgentSessionManagementServiceServer interface {
 	GetAgentRun(context.Context, *GetAgentRunRequest) (*GetAgentRunResponse, error)
 	StreamAgentRunOutput(*StreamAgentRunOutputRequest, grpc.ServerStreamingServer[StreamAgentRunOutputResponse]) error
 	ResolveAgentRunRuntimeContext(context.Context, *ResolveAgentRunRuntimeContextRequest) (*ResolveAgentRunRuntimeContextResponse, error)
-	RecordAgentRunResponseHeaders(context.Context, *RecordAgentRunResponseHeadersRequest) (*RecordAgentRunResponseHeadersResponse, error)
 	mustEmbedUnimplementedAgentSessionManagementServiceServer()
 }
 
@@ -246,9 +233,6 @@ func (UnimplementedAgentSessionManagementServiceServer) StreamAgentRunOutput(*St
 }
 func (UnimplementedAgentSessionManagementServiceServer) ResolveAgentRunRuntimeContext(context.Context, *ResolveAgentRunRuntimeContextRequest) (*ResolveAgentRunRuntimeContextResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveAgentRunRuntimeContext not implemented")
-}
-func (UnimplementedAgentSessionManagementServiceServer) RecordAgentRunResponseHeaders(context.Context, *RecordAgentRunResponseHeadersRequest) (*RecordAgentRunResponseHeadersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RecordAgentRunResponseHeaders not implemented")
 }
 func (UnimplementedAgentSessionManagementServiceServer) mustEmbedUnimplementedAgentSessionManagementServiceServer() {
 }
@@ -463,24 +447,6 @@ func _AgentSessionManagementService_ResolveAgentRunRuntimeContext_Handler(srv in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AgentSessionManagementService_RecordAgentRunResponseHeaders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RecordAgentRunResponseHeadersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentSessionManagementServiceServer).RecordAgentRunResponseHeaders(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AgentSessionManagementService_RecordAgentRunResponseHeaders_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentSessionManagementServiceServer).RecordAgentRunResponseHeaders(ctx, req.(*RecordAgentRunResponseHeadersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AgentSessionManagementService_ServiceDesc is the grpc.ServiceDesc for AgentSessionManagementService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -527,10 +493,6 @@ var AgentSessionManagementService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResolveAgentRunRuntimeContext",
 			Handler:    _AgentSessionManagementService_ResolveAgentRunRuntimeContext_Handler,
-		},
-		{
-			MethodName: "RecordAgentRunResponseHeaders",
-			Handler:    _AgentSessionManagementService_RecordAgentRunResponseHeaders_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

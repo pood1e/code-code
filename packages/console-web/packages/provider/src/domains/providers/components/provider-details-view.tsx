@@ -5,6 +5,7 @@ import type { ProviderView } from "@code-code/agent-contract/platform/management
 import { DialogFooterActions, ErrorCalloutIf, SoftBadge, StatusBadge } from "@code-code/console-web-ui";
 import { VendorAvatar } from "../../models/components/vendor-avatar";
 import { useProviderActiveQueryStatus } from "../provider-active-query-status";
+import { providerHostTelemetryLatencyLabel, providerHostTelemetryStatus } from "../provider-host-telemetry";
 import { providerModel } from "../provider-model";
 import { ProviderAuthenticationSummary } from "./provider-authentication-summary";
 import { ProviderModelCatalogBadges } from "./provider-model-catalog";
@@ -128,6 +129,25 @@ export function ProviderDetailsView({
             ) : null}
           </Flex>
         </Box>
+
+        {provider.hostTelemetry.length > 0 ? (
+          <Box>
+            <Heading size="2" mb="2">Host Telemetry</Heading>
+            <Flex direction="column" gap="2">
+              {provider.hostTelemetry.map((item) => {
+                const status = providerHostTelemetryStatus(item);
+                const latency = providerHostTelemetryLatencyLabel(item);
+                return (
+                  <Flex key={`${item.scheme}:${item.host}:${item.port}`} align="center" gap="2" wrap="wrap">
+                    <StatusBadge color={status.color} label={status.label} />
+                    {latency ? <SoftBadge color="gray" label={latency} /> : null}
+                    {item.httpStatusCode > 0 ? <SoftBadge color="gray" label={`HTTP ${item.httpStatusCode}`} /> : null}
+                  </Flex>
+                );
+              })}
+            </Flex>
+          </Box>
+        ) : null}
 
         <ErrorCalloutIf error={deleteError} />
       </Flex>

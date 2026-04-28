@@ -1,0 +1,21 @@
+{{- range $key := keys .Values.components | sortAlpha }}
+{{- $component := index $.Values.components $key }}
+{{- $pdbDefaults := $.Values.defaults.pdb }}
+{{- $pdb := mergeOverwrite (deepCopy $pdbDefaults) (default (dict) $component.pdb) }}
+{{- if and $component.enabled $pdb.enabled }}
+{{- $componentNamespace := include "platform.componentNamespace" (dict "root" $ "component" $component) | trim }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $component.name }}
+  namespace: {{ $componentNamespace }}
+  labels:
+{{ include "platform.labels" (dict "root" $ "name" $component.name "componentLabel" $component.componentLabel) | nindent 4 }}
+spec:
+  minAvailable: {{ $pdb.minAvailable }}
+  selector:
+    matchLabels:
+{{ include "platform.selectorLabels" (dict "root" $ "name" $component.name) | nindent 6 }}
+---
+{{- end }}
+{{- end }}

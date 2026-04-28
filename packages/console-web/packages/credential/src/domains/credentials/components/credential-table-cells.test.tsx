@@ -12,14 +12,14 @@ describe("CredentialDetail", () => {
       kind: "CREDENTIAL_KIND_API_KEY",
       status: create(CredentialStatusSchema, {
         materialReady: false,
-        reason: "backing secret missing"
+        reason: "credential material missing"
       })
     });
 
     render(<CredentialDetail credential={credential} kind="api-key" />);
 
     expect(screen.getByText("Not ready")).toBeInTheDocument();
-    expect(screen.getByText("backing secret missing")).toBeInTheDocument();
+    expect(screen.getByText("credential material missing")).toBeInTheDocument();
   });
 
   it("shows account email and ready badge for OAuth credentials", () => {

@@ -1,36 +1,76 @@
-import type { RegistryModelPricing } from "@code-code/agent-contract/platform/model/v1";
+import type { PricingSummary, PriceType } from "@code-code/agent-contract/platform/model/v1";
 
-export function formatSourcePricing(pricing?: RegistryModelPricing) {
+export type PricingDetailLine = {
+  label: string;
+  value: string;
+};
+
+export function formatSourcePricing(pricing?: PricingSummary) {
   const parts: string[] = [];
-  const input = formatSourcePrice(pricing?.input || "");
-  const output = formatSourcePrice(pricing?.output || "");
-  const cacheReadInput = formatSourcePrice(pricing?.cacheReadInput || "");
-  const cacheWriteInput = formatSourcePrice(pricing?.cacheWriteInput || "");
-  if (input) {
-    parts.push(`Input ${input}`);
-  }
-  if (output) {
-    parts.push(`Output ${output}`);
-  }
-  if (cacheReadInput) {
-    parts.push(`Cache Read ${cacheReadInput}`);
-  }
-  if (cacheWriteInput) {
-    parts.push(`Cache Write ${cacheWriteInput}`);
-  }
+  const add = (label: string, raw: string, unit = "/M") => {
+    const amount = parseSourcePricePerMillion(raw);
+    if (amount === null) return;
+    parts.push(`${label} ${currencySymbol(pricing)}${formatPerMillionAmount(amount)}${unit}`);
+  };
+  add("Input", pricing?.input || "");
+  add("Output", pricing?.output || "");
+  add("Reasoning", pricing?.reasoning || "");
+  add("Cache Read", pricing?.cacheReadInput || "");
+  add("Cache Write", pricing?.cacheWriteInput || "");
+  add("Image In", pricing?.imageInput || "", "/img");
+  add("Audio In", pricing?.audioInput || "");
+  add("Audio Out", pricing?.audioOutput || "");
+  add("Request", pricing?.request || "", "/req");
   return parts.join(" · ");
 }
 
-function formatSourcePrice(raw: string) {
-  const amount = parseSourcePricePerMillion(raw);
-  if (amount === null) {
-    return "";
-  }
-  return `$${formatPerMillionAmount(amount)}/M`;
+export function formatPricingDetail(pricing?: PricingSummary): PricingDetailLine[] {
+  if (!pricing) return [];
+  const lines: PricingDetailLine[] = [];
+  const add = (label: string, raw: string, unit = "/M") => {
+    const amount = parseSourcePricePerMillion(raw);
+    if (amount === null) return;
+    lines.push({ label, value: `${currencySymbol(pricing)}${formatPerMillionAmount(amount)}${unit}` });
+  };
+  add("Input", pricing.input);
+  add("Output", pricing.output);
+  add("Reasoning", pricing.reasoning);
+  add("Cache Read", pricing.cacheReadInput);
+  add("Cache Write", pricing.cacheWriteInput);
+  add("Image Input", pricing.imageInput, "/img");
+  add("Audio Input", pricing.audioInput);
+  add("Audio Output", pricing.audioOutput);
+  add("Request", pricing.request, "/req");
+  return lines;
 }
 
-function parseSourcePricePerMillion(raw: string) {
-  const normalized = raw.trim();
+export function formatPriceType(priceType: PriceType): string {
+  // PriceType enum values: UNSPECIFIED=0, VENDOR_PUBLIC=1, CLOUD_PUBLIC=2, AGENT_CONTRACT=3, INTERNAL_COST=4
+  switch (priceType) {
+    case 1:
+      return "Vendor Public";
+    case 2:
+      return "Cloud Public";
+    case 3:
+      return "Agent Contract";
+    case 4:
+      return "Internal Cost";
+    default:
+      return "";
+  }
+}
+
+function currencySymbol(pricing?: PricingSummary): string {
+  const currency = pricing?.currency?.trim().toUpperCase();
+  if (!currency || currency === "USD" || currency === "") return "$";
+  if (currency === "EUR") return "€";
+  if (currency === "GBP") return "£";
+  if (currency === "CNY" || currency === "RMB") return "¥";
+  return `${currency} `;
+}
+
+function parseSourcePricePerMillion(raw: string | undefined) {
+  const normalized = (raw ?? "").trim();
   if (!normalized) {
     return null;
   }

@@ -93,7 +93,8 @@ registry page 的 item 不是裸 `ModelDefinition`，而是 `ModelRegistryEntry`
 - `definition` 必须来自已经存在的 canonical stored model definition
 - `sources` 必须直接来自 stored source observations，management API 不再二次推导
 - registry 不再直接展开 historical source 差异；source truth 落在 stored source observations
-- 聚合型 source collector 产出的代理模型必须是独立 child row，并通过 `source_ref` 指向 direct canonical model
+- 聚合代理商（如 OpenRouter）对第三方模型的 callable variants 不生成新的 canonical child row；这些 callable ids 仅作为 `sources[].source_model_id` observation 挂在对应 canonical model 上
+- 仅当聚合代理商提供独立产品模型（例如 `openrouter/*`）时，才允许落独立 canonical row（`source_ref` 可为空）
 
 ## List Behavior
 

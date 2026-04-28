@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "partOf": { "type": "string", "minLength": 1 },
+        "platformNamespace": { "type": "string", "minLength": 1 },
+        "infraNamespace": { "type": "string", "minLength": 1 },
+        "observabilityNamespace": { "type": "string", "minLength": 1 },
+        "observabilityAmbientPodOptOut": { "type": "boolean" },
+        "networkNamespace": { "type": "string", "minLength": 1 },
+        "runNamespace": { "type": "string", "minLength": 1 },
+        "grafanaAdminSecretName": { "type": "string", "minLength": 1 }
+      },
+      "required": [
+        "partOf",
+        "platformNamespace",
+        "infraNamespace",
+        "observabilityNamespace",
+        "observabilityAmbientPodOptOut",
+        "networkNamespace",
+        "runNamespace",
+        "grafanaAdminSecretName"
+      ]
+    },
+    "tempo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "dataSize": { "type": "string", "minLength": 1 }
+      },
+      "required": ["enabled", "image", "dataSize"]
+    },
+    "loki": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "dataSize": { "type": "string", "minLength": 1 },
+        "storageClassName": { "type": "string" },
+        "retentionPeriod": { "type": "string", "minLength": 1 }
+      },
+      "required": ["enabled", "image", "dataSize", "storageClassName", "retentionPeriod"]
+    },
+    "alloy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "clusterName": { "type": "string", "minLength": 1 },
+        "lokiWriteUrl": { "type": "string" },
+        "collectClusterEvents": { "type": "boolean" }
+      },
+      "required": ["enabled", "image", "clusterName", "lokiWriteUrl", "collectClusterEvents"]
+    },
+    "grafana": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "service": { "$ref": "#/$defs/nodePortService" },
+        "publicUrl": { "type": "string" },
+        "rootUrl": { "type": "string", "minLength": 1 },
+        "anonymousOrgRole": { "type": "string", "enum": ["Viewer", "Editor", "Admin"] },
+        "viewersCanEdit": { "type": "boolean" },
+        "exploreEnabled": { "type": "boolean" },
+        "route": { "$ref": "#/$defs/httpRoute" }
+      },
+      "required": ["enabled", "image", "service", "publicUrl", "rootUrl", "anonymousOrgRole", "viewersCanEdit", "exploreEnabled", "route"]
+    },
+    "cloudflareDdns": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "configMapName": { "type": "string", "minLength": 1 },
+        "secretName": { "type": "string", "minLength": 1 },
+        "domains": { "type": "string", "minLength": 1 },
+        "proxied": { "type": "string", "minLength": 1 },
+        "ip4Provider": { "type": "string", "minLength": 1 },
+        "ip6Provider": { "type": "string", "minLength": 1 },
+        "updateCron": { "type": "string", "minLength": 1 },
+        "updateOnStart": { "type": "string", "minLength": 1 }
+      },
+      "required": [
+        "enabled",
+        "image",
+        "configMapName",
+        "secretName",
+        "domains",
+        "proxied",
+        "ip4Provider",
+        "ip6Provider",
+        "updateCron",
+        "updateOnStart"
+      ]
+    },
+    "kiali": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "crEnabled": { "type": "boolean" },
+        "name": { "type": "string", "minLength": 1 },
+        "service": { "$ref": "#/$defs/kialiService" },
+        "webRoot": { "type": "string", "minLength": 1 },
+        "route": { "$ref": "#/$defs/httpRoute" }
+      },
+      "required": ["enabled", "name", "service", "webRoot", "route"]
+    }
+  },
+  "required": ["global", "tempo", "loki", "alloy", "grafana", "cloudflareDdns", "kiali"],
+  "$defs": {
+    "nodePortService": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+        "nodePort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      },
+      "required": ["type", "nodePort"]
+    },
+    "kialiService": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "nodePort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      },
+      "required": ["type", "port", "nodePort"]
+    },
+    "httpRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "host": { "type": "string", "minLength": 1 },
+        "extraHosts": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "parentRef": { "$ref": "#/$defs/parentRef" }
+      },
+      "required": ["enabled", "host", "extraHosts", "path", "parentRef"]
+    },
+    "parentRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "namespace": { "type": "string", "minLength": 1 },
+        "sectionName": { "type": "string", "minLength": 1 }
+      },
+      "required": ["name", "namespace", "sectionName"]
+    }
+  }
+}

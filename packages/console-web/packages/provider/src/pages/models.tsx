@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AsyncState, GridIcon, ListIcon } from "@code-code/console-web-ui";
 import { Box, Flex, Heading, IconButton, Text } from "@radix-ui/themes";
+import { CategoryChipBar } from "../domains/models/components/category-chip-bar";
+import { LifecycleToggle } from "../domains/models/components/lifecycle-toggle";
 import { ModelActiveFilters } from "../domains/models/components/model-active-filters";
 import { ModelCardList } from "../domains/models/components/model-card-list";
 import { ModelFacetSidebar } from "../domains/models/components/model-facet-sidebar";
@@ -13,6 +15,10 @@ export function ModelsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const state = useModelRegistryState();
   const resultCount = state.models.totalCount > 0 ? state.models.totalCount : state.models.models.length;
+  const hasActiveFilters = useMemo(
+    () => state.vendorIds.length > 0 || state.sourceIds.length > 0 || state.availabilityFilter !== "" || state.selectedCategory !== "",
+    [state.vendorIds, state.sourceIds, state.availabilityFilter, state.selectedCategory]
+  );
 
   return (
     <Flex direction="column" gap="5">
@@ -52,8 +58,19 @@ export function ModelsPage() {
         </Flex>
       </Flex>
 
+      <Flex align="center" justify="between" gap="3" wrap="wrap">
+        <CategoryChipBar
+          selected={state.selectedCategory}
+          onChange={state.handleCategoryChange}
+        />
+        <LifecycleToggle
+          hideDeprecated={state.hideDeprecated}
+          onChange={state.handleLifecycleToggle}
+        />
+      </Flex>
+
       <Flex align="start" gap="5" wrap="wrap">
-        <Box style={{ flex: "0 1 280px", minWidth: 240, width: "100%" }}>
+        <Box display={{ initial: "none", sm: "block" }} style={{ flex: "0 1 280px", minWidth: 240, width: "100%" }}>
           <ModelFacetSidebar
             availabilityFilter={state.availabilityFilter}
             onAvailabilityChange={state.handleAvailabilityChange}
@@ -91,15 +108,16 @@ export function ModelsPage() {
                 models={state.models.models}
                 selectedSourceIds={state.sourceIds}
                 vendorsById={state.vendorsById}
+                hasActiveFilters={hasActiveFilters}
+                onClearFilters={state.handleClearAllFilters}
               />
             ) : (
               <ModelsTable
                 models={state.models.models}
-                proxyGroups={state.proxyGroups}
-                proxyLoading={state.proxyModels.isLoading}
-                proxyTruncated={state.proxyModels.nextPageToken !== ""}
                 selectedSourceIds={state.sourceIds}
                 vendorsById={state.vendorsById}
+                hasActiveFilters={hasActiveFilters}
+                onClearFilters={state.handleClearAllFilters}
               />
             )}
             <ModelsPagination

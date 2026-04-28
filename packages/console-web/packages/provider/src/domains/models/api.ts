@@ -1,4 +1,4 @@
-import { ModelService, type ModelRegistryEntry } from "@code-code/agent-contract/platform/model/v1";
+import { ModelService, type ModelListFilter, type ModelRegistryEntry } from "@code-code/agent-contract/platform/model/v1";
 import { ProviderService, type VendorView } from "@code-code/agent-contract/platform/provider/v1";
 import useSWR from "swr";
 import { connectClient } from "@code-code/console-web-ui";
@@ -9,7 +9,7 @@ const modelServiceClient = connectClient(ModelService);
 const providerServiceClient = connectClient(ProviderService);
 
 export type ModelListQuery = {
-  filter?: string;
+  structuredFilter?: ModelListFilter;
   pageSize?: number;
   pageToken?: string;
 };
@@ -45,16 +45,16 @@ function getModelsKey(query: ModelListQuery) {
   if (query.pageToken) {
     params.set("pageToken", query.pageToken);
   }
-  if (query.filter) {
-    params.set("filter", query.filter);
+  if (query.structuredFilter) {
+    params.set("filter", JSON.stringify(query.structuredFilter));
   }
   return `connect:model-definitions?${params.toString()}`;
 }
 
 function listModels(query: ModelListQuery) {
-  return modelServiceClient.listModelDefinitions({
+  return modelServiceClient.listModels({
     pageSize: query.pageSize || DEFAULT_MODEL_PAGE_SIZE,
     pageToken: query.pageToken || "",
-    filter: query.filter || ""
+    structuredFilter: query.structuredFilter
   });
 }

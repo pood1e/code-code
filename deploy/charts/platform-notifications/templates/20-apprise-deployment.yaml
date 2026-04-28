@@ -1,0 +1,74 @@
+{{- if .Values.notificationDispatcher.enabled }}
+{{- $apprise := .Values.notificationDispatcher.appriseApi }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $apprise.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $apprise.name "componentLabel" "notification-sender") | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+{{ include "platform.selectorLabels" (dict "root" . "name" $apprise.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "platform.labels" (dict "root" . "name" $apprise.name "componentLabel" "notification-sender") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: {{ $apprise.name }}
+          image: {{ printf "%s:%s" $apprise.image.repository ($apprise.image.tag | toString) }}
+          imagePullPolicy: {{ $apprise.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          lifecycle:
+{{ include "platform.lifecyclePreStop" . | indent 12 }}
+          env:
+            - name: APPRISE_ADMIN
+              value: "n"
+            - name: APPRISE_API_ONLY
+              value: "yes"
+            - name: APPRISE_STATEFUL_MODE
+              value: simple
+            - name: APPRISE_STATELESS_URLS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.notificationDispatcher.secretNames.appriseUrls }}
+                  key: urls
+            - name: APPRISE_WORKER_COUNT
+              value: "1"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: plugin
+              mountPath: /plugin
+            - name: attach
+              mountPath: /attach
+            - name: tmp
+              mountPath: /tmp
+{{ include "platform.httpProbes" (dict "path" "/status/" "startupFailureThreshold" 36 "readinessFailureThreshold" 6 "livenessFailureThreshold" 6) | indent 10 }}
+          securityContext:
+{{ include "platform.restrictedContainerSecurityContext" (dict "seccomp" true) | indent 12 }}
+          resources:
+{{ include "platform.resources" (dict "cpuRequest" "25m" "memoryRequest" "64Mi" "ephemeralStorageRequest" "128Mi" "cpuLimit" "200m" "memoryLimit" "256Mi" "ephemeralStorageLimit" "512Mi") | indent 12 }}
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: plugin
+          emptyDir: {}
+        - name: attach
+          emptyDir: {}
+        - name: tmp
+          emptyDir:
+            medium: Memory
+{{- end }}

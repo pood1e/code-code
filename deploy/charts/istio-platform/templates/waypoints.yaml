@@ -1,0 +1,37 @@
+{{- if .Values.components.waypoints.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: egress-waypoint
+  namespace: {{ .Values.global.egressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "egress-waypoint" "componentLabel" "ambient-waypoint") | nindent 4 }}
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+    - name: mesh
+      port: 15008
+      protocol: HBONE
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+{{- range $namespace := list .Values.global.platformNamespace .Values.global.consoleNamespace .Values.global.showcaseNamespace .Values.global.observabilityNamespace .Values.global.runNamespace }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint
+  namespace: {{ $namespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" $ "name" (printf "%s-waypoint" $namespace) "componentLabel" "ambient-waypoint") | nindent 4 }}
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+    - name: mesh
+      port: 15008
+      protocol: HBONE
+---
+{{- end }}
+{{- end }}

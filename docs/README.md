@@ -9,7 +9,7 @@
 | `agent/` | `packages/agent-contract`, `packages/agent-runtime-contract` | agent domain model + runtime contract |
 | `credential/` | `packages/go-contract/credential/`, `packages/agent-runtime-contract/credential/`, `packages/platform-contract/credential/` | credential data model + resolver + OAuth management |
 | `provider/` | `packages/go-contract/provider/`, `packages/agent-runtime-contract/provider/` | LLM provider data model + runtime |
-| `model/` | `packages/go-contract/model/`, `packages/platform-k8s/models/` | model definition + catalog |
+| `model/` | `packages/go-contract/model/`, `packages/platform-k8s/internal/modelservice/models/` | model definition + catalog |
 | `platform/` | `packages/platform-contract/`, `packages/platform-k8s/` | control plane abstraction + K8s implementation |
 | `console-api/` | `packages/console-api/` | BFF boundary + error mapping |
 | `console-web/` | `packages/console-web/` | frontend shell design |
@@ -23,7 +23,3 @@
 - 文档只保留三类信息：`responsibility`、关键外部字段或方法、最小实现说明。
 - 发现过时的 scope、目标、Non-Goals、兼容说明或旧主链叙事时，直接删除或重写，不保留作历史材料。
 - 文档内容只描述当前抽象与 mainline 设计，不包含实现代码。
-
-## 参考
-
-- [only_ref.md](./only_ref.md) — reference-only 旧实现目录说明

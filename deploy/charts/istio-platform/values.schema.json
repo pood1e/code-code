@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "partOf": { "type": "string", "minLength": 1 },
+        "platformNamespace": { "type": "string", "minLength": 1 },
+        "consoleNamespace": { "type": "string", "minLength": 1 },
+        "showcaseNamespace": { "type": "string", "minLength": 1 },
+        "runNamespace": { "type": "string", "minLength": 1 },
+        "infraNamespace": { "type": "string", "minLength": 1 },
+        "observabilityNamespace": { "type": "string", "minLength": 1 },
+        "istioNamespace": { "type": "string", "minLength": 1 },
+        "certManagerNamespace": { "type": "string", "minLength": 1 },
+        "egressNamespace": { "type": "string", "minLength": 1 },
+        "ingressNamespace": { "type": "string", "minLength": 1 },
+        "egressGatewaySelector": { "type": "string", "minLength": 1 }
+      },
+      "required": [
+        "partOf",
+        "platformNamespace",
+        "consoleNamespace",
+        "showcaseNamespace",
+        "runNamespace",
+        "infraNamespace",
+        "observabilityNamespace",
+        "istioNamespace",
+        "certManagerNamespace",
+        "egressNamespace",
+        "ingressNamespace",
+        "egressGatewaySelector"
+      ]
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ingressGateway": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "name": { "type": "string", "minLength": 1 },
+            "serviceType": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+            "httpPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "httpNodePort": { "type": "integer", "minimum": 0, "maximum": 65535 },
+            "allowedRouteNamespaceSelector": {
+              "type": "object",
+              "additionalProperties": true,
+              "minProperties": 1
+            },
+            "backendEgress": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "namespace": { "type": "string", "minLength": 1 },
+                  "podSelector": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "ports": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+                  }
+                },
+                "required": ["namespace", "ports"]
+              }
+            }
+          },
+          "required": ["enabled", "name", "serviceType", "httpPort", "httpNodePort", "allowedRouteNamespaceSelector", "backendEgress"]
+        },
+        "egressCertificates": { "$ref": "#/$defs/enabledToggle" },
+        "waypoints": { "$ref": "#/$defs/enabledToggle" },
+        "telemetry": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "tracing": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "provider": { "type": "string", "minLength": 1 },
+                "randomSamplingPercentage": { "type": "number", "minimum": 0, "maximum": 100 }
+              },
+              "required": ["enabled", "provider", "randomSamplingPercentage"]
+            }
+          },
+          "required": ["enabled", "tracing"]
+        },
+        "controlPlaneEgress": { "$ref": "#/$defs/enabledToggle" },
+        "networkNamespaceEgress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "kubernetesApiCidrs": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "externalPorts": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+            },
+            "proxyPorts": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+            }
+          },
+          "required": ["enabled", "kubernetesApiCidrs", "externalPorts", "proxyPorts"]
+        }
+      },
+      "required": [
+        "ingressGateway",
+        "egressCertificates",
+        "waypoints",
+        "telemetry",
+        "controlPlaneEgress",
+        "networkNamespaceEgress"
+      ]
+    }
+  },
+  "required": ["global", "components"],
+  "$defs": {
+    "enabledToggle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      },
+      "required": ["enabled"]
+    }
+  }
+}

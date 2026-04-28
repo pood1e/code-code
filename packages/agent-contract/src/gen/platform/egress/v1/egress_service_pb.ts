@@ -4,7 +4,11 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { ListEgressPoliciesRequestSchema, ListEgressPoliciesResponseSchema, UpdateEgressPolicyRequestSchema, UpdateEgressPolicyResponseSchema } from "../../management/v1/management_pb";
+import type { ExternalAccessSet } from "../../../egress/v1/policy_pb";
+import { file_egress_v1_policy } from "../../../egress/v1/policy_pb";
+import type { ObservabilityCapability } from "../../../observability/v1/observability_pb";
+import { file_observability_v1_observability } from "../../../observability/v1/observability_pb";
+import type { EgressPolicyView, ListEgressPoliciesRequestSchema, ListEgressPoliciesResponseSchema, UpdateEgressPolicyRequestSchema, UpdateEgressPolicyResponseSchema } from "../../management/v1/management_pb";
 import { file_platform_management_v1_management } from "../../management/v1/management_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -12,7 +16,115 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file platform/egress/v1/egress_service.proto.
  */
 export const file_platform_egress_v1_egress_service: GenFile = /*@__PURE__*/
-  fileDesc("CidwbGF0Zm9ybS9lZ3Jlc3MvdjEvZWdyZXNzX3NlcnZpY2UucHJvdG8SEnBsYXRmb3JtLmVncmVzcy52MSJHCh1HZXRFZ3Jlc3NSdW50aW1lUG9saWN5UmVxdWVzdBIRCglwb2xpY3lfaWQYASABKAkSEwoLcnVudGltZV91cmwYAiABKAkiWQoeR2V0RWdyZXNzUnVudGltZVBvbGljeVJlc3BvbnNlEjcKBnBvbGljeRgBIAEoCzInLnBsYXRmb3JtLmVncmVzcy52MS5FZ3Jlc3NSdW50aW1lUG9saWN5IlwKE0VncmVzc1J1bnRpbWVQb2xpY3kSEQoJcG9saWN5X2lkGAEgASgJEhQKDHRhcmdldF9ob3N0cxgCIAMoCRIcChR0YXJnZXRfcGF0aF9wcmVmaXhlcxgDIAMoCTKKAwoNRWdyZXNzU2VydmljZRJ7ChJMaXN0RWdyZXNzUG9saWNpZXMSMS5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkxpc3RFZ3Jlc3NQb2xpY2llc1JlcXVlc3QaMi5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkxpc3RFZ3Jlc3NQb2xpY2llc1Jlc3BvbnNlEnsKElVwZGF0ZUVncmVzc1BvbGljeRIxLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuVXBkYXRlRWdyZXNzUG9saWN5UmVxdWVzdBoyLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuVXBkYXRlRWdyZXNzUG9saWN5UmVzcG9uc2USfwoWR2V0RWdyZXNzUnVudGltZVBvbGljeRIxLnBsYXRmb3JtLmVncmVzcy52MS5HZXRFZ3Jlc3NSdW50aW1lUG9saWN5UmVxdWVzdBoyLnBsYXRmb3JtLmVncmVzcy52MS5HZXRFZ3Jlc3NSdW50aW1lUG9saWN5UmVzcG9uc2VCQ1pBY29kZS1jb2RlLmludGVybmFsL2dvLWNvbnRyYWN0L3BsYXRmb3JtL2VncmVzcy92MTtlZ3Jlc3NzZXJ2aWNldjFiBnByb3RvMw", [file_platform_management_v1_management]);
+  fileDesc("CidwbGF0Zm9ybS9lZ3Jlc3MvdjEvZWdyZXNzX3NlcnZpY2UucHJvdG8SEnBsYXRmb3JtLmVncmVzcy52MSJRCh1BcHBseUV4dGVybmFsQWNjZXNzU2V0UmVxdWVzdBIwCgphY2Nlc3Nfc2V0GAEgASgLMhwuZWdyZXNzLnYxLkV4dGVybmFsQWNjZXNzU2V0IuwBCh5BcHBseUV4dGVybmFsQWNjZXNzU2V0UmVzcG9uc2USNgoEaXRlbRgBIAEoCzIoLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuRWdyZXNzUG9saWN5VmlldxIhChlhZGRlZF9leHRlcm5hbF9ydWxlX2NvdW50GAIgASgFEiMKG3VwZGF0ZWRfZXh0ZXJuYWxfcnVsZV9jb3VudBgDIAEoBRIjChtyZW1vdmVkX2V4dGVybmFsX3J1bGVfY291bnQYBCABKAUSJQoddW5jaGFuZ2VkX2V4dGVybmFsX3J1bGVfY291bnQYBSABKAUiSgoeRGVsZXRlRXh0ZXJuYWxBY2Nlc3NTZXRSZXF1ZXN0EhEKCXBvbGljeV9pZBgBIAEoCRIVCg1hY2Nlc3Nfc2V0X2lkGAIgASgJIsQBCh9EZWxldGVFeHRlcm5hbEFjY2Vzc1NldFJlc3BvbnNlEjYKBGl0ZW0YASABKAsyKC5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkVncmVzc1BvbGljeVZpZXcSIwobcmVtb3ZlZF9leHRlcm5hbF9ydWxlX2NvdW50GAIgASgFEiIKGnJlbW92ZWRfc2VydmljZV9ydWxlX2NvdW50GAMgASgFEiAKGHJlbW92ZWRfaHR0cF9yb3V0ZV9jb3VudBgEIAEoBSJHCh1HZXRFZ3Jlc3NSdW50aW1lUG9saWN5UmVxdWVzdBIRCglwb2xpY3lfaWQYASABKAkSEwoLcnVudGltZV91cmwYAiABKAkiWQoeR2V0RWdyZXNzUnVudGltZVBvbGljeVJlc3BvbnNlEjcKBnBvbGljeRgBIAEoCzInLnBsYXRmb3JtLmVncmVzcy52MS5FZ3Jlc3NSdW50aW1lUG9saWN5IlwKE0VncmVzc1J1bnRpbWVQb2xpY3kSEQoJcG9saWN5X2lkGAEgASgJEhQKDHRhcmdldF9ob3N0cxgCIAMoCRIcChR0YXJnZXRfcGF0aF9wcmVmaXhlcxgDIAMoCSJ/CiZBcHBseVJ1bnRpbWVUZWxlbWV0cnlQcm9maWxlU2V0UmVxdWVzdBIWCg5wcm9maWxlX3NldF9pZBgBIAEoCRI9CgpjYXBhYmlsaXR5GAIgASgLMikub2JzZXJ2YWJpbGl0eS52MS5PYnNlcnZhYmlsaXR5Q2FwYWJpbGl0eSJRCidBcHBseVJ1bnRpbWVUZWxlbWV0cnlQcm9maWxlU2V0UmVzcG9uc2USDwoHYXBwbGllZBgBIAEoCBIVCg1wcm9maWxlX2NvdW50GAIgASgNMq0GCg1FZ3Jlc3NTZXJ2aWNlEnsKEkxpc3RFZ3Jlc3NQb2xpY2llcxIxLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuTGlzdEVncmVzc1BvbGljaWVzUmVxdWVzdBoyLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuTGlzdEVncmVzc1BvbGljaWVzUmVzcG9uc2USewoSVXBkYXRlRWdyZXNzUG9saWN5EjEucGxhdGZvcm0ubWFuYWdlbWVudC52MS5VcGRhdGVFZ3Jlc3NQb2xpY3lSZXF1ZXN0GjIucGxhdGZvcm0ubWFuYWdlbWVudC52MS5VcGRhdGVFZ3Jlc3NQb2xpY3lSZXNwb25zZRJ/ChZBcHBseUV4dGVybmFsQWNjZXNzU2V0EjEucGxhdGZvcm0uZWdyZXNzLnYxLkFwcGx5RXh0ZXJuYWxBY2Nlc3NTZXRSZXF1ZXN0GjIucGxhdGZvcm0uZWdyZXNzLnYxLkFwcGx5RXh0ZXJuYWxBY2Nlc3NTZXRSZXNwb25zZRKCAQoXRGVsZXRlRXh0ZXJuYWxBY2Nlc3NTZXQSMi5wbGF0Zm9ybS5lZ3Jlc3MudjEuRGVsZXRlRXh0ZXJuYWxBY2Nlc3NTZXRSZXF1ZXN0GjMucGxhdGZvcm0uZWdyZXNzLnYxLkRlbGV0ZUV4dGVybmFsQWNjZXNzU2V0UmVzcG9uc2USfwoWR2V0RWdyZXNzUnVudGltZVBvbGljeRIxLnBsYXRmb3JtLmVncmVzcy52MS5HZXRFZ3Jlc3NSdW50aW1lUG9saWN5UmVxdWVzdBoyLnBsYXRmb3JtLmVncmVzcy52MS5HZXRFZ3Jlc3NSdW50aW1lUG9saWN5UmVzcG9uc2USmgEKH0FwcGx5UnVudGltZVRlbGVtZXRyeVByb2ZpbGVTZXQSOi5wbGF0Zm9ybS5lZ3Jlc3MudjEuQXBwbHlSdW50aW1lVGVsZW1ldHJ5UHJvZmlsZVNldFJlcXVlc3QaOy5wbGF0Zm9ybS5lZ3Jlc3MudjEuQXBwbHlSdW50aW1lVGVsZW1ldHJ5UHJvZmlsZVNldFJlc3BvbnNlQkNaQWNvZGUtY29kZS5pbnRlcm5hbC9nby1jb250cmFjdC9wbGF0Zm9ybS9lZ3Jlc3MvdjE7ZWdyZXNzc2VydmljZXYxYgZwcm90bzM", [file_egress_v1_policy, file_observability_v1_observability, file_platform_management_v1_management]);
+
+/**
+ * @generated from message platform.egress.v1.ApplyExternalAccessSetRequest
+ */
+export type ApplyExternalAccessSetRequest = Message<"platform.egress.v1.ApplyExternalAccessSetRequest"> & {
+  /**
+   * @generated from field: egress.v1.ExternalAccessSet access_set = 1;
+   */
+  accessSet?: ExternalAccessSet;
+};
+
+/**
+ * Describes the message platform.egress.v1.ApplyExternalAccessSetRequest.
+ * Use `create(ApplyExternalAccessSetRequestSchema)` to create a new message.
+ */
+export const ApplyExternalAccessSetRequestSchema: GenMessage<ApplyExternalAccessSetRequest> = /*@__PURE__*/
+  messageDesc(file_platform_egress_v1_egress_service, 0);
+
+/**
+ * @generated from message platform.egress.v1.ApplyExternalAccessSetResponse
+ */
+export type ApplyExternalAccessSetResponse = Message<"platform.egress.v1.ApplyExternalAccessSetResponse"> & {
+  /**
+   * @generated from field: platform.management.v1.EgressPolicyView item = 1;
+   */
+  item?: EgressPolicyView;
+
+  /**
+   * @generated from field: int32 added_external_rule_count = 2;
+   */
+  addedExternalRuleCount: number;
+
+  /**
+   * @generated from field: int32 updated_external_rule_count = 3;
+   */
+  updatedExternalRuleCount: number;
+
+  /**
+   * @generated from field: int32 removed_external_rule_count = 4;
+   */
+  removedExternalRuleCount: number;
+
+  /**
+   * @generated from field: int32 unchanged_external_rule_count = 5;
+   */
+  unchangedExternalRuleCount: number;
+};
+
+/**
+ * Describes the message platform.egress.v1.ApplyExternalAccessSetResponse.
+ * Use `create(ApplyExternalAccessSetResponseSchema)` to create a new message.
+ */
+export const ApplyExternalAccessSetResponseSchema: GenMessage<ApplyExternalAccessSetResponse> = /*@__PURE__*/
+  messageDesc(file_platform_egress_v1_egress_service, 1);
+
+/**
+ * @generated from message platform.egress.v1.DeleteExternalAccessSetRequest
+ */
+export type DeleteExternalAccessSetRequest = Message<"platform.egress.v1.DeleteExternalAccessSetRequest"> & {
+  /**
+   * @generated from field: string policy_id = 1;
+   */
+  policyId: string;
+
+  /**
+   * @generated from field: string access_set_id = 2;
+   */
+  accessSetId: string;
+};
+
+/**
+ * Describes the message platform.egress.v1.DeleteExternalAccessSetRequest.
+ * Use `create(DeleteExternalAccessSetRequestSchema)` to create a new message.
+ */
+export const DeleteExternalAccessSetRequestSchema: GenMessage<DeleteExternalAccessSetRequest> = /*@__PURE__*/
+  messageDesc(file_platform_egress_v1_egress_service, 2);
+
+/**
+ * @generated from message platform.egress.v1.DeleteExternalAccessSetResponse
+ */
+export type DeleteExternalAccessSetResponse = Message<"platform.egress.v1.DeleteExternalAccessSetResponse"> & {
+  /**
+   * @generated from field: platform.management.v1.EgressPolicyView item = 1;
+   */
+  item?: EgressPolicyView;
+
+  /**
+   * @generated from field: int32 removed_external_rule_count = 2;
+   */
+  removedExternalRuleCount: number;
+
+  /**
+   * @generated from field: int32 removed_service_rule_count = 3;
+   */
+  removedServiceRuleCount: number;
+
+  /**
+   * @generated from field: int32 removed_http_route_count = 4;
+   */
+  removedHttpRouteCount: number;
+};
+
+/**
+ * Describes the message platform.egress.v1.DeleteExternalAccessSetResponse.
+ * Use `create(DeleteExternalAccessSetResponseSchema)` to create a new message.
+ */
+export const DeleteExternalAccessSetResponseSchema: GenMessage<DeleteExternalAccessSetResponse> = /*@__PURE__*/
+  messageDesc(file_platform_egress_v1_egress_service, 3);
 
 /**
  * @generated from message platform.egress.v1.GetEgressRuntimePolicyRequest
@@ -34,7 +146,7 @@ export type GetEgressRuntimePolicyRequest = Message<"platform.egress.v1.GetEgres
  * Use `create(GetEgressRuntimePolicyRequestSchema)` to create a new message.
  */
 export const GetEgressRuntimePolicyRequestSchema: GenMessage<GetEgressRuntimePolicyRequest> = /*@__PURE__*/
-  messageDesc(file_platform_egress_v1_egress_service, 0);
+  messageDesc(file_platform_egress_v1_egress_service, 4);
 
 /**
  * @generated from message platform.egress.v1.GetEgressRuntimePolicyResponse
@@ -51,7 +163,7 @@ export type GetEgressRuntimePolicyResponse = Message<"platform.egress.v1.GetEgre
  * Use `create(GetEgressRuntimePolicyResponseSchema)` to create a new message.
  */
 export const GetEgressRuntimePolicyResponseSchema: GenMessage<GetEgressRuntimePolicyResponse> = /*@__PURE__*/
-  messageDesc(file_platform_egress_v1_egress_service, 1);
+  messageDesc(file_platform_egress_v1_egress_service, 5);
 
 /**
  * @generated from message platform.egress.v1.EgressRuntimePolicy
@@ -78,7 +190,51 @@ export type EgressRuntimePolicy = Message<"platform.egress.v1.EgressRuntimePolic
  * Use `create(EgressRuntimePolicySchema)` to create a new message.
  */
 export const EgressRuntimePolicySchema: GenMessage<EgressRuntimePolicy> = /*@__PURE__*/
-  messageDesc(file_platform_egress_v1_egress_service, 2);
+  messageDesc(file_platform_egress_v1_egress_service, 6);
+
+/**
+ * @generated from message platform.egress.v1.ApplyRuntimeTelemetryProfileSetRequest
+ */
+export type ApplyRuntimeTelemetryProfileSetRequest = Message<"platform.egress.v1.ApplyRuntimeTelemetryProfileSetRequest"> & {
+  /**
+   * @generated from field: string profile_set_id = 1;
+   */
+  profileSetId: string;
+
+  /**
+   * @generated from field: observability.v1.ObservabilityCapability capability = 2;
+   */
+  capability?: ObservabilityCapability;
+};
+
+/**
+ * Describes the message platform.egress.v1.ApplyRuntimeTelemetryProfileSetRequest.
+ * Use `create(ApplyRuntimeTelemetryProfileSetRequestSchema)` to create a new message.
+ */
+export const ApplyRuntimeTelemetryProfileSetRequestSchema: GenMessage<ApplyRuntimeTelemetryProfileSetRequest> = /*@__PURE__*/
+  messageDesc(file_platform_egress_v1_egress_service, 7);
+
+/**
+ * @generated from message platform.egress.v1.ApplyRuntimeTelemetryProfileSetResponse
+ */
+export type ApplyRuntimeTelemetryProfileSetResponse = Message<"platform.egress.v1.ApplyRuntimeTelemetryProfileSetResponse"> & {
+  /**
+   * @generated from field: bool applied = 1;
+   */
+  applied: boolean;
+
+  /**
+   * @generated from field: uint32 profile_count = 2;
+   */
+  profileCount: number;
+};
+
+/**
+ * Describes the message platform.egress.v1.ApplyRuntimeTelemetryProfileSetResponse.
+ * Use `create(ApplyRuntimeTelemetryProfileSetResponseSchema)` to create a new message.
+ */
+export const ApplyRuntimeTelemetryProfileSetResponseSchema: GenMessage<ApplyRuntimeTelemetryProfileSetResponse> = /*@__PURE__*/
+  messageDesc(file_platform_egress_v1_egress_service, 8);
 
 /**
  * @generated from service platform.egress.v1.EgressService
@@ -101,12 +257,36 @@ export const EgressService: GenService<{
     output: typeof UpdateEgressPolicyResponseSchema;
   },
   /**
+   * @generated from rpc platform.egress.v1.EgressService.ApplyExternalAccessSet
+   */
+  applyExternalAccessSet: {
+    methodKind: "unary";
+    input: typeof ApplyExternalAccessSetRequestSchema;
+    output: typeof ApplyExternalAccessSetResponseSchema;
+  },
+  /**
+   * @generated from rpc platform.egress.v1.EgressService.DeleteExternalAccessSet
+   */
+  deleteExternalAccessSet: {
+    methodKind: "unary";
+    input: typeof DeleteExternalAccessSetRequestSchema;
+    output: typeof DeleteExternalAccessSetResponseSchema;
+  },
+  /**
    * @generated from rpc platform.egress.v1.EgressService.GetEgressRuntimePolicy
    */
   getEgressRuntimePolicy: {
     methodKind: "unary";
     input: typeof GetEgressRuntimePolicyRequestSchema;
     output: typeof GetEgressRuntimePolicyResponseSchema;
+  },
+  /**
+   * @generated from rpc platform.egress.v1.EgressService.ApplyRuntimeTelemetryProfileSet
+   */
+  applyRuntimeTelemetryProfileSet: {
+    methodKind: "unary";
+    input: typeof ApplyRuntimeTelemetryProfileSetRequestSchema;
+    output: typeof ApplyRuntimeTelemetryProfileSetResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_platform_egress_v1_egress_service, 0);

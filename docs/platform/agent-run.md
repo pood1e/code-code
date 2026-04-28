@@ -107,7 +107,7 @@ AgentRunCondition
 - `AgentRun` 不持有 session-level resource config。
 - `AgentRun` 必须持有 submit-time resolved execution image 与 resource requests。
 - `AgentRun` 必须持有 submit-time frozen `ProviderID`，供 execution adapter 选择 CLI-specific runtime wiring。
-- `AgentRun` 必须持有 submit-time frozen `AuthRequirement`，供 prepare job 构造 runtime auth files 与 run-scoped auth projection。
+- `AgentRun` 必须持有 submit-time frozen `AuthRequirement`，供 prepare job 构造 runtime auth files，并供 runtime context 按需派生 run-scoped auth projection metadata。
 - `AgentRunAuthRequirement.RuntimeURL` 是本次 run 的 provider-facing base URL。
 - `AgentRunAuthRequirement.MaterializationKey` 是 CLI auth bootstrap key，来自 CLI specialization package 的 auth materialization contract。
 - `AgentRunPrepareJob.CliID` 指向解释这个 prepare job 的 CLI。

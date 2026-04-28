@@ -6,8 +6,8 @@ Collect token usage data from Mistral AI's console billing API and expose it as 
 
 ## Ownership
 
-`packages/platform-k8s/providerobservability` — Mistral billing collector
-`packages/platform-k8s/vendors/capabilitypackages` — vendor capability package registry
+`packages/platform-k8s/internal/providerservice/providerobservability` — Mistral billing collector
+`packages/platform-k8s/internal/supportservice/vendors/support` — vendor capability package registry
 
 ## Interface
 
@@ -26,7 +26,7 @@ Collect token usage data from Mistral AI's console billing API and expose it as 
 
 The Mistral console billing API (`https://console.mistral.ai/billing/v2/usage`) requires a **web session token** obtained by logging in to `console.mistral.ai`. This token is different from the inference API key and must be stored in a dedicated management-plane credential.
 
-The runner resolves this credential via the `observability_credential_ref` field on `VendorCapabilityPackage`, which is a new generic mechanism for vendors whose observability endpoint uses different auth than their inference API key.
+The runner resolves this token from the provider's dedicated observability credential (`<provider_id>-observability`). The active-query collector advertises the internal `bearer-session` adapter, so auth replacement and any future backfill use the management-plane credential instead of the provider's inference API key.
 
 ## Setup
 
@@ -34,40 +34,13 @@ The runner resolves this credential via the `observability_credential_ref` field
 
 Log in to `console.mistral.ai` and extract the session token from the browser's developer tools (Network tab → any authenticated request → `Authorization` header value, without the `Bearer ` prefix). This token may expire and need to be rotated periodically.
 
-### 2. Create the Kubernetes Secret
+### 2. Store the observability credential
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: mistral-billing-session
-  namespace: code-code
-type: Opaque
-stringData:
-  api_key: <REPLACE_WITH_SESSION_TOKEN>
-```
+Use the provider details dialog's observability auth action for Mistral, or call `UpdateProviderObservabilityAuthentication` with `schema_id=mistral-billing-session`, `required_keys=["access_token"]`, and `values.access_token=<token>`.
 
-### 3. Create the credential definition
+The auth service owns credential material persistence through its material store. Do not create a Kubernetes Secret or a second vendor-specific storage path for this token.
 
-```yaml
-apiVersion: platform.code-code.internal/v1
-kind: CredentialDefinition
-metadata:
-  name: mistral-billing-session
-  namespace: code-code
-spec:
-  credentialDefinition:
-    credentialId: mistral-billing-session
-    displayName: Mistral Billing Session
-    kind: CREDENTIAL_KIND_API_KEY
-    purpose: CREDENTIAL_PURPOSE_MANAGEMENT_PLANE
-    vendorId: mistral
-    secretSource:
-      name: mistral-billing-session
-      apiKeyKey: api_key
-```
-
-### 4. Verify
+### 3. Verify
 
 Apply the resources and trigger a manual probe. Check that `gen_ai_provider_usage_tokens_count{token_type=~"input|output"}` appears in Prometheus. Total tokens should be derived in query via `sum(input, output)`.
 
@@ -91,7 +64,7 @@ The probe backs off for 5 minutes on failure and 60 minutes after a successful e
 
 ## Related
 
-- `packages/platform-k8s/providerobservability/vendor_observability_collector_mistral.go`
-- `packages/platform-k8s/providerobservability/vendor_observability_collector_mistral_parse.go`
-- `packages/platform-k8s/providerobservability/vendor_observability_runner_probe.go` — `resolveObservabilityToken`
-- `packages/proto/vendor_capability_package/v1/vendor_capability_package.proto` — `observability_credential_ref`
+- `packages/platform-k8s/internal/providerservice/providerobservability/vendor_observability_collector_mistral.go`
+- `packages/platform-k8s/internal/providerservice/providerobservability/vendor_observability_collector_mistral_parse.go`
+- `packages/platform-k8s/internal/providerservice/providerobservability/vendor_observability_runner_probe.go`
+- `packages/platform-k8s/internal/egressauth/context.go` — `bearer-session` adapter id

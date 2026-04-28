@@ -1,8 +1,0 @@
-otelCollector:
-  tempoEnabled: false
-
-alertmanager:
-  wechat:
-    corpId: REPLACE_ME
-    agentId: REPLACE_ME
-    partyId: REPLACE_ME

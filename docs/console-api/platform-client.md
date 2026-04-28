@@ -19,7 +19,7 @@
   - `platform.provider.v1.ProviderService`
 - `platform-profile-service`
   - `platform.profile.v1.ProfileService`
-- `platform-network-service`
+- `platform-egress-service`
   - `platform.egress.v1.EgressService`
 - `platform-auth-service`
   - `platform.oauth.v1.OAuthSessionService`
@@ -49,7 +49,7 @@
 - model registry read surface 走 `/api/connect/platform.model.v1.ModelService/ListModelDefinitions`。
 - vendor reference read surface 走 `/api/connect/platform.provider.v1.ProviderService/ListVendors`。
 - provider-domain surface 固定走 `platform-provider-service`。
-- egress surface 固定走 `platform-network-service`。
+- egress surface 固定走 `platform-egress-service`。
 - OAuth session/callback surface 固定走 `platform-auth-service`。
 - chat session setup/runtime-options surface 通过 `ChatServiceClient()` 走 `platform.chat.v1.ChatService`。
 - session read and turn/run control surface 通过 `AgentSessions()`、`AgentSessionActions()`、`AgentRuns()` 走 `AgentSessionManagementService`。

@@ -179,6 +179,315 @@ func (ObservabilityAttributeRequirementLevel) EnumDescriptor() ([]byte, []int) {
 	return file_observability_v1_observability_proto_rawDescGZIP(), []int{2}
 }
 
+// ActiveQueryInputControl identifies the preferred UI control for one input.
+type ActiveQueryInputControl int32
+
+const (
+	ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED ActiveQueryInputControl = 0
+	ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_TEXT        ActiveQueryInputControl = 1
+	ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_PASSWORD    ActiveQueryInputControl = 2
+	ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA    ActiveQueryInputControl = 3
+)
+
+// Enum value maps for ActiveQueryInputControl.
+var (
+	ActiveQueryInputControl_name = map[int32]string{
+		0: "ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED",
+		1: "ACTIVE_QUERY_INPUT_CONTROL_TEXT",
+		2: "ACTIVE_QUERY_INPUT_CONTROL_PASSWORD",
+		3: "ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA",
+	}
+	ActiveQueryInputControl_value = map[string]int32{
+		"ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED": 0,
+		"ACTIVE_QUERY_INPUT_CONTROL_TEXT":        1,
+		"ACTIVE_QUERY_INPUT_CONTROL_PASSWORD":    2,
+		"ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA":    3,
+	}
+)
+
+func (x ActiveQueryInputControl) Enum() *ActiveQueryInputControl {
+	p := new(ActiveQueryInputControl)
+	*p = x
+	return p
+}
+
+func (x ActiveQueryInputControl) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActiveQueryInputControl) Descriptor() protoreflect.EnumDescriptor {
+	return file_observability_v1_observability_proto_enumTypes[3].Descriptor()
+}
+
+func (ActiveQueryInputControl) Type() protoreflect.EnumType {
+	return &file_observability_v1_observability_proto_enumTypes[3]
+}
+
+func (x ActiveQueryInputControl) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActiveQueryInputControl.Descriptor instead.
+func (ActiveQueryInputControl) EnumDescriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{3}
+}
+
+// ActiveQueryInputPersistence describes whether a submitted field is persisted
+// into provider observability credential material.
+type ActiveQueryInputPersistence int32
+
+const (
+	ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_UNSPECIFIED     ActiveQueryInputPersistence = 0
+	ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL ActiveQueryInputPersistence = 1
+	ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT       ActiveQueryInputPersistence = 2
+)
+
+// Enum value maps for ActiveQueryInputPersistence.
+var (
+	ActiveQueryInputPersistence_name = map[int32]string{
+		0: "ACTIVE_QUERY_INPUT_PERSISTENCE_UNSPECIFIED",
+		1: "ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL",
+		2: "ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT",
+	}
+	ActiveQueryInputPersistence_value = map[string]int32{
+		"ACTIVE_QUERY_INPUT_PERSISTENCE_UNSPECIFIED":     0,
+		"ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL": 1,
+		"ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT":       2,
+	}
+)
+
+func (x ActiveQueryInputPersistence) Enum() *ActiveQueryInputPersistence {
+	p := new(ActiveQueryInputPersistence)
+	*p = x
+	return p
+}
+
+func (x ActiveQueryInputPersistence) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActiveQueryInputPersistence) Descriptor() protoreflect.EnumDescriptor {
+	return file_observability_v1_observability_proto_enumTypes[4].Descriptor()
+}
+
+func (ActiveQueryInputPersistence) Type() protoreflect.EnumType {
+	return &file_observability_v1_observability_proto_enumTypes[4]
+}
+
+func (x ActiveQueryInputPersistence) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActiveQueryInputPersistence.Descriptor instead.
+func (ActiveQueryInputPersistence) EnumDescriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{4}
+}
+
+// ActiveQueryInputValueTransform describes a built-in normalization applied to
+// an input value before it is persisted.
+type ActiveQueryInputValueTransform int32
+
+const (
+	ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED      ActiveQueryInputValueTransform = 0
+	ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY         ActiveQueryInputValueTransform = 1
+	ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE ActiveQueryInputValueTransform = 2
+)
+
+// Enum value maps for ActiveQueryInputValueTransform.
+var (
+	ActiveQueryInputValueTransform_name = map[int32]string{
+		0: "ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED",
+		1: "ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY",
+		2: "ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE",
+	}
+	ActiveQueryInputValueTransform_value = map[string]int32{
+		"ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED":      0,
+		"ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY":         1,
+		"ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE": 2,
+	}
+)
+
+func (x ActiveQueryInputValueTransform) Enum() *ActiveQueryInputValueTransform {
+	p := new(ActiveQueryInputValueTransform)
+	*p = x
+	return p
+}
+
+func (x ActiveQueryInputValueTransform) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActiveQueryInputValueTransform) Descriptor() protoreflect.EnumDescriptor {
+	return file_observability_v1_observability_proto_enumTypes[5].Descriptor()
+}
+
+func (ActiveQueryInputValueTransform) Type() protoreflect.EnumType {
+	return &file_observability_v1_observability_proto_enumTypes[5]
+}
+
+func (x ActiveQueryInputValueTransform) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActiveQueryInputValueTransform.Descriptor instead.
+func (ActiveQueryInputValueTransform) EnumDescriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{5}
+}
+
+// CredentialBackfillSource identifies where a credential backfill value comes
+// from. Collectors remain responsible for parsing provider-specific formats.
+type CredentialBackfillSource int32
+
+const (
+	CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED          CredentialBackfillSource = 0
+	CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT     CredentialBackfillSource = 1
+	CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_HEADER CredentialBackfillSource = 2
+	CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_COOKIE CredentialBackfillSource = 3
+)
+
+// Enum value maps for CredentialBackfillSource.
+var (
+	CredentialBackfillSource_name = map[int32]string{
+		0: "CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED",
+		1: "CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT",
+		2: "CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_HEADER",
+		3: "CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_COOKIE",
+	}
+	CredentialBackfillSource_value = map[string]int32{
+		"CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED":          0,
+		"CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT":     1,
+		"CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_HEADER": 2,
+		"CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_COOKIE": 3,
+	}
+)
+
+func (x CredentialBackfillSource) Enum() *CredentialBackfillSource {
+	p := new(CredentialBackfillSource)
+	*p = x
+	return p
+}
+
+func (x CredentialBackfillSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CredentialBackfillSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_observability_v1_observability_proto_enumTypes[6].Descriptor()
+}
+
+func (CredentialBackfillSource) Type() protoreflect.EnumType {
+	return &file_observability_v1_observability_proto_enumTypes[6]
+}
+
+func (x CredentialBackfillSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CredentialBackfillSource.Descriptor instead.
+func (CredentialBackfillSource) EnumDescriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{6}
+}
+
+// TelemetryCapturePoint identifies the L7 proxy point that owns capture.
+type TelemetryCapturePoint int32
+
+const (
+	TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_UNSPECIFIED          TelemetryCapturePoint = 0
+	TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_EGRESS               TelemetryCapturePoint = 1
+	TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_DESTINATION_WAYPOINT TelemetryCapturePoint = 2
+)
+
+// Enum value maps for TelemetryCapturePoint.
+var (
+	TelemetryCapturePoint_name = map[int32]string{
+		0: "TELEMETRY_CAPTURE_POINT_UNSPECIFIED",
+		1: "TELEMETRY_CAPTURE_POINT_EGRESS",
+		2: "TELEMETRY_CAPTURE_POINT_DESTINATION_WAYPOINT",
+	}
+	TelemetryCapturePoint_value = map[string]int32{
+		"TELEMETRY_CAPTURE_POINT_UNSPECIFIED":          0,
+		"TELEMETRY_CAPTURE_POINT_EGRESS":               1,
+		"TELEMETRY_CAPTURE_POINT_DESTINATION_WAYPOINT": 2,
+	}
+)
+
+func (x TelemetryCapturePoint) Enum() *TelemetryCapturePoint {
+	p := new(TelemetryCapturePoint)
+	*p = x
+	return p
+}
+
+func (x TelemetryCapturePoint) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TelemetryCapturePoint) Descriptor() protoreflect.EnumDescriptor {
+	return file_observability_v1_observability_proto_enumTypes[7].Descriptor()
+}
+
+func (TelemetryCapturePoint) Type() protoreflect.EnumType {
+	return &file_observability_v1_observability_proto_enumTypes[7]
+}
+
+func (x TelemetryCapturePoint) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TelemetryCapturePoint.Descriptor instead.
+func (TelemetryCapturePoint) EnumDescriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{7}
+}
+
+// HttpHeaderSource identifies the HTTP header bag used by one transform.
+type HttpHeaderSource int32
+
+const (
+	HttpHeaderSource_HTTP_HEADER_SOURCE_UNSPECIFIED HttpHeaderSource = 0
+	HttpHeaderSource_HTTP_HEADER_SOURCE_REQUEST     HttpHeaderSource = 1
+	HttpHeaderSource_HTTP_HEADER_SOURCE_RESPONSE    HttpHeaderSource = 2
+)
+
+// Enum value maps for HttpHeaderSource.
+var (
+	HttpHeaderSource_name = map[int32]string{
+		0: "HTTP_HEADER_SOURCE_UNSPECIFIED",
+		1: "HTTP_HEADER_SOURCE_REQUEST",
+		2: "HTTP_HEADER_SOURCE_RESPONSE",
+	}
+	HttpHeaderSource_value = map[string]int32{
+		"HTTP_HEADER_SOURCE_UNSPECIFIED": 0,
+		"HTTP_HEADER_SOURCE_REQUEST":     1,
+		"HTTP_HEADER_SOURCE_RESPONSE":    2,
+	}
+)
+
+func (x HttpHeaderSource) Enum() *HttpHeaderSource {
+	p := new(HttpHeaderSource)
+	*p = x
+	return p
+}
+
+func (x HttpHeaderSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (HttpHeaderSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_observability_v1_observability_proto_enumTypes[8].Descriptor()
+}
+
+func (HttpHeaderSource) Type() protoreflect.EnumType {
+	return &file_observability_v1_observability_proto_enumTypes[8]
+}
+
+func (x HttpHeaderSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use HttpHeaderSource.Descriptor instead.
+func (HttpHeaderSource) EnumDescriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{8}
+}
+
 // MetricQueryLanguage identifies the query language used by one metric query.
 type MetricQueryLanguage int32
 
@@ -210,11 +519,11 @@ func (x MetricQueryLanguage) String() string {
 }
 
 func (MetricQueryLanguage) Descriptor() protoreflect.EnumDescriptor {
-	return file_observability_v1_observability_proto_enumTypes[3].Descriptor()
+	return file_observability_v1_observability_proto_enumTypes[9].Descriptor()
 }
 
 func (MetricQueryLanguage) Type() protoreflect.EnumType {
-	return &file_observability_v1_observability_proto_enumTypes[3]
+	return &file_observability_v1_observability_proto_enumTypes[9]
 }
 
 func (x MetricQueryLanguage) Number() protoreflect.EnumNumber {
@@ -223,7 +532,7 @@ func (x MetricQueryLanguage) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MetricQueryLanguage.Descriptor instead.
 func (MetricQueryLanguage) EnumDescriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{3}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{9}
 }
 
 // MetricQueryResultKind identifies the expected result shape of one query.
@@ -263,11 +572,11 @@ func (x MetricQueryResultKind) String() string {
 }
 
 func (MetricQueryResultKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_observability_v1_observability_proto_enumTypes[4].Descriptor()
+	return file_observability_v1_observability_proto_enumTypes[10].Descriptor()
 }
 
 func (MetricQueryResultKind) Type() protoreflect.EnumType {
-	return &file_observability_v1_observability_proto_enumTypes[4]
+	return &file_observability_v1_observability_proto_enumTypes[10]
 }
 
 func (x MetricQueryResultKind) Number() protoreflect.EnumNumber {
@@ -276,7 +585,7 @@ func (x MetricQueryResultKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MetricQueryResultKind.Descriptor instead.
 func (MetricQueryResultKind) EnumDescriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{4}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{10}
 }
 
 // AvailabilitySubjectKind identifies the entity type judged by one profile.
@@ -310,11 +619,11 @@ func (x AvailabilitySubjectKind) String() string {
 }
 
 func (AvailabilitySubjectKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_observability_v1_observability_proto_enumTypes[5].Descriptor()
+	return file_observability_v1_observability_proto_enumTypes[11].Descriptor()
 }
 
 func (AvailabilitySubjectKind) Type() protoreflect.EnumType {
-	return &file_observability_v1_observability_proto_enumTypes[5]
+	return &file_observability_v1_observability_proto_enumTypes[11]
 }
 
 func (x AvailabilitySubjectKind) Number() protoreflect.EnumNumber {
@@ -323,7 +632,7 @@ func (x AvailabilitySubjectKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AvailabilitySubjectKind.Descriptor instead.
 func (AvailabilitySubjectKind) EnumDescriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{5}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{11}
 }
 
 // AvailabilityState identifies the derived availability state of one subject.
@@ -363,11 +672,11 @@ func (x AvailabilityState) String() string {
 }
 
 func (AvailabilityState) Descriptor() protoreflect.EnumDescriptor {
-	return file_observability_v1_observability_proto_enumTypes[6].Descriptor()
+	return file_observability_v1_observability_proto_enumTypes[12].Descriptor()
 }
 
 func (AvailabilityState) Type() protoreflect.EnumType {
-	return &file_observability_v1_observability_proto_enumTypes[6]
+	return &file_observability_v1_observability_proto_enumTypes[12]
 }
 
 func (x AvailabilityState) Number() protoreflect.EnumNumber {
@@ -376,7 +685,7 @@ func (x AvailabilityState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AvailabilityState.Descriptor instead.
 func (AvailabilityState) EnumDescriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{6}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{12}
 }
 
 // ComparisonOperator identifies how one query result should be compared to a
@@ -426,11 +735,11 @@ func (x ComparisonOperator) String() string {
 }
 
 func (ComparisonOperator) Descriptor() protoreflect.EnumDescriptor {
-	return file_observability_v1_observability_proto_enumTypes[7].Descriptor()
+	return file_observability_v1_observability_proto_enumTypes[13].Descriptor()
 }
 
 func (ComparisonOperator) Type() protoreflect.EnumType {
-	return &file_observability_v1_observability_proto_enumTypes[7]
+	return &file_observability_v1_observability_proto_enumTypes[13]
 }
 
 func (x ComparisonOperator) Number() protoreflect.EnumNumber {
@@ -439,7 +748,7 @@ func (x ComparisonOperator) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComparisonOperator.Descriptor instead.
 func (ComparisonOperator) EnumDescriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{7}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{13}
 }
 
 // HeaderValueType identifies how one header value should be parsed.
@@ -485,11 +794,11 @@ func (x HeaderValueType) String() string {
 }
 
 func (HeaderValueType) Descriptor() protoreflect.EnumDescriptor {
-	return file_observability_v1_observability_proto_enumTypes[8].Descriptor()
+	return file_observability_v1_observability_proto_enumTypes[14].Descriptor()
 }
 
 func (HeaderValueType) Type() protoreflect.EnumType {
-	return &file_observability_v1_observability_proto_enumTypes[8]
+	return &file_observability_v1_observability_proto_enumTypes[14]
 }
 
 func (x HeaderValueType) Number() protoreflect.EnumNumber {
@@ -498,7 +807,7 @@ func (x HeaderValueType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use HeaderValueType.Descriptor instead.
 func (HeaderValueType) EnumDescriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{8}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{14}
 }
 
 // ObservabilityCapability describes a reusable observability capability block
@@ -559,7 +868,7 @@ type ObservabilityProfile struct {
 	// Types that are valid to be assigned to Collection:
 	//
 	//	*ObservabilityProfile_ActiveQuery
-	//	*ObservabilityProfile_ResponseHeaders
+	//	*ObservabilityProfile_PassiveHttp
 	Collection isObservabilityProfile_Collection `protobuf_oneof:"collection"`
 	// Stable metric queries consumed by availability judgment.
 	MetricQueries []*MetricQuery `protobuf:"bytes,7,rep,name=metric_queries,json=metricQueries,proto3" json:"metric_queries,omitempty"`
@@ -643,10 +952,10 @@ func (x *ObservabilityProfile) GetActiveQuery() *ActiveQueryCollection {
 	return nil
 }
 
-func (x *ObservabilityProfile) GetResponseHeaders() *ResponseHeaderCollection {
+func (x *ObservabilityProfile) GetPassiveHttp() *PassiveHttpTelemetryCollection {
 	if x != nil {
-		if x, ok := x.Collection.(*ObservabilityProfile_ResponseHeaders); ok {
-			return x.ResponseHeaders
+		if x, ok := x.Collection.(*ObservabilityProfile_PassiveHttp); ok {
+			return x.PassiveHttp
 		}
 	}
 	return nil
@@ -674,13 +983,13 @@ type ObservabilityProfile_ActiveQuery struct {
 	ActiveQuery *ActiveQueryCollection `protobuf:"bytes,5,opt,name=active_query,json=activeQuery,proto3,oneof"`
 }
 
-type ObservabilityProfile_ResponseHeaders struct {
-	ResponseHeaders *ResponseHeaderCollection `protobuf:"bytes,6,opt,name=response_headers,json=responseHeaders,proto3,oneof"`
+type ObservabilityProfile_PassiveHttp struct {
+	PassiveHttp *PassiveHttpTelemetryCollection `protobuf:"bytes,6,opt,name=passive_http,json=passiveHttp,proto3,oneof"`
 }
 
 func (*ObservabilityProfile_ActiveQuery) isObservabilityProfile_Collection() {}
 
-func (*ObservabilityProfile_ResponseHeaders) isObservabilityProfile_Collection() {}
+func (*ObservabilityProfile_PassiveHttp) isObservabilityProfile_Collection() {}
 
 // ObservabilityMetric describes one OTel-style metric contract.
 type ObservabilityMetric struct {
@@ -837,9 +1146,19 @@ type ActiveQueryCollection struct {
 	DynamicParameters []*DynamicParameterDefinition `protobuf:"bytes,2,rep,name=dynamic_parameters,json=dynamicParameters,proto3" json:"dynamic_parameters,omitempty"`
 	// Optional collector implementation key resolved by the host package.
 	// Empty means host-default active query execution.
-	CollectorId   string `protobuf:"bytes,3,opt,name=collector_id,json=collectorId,proto3" json:"collector_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	CollectorId string `protobuf:"bytes,3,opt,name=collector_id,json=collectorId,proto3" json:"collector_id,omitempty"`
+	// Explicit credential values that the collector may persist after a
+	// successful query. The collector must ignore all undeclared values.
+	CredentialBackfills []*CredentialBackfillRule `protobuf:"bytes,4,rep,name=credential_backfills,json=credentialBackfills,proto3" json:"credential_backfills,omitempty"`
+	// Optional schema-driven form used to collect management-plane credential
+	// inputs required by this active query.
+	InputForm *ActiveQueryInputForm `protobuf:"bytes,5,opt,name=input_form,json=inputForm,proto3" json:"input_form,omitempty"`
+	// Explicit non-secret material keys the collector may read back on later
+	// runs. Secret tokens/cookies should stay behind authservice/egress auth and
+	// must not be listed here.
+	MaterialReadFields []string `protobuf:"bytes,6,rep,name=material_read_fields,json=materialReadFields,proto3" json:"material_read_fields,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ActiveQueryCollection) Reset() {
@@ -891,6 +1210,27 @@ func (x *ActiveQueryCollection) GetCollectorId() string {
 		return x.CollectorId
 	}
 	return ""
+}
+
+func (x *ActiveQueryCollection) GetCredentialBackfills() []*CredentialBackfillRule {
+	if x != nil {
+		return x.CredentialBackfills
+	}
+	return nil
+}
+
+func (x *ActiveQueryCollection) GetInputForm() *ActiveQueryInputForm {
+	if x != nil {
+		return x.InputForm
+	}
+	return nil
+}
+
+func (x *ActiveQueryCollection) GetMaterialReadFields() []string {
+	if x != nil {
+		return x.MaterialReadFields
+	}
+	return nil
 }
 
 // DynamicParameterDefinition describes one dynamically supplied parameter.
@@ -970,76 +1310,117 @@ func (x *DynamicParameterDefinition) GetSecret() bool {
 	return false
 }
 
-// ResponseHeaderCollection declares how response headers map to metrics.
-type ResponseHeaderCollection struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	HeaderMetricMappings []*HeaderMetricMapping `protobuf:"bytes,1,rep,name=header_metric_mappings,json=headerMetricMappings,proto3" json:"header_metric_mappings,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
-}
-
-func (x *ResponseHeaderCollection) Reset() {
-	*x = ResponseHeaderCollection{}
-	mi := &file_observability_v1_observability_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ResponseHeaderCollection) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ResponseHeaderCollection) ProtoMessage() {}
-
-func (x *ResponseHeaderCollection) ProtoReflect() protoreflect.Message {
-	mi := &file_observability_v1_observability_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ResponseHeaderCollection.ProtoReflect.Descriptor instead.
-func (*ResponseHeaderCollection) Descriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *ResponseHeaderCollection) GetHeaderMetricMappings() []*HeaderMetricMapping {
-	if x != nil {
-		return x.HeaderMetricMappings
-	}
-	return nil
-}
-
-// HeaderMetricMapping maps one response header to one declared metric.
-type HeaderMetricMapping struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	HeaderName    string                 `protobuf:"bytes,1,opt,name=header_name,json=headerName,proto3" json:"header_name,omitempty"`
-	MetricName    string                 `protobuf:"bytes,2,opt,name=metric_name,json=metricName,proto3" json:"metric_name,omitempty"`
-	ValueType     HeaderValueType        `protobuf:"varint,3,opt,name=value_type,json=valueType,proto3,enum=observability.v1.HeaderValueType" json:"value_type,omitempty"`
-	Labels        []*HeaderMetricLabel   `protobuf:"bytes,4,rep,name=labels,proto3" json:"labels,omitempty"`
+// ActiveQueryInputForm describes provider-owned credential inputs needed by one
+// active query. UI clients render this schema instead of hard-coding per-vendor
+// fields.
+type ActiveQueryInputForm struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	SchemaId      string                   `protobuf:"bytes,1,opt,name=schema_id,json=schemaId,proto3" json:"schema_id,omitempty"`
+	Title         string                   `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	ActionLabel   string                   `protobuf:"bytes,3,opt,name=action_label,json=actionLabel,proto3" json:"action_label,omitempty"`
+	Description   string                   `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Fields        []*ActiveQueryInputField `protobuf:"bytes,5,rep,name=fields,proto3" json:"fields,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *HeaderMetricMapping) Reset() {
-	*x = HeaderMetricMapping{}
+func (x *ActiveQueryInputForm) Reset() {
+	*x = ActiveQueryInputForm{}
+	mi := &file_observability_v1_observability_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActiveQueryInputForm) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActiveQueryInputForm) ProtoMessage() {}
+
+func (x *ActiveQueryInputForm) ProtoReflect() protoreflect.Message {
+	mi := &file_observability_v1_observability_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActiveQueryInputForm.ProtoReflect.Descriptor instead.
+func (*ActiveQueryInputForm) Descriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ActiveQueryInputForm) GetSchemaId() string {
+	if x != nil {
+		return x.SchemaId
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputForm) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputForm) GetActionLabel() string {
+	if x != nil {
+		return x.ActionLabel
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputForm) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputForm) GetFields() []*ActiveQueryInputField {
+	if x != nil {
+		return x.Fields
+	}
+	return nil
+}
+
+// ActiveQueryInputField describes one operator-supplied input field.
+type ActiveQueryInputField struct {
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	FieldId       string                         `protobuf:"bytes,1,opt,name=field_id,json=fieldId,proto3" json:"field_id,omitempty"`
+	Label         string                         `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	Description   string                         `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Placeholder   string                         `protobuf:"bytes,4,opt,name=placeholder,proto3" json:"placeholder,omitempty"`
+	Required      bool                           `protobuf:"varint,5,opt,name=required,proto3" json:"required,omitempty"`
+	Sensitive     bool                           `protobuf:"varint,6,opt,name=sensitive,proto3" json:"sensitive,omitempty"`
+	Control       ActiveQueryInputControl        `protobuf:"varint,7,opt,name=control,proto3,enum=observability.v1.ActiveQueryInputControl" json:"control,omitempty"`
+	Persistence   ActiveQueryInputPersistence    `protobuf:"varint,8,opt,name=persistence,proto3,enum=observability.v1.ActiveQueryInputPersistence" json:"persistence,omitempty"`
+	TargetFieldId string                         `protobuf:"bytes,9,opt,name=target_field_id,json=targetFieldId,proto3" json:"target_field_id,omitempty"`
+	Transform     ActiveQueryInputValueTransform `protobuf:"varint,10,opt,name=transform,proto3,enum=observability.v1.ActiveQueryInputValueTransform" json:"transform,omitempty"`
+	DefaultValue  string                         `protobuf:"bytes,11,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActiveQueryInputField) Reset() {
+	*x = ActiveQueryInputField{}
 	mi := &file_observability_v1_observability_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HeaderMetricMapping) String() string {
+func (x *ActiveQueryInputField) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HeaderMetricMapping) ProtoMessage() {}
+func (*ActiveQueryInputField) ProtoMessage() {}
 
-func (x *HeaderMetricMapping) ProtoReflect() protoreflect.Message {
+func (x *ActiveQueryInputField) ProtoReflect() protoreflect.Message {
 	mi := &file_observability_v1_observability_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1051,42 +1432,404 @@ func (x *HeaderMetricMapping) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HeaderMetricMapping.ProtoReflect.Descriptor instead.
-func (*HeaderMetricMapping) Descriptor() ([]byte, []int) {
+// Deprecated: Use ActiveQueryInputField.ProtoReflect.Descriptor instead.
+func (*ActiveQueryInputField) Descriptor() ([]byte, []int) {
 	return file_observability_v1_observability_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *HeaderMetricMapping) GetHeaderName() string {
+func (x *ActiveQueryInputField) GetFieldId() string {
+	if x != nil {
+		return x.FieldId
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputField) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputField) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputField) GetPlaceholder() string {
+	if x != nil {
+		return x.Placeholder
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputField) GetRequired() bool {
+	if x != nil {
+		return x.Required
+	}
+	return false
+}
+
+func (x *ActiveQueryInputField) GetSensitive() bool {
+	if x != nil {
+		return x.Sensitive
+	}
+	return false
+}
+
+func (x *ActiveQueryInputField) GetControl() ActiveQueryInputControl {
+	if x != nil {
+		return x.Control
+	}
+	return ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED
+}
+
+func (x *ActiveQueryInputField) GetPersistence() ActiveQueryInputPersistence {
+	if x != nil {
+		return x.Persistence
+	}
+	return ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_UNSPECIFIED
+}
+
+func (x *ActiveQueryInputField) GetTargetFieldId() string {
+	if x != nil {
+		return x.TargetFieldId
+	}
+	return ""
+}
+
+func (x *ActiveQueryInputField) GetTransform() ActiveQueryInputValueTransform {
+	if x != nil {
+		return x.Transform
+	}
+	return ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED
+}
+
+func (x *ActiveQueryInputField) GetDefaultValue() string {
+	if x != nil {
+		return x.DefaultValue
+	}
+	return ""
+}
+
+// CredentialBackfillRule declares one credential value that may be persisted
+// from an active query result.
+type CredentialBackfillRule struct {
+	state             protoimpl.MessageState   `protogen:"open.v1"`
+	RuleId            string                   `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3" json:"rule_id,omitempty"`
+	Source            CredentialBackfillSource `protobuf:"varint,2,opt,name=source,proto3,enum=observability.v1.CredentialBackfillSource" json:"source,omitempty"`
+	SourceName        string                   `protobuf:"bytes,3,opt,name=source_name,json=sourceName,proto3" json:"source_name,omitempty"`
+	TargetMaterialKey string                   `protobuf:"bytes,4,opt,name=target_material_key,json=targetMaterialKey,proto3" json:"target_material_key,omitempty"`
+	Required          bool                     `protobuf:"varint,5,opt,name=required,proto3" json:"required,omitempty"`
+	// If true, this persisted value may be read back by the same active query
+	// collector on later runs. Leave false for token/cookie/session material that
+	// should remain write-only outside authservice.
+	Readable      bool `protobuf:"varint,6,opt,name=readable,proto3" json:"readable,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CredentialBackfillRule) Reset() {
+	*x = CredentialBackfillRule{}
+	mi := &file_observability_v1_observability_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialBackfillRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialBackfillRule) ProtoMessage() {}
+
+func (x *CredentialBackfillRule) ProtoReflect() protoreflect.Message {
+	mi := &file_observability_v1_observability_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CredentialBackfillRule.ProtoReflect.Descriptor instead.
+func (*CredentialBackfillRule) Descriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CredentialBackfillRule) GetRuleId() string {
+	if x != nil {
+		return x.RuleId
+	}
+	return ""
+}
+
+func (x *CredentialBackfillRule) GetSource() CredentialBackfillSource {
+	if x != nil {
+		return x.Source
+	}
+	return CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED
+}
+
+func (x *CredentialBackfillRule) GetSourceName() string {
+	if x != nil {
+		return x.SourceName
+	}
+	return ""
+}
+
+func (x *CredentialBackfillRule) GetTargetMaterialKey() string {
+	if x != nil {
+		return x.TargetMaterialKey
+	}
+	return ""
+}
+
+func (x *CredentialBackfillRule) GetRequired() bool {
+	if x != nil {
+		return x.Required
+	}
+	return false
+}
+
+func (x *CredentialBackfillRule) GetReadable() bool {
+	if x != nil {
+		return x.Readable
+	}
+	return false
+}
+
+// PassiveHttpTelemetryCollection declares how an official HTTP telemetry stream
+// is selected, sanitized, and converted into metrics.
+type PassiveHttpTelemetryCollection struct {
+	state         protoimpl.MessageState          `protogen:"open.v1"`
+	CapturePoint  TelemetryCapturePoint           `protobuf:"varint,1,opt,name=capture_point,json=capturePoint,proto3,enum=observability.v1.TelemetryCapturePoint" json:"capture_point,omitempty"`
+	Selectors     []*HttpTelemetrySelector        `protobuf:"bytes,2,rep,name=selectors,proto3" json:"selectors,omitempty"`
+	Transforms    []*HttpHeaderTelemetryTransform `protobuf:"bytes,3,rep,name=transforms,proto3" json:"transforms,omitempty"`
+	Redaction     *HeaderRedactionPolicy          `protobuf:"bytes,4,opt,name=redaction,proto3" json:"redaction,omitempty"`
+	EmitAccessLog bool                            `protobuf:"varint,5,opt,name=emit_access_log,json=emitAccessLog,proto3" json:"emit_access_log,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PassiveHttpTelemetryCollection) Reset() {
+	*x = PassiveHttpTelemetryCollection{}
+	mi := &file_observability_v1_observability_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PassiveHttpTelemetryCollection) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PassiveHttpTelemetryCollection) ProtoMessage() {}
+
+func (x *PassiveHttpTelemetryCollection) ProtoReflect() protoreflect.Message {
+	mi := &file_observability_v1_observability_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PassiveHttpTelemetryCollection.ProtoReflect.Descriptor instead.
+func (*PassiveHttpTelemetryCollection) Descriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *PassiveHttpTelemetryCollection) GetCapturePoint() TelemetryCapturePoint {
+	if x != nil {
+		return x.CapturePoint
+	}
+	return TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_UNSPECIFIED
+}
+
+func (x *PassiveHttpTelemetryCollection) GetSelectors() []*HttpTelemetrySelector {
+	if x != nil {
+		return x.Selectors
+	}
+	return nil
+}
+
+func (x *PassiveHttpTelemetryCollection) GetTransforms() []*HttpHeaderTelemetryTransform {
+	if x != nil {
+		return x.Transforms
+	}
+	return nil
+}
+
+func (x *PassiveHttpTelemetryCollection) GetRedaction() *HeaderRedactionPolicy {
+	if x != nil {
+		return x.Redaction
+	}
+	return nil
+}
+
+func (x *PassiveHttpTelemetryCollection) GetEmitAccessLog() bool {
+	if x != nil {
+		return x.EmitAccessLog
+	}
+	return false
+}
+
+// HttpTelemetrySelector narrows the HTTP stream handled by one profile.
+type HttpTelemetrySelector struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Hostnames     []string               `protobuf:"bytes,1,rep,name=hostnames,proto3" json:"hostnames,omitempty"`
+	PathPrefixes  []string               `protobuf:"bytes,2,rep,name=path_prefixes,json=pathPrefixes,proto3" json:"path_prefixes,omitempty"`
+	Methods       []string               `protobuf:"bytes,3,rep,name=methods,proto3" json:"methods,omitempty"`
+	StatusCodes   []uint32               `protobuf:"varint,4,rep,packed,name=status_codes,json=statusCodes,proto3" json:"status_codes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HttpTelemetrySelector) Reset() {
+	*x = HttpTelemetrySelector{}
+	mi := &file_observability_v1_observability_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HttpTelemetrySelector) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HttpTelemetrySelector) ProtoMessage() {}
+
+func (x *HttpTelemetrySelector) ProtoReflect() protoreflect.Message {
+	mi := &file_observability_v1_observability_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HttpTelemetrySelector.ProtoReflect.Descriptor instead.
+func (*HttpTelemetrySelector) Descriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *HttpTelemetrySelector) GetHostnames() []string {
+	if x != nil {
+		return x.Hostnames
+	}
+	return nil
+}
+
+func (x *HttpTelemetrySelector) GetPathPrefixes() []string {
+	if x != nil {
+		return x.PathPrefixes
+	}
+	return nil
+}
+
+func (x *HttpTelemetrySelector) GetMethods() []string {
+	if x != nil {
+		return x.Methods
+	}
+	return nil
+}
+
+func (x *HttpTelemetrySelector) GetStatusCodes() []uint32 {
+	if x != nil {
+		return x.StatusCodes
+	}
+	return nil
+}
+
+// HttpHeaderTelemetryTransform maps one selected HTTP header to one metric.
+type HttpHeaderTelemetryTransform struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Source        HttpHeaderSource        `protobuf:"varint,1,opt,name=source,proto3,enum=observability.v1.HttpHeaderSource" json:"source,omitempty"`
+	HeaderName    string                  `protobuf:"bytes,2,opt,name=header_name,json=headerName,proto3" json:"header_name,omitempty"`
+	MetricName    string                  `protobuf:"bytes,3,opt,name=metric_name,json=metricName,proto3" json:"metric_name,omitempty"`
+	ValueType     HeaderValueType         `protobuf:"varint,4,opt,name=value_type,json=valueType,proto3,enum=observability.v1.HeaderValueType" json:"value_type,omitempty"`
+	Labels        []*TelemetryMetricLabel `protobuf:"bytes,5,rep,name=labels,proto3" json:"labels,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HttpHeaderTelemetryTransform) Reset() {
+	*x = HttpHeaderTelemetryTransform{}
+	mi := &file_observability_v1_observability_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HttpHeaderTelemetryTransform) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HttpHeaderTelemetryTransform) ProtoMessage() {}
+
+func (x *HttpHeaderTelemetryTransform) ProtoReflect() protoreflect.Message {
+	mi := &file_observability_v1_observability_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HttpHeaderTelemetryTransform.ProtoReflect.Descriptor instead.
+func (*HttpHeaderTelemetryTransform) Descriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *HttpHeaderTelemetryTransform) GetSource() HttpHeaderSource {
+	if x != nil {
+		return x.Source
+	}
+	return HttpHeaderSource_HTTP_HEADER_SOURCE_UNSPECIFIED
+}
+
+func (x *HttpHeaderTelemetryTransform) GetHeaderName() string {
 	if x != nil {
 		return x.HeaderName
 	}
 	return ""
 }
 
-func (x *HeaderMetricMapping) GetMetricName() string {
+func (x *HttpHeaderTelemetryTransform) GetMetricName() string {
 	if x != nil {
 		return x.MetricName
 	}
 	return ""
 }
 
-func (x *HeaderMetricMapping) GetValueType() HeaderValueType {
+func (x *HttpHeaderTelemetryTransform) GetValueType() HeaderValueType {
 	if x != nil {
 		return x.ValueType
 	}
 	return HeaderValueType_HEADER_VALUE_TYPE_UNSPECIFIED
 }
 
-func (x *HeaderMetricMapping) GetLabels() []*HeaderMetricLabel {
+func (x *HttpHeaderTelemetryTransform) GetLabels() []*TelemetryMetricLabel {
 	if x != nil {
 		return x.Labels
 	}
 	return nil
 }
 
-// HeaderMetricLabel binds one fixed label value to one header-derived metric
-// sample.
-type HeaderMetricLabel struct {
+// TelemetryMetricLabel binds one fixed metric label value to one telemetry
+// transform.
+type TelemetryMetricLabel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -1094,21 +1837,21 @@ type HeaderMetricLabel struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *HeaderMetricLabel) Reset() {
-	*x = HeaderMetricLabel{}
-	mi := &file_observability_v1_observability_proto_msgTypes[8]
+func (x *TelemetryMetricLabel) Reset() {
+	*x = TelemetryMetricLabel{}
+	mi := &file_observability_v1_observability_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HeaderMetricLabel) String() string {
+func (x *TelemetryMetricLabel) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HeaderMetricLabel) ProtoMessage() {}
+func (*TelemetryMetricLabel) ProtoMessage() {}
 
-func (x *HeaderMetricLabel) ProtoReflect() protoreflect.Message {
-	mi := &file_observability_v1_observability_proto_msgTypes[8]
+func (x *TelemetryMetricLabel) ProtoReflect() protoreflect.Message {
+	mi := &file_observability_v1_observability_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1119,23 +1862,85 @@ func (x *HeaderMetricLabel) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HeaderMetricLabel.ProtoReflect.Descriptor instead.
-func (*HeaderMetricLabel) Descriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use TelemetryMetricLabel.ProtoReflect.Descriptor instead.
+func (*TelemetryMetricLabel) Descriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *HeaderMetricLabel) GetName() string {
+func (x *TelemetryMetricLabel) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *HeaderMetricLabel) GetValue() string {
+func (x *TelemetryMetricLabel) GetValue() string {
 	if x != nil {
 		return x.Value
 	}
 	return ""
+}
+
+// HeaderRedactionPolicy describes how raw header values are protected before
+// leaving the collector pipeline.
+type HeaderRedactionPolicy struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	DropRawHeaders bool                   `protobuf:"varint,1,opt,name=drop_raw_headers,json=dropRawHeaders,proto3" json:"drop_raw_headers,omitempty"`
+	HashHeaders    []string               `protobuf:"bytes,2,rep,name=hash_headers,json=hashHeaders,proto3" json:"hash_headers,omitempty"`
+	RedactHeaders  []string               `protobuf:"bytes,3,rep,name=redact_headers,json=redactHeaders,proto3" json:"redact_headers,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *HeaderRedactionPolicy) Reset() {
+	*x = HeaderRedactionPolicy{}
+	mi := &file_observability_v1_observability_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HeaderRedactionPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeaderRedactionPolicy) ProtoMessage() {}
+
+func (x *HeaderRedactionPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_observability_v1_observability_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeaderRedactionPolicy.ProtoReflect.Descriptor instead.
+func (*HeaderRedactionPolicy) Descriptor() ([]byte, []int) {
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *HeaderRedactionPolicy) GetDropRawHeaders() bool {
+	if x != nil {
+		return x.DropRawHeaders
+	}
+	return false
+}
+
+func (x *HeaderRedactionPolicy) GetHashHeaders() []string {
+	if x != nil {
+		return x.HashHeaders
+	}
+	return nil
+}
+
+func (x *HeaderRedactionPolicy) GetRedactHeaders() []string {
+	if x != nil {
+		return x.RedactHeaders
+	}
+	return nil
 }
 
 // MetricQuery describes one stable metrics query statement.
@@ -1153,7 +1958,7 @@ type MetricQuery struct {
 
 func (x *MetricQuery) Reset() {
 	*x = MetricQuery{}
-	mi := &file_observability_v1_observability_proto_msgTypes[9]
+	mi := &file_observability_v1_observability_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1165,7 +1970,7 @@ func (x *MetricQuery) String() string {
 func (*MetricQuery) ProtoMessage() {}
 
 func (x *MetricQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_observability_v1_observability_proto_msgTypes[9]
+	mi := &file_observability_v1_observability_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1178,7 +1983,7 @@ func (x *MetricQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricQuery.ProtoReflect.Descriptor instead.
 func (*MetricQuery) Descriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{9}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *MetricQuery) GetQueryId() string {
@@ -1237,7 +2042,7 @@ type AvailabilityJudgment struct {
 
 func (x *AvailabilityJudgment) Reset() {
 	*x = AvailabilityJudgment{}
-	mi := &file_observability_v1_observability_proto_msgTypes[10]
+	mi := &file_observability_v1_observability_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1249,7 +2054,7 @@ func (x *AvailabilityJudgment) String() string {
 func (*AvailabilityJudgment) ProtoMessage() {}
 
 func (x *AvailabilityJudgment) ProtoReflect() protoreflect.Message {
-	mi := &file_observability_v1_observability_proto_msgTypes[10]
+	mi := &file_observability_v1_observability_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1262,7 +2067,7 @@ func (x *AvailabilityJudgment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AvailabilityJudgment.ProtoReflect.Descriptor instead.
 func (*AvailabilityJudgment) Descriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{10}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *AvailabilityJudgment) GetSubjectKind() AvailabilitySubjectKind {
@@ -1306,7 +2111,7 @@ type AvailabilityRule struct {
 
 func (x *AvailabilityRule) Reset() {
 	*x = AvailabilityRule{}
-	mi := &file_observability_v1_observability_proto_msgTypes[11]
+	mi := &file_observability_v1_observability_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1318,7 +2123,7 @@ func (x *AvailabilityRule) String() string {
 func (*AvailabilityRule) ProtoMessage() {}
 
 func (x *AvailabilityRule) ProtoReflect() protoreflect.Message {
-	mi := &file_observability_v1_observability_proto_msgTypes[11]
+	mi := &file_observability_v1_observability_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1331,7 +2136,7 @@ func (x *AvailabilityRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AvailabilityRule.ProtoReflect.Descriptor instead.
 func (*AvailabilityRule) Descriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{11}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *AvailabilityRule) GetRuleId() string {
@@ -1374,7 +2179,7 @@ type AvailabilityPredicate struct {
 
 func (x *AvailabilityPredicate) Reset() {
 	*x = AvailabilityPredicate{}
-	mi := &file_observability_v1_observability_proto_msgTypes[12]
+	mi := &file_observability_v1_observability_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1386,7 +2191,7 @@ func (x *AvailabilityPredicate) String() string {
 func (*AvailabilityPredicate) ProtoMessage() {}
 
 func (x *AvailabilityPredicate) ProtoReflect() protoreflect.Message {
-	mi := &file_observability_v1_observability_proto_msgTypes[12]
+	mi := &file_observability_v1_observability_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1399,7 +2204,7 @@ func (x *AvailabilityPredicate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AvailabilityPredicate.ProtoReflect.Descriptor instead.
 func (*AvailabilityPredicate) Descriptor() ([]byte, []int) {
-	return file_observability_v1_observability_proto_rawDescGZIP(), []int{12}
+	return file_observability_v1_observability_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *AvailabilityPredicate) GetQueryId() string {
@@ -1429,15 +2234,15 @@ const file_observability_v1_observability_proto_rawDesc = "" +
 	"\n" +
 	"$observability/v1/observability.proto\x12\x10observability.v1\x1a\x1egoogle/protobuf/duration.proto\"]\n" +
 	"\x17ObservabilityCapability\x12B\n" +
-	"\bprofiles\x18\x01 \x03(\v2&.observability.v1.ObservabilityProfileR\bprofiles\"\x8e\x04\n" +
+	"\bprofiles\x18\x01 \x03(\v2&.observability.v1.ObservabilityProfileR\bprofiles\"\x8c\x04\n" +
 	"\x14ObservabilityProfile\x12\x1d\n" +
 	"\n" +
 	"profile_id\x18\x01 \x01(\tR\tprofileId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x1b\n" +
 	"\tscope_ids\x18\x03 \x03(\tR\bscopeIds\x12?\n" +
 	"\ametrics\x18\x04 \x03(\v2%.observability.v1.ObservabilityMetricR\ametrics\x12L\n" +
-	"\factive_query\x18\x05 \x01(\v2'.observability.v1.ActiveQueryCollectionH\x00R\vactiveQuery\x12W\n" +
-	"\x10response_headers\x18\x06 \x01(\v2*.observability.v1.ResponseHeaderCollectionH\x00R\x0fresponseHeaders\x12D\n" +
+	"\factive_query\x18\x05 \x01(\v2'.observability.v1.ActiveQueryCollectionH\x00R\vactiveQuery\x12U\n" +
+	"\fpassive_http\x18\x06 \x01(\v20.observability.v1.PassiveHttpTelemetryCollectionH\x00R\vpassiveHttp\x12D\n" +
 	"\x0emetric_queries\x18\a \x03(\v2\x1d.observability.v1.MetricQueryR\rmetricQueries\x12[\n" +
 	"\x15availability_judgment\x18\b \x01(\v2&.observability.v1.AvailabilityJudgmentR\x14availabilityJudgmentB\f\n" +
 	"\n" +
@@ -1454,30 +2259,77 @@ const file_observability_v1_observability_proto_rawDesc = "" +
 	"\x1cObservabilityMetricAttribute\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12e\n" +
-	"\x11requirement_level\x18\x03 \x01(\x0e28.observability.v1.ObservabilityAttributeRequirementLevelR\x10requirementLevel\"\xe6\x01\n" +
+	"\x11requirement_level\x18\x03 \x01(\x0e28.observability.v1.ObservabilityAttributeRequirementLevelR\x10requirementLevel\"\xbc\x03\n" +
 	"\x15ActiveQueryCollection\x12M\n" +
 	"\x15minimum_poll_interval\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x13minimumPollInterval\x12[\n" +
 	"\x12dynamic_parameters\x18\x02 \x03(\v2,.observability.v1.DynamicParameterDefinitionR\x11dynamicParameters\x12!\n" +
-	"\fcollector_id\x18\x03 \x01(\tR\vcollectorId\"\xb8\x01\n" +
+	"\fcollector_id\x18\x03 \x01(\tR\vcollectorId\x12[\n" +
+	"\x14credential_backfills\x18\x04 \x03(\v2(.observability.v1.CredentialBackfillRuleR\x13credentialBackfills\x12E\n" +
+	"\n" +
+	"input_form\x18\x05 \x01(\v2&.observability.v1.ActiveQueryInputFormR\tinputForm\x120\n" +
+	"\x14material_read_fields\x18\x06 \x03(\tR\x12materialReadFields\"\xb8\x01\n" +
 	"\x1aDynamicParameterDefinition\x12!\n" +
 	"\fparameter_id\x18\x01 \x01(\tR\vparameterId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1a\n" +
 	"\brequired\x18\x04 \x01(\bR\brequired\x12\x16\n" +
-	"\x06secret\x18\x05 \x01(\bR\x06secret\"w\n" +
-	"\x18ResponseHeaderCollection\x12[\n" +
-	"\x16header_metric_mappings\x18\x01 \x03(\v2%.observability.v1.HeaderMetricMappingR\x14headerMetricMappings\"\xd6\x01\n" +
-	"\x13HeaderMetricMapping\x12\x1f\n" +
-	"\vheader_name\x18\x01 \x01(\tR\n" +
+	"\x06secret\x18\x05 \x01(\bR\x06secret\"\xcf\x01\n" +
+	"\x14ActiveQueryInputForm\x12\x1b\n" +
+	"\tschema_id\x18\x01 \x01(\tR\bschemaId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12!\n" +
+	"\faction_label\x18\x03 \x01(\tR\vactionLabel\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12?\n" +
+	"\x06fields\x18\x05 \x03(\v2'.observability.v1.ActiveQueryInputFieldR\x06fields\"\xf9\x03\n" +
+	"\x15ActiveQueryInputField\x12\x19\n" +
+	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12 \n" +
+	"\vplaceholder\x18\x04 \x01(\tR\vplaceholder\x12\x1a\n" +
+	"\brequired\x18\x05 \x01(\bR\brequired\x12\x1c\n" +
+	"\tsensitive\x18\x06 \x01(\bR\tsensitive\x12C\n" +
+	"\acontrol\x18\a \x01(\x0e2).observability.v1.ActiveQueryInputControlR\acontrol\x12O\n" +
+	"\vpersistence\x18\b \x01(\x0e2-.observability.v1.ActiveQueryInputPersistenceR\vpersistence\x12&\n" +
+	"\x0ftarget_field_id\x18\t \x01(\tR\rtargetFieldId\x12N\n" +
+	"\ttransform\x18\n" +
+	" \x01(\x0e20.observability.v1.ActiveQueryInputValueTransformR\ttransform\x12#\n" +
+	"\rdefault_value\x18\v \x01(\tR\fdefaultValue\"\xfe\x01\n" +
+	"\x16CredentialBackfillRule\x12\x17\n" +
+	"\arule_id\x18\x01 \x01(\tR\x06ruleId\x12B\n" +
+	"\x06source\x18\x02 \x01(\x0e2*.observability.v1.CredentialBackfillSourceR\x06source\x12\x1f\n" +
+	"\vsource_name\x18\x03 \x01(\tR\n" +
+	"sourceName\x12.\n" +
+	"\x13target_material_key\x18\x04 \x01(\tR\x11targetMaterialKey\x12\x1a\n" +
+	"\brequired\x18\x05 \x01(\bR\brequired\x12\x1a\n" +
+	"\breadable\x18\x06 \x01(\bR\breadable\"\xf4\x02\n" +
+	"\x1ePassiveHttpTelemetryCollection\x12L\n" +
+	"\rcapture_point\x18\x01 \x01(\x0e2'.observability.v1.TelemetryCapturePointR\fcapturePoint\x12E\n" +
+	"\tselectors\x18\x02 \x03(\v2'.observability.v1.HttpTelemetrySelectorR\tselectors\x12N\n" +
+	"\n" +
+	"transforms\x18\x03 \x03(\v2..observability.v1.HttpHeaderTelemetryTransformR\n" +
+	"transforms\x12E\n" +
+	"\tredaction\x18\x04 \x01(\v2'.observability.v1.HeaderRedactionPolicyR\tredaction\x12&\n" +
+	"\x0femit_access_log\x18\x05 \x01(\bR\remitAccessLog\"\x97\x01\n" +
+	"\x15HttpTelemetrySelector\x12\x1c\n" +
+	"\thostnames\x18\x01 \x03(\tR\thostnames\x12#\n" +
+	"\rpath_prefixes\x18\x02 \x03(\tR\fpathPrefixes\x12\x18\n" +
+	"\amethods\x18\x03 \x03(\tR\amethods\x12!\n" +
+	"\fstatus_codes\x18\x04 \x03(\rR\vstatusCodes\"\x9e\x02\n" +
+	"\x1cHttpHeaderTelemetryTransform\x12:\n" +
+	"\x06source\x18\x01 \x01(\x0e2\".observability.v1.HttpHeaderSourceR\x06source\x12\x1f\n" +
+	"\vheader_name\x18\x02 \x01(\tR\n" +
 	"headerName\x12\x1f\n" +
-	"\vmetric_name\x18\x02 \x01(\tR\n" +
+	"\vmetric_name\x18\x03 \x01(\tR\n" +
 	"metricName\x12@\n" +
 	"\n" +
-	"value_type\x18\x03 \x01(\x0e2!.observability.v1.HeaderValueTypeR\tvalueType\x12;\n" +
-	"\x06labels\x18\x04 \x03(\v2#.observability.v1.HeaderMetricLabelR\x06labels\"=\n" +
-	"\x11HeaderMetricLabel\x12\x12\n" +
+	"value_type\x18\x04 \x01(\x0e2!.observability.v1.HeaderValueTypeR\tvalueType\x12>\n" +
+	"\x06labels\x18\x05 \x03(\v2&.observability.v1.TelemetryMetricLabelR\x06labels\"@\n" +
+	"\x14TelemetryMetricLabel\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"\x99\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\x8b\x01\n" +
+	"\x15HeaderRedactionPolicy\x12(\n" +
+	"\x10drop_raw_headers\x18\x01 \x01(\bR\x0edropRawHeaders\x12!\n" +
+	"\fhash_headers\x18\x02 \x03(\tR\vhashHeaders\x12%\n" +
+	"\x0eredact_headers\x18\x03 \x03(\tR\rredactHeaders\"\x99\x02\n" +
 	"\vMetricQuery\x12\x19\n" +
 	"\bquery_id\x18\x01 \x01(\tR\aqueryId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12A\n" +
@@ -1513,7 +2365,33 @@ const file_observability_v1_observability_proto_rawDesc = "" +
 	"&ObservabilityAttributeRequirementLevel\x129\n" +
 	"5OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_UNSPECIFIED\x10\x00\x126\n" +
 	"2OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_REQUIRED\x10\x01\x129\n" +
-	"5OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_RECOMMENDED\x10\x02*^\n" +
+	"5OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_RECOMMENDED\x10\x02*\xbc\x01\n" +
+	"\x17ActiveQueryInputControl\x12*\n" +
+	"&ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED\x10\x00\x12#\n" +
+	"\x1fACTIVE_QUERY_INPUT_CONTROL_TEXT\x10\x01\x12'\n" +
+	"#ACTIVE_QUERY_INPUT_CONTROL_PASSWORD\x10\x02\x12'\n" +
+	"#ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA\x10\x03*\xaf\x01\n" +
+	"\x1bActiveQueryInputPersistence\x12.\n" +
+	"*ACTIVE_QUERY_INPUT_PERSISTENCE_UNSPECIFIED\x10\x00\x122\n" +
+	".ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL\x10\x01\x12,\n" +
+	"(ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT\x10\x02*\xbe\x01\n" +
+	"\x1eActiveQueryInputValueTransform\x122\n" +
+	".ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED\x10\x00\x12/\n" +
+	"+ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY\x10\x01\x127\n" +
+	"3ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE\x10\x02*\xe1\x01\n" +
+	"\x18CredentialBackfillSource\x12*\n" +
+	"&CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED\x10\x00\x12/\n" +
+	"+CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT\x10\x01\x123\n" +
+	"/CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_HEADER\x10\x02\x123\n" +
+	"/CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_COOKIE\x10\x03*\x96\x01\n" +
+	"\x15TelemetryCapturePoint\x12'\n" +
+	"#TELEMETRY_CAPTURE_POINT_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eTELEMETRY_CAPTURE_POINT_EGRESS\x10\x01\x120\n" +
+	",TELEMETRY_CAPTURE_POINT_DESTINATION_WAYPOINT\x10\x02*w\n" +
+	"\x10HttpHeaderSource\x12\"\n" +
+	"\x1eHTTP_HEADER_SOURCE_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aHTTP_HEADER_SOURCE_REQUEST\x10\x01\x12\x1f\n" +
+	"\x1bHTTP_HEADER_SOURCE_RESPONSE\x10\x02*^\n" +
 	"\x13MetricQueryLanguage\x12%\n" +
 	"!METRIC_QUERY_LANGUAGE_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cMETRIC_QUERY_LANGUAGE_PROMQL\x10\x01*\xb6\x01\n" +
@@ -1558,61 +2436,83 @@ func file_observability_v1_observability_proto_rawDescGZIP() []byte {
 	return file_observability_v1_observability_proto_rawDescData
 }
 
-var file_observability_v1_observability_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
-var file_observability_v1_observability_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_observability_v1_observability_proto_enumTypes = make([]protoimpl.EnumInfo, 15)
+var file_observability_v1_observability_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_observability_v1_observability_proto_goTypes = []any{
 	(ObservabilityMetricKind)(0),                // 0: observability.v1.ObservabilityMetricKind
 	(ObservabilityMetricCategory)(0),            // 1: observability.v1.ObservabilityMetricCategory
 	(ObservabilityAttributeRequirementLevel)(0), // 2: observability.v1.ObservabilityAttributeRequirementLevel
-	(MetricQueryLanguage)(0),                    // 3: observability.v1.MetricQueryLanguage
-	(MetricQueryResultKind)(0),                  // 4: observability.v1.MetricQueryResultKind
-	(AvailabilitySubjectKind)(0),                // 5: observability.v1.AvailabilitySubjectKind
-	(AvailabilityState)(0),                      // 6: observability.v1.AvailabilityState
-	(ComparisonOperator)(0),                     // 7: observability.v1.ComparisonOperator
-	(HeaderValueType)(0),                        // 8: observability.v1.HeaderValueType
-	(*ObservabilityCapability)(nil),             // 9: observability.v1.ObservabilityCapability
-	(*ObservabilityProfile)(nil),                // 10: observability.v1.ObservabilityProfile
-	(*ObservabilityMetric)(nil),                 // 11: observability.v1.ObservabilityMetric
-	(*ObservabilityMetricAttribute)(nil),        // 12: observability.v1.ObservabilityMetricAttribute
-	(*ActiveQueryCollection)(nil),               // 13: observability.v1.ActiveQueryCollection
-	(*DynamicParameterDefinition)(nil),          // 14: observability.v1.DynamicParameterDefinition
-	(*ResponseHeaderCollection)(nil),            // 15: observability.v1.ResponseHeaderCollection
-	(*HeaderMetricMapping)(nil),                 // 16: observability.v1.HeaderMetricMapping
-	(*HeaderMetricLabel)(nil),                   // 17: observability.v1.HeaderMetricLabel
-	(*MetricQuery)(nil),                         // 18: observability.v1.MetricQuery
-	(*AvailabilityJudgment)(nil),                // 19: observability.v1.AvailabilityJudgment
-	(*AvailabilityRule)(nil),                    // 20: observability.v1.AvailabilityRule
-	(*AvailabilityPredicate)(nil),               // 21: observability.v1.AvailabilityPredicate
-	(*durationpb.Duration)(nil),                 // 22: google.protobuf.Duration
+	(ActiveQueryInputControl)(0),                // 3: observability.v1.ActiveQueryInputControl
+	(ActiveQueryInputPersistence)(0),            // 4: observability.v1.ActiveQueryInputPersistence
+	(ActiveQueryInputValueTransform)(0),         // 5: observability.v1.ActiveQueryInputValueTransform
+	(CredentialBackfillSource)(0),               // 6: observability.v1.CredentialBackfillSource
+	(TelemetryCapturePoint)(0),                  // 7: observability.v1.TelemetryCapturePoint
+	(HttpHeaderSource)(0),                       // 8: observability.v1.HttpHeaderSource
+	(MetricQueryLanguage)(0),                    // 9: observability.v1.MetricQueryLanguage
+	(MetricQueryResultKind)(0),                  // 10: observability.v1.MetricQueryResultKind
+	(AvailabilitySubjectKind)(0),                // 11: observability.v1.AvailabilitySubjectKind
+	(AvailabilityState)(0),                      // 12: observability.v1.AvailabilityState
+	(ComparisonOperator)(0),                     // 13: observability.v1.ComparisonOperator
+	(HeaderValueType)(0),                        // 14: observability.v1.HeaderValueType
+	(*ObservabilityCapability)(nil),             // 15: observability.v1.ObservabilityCapability
+	(*ObservabilityProfile)(nil),                // 16: observability.v1.ObservabilityProfile
+	(*ObservabilityMetric)(nil),                 // 17: observability.v1.ObservabilityMetric
+	(*ObservabilityMetricAttribute)(nil),        // 18: observability.v1.ObservabilityMetricAttribute
+	(*ActiveQueryCollection)(nil),               // 19: observability.v1.ActiveQueryCollection
+	(*DynamicParameterDefinition)(nil),          // 20: observability.v1.DynamicParameterDefinition
+	(*ActiveQueryInputForm)(nil),                // 21: observability.v1.ActiveQueryInputForm
+	(*ActiveQueryInputField)(nil),               // 22: observability.v1.ActiveQueryInputField
+	(*CredentialBackfillRule)(nil),              // 23: observability.v1.CredentialBackfillRule
+	(*PassiveHttpTelemetryCollection)(nil),      // 24: observability.v1.PassiveHttpTelemetryCollection
+	(*HttpTelemetrySelector)(nil),               // 25: observability.v1.HttpTelemetrySelector
+	(*HttpHeaderTelemetryTransform)(nil),        // 26: observability.v1.HttpHeaderTelemetryTransform
+	(*TelemetryMetricLabel)(nil),                // 27: observability.v1.TelemetryMetricLabel
+	(*HeaderRedactionPolicy)(nil),               // 28: observability.v1.HeaderRedactionPolicy
+	(*MetricQuery)(nil),                         // 29: observability.v1.MetricQuery
+	(*AvailabilityJudgment)(nil),                // 30: observability.v1.AvailabilityJudgment
+	(*AvailabilityRule)(nil),                    // 31: observability.v1.AvailabilityRule
+	(*AvailabilityPredicate)(nil),               // 32: observability.v1.AvailabilityPredicate
+	(*durationpb.Duration)(nil),                 // 33: google.protobuf.Duration
 }
 var file_observability_v1_observability_proto_depIdxs = []int32{
-	10, // 0: observability.v1.ObservabilityCapability.profiles:type_name -> observability.v1.ObservabilityProfile
-	11, // 1: observability.v1.ObservabilityProfile.metrics:type_name -> observability.v1.ObservabilityMetric
-	13, // 2: observability.v1.ObservabilityProfile.active_query:type_name -> observability.v1.ActiveQueryCollection
-	15, // 3: observability.v1.ObservabilityProfile.response_headers:type_name -> observability.v1.ResponseHeaderCollection
-	18, // 4: observability.v1.ObservabilityProfile.metric_queries:type_name -> observability.v1.MetricQuery
-	19, // 5: observability.v1.ObservabilityProfile.availability_judgment:type_name -> observability.v1.AvailabilityJudgment
+	16, // 0: observability.v1.ObservabilityCapability.profiles:type_name -> observability.v1.ObservabilityProfile
+	17, // 1: observability.v1.ObservabilityProfile.metrics:type_name -> observability.v1.ObservabilityMetric
+	19, // 2: observability.v1.ObservabilityProfile.active_query:type_name -> observability.v1.ActiveQueryCollection
+	24, // 3: observability.v1.ObservabilityProfile.passive_http:type_name -> observability.v1.PassiveHttpTelemetryCollection
+	29, // 4: observability.v1.ObservabilityProfile.metric_queries:type_name -> observability.v1.MetricQuery
+	30, // 5: observability.v1.ObservabilityProfile.availability_judgment:type_name -> observability.v1.AvailabilityJudgment
 	0,  // 6: observability.v1.ObservabilityMetric.kind:type_name -> observability.v1.ObservabilityMetricKind
 	1,  // 7: observability.v1.ObservabilityMetric.category:type_name -> observability.v1.ObservabilityMetricCategory
-	12, // 8: observability.v1.ObservabilityMetric.attributes:type_name -> observability.v1.ObservabilityMetricAttribute
+	18, // 8: observability.v1.ObservabilityMetric.attributes:type_name -> observability.v1.ObservabilityMetricAttribute
 	2,  // 9: observability.v1.ObservabilityMetricAttribute.requirement_level:type_name -> observability.v1.ObservabilityAttributeRequirementLevel
-	22, // 10: observability.v1.ActiveQueryCollection.minimum_poll_interval:type_name -> google.protobuf.Duration
-	14, // 11: observability.v1.ActiveQueryCollection.dynamic_parameters:type_name -> observability.v1.DynamicParameterDefinition
-	16, // 12: observability.v1.ResponseHeaderCollection.header_metric_mappings:type_name -> observability.v1.HeaderMetricMapping
-	8,  // 13: observability.v1.HeaderMetricMapping.value_type:type_name -> observability.v1.HeaderValueType
-	17, // 14: observability.v1.HeaderMetricMapping.labels:type_name -> observability.v1.HeaderMetricLabel
-	3,  // 15: observability.v1.MetricQuery.language:type_name -> observability.v1.MetricQueryLanguage
-	4,  // 16: observability.v1.MetricQuery.result_kind:type_name -> observability.v1.MetricQueryResultKind
-	5,  // 17: observability.v1.AvailabilityJudgment.subject_kind:type_name -> observability.v1.AvailabilitySubjectKind
-	20, // 18: observability.v1.AvailabilityJudgment.rules:type_name -> observability.v1.AvailabilityRule
-	21, // 19: observability.v1.AvailabilityRule.all_of:type_name -> observability.v1.AvailabilityPredicate
-	6,  // 20: observability.v1.AvailabilityRule.state:type_name -> observability.v1.AvailabilityState
-	7,  // 21: observability.v1.AvailabilityPredicate.operator:type_name -> observability.v1.ComparisonOperator
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	33, // 10: observability.v1.ActiveQueryCollection.minimum_poll_interval:type_name -> google.protobuf.Duration
+	20, // 11: observability.v1.ActiveQueryCollection.dynamic_parameters:type_name -> observability.v1.DynamicParameterDefinition
+	23, // 12: observability.v1.ActiveQueryCollection.credential_backfills:type_name -> observability.v1.CredentialBackfillRule
+	21, // 13: observability.v1.ActiveQueryCollection.input_form:type_name -> observability.v1.ActiveQueryInputForm
+	22, // 14: observability.v1.ActiveQueryInputForm.fields:type_name -> observability.v1.ActiveQueryInputField
+	3,  // 15: observability.v1.ActiveQueryInputField.control:type_name -> observability.v1.ActiveQueryInputControl
+	4,  // 16: observability.v1.ActiveQueryInputField.persistence:type_name -> observability.v1.ActiveQueryInputPersistence
+	5,  // 17: observability.v1.ActiveQueryInputField.transform:type_name -> observability.v1.ActiveQueryInputValueTransform
+	6,  // 18: observability.v1.CredentialBackfillRule.source:type_name -> observability.v1.CredentialBackfillSource
+	7,  // 19: observability.v1.PassiveHttpTelemetryCollection.capture_point:type_name -> observability.v1.TelemetryCapturePoint
+	25, // 20: observability.v1.PassiveHttpTelemetryCollection.selectors:type_name -> observability.v1.HttpTelemetrySelector
+	26, // 21: observability.v1.PassiveHttpTelemetryCollection.transforms:type_name -> observability.v1.HttpHeaderTelemetryTransform
+	28, // 22: observability.v1.PassiveHttpTelemetryCollection.redaction:type_name -> observability.v1.HeaderRedactionPolicy
+	8,  // 23: observability.v1.HttpHeaderTelemetryTransform.source:type_name -> observability.v1.HttpHeaderSource
+	14, // 24: observability.v1.HttpHeaderTelemetryTransform.value_type:type_name -> observability.v1.HeaderValueType
+	27, // 25: observability.v1.HttpHeaderTelemetryTransform.labels:type_name -> observability.v1.TelemetryMetricLabel
+	9,  // 26: observability.v1.MetricQuery.language:type_name -> observability.v1.MetricQueryLanguage
+	10, // 27: observability.v1.MetricQuery.result_kind:type_name -> observability.v1.MetricQueryResultKind
+	11, // 28: observability.v1.AvailabilityJudgment.subject_kind:type_name -> observability.v1.AvailabilitySubjectKind
+	31, // 29: observability.v1.AvailabilityJudgment.rules:type_name -> observability.v1.AvailabilityRule
+	32, // 30: observability.v1.AvailabilityRule.all_of:type_name -> observability.v1.AvailabilityPredicate
+	12, // 31: observability.v1.AvailabilityRule.state:type_name -> observability.v1.AvailabilityState
+	13, // 32: observability.v1.AvailabilityPredicate.operator:type_name -> observability.v1.ComparisonOperator
+	33, // [33:33] is the sub-list for method output_type
+	33, // [33:33] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_observability_v1_observability_proto_init() }
@@ -1622,15 +2522,15 @@ func file_observability_v1_observability_proto_init() {
 	}
 	file_observability_v1_observability_proto_msgTypes[1].OneofWrappers = []any{
 		(*ObservabilityProfile_ActiveQuery)(nil),
-		(*ObservabilityProfile_ResponseHeaders)(nil),
+		(*ObservabilityProfile_PassiveHttp)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_observability_v1_observability_proto_rawDesc), len(file_observability_v1_observability_proto_rawDesc)),
-			NumEnums:      9,
-			NumMessages:   13,
+			NumEnums:      15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

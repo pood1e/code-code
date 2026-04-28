@@ -7,7 +7,6 @@
 - `common/`
   - 多个 agent image 共享的 shell 脚本
 - `<agent>/`
-  - 单个 agent runtime 的 `Dockerfile`
   - 单个 agent runtime 的 entrypoint
   - 单个 agent runtime 的 prepare job 入口
 
@@ -21,15 +20,12 @@
     - `Dockerfile`
     - `README.md`
 - `claude-code/`
-  - `Dockerfile`
   - `entrypoint.sh`
   - `prepare.sh`
 - `gemini-cli/`
-  - `Dockerfile`
   - `entrypoint.sh`
   - `prepare.sh`
 - `qwen-cli/`
-  - `Dockerfile`
   - `entrypoint.sh`
   - `prepare.sh`
 
@@ -57,7 +53,7 @@
 - Go 的 `clidefinitions` package 只保留 CLI specialization / runtime contract 代码，不夹带 image 打包脚本。
 - 共享脚本优先放在 `common/`，CLI-specific 逻辑只放在对应 agent 目录。
 - `cli-output-sidecar` image 资产与主容器 image 资产同属 `deploy/agents/` 域；不放在 `platform-k8s` package。
-- `deploy/images/docker-bake.hcl` 负责 image target 定义，但 agent image 的文件 owner 在 `deploy/agents/`。
+- `deploy/images/release/node-cli-agent.Dockerfile` 是共享 agent runtime Dockerfile；`deploy/images/docker-bake.hcl` 只负责 target 参数和镜像 tag。
 - 所有 agent entrypoint 都应接受统一最小输入：
   - `AGENT_RUN_PROMPT`
   - `AGENT_RUN_MODEL`

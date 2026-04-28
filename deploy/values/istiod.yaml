@@ -1,0 +1,39 @@
+profile: ambient
+
+meshConfig:
+  enableTracing: true
+  defaultProviders:
+    tracing:
+      - otel-tracing
+  extensionProviders:
+    - name: otel-tracing
+      opentelemetry:
+        service: otel-collector.code-code-observability.svc.cluster.local
+        port: 4317
+    - name: code-code-egress-auth-bearer
+      envoyExtAuthzGrpc:
+        service: platform-auth-service.code-code.svc.cluster.local
+        port: 8081
+        timeout: 3s
+        failOpen: false
+    - name: code-code-egress-auth-api-key
+      envoyExtAuthzGrpc:
+        service: platform-auth-service.code-code.svc.cluster.local
+        port: 8081
+        timeout: 3s
+        failOpen: false
+    - name: code-code-egress-auth-session
+      envoyExtAuthzGrpc:
+        service: platform-auth-service.code-code.svc.cluster.local
+        port: 8081
+        timeout: 3s
+        failOpen: false
+
+pilot:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi

@@ -15,7 +15,7 @@
 ## Implementation Notes
 
 - 页面状态由 server-side pagination、`model_id_query` search、`vendor_id` filter 和 `source_id` filter 组成。
-- `pageToken` 是 management API 自有 opaque token；内部只封装 K8s continue token 和当前 offset。
+- `pageToken` 是 management API 自有 opaque token；当前主路径是 keyset continuation（`vendor_id`,`model_id`），并兼容旧 offset 信息。
 - `total_count` 由当前 chunk 的 `offset + itemCount + remainingItemCount` 推导，不做全量拉取。
 - `model_id_query` 只匹配 canonical `model_id`，语义是 case-insensitive contains，不匹配 display name。
 - `source_id` 过滤 direct row 的 `sources[]`，用于快速筛出 `nvidia-integrate`、`modelscope` 等 source 覆盖。

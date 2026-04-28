@@ -32,7 +32,7 @@
 
 - source of truth: `packages/proto/provider/v1/provider.proto`
 - generated contracts owner: `packages/go-contract`, `packages/agent-contract`
-- protocol-specific runtime 是否存在，由 `packages/platform-k8s/providers/*` 单独拥有
+- protocol-specific runtime 是否存在，由 `packages/platform-k8s/internal/providerservice/providers/*` 单独拥有
 
 ## Interface
 

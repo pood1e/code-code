@@ -1,0 +1,65 @@
+{{- $component := .Values.components.model }}
+{{- if and $component.enabled (default false $component.cronJob.enabled) }}
+{{- $componentNamespace := include "platform.componentNamespace" (dict "root" . "component" $component) | trim }}
+{{- $cronJob := $component.cronJob }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $component.name }}-sync
+  namespace: {{ $componentNamespace }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" (printf "%s-sync" $component.name) "componentLabel" $component.componentLabel) | nindent 4 }}
+spec:
+  schedule: {{ default "*/5 * * * *" $cronJob.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ default 1 $cronJob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ default 3 $cronJob.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: {{ default 120 $cronJob.activeDeadlineSeconds }}
+      template:
+        metadata:
+          labels:
+{{ include "platform.labels" (dict "root" . "name" (printf "%s-sync" $component.name) "componentLabel" $component.componentLabel) | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          {{- if $.Values.defaults.containerSecurityContext }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          {{- end }}
+          containers:
+            - name: trigger
+              image: {{ default "curlimages/curl:8.12.1" $cronJob.triggerImage }}
+              command:
+                - curl
+                - -sf
+                - --max-time
+                - "90"
+                - -H
+                - "Authorization: Bearer $(INTERNAL_ACTION_TOKEN)"
+                - "http://{{ $component.name }}.{{ $componentNamespace }}.svc.cluster.local:8080/sync-model-definitions"
+              env:
+                - name: INTERNAL_ACTION_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: platform-model-service-internal-action
+                      key: token
+                      optional: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  cpu: 50m
+                  memory: 32Mi
+{{- end }}

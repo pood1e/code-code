@@ -9,7 +9,7 @@
 ## external fields
 
 - vendor catalog: `vendors/identity`
-- vendor capabilities: `vendors/capabilitypackages`
+- vendor capabilities: `internal/supportservice/vendors/support`
 - CLI definitions: `clidefinitions/identity`
 - CLI specializations: `clidefinitions/specializations`
 

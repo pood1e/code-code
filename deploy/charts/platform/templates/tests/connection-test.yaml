@@ -1,0 +1,56 @@
+{{- /*
+Connectivity smoke test invoked via `helm test`. Resolves DNS for every enabled
+Service that has at least one port, and exits non-zero on the first failure.
+*/}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-connection-test
+  labels:
+{{ include "platform.labels" (dict "root" . "name" "connection-test" "componentLabel" "test") | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: connection-test
+      image: busybox:1.36
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+          ephemeral-storage: 16Mi
+        limits:
+          cpu: 50m
+          memory: 32Mi
+          ephemeral-storage: 64Mi
+      command:
+        - sh
+        - -c
+        - |
+          set -eu
+          {{- range $key := keys .Values.components | sortAlpha }}
+          {{- $component := index $.Values.components $key }}
+          {{- if and $component.enabled $component.service.enabled (or $component.service.ports $component.portPreset) }}
+          {{- $componentNamespace := include "platform.componentNamespace" (dict "root" $ "component" $component) | trim }}
+          echo "[connection-test] resolving {{ $component.name }}.{{ $componentNamespace }}"
+          nslookup {{ $component.name }}.{{ $componentNamespace }}.svc.cluster.local >/dev/null
+          {{- end }}
+          {{- end }}
+          echo "[connection-test] all enabled services resolved"

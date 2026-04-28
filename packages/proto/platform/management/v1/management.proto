@@ -256,6 +256,7 @@ message ProviderView {
   reserved 9;
   reserved "default_model_id";
   provider.v1.ProviderModelCatalog model_catalog = 10;
+  repeated ProviderHostTelemetry host_telemetry = 11;
 }
 
 message ListProviderSurfaceBindingsRequest {}
@@ -277,6 +278,25 @@ message ProviderSurfaceBindingStatus {
   ProviderSurfaceBindingPhase phase = 1;
   // reason is an optional human-readable detail for the current phase.
   string reason = 2;
+}
+
+enum ProviderHostTelemetryAvailability {
+  PROVIDER_HOST_TELEMETRY_AVAILABILITY_UNSPECIFIED = 0;
+  PROVIDER_HOST_TELEMETRY_AVAILABILITY_UNKNOWN = 1;
+  PROVIDER_HOST_TELEMETRY_AVAILABILITY_REACHABLE = 2;
+  PROVIDER_HOST_TELEMETRY_AVAILABILITY_UNREACHABLE = 3;
+}
+
+message ProviderHostTelemetry {
+  string target_url = 1;
+  string host = 2;
+  string scheme = 3;
+  string port = 4;
+  ProviderHostTelemetryAvailability availability = 5;
+  double latency_seconds = 6;
+  int32 http_status_code = 7;
+  google.protobuf.Timestamp sampled_at = 8;
+  string reason = 9;
 }
 
 message ProviderSurfaceBindingView {
@@ -304,6 +324,7 @@ message ProviderSurfaceBindingView {
   string vendor_id = 16;
   string provider_id = 17;
   string provider_display_name = 18;
+  ProviderHostTelemetry host_telemetry = 19;
 }
 
 message UpsertProviderSurfaceBindingRequest {
@@ -683,9 +704,6 @@ message EgressPolicyView {
   EgressConfigSource configured_by = 2;
   repeated EgressConsumer consumers = 3;
   egress.v1.EgressSyncStatus sync = 4;
-  repeated HeaderModificationView header_modifications = 5;
-  repeated HeaderMetricView header_metrics = 6;
-  egress.v1.EgressExternalRuleSetStatus external_rule_set_status = 7;
 }
 
 message EgressConfigSource {
@@ -700,21 +718,6 @@ message EgressConsumer {
   string id = 2;
   string display_name = 3;
   string crd_kind = 4;
-}
-
-message HeaderModificationView {
-  string scope = 1;
-  string header = 2;
-  string action = 3;
-  string value_source = 4;
-}
-
-message HeaderMetricView {
-  string profile = 1;
-  string header = 2;
-  string metric = 3;
-  string value_type = 4;
-  repeated string labels = 5;
 }
 
 message ListTemplatesRequest {}

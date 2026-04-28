@@ -1,0 +1,72 @@
+global:
+  partOf: code-code
+  # -- Namespace where the in-cluster registry and caches are deployed.
+  infraNamespace: code-code-infra
+
+registry:
+  # -- Enable or disable the writable in-cluster registry.
+  enabled: true
+  name: code-code-registry
+  image: registry:2.8.3
+  replicaCount: 1
+  port: 5000
+  service:
+    type: NodePort
+    # -- NodePort exposed for the writable registry service.
+    nodePort: 30500
+  storage:
+    # -- Existing PVC name for registry storage; empty uses ephemeral storage.
+    persistentVolumeClaim: ""
+  deleteEnabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+cache:
+  # -- Enable or disable the pull-through cache tier.
+  enabled: true
+  image: registry:2.8.3
+  replicaCount: 1
+  port: 5000
+  service:
+    type: NodePort
+  deleteEnabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  mirrors:
+    dockerIo:
+      # -- Enable or disable the docker.io pull-through cache.
+      enabled: true
+      name: code-code-cache-docker-io
+      remoteUrl: https://registry-1.docker.io
+      # -- NodePort exposed for the docker.io cache.
+      nodePort: 30502
+      # -- Existing PVC name for the docker.io cache; empty uses ephemeral storage.
+      persistentVolumeClaim: ""
+    registryK8sIo:
+      # -- Enable or disable the registry.k8s.io pull-through cache.
+      enabled: true
+      name: code-code-cache-registry-k8s-io
+      remoteUrl: https://registry.k8s.io
+      # -- NodePort exposed for the registry.k8s.io cache.
+      nodePort: 30503
+      # -- Existing PVC name for the registry.k8s.io cache; empty uses ephemeral storage.
+      persistentVolumeClaim: ""
+    quayIo:
+      # -- Enable or disable the quay.io pull-through cache.
+      enabled: true
+      name: code-code-cache-quay-io
+      remoteUrl: https://quay.io
+      # -- NodePort exposed for the quay.io cache.
+      nodePort: 30504
+      # -- Existing PVC name for the quay.io cache; empty uses ephemeral storage.
+      persistentVolumeClaim: ""

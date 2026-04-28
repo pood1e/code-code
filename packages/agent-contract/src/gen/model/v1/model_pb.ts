@@ -12,10 +12,10 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file model/v1/model.proto.
  */
 export const file_model_v1_model: GenFile = /*@__PURE__*/
-  fileDesc("ChRtb2RlbC92MS9tb2RlbC5wcm90bxIIbW9kZWwudjEiLwoITW9kZWxSZWYSEAoIbW9kZWxfaWQYASABKAkSEQoJdmVuZG9yX2lkGAIgASgJIpkECg9Nb2RlbERlZmluaXRpb24SEAoIbW9kZWxfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEiUKB2FsaWFzZXMYAyADKAsyFC5tb2RlbC52MS5Nb2RlbEFsaWFzEh0KFWNvbnRleHRfd2luZG93X3Rva2VucxgEIAEoAxIZChFtYXhfb3V0cHV0X3Rva2VucxgFIAEoAxIvCgxjYXBhYmlsaXRpZXMYBiADKA4yGS5tb2RlbC52MS5Nb2RlbENhcGFiaWxpdHkSKwoNcHJpbWFyeV9zaGFwZRgHIAEoDjIULm1vZGVsLnYxLk1vZGVsU2hhcGUSLgoQc3VwcG9ydGVkX3NoYXBlcxgIIAMoDjIULm1vZGVsLnYxLk1vZGVsU2hhcGUSLAoQaW5wdXRfbW9kYWxpdGllcxgJIAMoDjISLm1vZGVsLnYxLk1vZGFsaXR5Ei0KEW91dHB1dF9tb2RhbGl0aWVzGAogAygOMhIubW9kZWwudjEuTW9kYWxpdHkSEQoJdmVuZG9yX2lkGA8gASgJSgQICxAMSgQIDBANSgQIDRAOSgQIDhAPSgQIEBARSgQIERASSgQIEhATUhBrbm93bGVkZ2VfY3V0b2ZmUg90cmFpbmluZ19jdXRvZmZSB3ByaWNpbmdSCWxpZmVjeWNsZVIJZmFtaWx5X2lkUgtkZXNjcmlwdGlvblIGbGFiZWxzIoIFCg1Nb2RlbE92ZXJyaWRlEi4KCmZpZWxkX21hc2sYASABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrEhkKDGRpc3BsYXlfbmFtZRgCIAEoCUgAiAEBEiIKFWNvbnRleHRfd2luZG93X3Rva2VucxgEIAEoA0gBiAEBEh4KEW1heF9vdXRwdXRfdG9rZW5zGAUgASgDSAKIAQESLwoMY2FwYWJpbGl0aWVzGAYgAygOMhkubW9kZWwudjEuTW9kZWxDYXBhYmlsaXR5EjAKDXByaW1hcnlfc2hhcGUYByABKA4yFC5tb2RlbC52MS5Nb2RlbFNoYXBlSAOIAQESLgoQc3VwcG9ydGVkX3NoYXBlcxgIIAMoDjIULm1vZGVsLnYxLk1vZGVsU2hhcGUSLAoQaW5wdXRfbW9kYWxpdGllcxgJIAMoDjISLm1vZGVsLnYxLk1vZGFsaXR5Ei0KEW91dHB1dF9tb2RhbGl0aWVzGAogAygOMhIubW9kZWwudjEuTW9kYWxpdHlCDwoNX2Rpc3BsYXlfbmFtZUIYChZfY29udGV4dF93aW5kb3dfdG9rZW5zQhQKEl9tYXhfb3V0cHV0X3Rva2Vuc0IQCg5fcHJpbWFyeV9zaGFwZUoECAMQBEoECAsQDEoECAwQDUoECA0QDkoECA4QD0oECA8QEEoECBAQEUoECBEQEkoECBIQE1IHYWxpYXNlc1IQa25vd2xlZGdlX2N1dG9mZlIPdHJhaW5pbmdfY3V0b2ZmUgdwcmljaW5nUglsaWZlY3ljbGVSCXZlbmRvcl9pZFIJZmFtaWx5X2lkUgtkZXNjcmlwdGlvblIGbGFiZWxzIloKDVJlc29sdmVkTW9kZWwSEAoIbW9kZWxfaWQYASABKAkSNwoUZWZmZWN0aXZlX2RlZmluaXRpb24YAiABKAsyGS5tb2RlbC52MS5Nb2RlbERlZmluaXRpb24iPgoKTW9kZWxBbGlhcxIhCgRraW5kGAEgASgOMhMubW9kZWwudjEuQWxpYXNLaW5kEg0KBXZhbHVlGAIgASgJKoYBCglBbGlhc0tpbmQSGgoWQUxJQVNfS0lORF9VTlNQRUNJRklFRBAAEhUKEUFMSUFTX0tJTkRfU1RBQkxFEAESFwoTQUxJQVNfS0lORF9TTkFQU0hPVBACEhYKEkFMSUFTX0tJTkRfQkVEUk9DSxADEhUKEUFMSUFTX0tJTkRfVkVSVEVYEAQqwAEKD01vZGVsQ2FwYWJpbGl0eRIgChxNT0RFTF9DQVBBQklMSVRZX1VOU1BFQ0lGSUVEEAASIQodTU9ERUxfQ0FQQUJJTElUWV9UT09MX0NBTExJTkcQARImCiJNT0RFTF9DQVBBQklMSVRZX1NUUlVDVFVSRURfT1VUUFVUEAISIAocTU9ERUxfQ0FQQUJJTElUWV9JTUFHRV9JTlBVVBADEh4KGk1PREVMX0NBUEFCSUxJVFlfU1RSRUFNSU5HEAQqigEKCk1vZGVsU2hhcGUSGwoXTU9ERUxfU0hBUEVfVU5TUEVDSUZJRUQQABIZChVNT0RFTF9TSEFQRV9SRVNQT05TRVMQARIgChxNT0RFTF9TSEFQRV9DSEFUX0NPTVBMRVRJT05TEAISIgoeTU9ERUxfU0hBUEVfQU5USFJPUElDX01FU1NBR0VTEAMqcwoITW9kYWxpdHkSGAoUTU9EQUxJVFlfVU5TUEVDSUZJRUQQABIRCg1NT0RBTElUWV9URVhUEAESEgoOTU9EQUxJVFlfSU1BR0UQAhISCg5NT0RBTElUWV9BVURJTxADEhIKDk1PREFMSVRZX1ZJREVPEARCMVovY29kZS1jb2RlLmludGVybmFsL2dvLWNvbnRyYWN0L21vZGVsL3YxO21vZGVsdjFiBnByb3RvMw", [file_google_protobuf_field_mask]);
+  fileDesc("ChRtb2RlbC92MS9tb2RlbC5wcm90bxIIbW9kZWwudjEiLwoITW9kZWxSZWYSEAoIbW9kZWxfaWQYASABKAkSEQoJdmVuZG9yX2lkGAIgASgJIqAGCgxNb2RlbFZlcnNpb24SEAoIbW9kZWxfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEiUKB2FsaWFzZXMYAyADKAsyFC5tb2RlbC52MS5Nb2RlbEFsaWFzEi8KDGNhcGFiaWxpdGllcxgGIAMoDjIZLm1vZGVsLnYxLk1vZGVsQ2FwYWJpbGl0eRIrCg1wcmltYXJ5X3NoYXBlGAcgASgOMhQubW9kZWwudjEuTW9kZWxTaGFwZRIuChBzdXBwb3J0ZWRfc2hhcGVzGAggAygOMhQubW9kZWwudjEuTW9kZWxTaGFwZRIsChBpbnB1dF9tb2RhbGl0aWVzGAkgAygOMhIubW9kZWwudjEuTW9kYWxpdHkSLQoRb3V0cHV0X21vZGFsaXRpZXMYCiADKA4yEi5tb2RlbC52MS5Nb2RhbGl0eRIRCgl2ZW5kb3JfaWQYDyABKAkSEwoLZmFtaWx5X3NsdWcYESABKAkSKQoIY2F0ZWdvcnkYEyABKA4yFy5tb2RlbC52MS5Nb2RlbENhdGVnb3J5Eg8KB3ZlcnNpb24YFCABKAkSGgoSY2Fub25pY2FsX21vZGVsX2lkGBUgASgJEjgKEGxpZmVjeWNsZV9zdGF0dXMYFiABKA4yHi5tb2RlbC52MS5Nb2RlbExpZmVjeWNsZVN0YXR1cxIrCgxjb250ZXh0X3NwZWMYFyABKAsyFS5tb2RlbC52MS5Db250ZXh0U3BlYxIUCgxyZWxlYXNlX2RhdGUYGCABKAkSFwoPdHJhaW5pbmdfY3V0b2ZmGBkgASgJEhQKDGxpY2Vuc2VfdHlwZRgaIAEoCRIXCg9pc19vcGVuX3dlaWdodHMYGyABKAgSEwoLZGVzY3JpcHRpb24YHCABKAlKBAgEEAVKBAgFEAZKBAgLEAxKBAgMEA1KBAgNEA5KBAgOEA9KBAgQEBFKBAgSEBNSEGtub3dsZWRnZV9jdXRvZmZSE3RyYWluaW5nX2N1dG9mZl9vbGRSB3ByaWNpbmdSCWxpZmVjeWNsZVIJZmFtaWx5X2lkUgZsYWJlbHMi9QQKDU1vZGVsT3ZlcnJpZGUSLgoKZmllbGRfbWFzaxgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2sSGQoMZGlzcGxheV9uYW1lGAIgASgJSACIAQESLwoMY2FwYWJpbGl0aWVzGAYgAygOMhkubW9kZWwudjEuTW9kZWxDYXBhYmlsaXR5EjAKDXByaW1hcnlfc2hhcGUYByABKA4yFC5tb2RlbC52MS5Nb2RlbFNoYXBlSAGIAQESLgoQc3VwcG9ydGVkX3NoYXBlcxgIIAMoDjIULm1vZGVsLnYxLk1vZGVsU2hhcGUSLAoQaW5wdXRfbW9kYWxpdGllcxgJIAMoDjISLm1vZGVsLnYxLk1vZGFsaXR5Ei0KEW91dHB1dF9tb2RhbGl0aWVzGAogAygOMhIubW9kZWwudjEuTW9kYWxpdHkSMAoMY29udGV4dF9zcGVjGBMgASgLMhUubW9kZWwudjEuQ29udGV4dFNwZWNIAogBAUIPCg1fZGlzcGxheV9uYW1lQhAKDl9wcmltYXJ5X3NoYXBlQg8KDV9jb250ZXh0X3NwZWNKBAgDEARKBAgEEAVKBAgFEAZKBAgLEAxKBAgMEA1KBAgNEA5KBAgOEA9KBAgPEBBKBAgQEBFKBAgREBJKBAgSEBNSB2FsaWFzZXNSEGtub3dsZWRnZV9jdXRvZmZSE3RyYWluaW5nX2N1dG9mZl9vbGRSC3ByaWNpbmdfb2xkUg1saWZlY3ljbGVfb2xkUgl2ZW5kb3JfaWRSDWZhbWlseV9pZF9vbGRSD2Rlc2NyaXB0aW9uX29sZFIKbGFiZWxzX29sZCJXCg1SZXNvbHZlZE1vZGVsEhAKCG1vZGVsX2lkGAEgASgJEjQKFGVmZmVjdGl2ZV9kZWZpbml0aW9uGAIgASgLMhYubW9kZWwudjEuTW9kZWxWZXJzaW9uIj4KCk1vZGVsQWxpYXMSIQoEa2luZBgBIAEoDjITLm1vZGVsLnYxLkFsaWFzS2luZBINCgV2YWx1ZRgCIAEoCSKpAQoLQ29udGV4dFNwZWMSGAoQbWF4X2lucHV0X3Rva2VucxgBIAEoAxIZChFtYXhfb3V0cHV0X3Rva2VucxgCIAEoAxIaChJtYXhfY29udGV4dF90b2tlbnMYAyABKAMSHAoUbWF4X3JlYXNvbmluZ190b2tlbnMYBCABKAMSEQoJdG9rZW5pemVyGAUgASgJEhgKEHRva2VuaXplcl9zb3VyY2UYBiABKAkqhgEKCUFsaWFzS2luZBIaChZBTElBU19LSU5EX1VOU1BFQ0lGSUVEEAASFQoRQUxJQVNfS0lORF9TVEFCTEUQARIXChNBTElBU19LSU5EX1NOQVBTSE9UEAISFgoSQUxJQVNfS0lORF9CRURST0NLEAMSFQoRQUxJQVNfS0lORF9WRVJURVgQBCqCBAoPTW9kZWxDYXBhYmlsaXR5EiAKHE1PREVMX0NBUEFCSUxJVFlfVU5TUEVDSUZJRUQQABIhCh1NT0RFTF9DQVBBQklMSVRZX1RPT0xfQ0FMTElORxABEiYKIk1PREVMX0NBUEFCSUxJVFlfU1RSVUNUVVJFRF9PVVRQVVQQAhIgChxNT0RFTF9DQVBBQklMSVRZX0lNQUdFX0lOUFVUEAMSHgoaTU9ERUxfQ0FQQUJJTElUWV9TVFJFQU1JTkcQBBIeChpNT0RFTF9DQVBBQklMSVRZX1JFQVNPTklORxAFEhoKFk1PREVMX0NBUEFCSUxJVFlfQkFUQ0gQBhIeChpNT0RFTF9DQVBBQklMSVRZX0ZJTkVfVFVORRAHEh4KGk1PREVMX0NBUEFCSUxJVFlfRU1CRURESU5HEAgSGwoXTU9ERUxfQ0FQQUJJTElUWV9SRVJBTksQCRIeChpNT0RFTF9DQVBBQklMSVRZX0pTT05fTU9ERRAKEiAKHE1PREVMX0NBUEFCSUxJVFlfSlNPTl9TQ0hFTUEQCxIgChxNT0RFTF9DQVBBQklMSVRZX0FVRElPX0lOUFVUEAwSIQodTU9ERUxfQ0FQQUJJTElUWV9BVURJT19PVVRQVVQQDRIgChxNT0RFTF9DQVBBQklMSVRZX1ZJREVPX0lOUFVUEA4qigEKCk1vZGVsU2hhcGUSGwoXTU9ERUxfU0hBUEVfVU5TUEVDSUZJRUQQABIZChVNT0RFTF9TSEFQRV9SRVNQT05TRVMQARIgChxNT0RFTF9TSEFQRV9DSEFUX0NPTVBMRVRJT05TEAISIgoeTU9ERUxfU0hBUEVfQU5USFJPUElDX01FU1NBR0VTEAMqcwoITW9kYWxpdHkSGAoUTU9EQUxJVFlfVU5TUEVDSUZJRUQQABIRCg1NT0RBTElUWV9URVhUEAESEgoOTU9EQUxJVFlfSU1BR0UQAhISCg5NT0RBTElUWV9BVURJTxADEhIKDk1PREFMSVRZX1ZJREVPEAQq8gEKDU1vZGVsQ2F0ZWdvcnkSHgoaTU9ERUxfQ0FURUdPUllfVU5TUEVDSUZJRUQQABIXChNNT0RFTF9DQVRFR09SWV9DSEFUEAESHAoYTU9ERUxfQ0FURUdPUllfRU1CRURESU5HEAISGQoVTU9ERUxfQ0FURUdPUllfUkVSQU5LEAMSHAoYTU9ERUxfQ0FURUdPUllfSU1BR0VfR0VOEAQSGAoUTU9ERUxfQ0FURUdPUllfQVVESU8QBRIYChRNT0RFTF9DQVRFR09SWV9WSURFTxAGEh0KGU1PREVMX0NBVEVHT1JZX01PREVSQVRJT04QByrvAQoUTW9kZWxMaWZlY3ljbGVTdGF0dXMSJgoiTU9ERUxfTElGRUNZQ0xFX1NUQVRVU19VTlNQRUNJRklFRBAAEiEKHU1PREVMX0xJRkVDWUNMRV9TVEFUVVNfQUNUSVZFEAESIQodTU9ERUxfTElGRUNZQ0xFX1NUQVRVU19MRUdBQ1kQAhIlCiFNT0RFTF9MSUZFQ1lDTEVfU1RBVFVTX0RFUFJFQ0FURUQQAxIeChpNT0RFTF9MSUZFQ1lDTEVfU1RBVFVTX0VPTBAEEiIKHk1PREVMX0xJRkVDWUNMRV9TVEFUVVNfQkxPQ0tFRBAFQjFaL2NvZGUtY29kZS5pbnRlcm5hbC9nby1jb250cmFjdC9tb2RlbC92MTttb2RlbHYxYgZwcm90bzM", [file_google_protobuf_field_mask]);
 
 /**
- * ModelRef references one default model definition by stable identity.
+ * ModelRef references one canonical model by stable identity.
  * Canonical identity is vendor_id + model_id.
  *
  * @generated from message model.v1.ModelRef
@@ -40,11 +40,12 @@ export const ModelRefSchema: GenMessage<ModelRef> = /*@__PURE__*/
   messageDesc(file_model_v1_model, 0);
 
 /**
- * ModelDefinition describes one default model definition.
+ * ModelVersion describes one canonical model version.
+ * Replaces the former ModelDefinition with richer metadata.
  *
- * @generated from message model.v1.ModelDefinition
+ * @generated from message model.v1.ModelVersion
  */
-export type ModelDefinition = Message<"model.v1.ModelDefinition"> & {
+export type ModelVersion = Message<"model.v1.ModelVersion"> & {
   /**
    * @generated from field: string model_id = 1;
    */
@@ -59,16 +60,6 @@ export type ModelDefinition = Message<"model.v1.ModelDefinition"> & {
    * @generated from field: repeated model.v1.ModelAlias aliases = 3;
    */
   aliases: ModelAlias[];
-
-  /**
-   * @generated from field: int64 context_window_tokens = 4;
-   */
-  contextWindowTokens: bigint;
-
-  /**
-   * @generated from field: int64 max_output_tokens = 5;
-   */
-  maxOutputTokens: bigint;
 
   /**
    * @generated from field: repeated model.v1.ModelCapability capabilities = 6;
@@ -96,25 +87,103 @@ export type ModelDefinition = Message<"model.v1.ModelDefinition"> & {
   outputModalities: Modality[];
 
   /**
-   * Model vendor stable identifier aligned with industry APIs
-   * (OpenAI owned_by, Gemini publisher prefix).
-   * Examples: "openai", "anthropic", "google", "meta", "deepseek".
+   * Model vendor stable identifier aligned with industry APIs.
    *
    * @generated from field: string vendor_id = 15;
    */
   vendorId: string;
+
+  /**
+   * Model family slug without version suffix.
+   * Example: "claude-sonnet", "gpt-4o", "gemini-pro".
+   *
+   * @generated from field: string family_slug = 17;
+   */
+  familySlug: string;
+
+  /**
+   * Model category.
+   *
+   * @generated from field: model.v1.ModelCategory category = 19;
+   */
+  category: ModelCategory;
+
+  /**
+   * Explicit version string from the model owner.
+   * Example: "2024-10-22", "001", "4o-2024-08-06".
+   *
+   * @generated from field: string version = 20;
+   */
+  version: string;
+
+  /**
+   * Fully qualified canonical model identifier.
+   * Format: "{vendor_id}/{family_slug}@{version}".
+   *
+   * @generated from field: string canonical_model_id = 21;
+   */
+  canonicalModelId: string;
+
+  /**
+   * Lifecycle status of this model version.
+   *
+   * @generated from field: model.v1.ModelLifecycleStatus lifecycle_status = 22;
+   */
+  lifecycleStatus: ModelLifecycleStatus;
+
+  /**
+   * Context and token limit specification.
+   *
+   * @generated from field: model.v1.ContextSpec context_spec = 23;
+   */
+  contextSpec?: ContextSpec;
+
+  /**
+   * Release date in ISO 8601 format (YYYY-MM-DD).
+   *
+   * @generated from field: string release_date = 24;
+   */
+  releaseDate: string;
+
+  /**
+   * Training data cutoff date in ISO 8601 format (YYYY-MM-DD).
+   *
+   * @generated from field: string training_cutoff = 25;
+   */
+  trainingCutoff: string;
+
+  /**
+   * License type identifier.
+   *
+   * @generated from field: string license_type = 26;
+   */
+  licenseType: string;
+
+  /**
+   * Whether model weights are publicly available.
+   *
+   * @generated from field: bool is_open_weights = 27;
+   */
+  isOpenWeights: boolean;
+
+  /**
+   * Human-readable description of the model.
+   *
+   * @generated from field: string description = 28;
+   */
+  description: string;
 };
 
 /**
- * Describes the message model.v1.ModelDefinition.
- * Use `create(ModelDefinitionSchema)` to create a new message.
+ * Describes the message model.v1.ModelVersion.
+ * Use `create(ModelVersionSchema)` to create a new message.
  */
-export const ModelDefinitionSchema: GenMessage<ModelDefinition> = /*@__PURE__*/
+export const ModelVersionSchema: GenMessage<ModelVersion> = /*@__PURE__*/
   messageDesc(file_model_v1_model, 1);
 
 /**
- * ModelOverride describes provider-supplied overrides for one default model
- * definition.
+ * ModelOverride describes provider-supplied overrides for one canonical model
+ * version.
  *
  * @generated from message model.v1.ModelOverride
  */
@@ -128,16 +197,6 @@ export type ModelOverride = Message<"model.v1.ModelOverride"> & {
    * @generated from field: optional string display_name = 2;
    */
   displayName?: string;
-
-  /**
-   * @generated from field: optional int64 context_window_tokens = 4;
-   */
-  contextWindowTokens?: bigint;
-
-  /**
-   * @generated from field: optional int64 max_output_tokens = 5;
-   */
-  maxOutputTokens?: bigint;
 
   /**
    * @generated from field: repeated model.v1.ModelCapability capabilities = 6;
@@ -163,6 +222,13 @@ export type ModelOverride = Message<"model.v1.ModelOverride"> & {
    * @generated from field: repeated model.v1.Modality output_modalities = 10;
    */
   outputModalities: Modality[];
+
+  /**
+   * Override context specification.
+   *
+   * @generated from field: optional model.v1.ContextSpec context_spec = 19;
+   */
+  contextSpec?: ContextSpec;
 };
 
 /**
@@ -174,7 +240,7 @@ export const ModelOverrideSchema: GenMessage<ModelOverride> = /*@__PURE__*/
 
 /**
  * ResolvedModel describes the effective model after merging the default
- * definition with an optional override.
+ * version with an optional override.
  *
  * @generated from message model.v1.ResolvedModel
  */
@@ -185,9 +251,9 @@ export type ResolvedModel = Message<"model.v1.ResolvedModel"> & {
   modelId: string;
 
   /**
-   * @generated from field: model.v1.ModelDefinition effective_definition = 2;
+   * @generated from field: model.v1.ModelVersion effective_definition = 2;
    */
-  effectiveDefinition?: ModelDefinition;
+  effectiveDefinition?: ModelVersion;
 };
 
 /**
@@ -220,6 +286,62 @@ export type ModelAlias = Message<"model.v1.ModelAlias"> & {
  */
 export const ModelAliasSchema: GenMessage<ModelAlias> = /*@__PURE__*/
   messageDesc(file_model_v1_model, 4);
+
+/**
+ * ContextSpec describes token limits and tokenizer information for a model.
+ *
+ * @generated from message model.v1.ContextSpec
+ */
+export type ContextSpec = Message<"model.v1.ContextSpec"> & {
+  /**
+   * Maximum number of input tokens the model accepts.
+   *
+   * @generated from field: int64 max_input_tokens = 1;
+   */
+  maxInputTokens: bigint;
+
+  /**
+   * Maximum number of output tokens the model can generate.
+   *
+   * @generated from field: int64 max_output_tokens = 2;
+   */
+  maxOutputTokens: bigint;
+
+  /**
+   * Maximum total context window (input + output).
+   *
+   * @generated from field: int64 max_context_tokens = 3;
+   */
+  maxContextTokens: bigint;
+
+  /**
+   * Maximum reasoning/thinking tokens, if applicable.
+   *
+   * @generated from field: int64 max_reasoning_tokens = 4;
+   */
+  maxReasoningTokens: bigint;
+
+  /**
+   * Tokenizer identifier (e.g. "cl100k_base", "o200k_base").
+   *
+   * @generated from field: string tokenizer = 5;
+   */
+  tokenizer: string;
+
+  /**
+   * Tokenizer source (e.g. "openai", "anthropic", "sentencepiece", "provider_specific").
+   *
+   * @generated from field: string tokenizer_source = 6;
+   */
+  tokenizerSource: string;
+};
+
+/**
+ * Describes the message model.v1.ContextSpec.
+ * Use `create(ContextSpecSchema)` to create a new message.
+ */
+export const ContextSpecSchema: GenMessage<ContextSpec> = /*@__PURE__*/
+  messageDesc(file_model_v1_model, 5);
 
 /**
  * AliasKind identifies the semantic kind of one model alias.
@@ -289,6 +411,56 @@ export enum ModelCapability {
    * @generated from enum value: MODEL_CAPABILITY_STREAMING = 4;
    */
   STREAMING = 4,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_REASONING = 5;
+   */
+  REASONING = 5,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_BATCH = 6;
+   */
+  BATCH = 6,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_FINE_TUNE = 7;
+   */
+  FINE_TUNE = 7,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_EMBEDDING = 8;
+   */
+  EMBEDDING = 8,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_RERANK = 9;
+   */
+  RERANK = 9,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_JSON_MODE = 10;
+   */
+  JSON_MODE = 10,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_JSON_SCHEMA = 11;
+   */
+  JSON_SCHEMA = 11,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_AUDIO_INPUT = 12;
+   */
+  AUDIO_INPUT = 12,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_AUDIO_OUTPUT = 13;
+   */
+  AUDIO_OUTPUT = 13,
+
+  /**
+   * @generated from enum value: MODEL_CAPABILITY_VIDEO_INPUT = 14;
+   */
+  VIDEO_INPUT = 14,
 }
 
 /**
@@ -367,4 +539,100 @@ export enum Modality {
  */
 export const ModalitySchema: GenEnum<Modality> = /*@__PURE__*/
   enumDesc(file_model_v1_model, 3);
+
+/**
+ * ModelCategory identifies the primary function category of a model.
+ *
+ * @generated from enum model.v1.ModelCategory
+ */
+export enum ModelCategory {
+  /**
+   * @generated from enum value: MODEL_CATEGORY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MODEL_CATEGORY_CHAT = 1;
+   */
+  CHAT = 1,
+
+  /**
+   * @generated from enum value: MODEL_CATEGORY_EMBEDDING = 2;
+   */
+  EMBEDDING = 2,
+
+  /**
+   * @generated from enum value: MODEL_CATEGORY_RERANK = 3;
+   */
+  RERANK = 3,
+
+  /**
+   * @generated from enum value: MODEL_CATEGORY_IMAGE_GEN = 4;
+   */
+  IMAGE_GEN = 4,
+
+  /**
+   * @generated from enum value: MODEL_CATEGORY_AUDIO = 5;
+   */
+  AUDIO = 5,
+
+  /**
+   * @generated from enum value: MODEL_CATEGORY_VIDEO = 6;
+   */
+  VIDEO = 6,
+
+  /**
+   * @generated from enum value: MODEL_CATEGORY_MODERATION = 7;
+   */
+  MODERATION = 7,
+}
+
+/**
+ * Describes the enum model.v1.ModelCategory.
+ */
+export const ModelCategorySchema: GenEnum<ModelCategory> = /*@__PURE__*/
+  enumDesc(file_model_v1_model, 4);
+
+/**
+ * ModelLifecycleStatus represents the lifecycle stage of a model version.
+ *
+ * @generated from enum model.v1.ModelLifecycleStatus
+ */
+export enum ModelLifecycleStatus {
+  /**
+   * @generated from enum value: MODEL_LIFECYCLE_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MODEL_LIFECYCLE_STATUS_ACTIVE = 1;
+   */
+  ACTIVE = 1,
+
+  /**
+   * @generated from enum value: MODEL_LIFECYCLE_STATUS_LEGACY = 2;
+   */
+  LEGACY = 2,
+
+  /**
+   * @generated from enum value: MODEL_LIFECYCLE_STATUS_DEPRECATED = 3;
+   */
+  DEPRECATED = 3,
+
+  /**
+   * @generated from enum value: MODEL_LIFECYCLE_STATUS_EOL = 4;
+   */
+  EOL = 4,
+
+  /**
+   * @generated from enum value: MODEL_LIFECYCLE_STATUS_BLOCKED = 5;
+   */
+  BLOCKED = 5,
+}
+
+/**
+ * Describes the enum model.v1.ModelLifecycleStatus.
+ */
+export const ModelLifecycleStatusSchema: GenEnum<ModelLifecycleStatus> = /*@__PURE__*/
+  enumDesc(file_model_v1_model, 5);
 

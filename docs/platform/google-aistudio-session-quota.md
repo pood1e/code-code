@@ -32,5 +32,5 @@
 - collector 基于 `ListModelRateLimits` 产出 authoritative `limit` 与 `reset`
 - collector 对最多 5 个 RPD 文本输出模型额外调用 `GetModelQuota`，best-effort 产出 `remaining`
 - `origin` 固定默认 `https://aistudio.google.com`
-- provider observability update 写 account-owned session credential；runner 将完整 session material 传给 collector
+- provider observability update 写 account-owned session credential；runner 只把本地解析需要的 `project_id` 等非请求头字段传给 collector，Cookie/API key/Authorization 仍由 egress auth adapter 在 L7 出口替换
 - provider connect 不再内联 observability token；AI Studio session 只在 account 维度单独维护

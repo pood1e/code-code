@@ -61,7 +61,7 @@ describe("overview view", () => {
         displayName: "Broken Key",
         status: create(CredentialStatusSchema, {
           materialReady: false,
-          reason: "backing secret missing",
+          reason: "credential material missing",
         }),
       }),
       create(CredentialViewSchema, {
@@ -79,7 +79,7 @@ describe("overview view", () => {
     expect(summary.issues).toMatchObject([{
       level: "red",
       title: "Credential · Broken Key",
-      reason: "backing secret missing",
+      reason: "credential material missing",
       href: "/providers?credential=cred-alert",
       actionLabel: "Review Authentication",
     }]);
@@ -93,7 +93,7 @@ describe("overview view", () => {
       unknown: 0,
       issues: [
         { level: "amber", title: "Provider · Zeta", reason: "1/2 endpoints ready" },
-        { level: "red", title: "Provider · Alpha", reason: "backing secret missing" },
+        { level: "red", title: "Provider · Alpha", reason: "credential material missing" },
       ],
     });
 

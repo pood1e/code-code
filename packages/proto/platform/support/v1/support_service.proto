@@ -105,7 +105,7 @@ message RuntimeCapabilitySubject {
 message ResolveProviderCapabilitiesResponse {
   string egress_policy_id = 1;
   string auth_policy_id = 2;
-  string header_metric_policy_id = 3;
+  observability.v1.ObservabilityCapability observability = 3;
   string model_catalog_probe_id = 4;
   string quota_probe_id = 5;
   string auth_materialization_key = 6;
@@ -330,7 +330,7 @@ message CredentialSubjectSummaryField {
   CredentialSubjectSummarySource source = 3;
   string json_pointer = 4;
   CredentialSubjectSummaryValueFormat value_format = 5;
-  string secret_key = 6;
+  string material_key = 6;
 }
 
 enum RuntimeProjectionKind {
@@ -370,7 +370,7 @@ enum CredentialSubjectSummarySource {
   CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_ID = 2;
   CREDENTIAL_SUBJECT_SUMMARY_SOURCE_TOKEN_RESPONSE = 3;
   CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ID_TOKEN_CLAIMS = 4;
-  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_SECRET = 5;
+  CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_MATERIAL = 5;
 }
 
 enum CredentialSubjectSummaryValueFormat {

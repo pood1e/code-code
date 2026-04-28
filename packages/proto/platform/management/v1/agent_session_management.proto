@@ -23,7 +23,6 @@ service AgentSessionManagementService {
   rpc GetAgentRun(GetAgentRunRequest) returns (GetAgentRunResponse);
   rpc StreamAgentRunOutput(StreamAgentRunOutputRequest) returns (stream StreamAgentRunOutputResponse);
   rpc ResolveAgentRunRuntimeContext(ResolveAgentRunRuntimeContextRequest) returns (ResolveAgentRunRuntimeContextResponse);
-  rpc RecordAgentRunResponseHeaders(RecordAgentRunResponseHeadersRequest) returns (RecordAgentRunResponseHeadersResponse);
 }
 
 message GetAgentSessionRequest {
@@ -152,10 +151,9 @@ message AgentRunRuntimeMetadata {
   string header_value_prefix = 12;
   repeated AgentRunRuntimeHeaderReplacementRule request_header_replacement_rules = 13;
   repeated AgentRunRuntimeHeaderReplacementRule response_header_replacement_rules = 14;
-  repeated platform.agent_run.v1.AgentRunResponseHeaderRule response_header_metric_rules = 15;
   string egress_policy_id = 16;
   string auth_policy_id = 17;
-  string header_metric_policy_id = 18;
+  repeated string observability_profile_ids = 18;
 }
 
 message AgentRunRuntimeHeaderReplacementRule {
@@ -164,21 +162,4 @@ message AgentRunRuntimeHeaderReplacementRule {
   string material_key = 3;
   string header_value_prefix = 4;
   string template = 5;
-}
-
-message RecordAgentRunResponseHeadersRequest {
-  oneof source {
-    string run_id = 1;
-    AgentRunPodRef pod = 2;
-    string workload_id = 3;
-  }
-  string target_host = 4;
-  string target_path = 5;
-  uint32 status_code = 6;
-  map<string, string> response_headers = 7;
-}
-
-message RecordAgentRunResponseHeadersResponse {
-  bool recorded = 1;
-  bool skipped = 2;
 }

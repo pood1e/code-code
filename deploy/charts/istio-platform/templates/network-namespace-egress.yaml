@@ -1,0 +1,150 @@
+{{- if .Values.components.networkNamespaceEgress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: network-namespace-default-deny-egress
+  namespace: {{ .Values.global.egressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "network-namespace-default-deny-egress" "componentLabel" "network-policy") | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+{{- if and .Values.components.ingressGateway.enabled .Values.components.ingressGateway.backendEgress }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-gateway-egress
+  namespace: {{ .Values.global.ingressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "ingress-gateway-egress" "componentLabel" "network-policy") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: {{ .Values.components.ingressGateway.name }}
+  policyTypes:
+    - Egress
+  egress:
+{{- include "istio-platform.networkPolicyCommonMeshEgress" . | nindent 4 }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.global.observabilityNamespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      ports:
+        - protocol: TCP
+          port: 4317
+{{- range .Values.components.ingressGateway.backendEgress }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .namespace }}
+{{- with .podSelector }}
+          podSelector:
+{{ toYaml . | indent 12 }}
+{{- end }}
+      ports:
+{{- range .ports }}
+        - protocol: TCP
+          port: {{ . }}
+{{- end }}
+{{- end }}
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: network-service-egress
+  namespace: {{ .Values.global.egressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "network-service-egress" "componentLabel" "network-policy") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: platform-egress-service
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+{{- range .Values.components.networkNamespaceEgress.kubernetesApiCidrs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+{{- end }}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.global.observabilityNamespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      ports:
+        - protocol: TCP
+          port: 15008
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-waypoint-egress
+  namespace: {{ .Values.global.egressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "egress-waypoint-egress" "componentLabel" "network-policy") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: egress-waypoint
+  policyTypes:
+    - Egress
+  egress:
+{{- include "istio-platform.networkPolicyManagedL7Egress" . | nindent 4 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-gateway-egress
+  namespace: {{ .Values.global.egressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "egress-gateway-egress" "componentLabel" "network-policy") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      istio: {{ .Values.global.egressGatewaySelector }}
+  policyTypes:
+    - Egress
+  egress:
+{{- include "istio-platform.networkPolicyManagedL7Egress" . | nindent 4 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: managed-l7-egress-gateways-egress
+  namespace: {{ .Values.global.egressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "managed-l7-egress-gateways-egress" "componentLabel" "network-policy") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: code-code-egress
+      app.kubernetes.io/component: egress-policy
+      app.kubernetes.io/managed-by: platform-egress-service
+  policyTypes:
+    - Egress
+  egress:
+{{- include "istio-platform.networkPolicyManagedL7Egress" . | nindent 4 }}
+{{- end }}

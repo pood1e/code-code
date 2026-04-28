@@ -36,16 +36,17 @@ header rewrite policy id.
 
 ## Implementation Notes
 
-Auth service owns credential grants and Secret material. Provider service owns
-accounts and access targets, and never reads Secret values. Model service owns
+Auth service owns credential grants and encrypted credential material. Provider service owns
+accounts and access targets, and only reads material fields explicitly declared by support-owned observability policy. Model service owns
 canonical model definitions and provider-native catalog queries. Model catalog
 lookup uses `model_catalog_probe_id`; adapters register their own probe ids and
 receive only credential identity for egress header replacement, not token
-material or Secret payloads.
+material or Kubernetes Secret payloads.
 
-Header replacement runs on the egressgateway Proxy-Wasm auth plugin path. Agent
-execution resolves and freezes `ProviderRunBinding` before creating
-`AgentSessionAction` and `AgentRun`.
+Header replacement runs at the L7 egress policy point. Static replacement uses
+Gateway API `HTTPRoute` filters; dynamic credential-backed replacement should
+move through Istio external authorization. Agent execution resolves and freezes
+`ProviderRunBinding` before creating `AgentSessionAction` and `AgentRun`.
 
 OAuth code flow uses PKCE, state, issuer/nonce checks where supported, exact
 redirect URI matching, and RFC 8707 resource indicators when provider-specific

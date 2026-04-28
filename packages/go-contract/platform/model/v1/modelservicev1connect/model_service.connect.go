@@ -33,26 +33,29 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// ModelServiceListModelDefinitionsProcedure is the fully-qualified name of the ModelService's
-	// ListModelDefinitions RPC.
-	ModelServiceListModelDefinitionsProcedure = "/platform.model.v1.ModelService/ListModelDefinitions"
-	// ModelServiceGetOrFetchCatalogModelsProcedure is the fully-qualified name of the ModelService's
-	// GetOrFetchCatalogModels RPC.
-	ModelServiceGetOrFetchCatalogModelsProcedure = "/platform.model.v1.ModelService/GetOrFetchCatalogModels"
-	// ModelServiceFetchCatalogModelsProcedure is the fully-qualified name of the ModelService's
-	// FetchCatalogModels RPC.
-	ModelServiceFetchCatalogModelsProcedure = "/platform.model.v1.ModelService/FetchCatalogModels"
+	// ModelServiceListModelsProcedure is the fully-qualified name of the ModelService's ListModels RPC.
+	ModelServiceListModelsProcedure = "/platform.model.v1.ModelService/ListModels"
+	// ModelServiceResolveModelRefProcedure is the fully-qualified name of the ModelService's
+	// ResolveModelRef RPC.
+	ModelServiceResolveModelRefProcedure = "/platform.model.v1.ModelService/ResolveModelRef"
+	// ModelServiceGetModelVersionProcedure is the fully-qualified name of the ModelService's
+	// GetModelVersion RPC.
+	ModelServiceGetModelVersionProcedure = "/platform.model.v1.ModelService/GetModelVersion"
 	// ModelServiceSyncModelDefinitionsProcedure is the fully-qualified name of the ModelService's
 	// SyncModelDefinitions RPC.
 	ModelServiceSyncModelDefinitionsProcedure = "/platform.model.v1.ModelService/SyncModelDefinitions"
+	// ModelServiceGetModelCardProcedure is the fully-qualified name of the ModelService's GetModelCard
+	// RPC.
+	ModelServiceGetModelCardProcedure = "/platform.model.v1.ModelService/GetModelCard"
 )
 
 // ModelServiceClient is a client for the platform.model.v1.ModelService service.
 type ModelServiceClient interface {
-	ListModelDefinitions(context.Context, *v1.ListModelDefinitionsRequest) (*v1.ListModelDefinitionsResponse, error)
-	GetOrFetchCatalogModels(context.Context, *v1.GetOrFetchCatalogModelsRequest) (*v1.GetOrFetchCatalogModelsResponse, error)
-	FetchCatalogModels(context.Context, *v1.FetchCatalogModelsRequest) (*v1.FetchCatalogModelsResponse, error)
+	ListModels(context.Context, *v1.ListModelsRequest) (*v1.ListModelsResponse, error)
+	ResolveModelRef(context.Context, *v1.ResolveModelRefRequest) (*v1.ResolveModelRefResponse, error)
+	GetModelVersion(context.Context, *v1.GetModelVersionRequest) (*v1.GetModelVersionResponse, error)
 	SyncModelDefinitions(context.Context, *v1.SyncModelDefinitionsRequest) (*v1.SyncModelDefinitionsResponse, error)
+	GetModelCard(context.Context, *v1.GetModelCardRequest) (*v1.GetModelCardResponse, error)
 }
 
 // NewModelServiceClient constructs a client for the platform.model.v1.ModelService service. By
@@ -66,22 +69,22 @@ func NewModelServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 	baseURL = strings.TrimRight(baseURL, "/")
 	modelServiceMethods := v1.File_platform_model_v1_model_service_proto.Services().ByName("ModelService").Methods()
 	return &modelServiceClient{
-		listModelDefinitions: connect.NewClient[v1.ListModelDefinitionsRequest, v1.ListModelDefinitionsResponse](
+		listModels: connect.NewClient[v1.ListModelsRequest, v1.ListModelsResponse](
 			httpClient,
-			baseURL+ModelServiceListModelDefinitionsProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("ListModelDefinitions")),
+			baseURL+ModelServiceListModelsProcedure,
+			connect.WithSchema(modelServiceMethods.ByName("ListModels")),
 			connect.WithClientOptions(opts...),
 		),
-		getOrFetchCatalogModels: connect.NewClient[v1.GetOrFetchCatalogModelsRequest, v1.GetOrFetchCatalogModelsResponse](
+		resolveModelRef: connect.NewClient[v1.ResolveModelRefRequest, v1.ResolveModelRefResponse](
 			httpClient,
-			baseURL+ModelServiceGetOrFetchCatalogModelsProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("GetOrFetchCatalogModels")),
+			baseURL+ModelServiceResolveModelRefProcedure,
+			connect.WithSchema(modelServiceMethods.ByName("ResolveModelRef")),
 			connect.WithClientOptions(opts...),
 		),
-		fetchCatalogModels: connect.NewClient[v1.FetchCatalogModelsRequest, v1.FetchCatalogModelsResponse](
+		getModelVersion: connect.NewClient[v1.GetModelVersionRequest, v1.GetModelVersionResponse](
 			httpClient,
-			baseURL+ModelServiceFetchCatalogModelsProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("FetchCatalogModels")),
+			baseURL+ModelServiceGetModelVersionProcedure,
+			connect.WithSchema(modelServiceMethods.ByName("GetModelVersion")),
 			connect.WithClientOptions(opts...),
 		),
 		syncModelDefinitions: connect.NewClient[v1.SyncModelDefinitionsRequest, v1.SyncModelDefinitionsResponse](
@@ -90,38 +93,45 @@ func NewModelServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(modelServiceMethods.ByName("SyncModelDefinitions")),
 			connect.WithClientOptions(opts...),
 		),
+		getModelCard: connect.NewClient[v1.GetModelCardRequest, v1.GetModelCardResponse](
+			httpClient,
+			baseURL+ModelServiceGetModelCardProcedure,
+			connect.WithSchema(modelServiceMethods.ByName("GetModelCard")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // modelServiceClient implements ModelServiceClient.
 type modelServiceClient struct {
-	listModelDefinitions    *connect.Client[v1.ListModelDefinitionsRequest, v1.ListModelDefinitionsResponse]
-	getOrFetchCatalogModels *connect.Client[v1.GetOrFetchCatalogModelsRequest, v1.GetOrFetchCatalogModelsResponse]
-	fetchCatalogModels      *connect.Client[v1.FetchCatalogModelsRequest, v1.FetchCatalogModelsResponse]
-	syncModelDefinitions    *connect.Client[v1.SyncModelDefinitionsRequest, v1.SyncModelDefinitionsResponse]
+	listModels           *connect.Client[v1.ListModelsRequest, v1.ListModelsResponse]
+	resolveModelRef      *connect.Client[v1.ResolveModelRefRequest, v1.ResolveModelRefResponse]
+	getModelVersion      *connect.Client[v1.GetModelVersionRequest, v1.GetModelVersionResponse]
+	syncModelDefinitions *connect.Client[v1.SyncModelDefinitionsRequest, v1.SyncModelDefinitionsResponse]
+	getModelCard         *connect.Client[v1.GetModelCardRequest, v1.GetModelCardResponse]
 }
 
-// ListModelDefinitions calls platform.model.v1.ModelService.ListModelDefinitions.
-func (c *modelServiceClient) ListModelDefinitions(ctx context.Context, req *v1.ListModelDefinitionsRequest) (*v1.ListModelDefinitionsResponse, error) {
-	response, err := c.listModelDefinitions.CallUnary(ctx, connect.NewRequest(req))
+// ListModels calls platform.model.v1.ModelService.ListModels.
+func (c *modelServiceClient) ListModels(ctx context.Context, req *v1.ListModelsRequest) (*v1.ListModelsResponse, error) {
+	response, err := c.listModels.CallUnary(ctx, connect.NewRequest(req))
 	if response != nil {
 		return response.Msg, err
 	}
 	return nil, err
 }
 
-// GetOrFetchCatalogModels calls platform.model.v1.ModelService.GetOrFetchCatalogModels.
-func (c *modelServiceClient) GetOrFetchCatalogModels(ctx context.Context, req *v1.GetOrFetchCatalogModelsRequest) (*v1.GetOrFetchCatalogModelsResponse, error) {
-	response, err := c.getOrFetchCatalogModels.CallUnary(ctx, connect.NewRequest(req))
+// ResolveModelRef calls platform.model.v1.ModelService.ResolveModelRef.
+func (c *modelServiceClient) ResolveModelRef(ctx context.Context, req *v1.ResolveModelRefRequest) (*v1.ResolveModelRefResponse, error) {
+	response, err := c.resolveModelRef.CallUnary(ctx, connect.NewRequest(req))
 	if response != nil {
 		return response.Msg, err
 	}
 	return nil, err
 }
 
-// FetchCatalogModels calls platform.model.v1.ModelService.FetchCatalogModels.
-func (c *modelServiceClient) FetchCatalogModels(ctx context.Context, req *v1.FetchCatalogModelsRequest) (*v1.FetchCatalogModelsResponse, error) {
-	response, err := c.fetchCatalogModels.CallUnary(ctx, connect.NewRequest(req))
+// GetModelVersion calls platform.model.v1.ModelService.GetModelVersion.
+func (c *modelServiceClient) GetModelVersion(ctx context.Context, req *v1.GetModelVersionRequest) (*v1.GetModelVersionResponse, error) {
+	response, err := c.getModelVersion.CallUnary(ctx, connect.NewRequest(req))
 	if response != nil {
 		return response.Msg, err
 	}
@@ -137,12 +147,22 @@ func (c *modelServiceClient) SyncModelDefinitions(ctx context.Context, req *v1.S
 	return nil, err
 }
 
+// GetModelCard calls platform.model.v1.ModelService.GetModelCard.
+func (c *modelServiceClient) GetModelCard(ctx context.Context, req *v1.GetModelCardRequest) (*v1.GetModelCardResponse, error) {
+	response, err := c.getModelCard.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
 // ModelServiceHandler is an implementation of the platform.model.v1.ModelService service.
 type ModelServiceHandler interface {
-	ListModelDefinitions(context.Context, *v1.ListModelDefinitionsRequest) (*v1.ListModelDefinitionsResponse, error)
-	GetOrFetchCatalogModels(context.Context, *v1.GetOrFetchCatalogModelsRequest) (*v1.GetOrFetchCatalogModelsResponse, error)
-	FetchCatalogModels(context.Context, *v1.FetchCatalogModelsRequest) (*v1.FetchCatalogModelsResponse, error)
+	ListModels(context.Context, *v1.ListModelsRequest) (*v1.ListModelsResponse, error)
+	ResolveModelRef(context.Context, *v1.ResolveModelRefRequest) (*v1.ResolveModelRefResponse, error)
+	GetModelVersion(context.Context, *v1.GetModelVersionRequest) (*v1.GetModelVersionResponse, error)
 	SyncModelDefinitions(context.Context, *v1.SyncModelDefinitionsRequest) (*v1.SyncModelDefinitionsResponse, error)
+	GetModelCard(context.Context, *v1.GetModelCardRequest) (*v1.GetModelCardResponse, error)
 }
 
 // NewModelServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -152,22 +172,22 @@ type ModelServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewModelServiceHandler(svc ModelServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	modelServiceMethods := v1.File_platform_model_v1_model_service_proto.Services().ByName("ModelService").Methods()
-	modelServiceListModelDefinitionsHandler := connect.NewUnaryHandlerSimple(
-		ModelServiceListModelDefinitionsProcedure,
-		svc.ListModelDefinitions,
-		connect.WithSchema(modelServiceMethods.ByName("ListModelDefinitions")),
+	modelServiceListModelsHandler := connect.NewUnaryHandlerSimple(
+		ModelServiceListModelsProcedure,
+		svc.ListModels,
+		connect.WithSchema(modelServiceMethods.ByName("ListModels")),
 		connect.WithHandlerOptions(opts...),
 	)
-	modelServiceGetOrFetchCatalogModelsHandler := connect.NewUnaryHandlerSimple(
-		ModelServiceGetOrFetchCatalogModelsProcedure,
-		svc.GetOrFetchCatalogModels,
-		connect.WithSchema(modelServiceMethods.ByName("GetOrFetchCatalogModels")),
+	modelServiceResolveModelRefHandler := connect.NewUnaryHandlerSimple(
+		ModelServiceResolveModelRefProcedure,
+		svc.ResolveModelRef,
+		connect.WithSchema(modelServiceMethods.ByName("ResolveModelRef")),
 		connect.WithHandlerOptions(opts...),
 	)
-	modelServiceFetchCatalogModelsHandler := connect.NewUnaryHandlerSimple(
-		ModelServiceFetchCatalogModelsProcedure,
-		svc.FetchCatalogModels,
-		connect.WithSchema(modelServiceMethods.ByName("FetchCatalogModels")),
+	modelServiceGetModelVersionHandler := connect.NewUnaryHandlerSimple(
+		ModelServiceGetModelVersionProcedure,
+		svc.GetModelVersion,
+		connect.WithSchema(modelServiceMethods.ByName("GetModelVersion")),
 		connect.WithHandlerOptions(opts...),
 	)
 	modelServiceSyncModelDefinitionsHandler := connect.NewUnaryHandlerSimple(
@@ -176,16 +196,24 @@ func NewModelServiceHandler(svc ModelServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(modelServiceMethods.ByName("SyncModelDefinitions")),
 		connect.WithHandlerOptions(opts...),
 	)
+	modelServiceGetModelCardHandler := connect.NewUnaryHandlerSimple(
+		ModelServiceGetModelCardProcedure,
+		svc.GetModelCard,
+		connect.WithSchema(modelServiceMethods.ByName("GetModelCard")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/platform.model.v1.ModelService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case ModelServiceListModelDefinitionsProcedure:
-			modelServiceListModelDefinitionsHandler.ServeHTTP(w, r)
-		case ModelServiceGetOrFetchCatalogModelsProcedure:
-			modelServiceGetOrFetchCatalogModelsHandler.ServeHTTP(w, r)
-		case ModelServiceFetchCatalogModelsProcedure:
-			modelServiceFetchCatalogModelsHandler.ServeHTTP(w, r)
+		case ModelServiceListModelsProcedure:
+			modelServiceListModelsHandler.ServeHTTP(w, r)
+		case ModelServiceResolveModelRefProcedure:
+			modelServiceResolveModelRefHandler.ServeHTTP(w, r)
+		case ModelServiceGetModelVersionProcedure:
+			modelServiceGetModelVersionHandler.ServeHTTP(w, r)
 		case ModelServiceSyncModelDefinitionsProcedure:
 			modelServiceSyncModelDefinitionsHandler.ServeHTTP(w, r)
+		case ModelServiceGetModelCardProcedure:
+			modelServiceGetModelCardHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -195,18 +223,22 @@ func NewModelServiceHandler(svc ModelServiceHandler, opts ...connect.HandlerOpti
 // UnimplementedModelServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedModelServiceHandler struct{}
 
-func (UnimplementedModelServiceHandler) ListModelDefinitions(context.Context, *v1.ListModelDefinitionsRequest) (*v1.ListModelDefinitionsResponse, error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.ListModelDefinitions is not implemented"))
+func (UnimplementedModelServiceHandler) ListModels(context.Context, *v1.ListModelsRequest) (*v1.ListModelsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.ListModels is not implemented"))
 }
 
-func (UnimplementedModelServiceHandler) GetOrFetchCatalogModels(context.Context, *v1.GetOrFetchCatalogModelsRequest) (*v1.GetOrFetchCatalogModelsResponse, error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.GetOrFetchCatalogModels is not implemented"))
+func (UnimplementedModelServiceHandler) ResolveModelRef(context.Context, *v1.ResolveModelRefRequest) (*v1.ResolveModelRefResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.ResolveModelRef is not implemented"))
 }
 
-func (UnimplementedModelServiceHandler) FetchCatalogModels(context.Context, *v1.FetchCatalogModelsRequest) (*v1.FetchCatalogModelsResponse, error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.FetchCatalogModels is not implemented"))
+func (UnimplementedModelServiceHandler) GetModelVersion(context.Context, *v1.GetModelVersionRequest) (*v1.GetModelVersionResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.GetModelVersion is not implemented"))
 }
 
 func (UnimplementedModelServiceHandler) SyncModelDefinitions(context.Context, *v1.SyncModelDefinitionsRequest) (*v1.SyncModelDefinitionsResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.SyncModelDefinitions is not implemented"))
+}
+
+func (UnimplementedModelServiceHandler) GetModelCard(context.Context, *v1.GetModelCardRequest) (*v1.GetModelCardResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.model.v1.ModelService.GetModelCard is not implemented"))
 }

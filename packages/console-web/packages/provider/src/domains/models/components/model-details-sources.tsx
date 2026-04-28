@@ -2,7 +2,7 @@ import type { VendorView } from "@code-code/agent-contract/platform/provider/v1"
 import type { ModelRegistryEntry, RegistryModelSource } from "@code-code/agent-contract/platform/model/v1";
 import { Code, Flex, Separator, Text } from "@radix-ui/themes";
 import { SoftBadge } from "@code-code/console-web-ui";
-import { formatSourcePricing } from "../source-pricing";
+import { formatPricingDetail, formatPriceType, formatSourcePricing } from "../source-pricing";
 import { SourceBadge } from "./source-badge";
 import { VendorAvatar } from "./vendor-avatar";
 import { vendorLookupKey } from "../vendor-index";
@@ -40,7 +40,9 @@ type SourceItemProps = {
 };
 
 function SourceItem({ source, separated, vendorsById }: SourceItemProps) {
-  const pricing = formatSourcePricing(source.pricing);
+  const pricingSummary = formatSourcePricing(source.pricing);
+  const pricingLines = formatPricingDetail(source.pricing);
+  const priceTypeLabel = source.pricing?.priceType ? formatPriceType(source.pricing.priceType) : "";
   const definition = source.definition;
   const vendor = definition?.vendorId ? vendorsById[vendorLookupKey(definition.vendorId)] : undefined;
   const vendorLabel = vendor?.displayName || definition?.vendorId || "Unknown vendor";
@@ -62,6 +64,9 @@ function SourceItem({ source, separated, vendorsById }: SourceItemProps) {
           label={source.isDirect ? "Direct" : "Proxy"}
         />
         <SourceBadge badges={source.badges} />
+        {priceTypeLabel ? (
+          <SoftBadge size="1" color="gray" label={priceTypeLabel} />
+        ) : null}
       </Flex>
       {sourceModelId ? (
         <Code size="1" variant="ghost">{sourceModelId}</Code>
@@ -71,10 +76,20 @@ function SourceItem({ source, separated, vendorsById }: SourceItemProps) {
       {definition?.displayName && definition.displayName !== sourceModelId && definition.displayName !== vendorLabel ? (
         <Text size="2">{definition.displayName}</Text>
       ) : null}
-      <Flex align="center" gap="3" wrap="wrap">
-        <Text size="1" color="gray">{pricing || "No pricing"}</Text>
-        <Text size="1" color="gray">{definitionRef || "No definition ref"}</Text>
-      </Flex>
+      {pricingLines.length > 0 ? (
+        <Flex direction="column" gap="1">
+          {pricingLines.map((line) => (
+            <Text key={line.label} size="1" color="gray">
+              {line.label}: {line.value}
+            </Text>
+          ))}
+        </Flex>
+      ) : (
+        <Text size="1" color="gray">{pricingSummary || "No pricing"}</Text>
+      )}
+      {definitionRef && definitionRef !== sourceModelId ? (
+        <Text size="1" color="gray">{definitionRef}</Text>
+      ) : null}
     </Flex>
   );
 }

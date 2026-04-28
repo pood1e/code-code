@@ -1,0 +1,3 @@
+{{- if .Values.registry.enabled }}
+{{ include "devImageInfra.renderRegistry" (dict "root" . "name" .Values.registry.name "componentLabel" "registry" "containerName" "registry" "image" .Values.registry.image "replicaCount" .Values.registry.replicaCount "port" .Values.registry.port "deleteEnabled" .Values.registry.deleteEnabled "resources" .Values.registry.resources "persistentVolumeClaim" .Values.registry.storage.persistentVolumeClaim "serviceType" .Values.registry.service.type "nodePort" .Values.registry.service.nodePort) }}
+{{- end }}

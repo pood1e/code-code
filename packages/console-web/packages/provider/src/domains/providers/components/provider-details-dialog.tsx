@@ -9,7 +9,7 @@ import { deleteProvider, updateProvider } from "../api";
 import { providerModel } from "../provider-model";
 import { providerSurfaceRuntimeCLIID } from "../provider-surface-binding-view";
 import { providerObservabilityAuthPresentation } from "../provider-observability-auth-presentation";
-import { providerSupportsActiveQuery } from "../provider-observability-visualization";
+import { providerSupportsActiveQuery, resolveProviderActiveQueryOwner } from "../provider-observability-visualization";
 import { ProviderAuthenticationView } from "./provider-authentication-view";
 import { ProviderDetailsView } from "./provider-details-view";
 import { ProviderObservabilityAuthenticationView } from "./provider-observability-authentication-view";
@@ -50,8 +50,13 @@ export function ProviderDetailsDialog({
     : false;
   const authenticationKind = providerViewModel?.authenticationKind() || "apiKey";
   const supportsActiveQuery = provider ? providerSupportsActiveQuery(provider, clis, vendors) : false;
-  const observabilityAuth = providerObservabilityAuthPresentation(provider?.vendorId);
-  const showDedicatedObservabilityAuthentication = authenticationKind === "apiKey" && supportsActiveQuery && Boolean(observabilityAuth?.separateProviderUpdate);
+  const activeQueryOwner = provider ? resolveProviderActiveQueryOwner(provider, clis, vendors) : null;
+  const observabilityAuth = providerObservabilityAuthPresentation(
+    activeQueryOwner?.kind === "vendor" ? activeQueryOwner.vendorId : provider?.vendorId,
+    vendors,
+    activeQueryOwner?.surfaceId || providerViewModel?.primarySurfaceId(),
+  );
+  const showDedicatedObservabilityAuthentication = authenticationKind === "apiKey" && Boolean(observabilityAuth);
 
   const handleClose = () => {
     setView("details");
@@ -173,6 +178,7 @@ export function ProviderDetailsDialog({
         {provider && observabilityAuth && view === "observabilityAuthentication" ? (
           <ProviderObservabilityAuthenticationView
             provider={provider}
+            presentation={observabilityAuth}
             onSuccess={() => {
               setView("details");
               onUpdated?.();

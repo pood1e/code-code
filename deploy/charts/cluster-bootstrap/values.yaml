@@ -1,0 +1,21 @@
+global:
+  # -- Shared app.kubernetes.io/part-of label.
+  partOf: code-code
+  # -- Namespace for platform control-plane services.
+  platformNamespace: code-code
+  # -- Namespace for operator-facing console workloads and routes.
+  consoleNamespace: code-code-console
+  # -- Namespace for public showcase workloads and routes.
+  showcaseNamespace: code-code-showcase
+  # -- Namespace for shared infrastructure services.
+  infraNamespace: code-code-infra
+  # -- Namespace for observability workloads.
+  observabilityNamespace: code-code-observability
+  # -- Namespace for egress gateway and network resources.
+  networkNamespace: code-code-net
+  # -- Namespace for runtime jobs and per-run RBAC.
+  runNamespace: code-code-runs
+
+namespaces:
+  # -- Toggle creation of the required platform namespaces.
+  enabled: true

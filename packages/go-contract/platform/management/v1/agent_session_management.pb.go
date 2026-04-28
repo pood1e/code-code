@@ -1244,10 +1244,9 @@ type AgentRunRuntimeMetadata struct {
 	HeaderValuePrefix              string                                  `protobuf:"bytes,12,opt,name=header_value_prefix,json=headerValuePrefix,proto3" json:"header_value_prefix,omitempty"`
 	RequestHeaderReplacementRules  []*AgentRunRuntimeHeaderReplacementRule `protobuf:"bytes,13,rep,name=request_header_replacement_rules,json=requestHeaderReplacementRules,proto3" json:"request_header_replacement_rules,omitempty"`
 	ResponseHeaderReplacementRules []*AgentRunRuntimeHeaderReplacementRule `protobuf:"bytes,14,rep,name=response_header_replacement_rules,json=responseHeaderReplacementRules,proto3" json:"response_header_replacement_rules,omitempty"`
-	ResponseHeaderMetricRules      []*v13.AgentRunResponseHeaderRule       `protobuf:"bytes,15,rep,name=response_header_metric_rules,json=responseHeaderMetricRules,proto3" json:"response_header_metric_rules,omitempty"`
 	EgressPolicyId                 string                                  `protobuf:"bytes,16,opt,name=egress_policy_id,json=egressPolicyId,proto3" json:"egress_policy_id,omitempty"`
 	AuthPolicyId                   string                                  `protobuf:"bytes,17,opt,name=auth_policy_id,json=authPolicyId,proto3" json:"auth_policy_id,omitempty"`
-	HeaderMetricPolicyId           string                                  `protobuf:"bytes,18,opt,name=header_metric_policy_id,json=headerMetricPolicyId,proto3" json:"header_metric_policy_id,omitempty"`
+	ObservabilityProfileIds        []string                                `protobuf:"bytes,18,rep,name=observability_profile_ids,json=observabilityProfileIds,proto3" json:"observability_profile_ids,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -1380,13 +1379,6 @@ func (x *AgentRunRuntimeMetadata) GetResponseHeaderReplacementRules() []*AgentRu
 	return nil
 }
 
-func (x *AgentRunRuntimeMetadata) GetResponseHeaderMetricRules() []*v13.AgentRunResponseHeaderRule {
-	if x != nil {
-		return x.ResponseHeaderMetricRules
-	}
-	return nil
-}
-
 func (x *AgentRunRuntimeMetadata) GetEgressPolicyId() string {
 	if x != nil {
 		return x.EgressPolicyId
@@ -1401,11 +1393,11 @@ func (x *AgentRunRuntimeMetadata) GetAuthPolicyId() string {
 	return ""
 }
 
-func (x *AgentRunRuntimeMetadata) GetHeaderMetricPolicyId() string {
+func (x *AgentRunRuntimeMetadata) GetObservabilityProfileIds() []string {
 	if x != nil {
-		return x.HeaderMetricPolicyId
+		return x.ObservabilityProfileIds
 	}
-	return ""
+	return nil
 }
 
 type AgentRunRuntimeHeaderReplacementRule struct {
@@ -1484,189 +1476,6 @@ func (x *AgentRunRuntimeHeaderReplacementRule) GetTemplate() string {
 	return ""
 }
 
-type RecordAgentRunResponseHeadersRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Source:
-	//
-	//	*RecordAgentRunResponseHeadersRequest_RunId
-	//	*RecordAgentRunResponseHeadersRequest_Pod
-	//	*RecordAgentRunResponseHeadersRequest_WorkloadId
-	Source          isRecordAgentRunResponseHeadersRequest_Source `protobuf_oneof:"source"`
-	TargetHost      string                                        `protobuf:"bytes,4,opt,name=target_host,json=targetHost,proto3" json:"target_host,omitempty"`
-	TargetPath      string                                        `protobuf:"bytes,5,opt,name=target_path,json=targetPath,proto3" json:"target_path,omitempty"`
-	StatusCode      uint32                                        `protobuf:"varint,6,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
-	ResponseHeaders map[string]string                             `protobuf:"bytes,7,rep,name=response_headers,json=responseHeaders,proto3" json:"response_headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) Reset() {
-	*x = RecordAgentRunResponseHeadersRequest{}
-	mi := &file_platform_management_v1_agent_session_management_proto_msgTypes[25]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RecordAgentRunResponseHeadersRequest) ProtoMessage() {}
-
-func (x *RecordAgentRunResponseHeadersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_management_v1_agent_session_management_proto_msgTypes[25]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RecordAgentRunResponseHeadersRequest.ProtoReflect.Descriptor instead.
-func (*RecordAgentRunResponseHeadersRequest) Descriptor() ([]byte, []int) {
-	return file_platform_management_v1_agent_session_management_proto_rawDescGZIP(), []int{25}
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetSource() isRecordAgentRunResponseHeadersRequest_Source {
-	if x != nil {
-		return x.Source
-	}
-	return nil
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetRunId() string {
-	if x != nil {
-		if x, ok := x.Source.(*RecordAgentRunResponseHeadersRequest_RunId); ok {
-			return x.RunId
-		}
-	}
-	return ""
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetPod() *AgentRunPodRef {
-	if x != nil {
-		if x, ok := x.Source.(*RecordAgentRunResponseHeadersRequest_Pod); ok {
-			return x.Pod
-		}
-	}
-	return nil
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetWorkloadId() string {
-	if x != nil {
-		if x, ok := x.Source.(*RecordAgentRunResponseHeadersRequest_WorkloadId); ok {
-			return x.WorkloadId
-		}
-	}
-	return ""
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetTargetHost() string {
-	if x != nil {
-		return x.TargetHost
-	}
-	return ""
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetTargetPath() string {
-	if x != nil {
-		return x.TargetPath
-	}
-	return ""
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetStatusCode() uint32 {
-	if x != nil {
-		return x.StatusCode
-	}
-	return 0
-}
-
-func (x *RecordAgentRunResponseHeadersRequest) GetResponseHeaders() map[string]string {
-	if x != nil {
-		return x.ResponseHeaders
-	}
-	return nil
-}
-
-type isRecordAgentRunResponseHeadersRequest_Source interface {
-	isRecordAgentRunResponseHeadersRequest_Source()
-}
-
-type RecordAgentRunResponseHeadersRequest_RunId struct {
-	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3,oneof"`
-}
-
-type RecordAgentRunResponseHeadersRequest_Pod struct {
-	Pod *AgentRunPodRef `protobuf:"bytes,2,opt,name=pod,proto3,oneof"`
-}
-
-type RecordAgentRunResponseHeadersRequest_WorkloadId struct {
-	WorkloadId string `protobuf:"bytes,3,opt,name=workload_id,json=workloadId,proto3,oneof"`
-}
-
-func (*RecordAgentRunResponseHeadersRequest_RunId) isRecordAgentRunResponseHeadersRequest_Source() {}
-
-func (*RecordAgentRunResponseHeadersRequest_Pod) isRecordAgentRunResponseHeadersRequest_Source() {}
-
-func (*RecordAgentRunResponseHeadersRequest_WorkloadId) isRecordAgentRunResponseHeadersRequest_Source() {
-}
-
-type RecordAgentRunResponseHeadersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Recorded      bool                   `protobuf:"varint,1,opt,name=recorded,proto3" json:"recorded,omitempty"`
-	Skipped       bool                   `protobuf:"varint,2,opt,name=skipped,proto3" json:"skipped,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RecordAgentRunResponseHeadersResponse) Reset() {
-	*x = RecordAgentRunResponseHeadersResponse{}
-	mi := &file_platform_management_v1_agent_session_management_proto_msgTypes[26]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RecordAgentRunResponseHeadersResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RecordAgentRunResponseHeadersResponse) ProtoMessage() {}
-
-func (x *RecordAgentRunResponseHeadersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_management_v1_agent_session_management_proto_msgTypes[26]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RecordAgentRunResponseHeadersResponse.ProtoReflect.Descriptor instead.
-func (*RecordAgentRunResponseHeadersResponse) Descriptor() ([]byte, []int) {
-	return file_platform_management_v1_agent_session_management_proto_rawDescGZIP(), []int{26}
-}
-
-func (x *RecordAgentRunResponseHeadersResponse) GetRecorded() bool {
-	if x != nil {
-		return x.Recorded
-	}
-	return false
-}
-
-func (x *RecordAgentRunResponseHeadersResponse) GetSkipped() bool {
-	if x != nil {
-		return x.Skipped
-	}
-	return false
-}
-
 var File_platform_management_v1_agent_session_management_proto protoreflect.FileDescriptor
 
 const file_platform_management_v1_agent_session_management_proto_rawDesc = "" +
@@ -1740,7 +1549,7 @@ const file_platform_management_v1_agent_session_management_proto_rawDesc = "" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x10\n" +
 	"\x03uid\x18\x03 \x01(\tR\x03uid\x12\x0e\n" +
-	"\x02ip\x18\x04 \x01(\tR\x02ip\"\x82\b\n" +
+	"\x02ip\x18\x04 \x01(\tR\x02ip\"\x93\a\n" +
 	"\x17AgentRunRuntimeMetadata\x12\x1f\n" +
 	"\vprovider_id\x18\x01 \x01(\tR\n" +
 	"providerId\x12\x15\n" +
@@ -1758,37 +1567,17 @@ const file_platform_management_v1_agent_session_management_proto_rawDesc = "" +
 	"\x14request_header_names\x18\v \x03(\tR\x12requestHeaderNames\x12.\n" +
 	"\x13header_value_prefix\x18\f \x01(\tR\x11headerValuePrefix\x12\x85\x01\n" +
 	" request_header_replacement_rules\x18\r \x03(\v2<.platform.management.v1.AgentRunRuntimeHeaderReplacementRuleR\x1drequestHeaderReplacementRules\x12\x87\x01\n" +
-	"!response_header_replacement_rules\x18\x0e \x03(\v2<.platform.management.v1.AgentRunRuntimeHeaderReplacementRuleR\x1eresponseHeaderReplacementRules\x12r\n" +
-	"\x1cresponse_header_metric_rules\x18\x0f \x03(\v21.platform.agent_run.v1.AgentRunResponseHeaderRuleR\x19responseHeaderMetricRules\x12(\n" +
+	"!response_header_replacement_rules\x18\x0e \x03(\v2<.platform.management.v1.AgentRunRuntimeHeaderReplacementRuleR\x1eresponseHeaderReplacementRules\x12(\n" +
 	"\x10egress_policy_id\x18\x10 \x01(\tR\x0eegressPolicyId\x12$\n" +
-	"\x0eauth_policy_id\x18\x11 \x01(\tR\fauthPolicyId\x125\n" +
-	"\x17header_metric_policy_id\x18\x12 \x01(\tR\x14headerMetricPolicyId\"\xca\x01\n" +
+	"\x0eauth_policy_id\x18\x11 \x01(\tR\fauthPolicyId\x12:\n" +
+	"\x19observability_profile_ids\x18\x12 \x03(\tR\x17observabilityProfileIds\"\xca\x01\n" +
 	"$AgentRunRuntimeHeaderReplacementRule\x12\x12\n" +
 	"\x04mode\x18\x01 \x01(\tR\x04mode\x12\x1f\n" +
 	"\vheader_name\x18\x02 \x01(\tR\n" +
 	"headerName\x12!\n" +
 	"\fmaterial_key\x18\x03 \x01(\tR\vmaterialKey\x12.\n" +
 	"\x13header_value_prefix\x18\x04 \x01(\tR\x11headerValuePrefix\x12\x1a\n" +
-	"\btemplate\x18\x05 \x01(\tR\btemplate\"\xcd\x03\n" +
-	"$RecordAgentRunResponseHeadersRequest\x12\x17\n" +
-	"\x06run_id\x18\x01 \x01(\tH\x00R\x05runId\x12:\n" +
-	"\x03pod\x18\x02 \x01(\v2&.platform.management.v1.AgentRunPodRefH\x00R\x03pod\x12!\n" +
-	"\vworkload_id\x18\x03 \x01(\tH\x00R\n" +
-	"workloadId\x12\x1f\n" +
-	"\vtarget_host\x18\x04 \x01(\tR\n" +
-	"targetHost\x12\x1f\n" +
-	"\vtarget_path\x18\x05 \x01(\tR\n" +
-	"targetPath\x12\x1f\n" +
-	"\vstatus_code\x18\x06 \x01(\rR\n" +
-	"statusCode\x12|\n" +
-	"\x10response_headers\x18\a \x03(\v2Q.platform.management.v1.RecordAgentRunResponseHeadersRequest.ResponseHeadersEntryR\x0fresponseHeaders\x1aB\n" +
-	"\x14ResponseHeadersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\b\n" +
-	"\x06source\"]\n" +
-	"%RecordAgentRunResponseHeadersResponse\x12\x1a\n" +
-	"\brecorded\x18\x01 \x01(\bR\brecorded\x12\x18\n" +
-	"\askipped\x18\x02 \x01(\bR\askipped2\xfd\f\n" +
+	"\btemplate\x18\x05 \x01(\tR\btemplate2\xde\v\n" +
 	"\x1dAgentSessionManagementService\x12r\n" +
 	"\x0fGetAgentSession\x12..platform.management.v1.GetAgentSessionRequest\x1a/.platform.management.v1.GetAgentSessionResponse\x12{\n" +
 	"\x12CreateAgentSession\x121.platform.management.v1.CreateAgentSessionRequest\x1a2.platform.management.v1.CreateAgentSessionResponse\x12{\n" +
@@ -1800,8 +1589,7 @@ const file_platform_management_v1_agent_session_management_proto_rawDesc = "" +
 	"\x17RetryAgentSessionAction\x126.platform.management.v1.RetryAgentSessionActionRequest\x1a7.platform.management.v1.RetryAgentSessionActionResponse\x12f\n" +
 	"\vGetAgentRun\x12*.platform.management.v1.GetAgentRunRequest\x1a+.platform.management.v1.GetAgentRunResponse\x12\x83\x01\n" +
 	"\x14StreamAgentRunOutput\x123.platform.management.v1.StreamAgentRunOutputRequest\x1a4.platform.management.v1.StreamAgentRunOutputResponse0\x01\x12\x9c\x01\n" +
-	"\x1dResolveAgentRunRuntimeContext\x12<.platform.management.v1.ResolveAgentRunRuntimeContextRequest\x1a=.platform.management.v1.ResolveAgentRunRuntimeContextResponse\x12\x9c\x01\n" +
-	"\x1dRecordAgentRunResponseHeaders\x12<.platform.management.v1.RecordAgentRunResponseHeadersRequest\x1a=.platform.management.v1.RecordAgentRunResponseHeadersResponseBDZBcode-code.internal/go-contract/platform/management/v1;managementv1b\x06proto3"
+	"\x1dResolveAgentRunRuntimeContext\x12<.platform.management.v1.ResolveAgentRunRuntimeContextRequest\x1a=.platform.management.v1.ResolveAgentRunRuntimeContextResponseBDZBcode-code.internal/go-contract/platform/management/v1;managementv1b\x06proto3"
 
 var (
 	file_platform_management_v1_agent_session_management_proto_rawDescOnce sync.Once
@@ -1815,7 +1603,7 @@ func file_platform_management_v1_agent_session_management_proto_rawDescGZIP() []
 	return file_platform_management_v1_agent_session_management_proto_rawDescData
 }
 
-var file_platform_management_v1_agent_session_management_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_platform_management_v1_agent_session_management_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_platform_management_v1_agent_session_management_proto_goTypes = []any{
 	(*GetAgentSessionRequest)(nil),                // 0: platform.management.v1.GetAgentSessionRequest
 	(*GetAgentSessionResponse)(nil),               // 1: platform.management.v1.GetAgentSessionResponse
@@ -1842,73 +1630,64 @@ var file_platform_management_v1_agent_session_management_proto_goTypes = []any{
 	(*AgentRunPodRef)(nil),                        // 22: platform.management.v1.AgentRunPodRef
 	(*AgentRunRuntimeMetadata)(nil),               // 23: platform.management.v1.AgentRunRuntimeMetadata
 	(*AgentRunRuntimeHeaderReplacementRule)(nil),  // 24: platform.management.v1.AgentRunRuntimeHeaderReplacementRule
-	(*RecordAgentRunResponseHeadersRequest)(nil),  // 25: platform.management.v1.RecordAgentRunResponseHeadersRequest
-	(*RecordAgentRunResponseHeadersResponse)(nil), // 26: platform.management.v1.RecordAgentRunResponseHeadersResponse
-	nil,                                    // 27: platform.management.v1.RecordAgentRunResponseHeadersRequest.ResponseHeadersEntry
-	(*v1.AgentSessionState)(nil),           // 28: platform.agent_session.v1.AgentSessionState
-	(*v1.AgentSessionSpec)(nil),            // 29: platform.agent_session.v1.AgentSessionSpec
-	(*v11.AgentSessionActionState)(nil),    // 30: platform.agent_session_action.v1.AgentSessionActionState
-	(*v12.RunRequest)(nil),                 // 31: agent.core.v1.RunRequest
-	(*v13.AgentRunState)(nil),              // 32: platform.agent_run.v1.AgentRunState
-	(*v14.RunDeltaEvent)(nil),              // 33: platform.run_event.v1.RunDeltaEvent
-	(*v14.RunResultEvent)(nil),             // 34: platform.run_event.v1.RunResultEvent
-	(v15.Protocol)(0),                      // 35: api_protocol.v1.Protocol
-	(*v13.AgentRunResponseHeaderRule)(nil), // 36: platform.agent_run.v1.AgentRunResponseHeaderRule
+	(*v1.AgentSessionState)(nil),                  // 25: platform.agent_session.v1.AgentSessionState
+	(*v1.AgentSessionSpec)(nil),                   // 26: platform.agent_session.v1.AgentSessionSpec
+	(*v11.AgentSessionActionState)(nil),           // 27: platform.agent_session_action.v1.AgentSessionActionState
+	(*v12.RunRequest)(nil),                        // 28: agent.core.v1.RunRequest
+	(*v13.AgentRunState)(nil),                     // 29: platform.agent_run.v1.AgentRunState
+	(*v14.RunDeltaEvent)(nil),                     // 30: platform.run_event.v1.RunDeltaEvent
+	(*v14.RunResultEvent)(nil),                    // 31: platform.run_event.v1.RunResultEvent
+	(v15.Protocol)(0),                             // 32: api_protocol.v1.Protocol
 }
 var file_platform_management_v1_agent_session_management_proto_depIdxs = []int32{
-	28, // 0: platform.management.v1.GetAgentSessionResponse.session:type_name -> platform.agent_session.v1.AgentSessionState
-	29, // 1: platform.management.v1.CreateAgentSessionRequest.session:type_name -> platform.agent_session.v1.AgentSessionSpec
-	28, // 2: platform.management.v1.CreateAgentSessionResponse.session:type_name -> platform.agent_session.v1.AgentSessionState
-	29, // 3: platform.management.v1.UpdateAgentSessionRequest.session:type_name -> platform.agent_session.v1.AgentSessionSpec
-	28, // 4: platform.management.v1.UpdateAgentSessionResponse.session:type_name -> platform.agent_session.v1.AgentSessionState
-	30, // 5: platform.management.v1.GetAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
-	31, // 6: platform.management.v1.CreateAgentSessionActionRequest.run_request:type_name -> agent.core.v1.RunRequest
-	30, // 7: platform.management.v1.CreateAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
-	30, // 8: platform.management.v1.ResetAgentSessionWarmStateResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
-	30, // 9: platform.management.v1.StopAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
-	30, // 10: platform.management.v1.RetryAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
-	32, // 11: platform.management.v1.GetAgentRunResponse.run:type_name -> platform.agent_run.v1.AgentRunState
-	33, // 12: platform.management.v1.StreamAgentRunOutputResponse.delta:type_name -> platform.run_event.v1.RunDeltaEvent
-	34, // 13: platform.management.v1.StreamAgentRunOutputResponse.result:type_name -> platform.run_event.v1.RunResultEvent
+	25, // 0: platform.management.v1.GetAgentSessionResponse.session:type_name -> platform.agent_session.v1.AgentSessionState
+	26, // 1: platform.management.v1.CreateAgentSessionRequest.session:type_name -> platform.agent_session.v1.AgentSessionSpec
+	25, // 2: platform.management.v1.CreateAgentSessionResponse.session:type_name -> platform.agent_session.v1.AgentSessionState
+	26, // 3: platform.management.v1.UpdateAgentSessionRequest.session:type_name -> platform.agent_session.v1.AgentSessionSpec
+	25, // 4: platform.management.v1.UpdateAgentSessionResponse.session:type_name -> platform.agent_session.v1.AgentSessionState
+	27, // 5: platform.management.v1.GetAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
+	28, // 6: platform.management.v1.CreateAgentSessionActionRequest.run_request:type_name -> agent.core.v1.RunRequest
+	27, // 7: platform.management.v1.CreateAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
+	27, // 8: platform.management.v1.ResetAgentSessionWarmStateResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
+	27, // 9: platform.management.v1.StopAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
+	27, // 10: platform.management.v1.RetryAgentSessionActionResponse.action:type_name -> platform.agent_session_action.v1.AgentSessionActionState
+	29, // 11: platform.management.v1.GetAgentRunResponse.run:type_name -> platform.agent_run.v1.AgentRunState
+	30, // 12: platform.management.v1.StreamAgentRunOutputResponse.delta:type_name -> platform.run_event.v1.RunDeltaEvent
+	31, // 13: platform.management.v1.StreamAgentRunOutputResponse.result:type_name -> platform.run_event.v1.RunResultEvent
 	22, // 14: platform.management.v1.ResolveAgentRunRuntimeContextRequest.pod:type_name -> platform.management.v1.AgentRunPodRef
-	32, // 15: platform.management.v1.ResolveAgentRunRuntimeContextResponse.run:type_name -> platform.agent_run.v1.AgentRunState
+	29, // 15: platform.management.v1.ResolveAgentRunRuntimeContextResponse.run:type_name -> platform.agent_run.v1.AgentRunState
 	22, // 16: platform.management.v1.ResolveAgentRunRuntimeContextResponse.pod:type_name -> platform.management.v1.AgentRunPodRef
 	23, // 17: platform.management.v1.ResolveAgentRunRuntimeContextResponse.metadata:type_name -> platform.management.v1.AgentRunRuntimeMetadata
-	35, // 18: platform.management.v1.AgentRunRuntimeMetadata.protocol:type_name -> api_protocol.v1.Protocol
+	32, // 18: platform.management.v1.AgentRunRuntimeMetadata.protocol:type_name -> api_protocol.v1.Protocol
 	24, // 19: platform.management.v1.AgentRunRuntimeMetadata.request_header_replacement_rules:type_name -> platform.management.v1.AgentRunRuntimeHeaderReplacementRule
 	24, // 20: platform.management.v1.AgentRunRuntimeMetadata.response_header_replacement_rules:type_name -> platform.management.v1.AgentRunRuntimeHeaderReplacementRule
-	36, // 21: platform.management.v1.AgentRunRuntimeMetadata.response_header_metric_rules:type_name -> platform.agent_run.v1.AgentRunResponseHeaderRule
-	22, // 22: platform.management.v1.RecordAgentRunResponseHeadersRequest.pod:type_name -> platform.management.v1.AgentRunPodRef
-	27, // 23: platform.management.v1.RecordAgentRunResponseHeadersRequest.response_headers:type_name -> platform.management.v1.RecordAgentRunResponseHeadersRequest.ResponseHeadersEntry
-	0,  // 24: platform.management.v1.AgentSessionManagementService.GetAgentSession:input_type -> platform.management.v1.GetAgentSessionRequest
-	2,  // 25: platform.management.v1.AgentSessionManagementService.CreateAgentSession:input_type -> platform.management.v1.CreateAgentSessionRequest
-	4,  // 26: platform.management.v1.AgentSessionManagementService.UpdateAgentSession:input_type -> platform.management.v1.UpdateAgentSessionRequest
-	6,  // 27: platform.management.v1.AgentSessionManagementService.GetAgentSessionAction:input_type -> platform.management.v1.GetAgentSessionActionRequest
-	8,  // 28: platform.management.v1.AgentSessionManagementService.CreateAgentSessionAction:input_type -> platform.management.v1.CreateAgentSessionActionRequest
-	10, // 29: platform.management.v1.AgentSessionManagementService.ResetAgentSessionWarmState:input_type -> platform.management.v1.ResetAgentSessionWarmStateRequest
-	12, // 30: platform.management.v1.AgentSessionManagementService.StopAgentSessionAction:input_type -> platform.management.v1.StopAgentSessionActionRequest
-	14, // 31: platform.management.v1.AgentSessionManagementService.RetryAgentSessionAction:input_type -> platform.management.v1.RetryAgentSessionActionRequest
-	16, // 32: platform.management.v1.AgentSessionManagementService.GetAgentRun:input_type -> platform.management.v1.GetAgentRunRequest
-	18, // 33: platform.management.v1.AgentSessionManagementService.StreamAgentRunOutput:input_type -> platform.management.v1.StreamAgentRunOutputRequest
-	20, // 34: platform.management.v1.AgentSessionManagementService.ResolveAgentRunRuntimeContext:input_type -> platform.management.v1.ResolveAgentRunRuntimeContextRequest
-	25, // 35: platform.management.v1.AgentSessionManagementService.RecordAgentRunResponseHeaders:input_type -> platform.management.v1.RecordAgentRunResponseHeadersRequest
-	1,  // 36: platform.management.v1.AgentSessionManagementService.GetAgentSession:output_type -> platform.management.v1.GetAgentSessionResponse
-	3,  // 37: platform.management.v1.AgentSessionManagementService.CreateAgentSession:output_type -> platform.management.v1.CreateAgentSessionResponse
-	5,  // 38: platform.management.v1.AgentSessionManagementService.UpdateAgentSession:output_type -> platform.management.v1.UpdateAgentSessionResponse
-	7,  // 39: platform.management.v1.AgentSessionManagementService.GetAgentSessionAction:output_type -> platform.management.v1.GetAgentSessionActionResponse
-	9,  // 40: platform.management.v1.AgentSessionManagementService.CreateAgentSessionAction:output_type -> platform.management.v1.CreateAgentSessionActionResponse
-	11, // 41: platform.management.v1.AgentSessionManagementService.ResetAgentSessionWarmState:output_type -> platform.management.v1.ResetAgentSessionWarmStateResponse
-	13, // 42: platform.management.v1.AgentSessionManagementService.StopAgentSessionAction:output_type -> platform.management.v1.StopAgentSessionActionResponse
-	15, // 43: platform.management.v1.AgentSessionManagementService.RetryAgentSessionAction:output_type -> platform.management.v1.RetryAgentSessionActionResponse
-	17, // 44: platform.management.v1.AgentSessionManagementService.GetAgentRun:output_type -> platform.management.v1.GetAgentRunResponse
-	19, // 45: platform.management.v1.AgentSessionManagementService.StreamAgentRunOutput:output_type -> platform.management.v1.StreamAgentRunOutputResponse
-	21, // 46: platform.management.v1.AgentSessionManagementService.ResolveAgentRunRuntimeContext:output_type -> platform.management.v1.ResolveAgentRunRuntimeContextResponse
-	26, // 47: platform.management.v1.AgentSessionManagementService.RecordAgentRunResponseHeaders:output_type -> platform.management.v1.RecordAgentRunResponseHeadersResponse
-	36, // [36:48] is the sub-list for method output_type
-	24, // [24:36] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	0,  // 21: platform.management.v1.AgentSessionManagementService.GetAgentSession:input_type -> platform.management.v1.GetAgentSessionRequest
+	2,  // 22: platform.management.v1.AgentSessionManagementService.CreateAgentSession:input_type -> platform.management.v1.CreateAgentSessionRequest
+	4,  // 23: platform.management.v1.AgentSessionManagementService.UpdateAgentSession:input_type -> platform.management.v1.UpdateAgentSessionRequest
+	6,  // 24: platform.management.v1.AgentSessionManagementService.GetAgentSessionAction:input_type -> platform.management.v1.GetAgentSessionActionRequest
+	8,  // 25: platform.management.v1.AgentSessionManagementService.CreateAgentSessionAction:input_type -> platform.management.v1.CreateAgentSessionActionRequest
+	10, // 26: platform.management.v1.AgentSessionManagementService.ResetAgentSessionWarmState:input_type -> platform.management.v1.ResetAgentSessionWarmStateRequest
+	12, // 27: platform.management.v1.AgentSessionManagementService.StopAgentSessionAction:input_type -> platform.management.v1.StopAgentSessionActionRequest
+	14, // 28: platform.management.v1.AgentSessionManagementService.RetryAgentSessionAction:input_type -> platform.management.v1.RetryAgentSessionActionRequest
+	16, // 29: platform.management.v1.AgentSessionManagementService.GetAgentRun:input_type -> platform.management.v1.GetAgentRunRequest
+	18, // 30: platform.management.v1.AgentSessionManagementService.StreamAgentRunOutput:input_type -> platform.management.v1.StreamAgentRunOutputRequest
+	20, // 31: platform.management.v1.AgentSessionManagementService.ResolveAgentRunRuntimeContext:input_type -> platform.management.v1.ResolveAgentRunRuntimeContextRequest
+	1,  // 32: platform.management.v1.AgentSessionManagementService.GetAgentSession:output_type -> platform.management.v1.GetAgentSessionResponse
+	3,  // 33: platform.management.v1.AgentSessionManagementService.CreateAgentSession:output_type -> platform.management.v1.CreateAgentSessionResponse
+	5,  // 34: platform.management.v1.AgentSessionManagementService.UpdateAgentSession:output_type -> platform.management.v1.UpdateAgentSessionResponse
+	7,  // 35: platform.management.v1.AgentSessionManagementService.GetAgentSessionAction:output_type -> platform.management.v1.GetAgentSessionActionResponse
+	9,  // 36: platform.management.v1.AgentSessionManagementService.CreateAgentSessionAction:output_type -> platform.management.v1.CreateAgentSessionActionResponse
+	11, // 37: platform.management.v1.AgentSessionManagementService.ResetAgentSessionWarmState:output_type -> platform.management.v1.ResetAgentSessionWarmStateResponse
+	13, // 38: platform.management.v1.AgentSessionManagementService.StopAgentSessionAction:output_type -> platform.management.v1.StopAgentSessionActionResponse
+	15, // 39: platform.management.v1.AgentSessionManagementService.RetryAgentSessionAction:output_type -> platform.management.v1.RetryAgentSessionActionResponse
+	17, // 40: platform.management.v1.AgentSessionManagementService.GetAgentRun:output_type -> platform.management.v1.GetAgentRunResponse
+	19, // 41: platform.management.v1.AgentSessionManagementService.StreamAgentRunOutput:output_type -> platform.management.v1.StreamAgentRunOutputResponse
+	21, // 42: platform.management.v1.AgentSessionManagementService.ResolveAgentRunRuntimeContext:output_type -> platform.management.v1.ResolveAgentRunRuntimeContextResponse
+	32, // [32:43] is the sub-list for method output_type
+	21, // [21:32] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_platform_management_v1_agent_session_management_proto_init() }
@@ -1925,18 +1704,13 @@ func file_platform_management_v1_agent_session_management_proto_init() {
 		(*ResolveAgentRunRuntimeContextRequest_Pod)(nil),
 		(*ResolveAgentRunRuntimeContextRequest_WorkloadId)(nil),
 	}
-	file_platform_management_v1_agent_session_management_proto_msgTypes[25].OneofWrappers = []any{
-		(*RecordAgentRunResponseHeadersRequest_RunId)(nil),
-		(*RecordAgentRunResponseHeadersRequest_Pod)(nil),
-		(*RecordAgentRunResponseHeadersRequest_WorkloadId)(nil),
-	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_platform_management_v1_agent_session_management_proto_rawDesc), len(file_platform_management_v1_agent_session_management_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   28,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -39,7 +39,7 @@ describe("provider-active-query-status", () => {
     expect(status).toEqual({
       color: "red",
       label: "Auth Blocked · 10m ago",
-      reason: "authjs.session-token needs refresh.",
+      reason: "Observability authentication needs refresh.",
     });
   });
 });

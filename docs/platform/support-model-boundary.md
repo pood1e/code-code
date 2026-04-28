@@ -2,10 +2,10 @@
 
 ## Responsibility
 
-- `platform-support-service` exposes public resource metadata and opaque
-  capability ids.
-- Source-specific capability details stay behind support adapters and are not
-  returned to network/auth/session domains.
+- `platform-support-service` exposes public resource metadata, routing policy
+  ids, and provider/CLI/vendor observability profiles.
+- Source-specific credential/header rewrite details stay behind support
+  adapters and are not returned to network/session domains.
 - `provider.v1.ProviderSurface` owns stable provider surface semantics.
 - Cross-service runtime wiring ids are surface bindings, not source identity
   fields.
@@ -27,17 +27,19 @@
 - API surface bindings for vendor-spec API connect
 - public API surface binding ids and provider card metadata
 
-`ResolveProviderCapabilities` returns only opaque ids:
+`ResolveProviderCapabilities` returns resolved runtime wiring:
 
 - `egress_policy_id`
 - `auth_policy_id`
-- `header_metric_policy_id`
+- `observability`
 - `model_catalog_probe_id`
 - `quota_probe_id`
 - `auth_materialization_key`
 
-It does not return target hosts, path rules, header names, replacement
-templates, response-header mappings, or vendor/CLI ownership.
+It does not return target hosts, path rules, credential material, header
+replacement templates, or vendor/CLI ownership internals. Response-header
+metric mappings are returned as `observability.v1.ObservabilityCapability`,
+because support owns provider-specific header semantics.
 
 The following are binding fields, not source identity fields:
 
@@ -55,7 +57,9 @@ The following are binding fields, not source identity fields:
   part of provider list assembly.
 - Support registries may synthesize default bindings from static data while the
   proto shape is being adopted.
-- Concrete egress rules live in `platform-network-service`.
+- Concrete egress rules live in `platform-egress-service`.
 - Concrete header rewrite rules live in `platform-auth-service`.
-- Concrete passive header metric rules live in agent runtime/session
-  observability.
+- Concrete runtime HTTP telemetry declarations live in support-owned
+  observability profiles. Support syncs them to `platform-egress-service`
+  after startup; Istio Telemetry and OTel Collector own collection and metric
+  conversion.

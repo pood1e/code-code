@@ -57,15 +57,8 @@ describe("app composition", () => {
     expect(result.section.headline).toBe("Grafana");
   });
 
-  it("resolves nested provider credential routes (OAuth auth callback) falling back to overview", () => {
+  it("resolves nested provider credential routes falling back to overview", () => {
     const result = resolveSection("/provider-credentials/oauth/callback");
-
-    expect(result.activeKey).toBe("overview");
-    expect(result.section.headline).toBe("Overview");
-  });
-
-  it("resolves nested provider credential routes (OAuth auth authorize) falling back to overview", () => {
-    const result = resolveSection("/provider-credentials/oauth/authorize");
 
     expect(result.activeKey).toBe("overview");
     expect(result.section.headline).toBe("Overview");
@@ -78,10 +71,10 @@ describe("app composition", () => {
     expect(result.section.headline).toBe("Overview");
   });
 
-  it("falls back to overview for catalog sources", () => {
-    const result = resolveSection("/catalog-sources");
+  it("falls back to custom section when provided", () => {
+    const customFallback = { key: "providers", label: "Providers", icon: "layers" as const, headline: "Providers" };
+    const result = resolveSection("/unknown", customFallback);
 
-    expect(result.activeKey).toBe("overview");
-    expect(result.section.headline).toBe("Overview");
+    expect(result.activeKey).toBe("providers");
   });
 });

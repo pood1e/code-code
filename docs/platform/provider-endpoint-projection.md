@@ -12,7 +12,7 @@ selection behavior.
 
 - source of truth remains the provider account aggregate
 - endpoint projection must be derived, not independently owned
-- endpoint projection does not read credential Secret material
+- endpoint projection does not read credential material
 - endpoint projection does not own default model selection
 - catalog validation does not trigger remote model discovery
 

@@ -59,7 +59,7 @@ describe("ModelDetailsSources", () => {
     expect(screen.getByText("Mistral AI")).toBeInTheDocument();
     expect(screen.getByText("nvidia-integrate")).toBeInTheDocument();
     expect(screen.getByText("mistral-large")).toBeInTheDocument();
-    expect(screen.getByText(/Input \$2\/M/)).toBeInTheDocument();
+    expect(screen.getByText(/Input: \$2\/M/)).toBeInTheDocument();
     expect(screen.getAllByText("openrouter")).toHaveLength(2);
     expect(screen.getByText("mistralai/mistral-large")).toBeInTheDocument();
     expect(screen.getByText("Proxy")).toBeInTheDocument();

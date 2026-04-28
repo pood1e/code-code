@@ -1,0 +1,57 @@
+global:
+  partOf: code-code
+  # -- Optional registry prefix prepended to platform-notifications images.
+  imageRegistry: ""
+  # -- Shared image tag used for platform-notifications images.
+  imageTag: "0.0.0"
+  # -- Namespace where NATS and other shared infrastructure live.
+  infraNamespace: code-code-infra
+
+notificationDispatcher:
+  # -- Enable or disable the notification subsystem.
+  enabled: true
+  # -- NATS URL consumed by the dispatcher and inbound adapters.
+  natsUrl: nats://nats.code-code-infra.svc.cluster.local:4222
+  # -- NATS subject consumed by the dispatcher.
+  subject: platform.notifications.requested
+  secretNames:
+    # -- Secret containing Apprise destination URLs.
+    appriseUrls: notification-apprise-urls
+    # -- Secret containing WeCom callback token and AES key.
+    wecomCallback: wecom-callback
+    # -- Secret containing the default WeCom robot callback token and AES key.
+    wecomRobotDefaultCallback: wecom-robot-default-callback
+  route:
+    # -- Publish inbound notification endpoints through a Gateway API HTTPRoute.
+    enabled: true
+    # -- Host list served by the inbound notification HTTPRoute.
+    hosts:
+      - notifications-primary.placeholder.invalid
+      - notifications-secondary.placeholder.invalid
+    parentRef:
+      # -- Gateway name used by the notification HTTPRoute.
+      name: platform-ingress
+      # -- Gateway namespace used by the notification HTTPRoute.
+      namespace: code-code-net
+      # -- Gateway listener section used by the notification HTTPRoute.
+      sectionName: http
+  dispatcher:
+    name: notification-dispatcher
+    # -- Platform image name for the dispatcher Deployment.
+    imageName: notification-dispatcher
+  appriseApi:
+    name: apprise-api
+    image:
+      # -- Container repository for the bundled Apprise API.
+      repository: caronc/apprise
+      # -- Container tag for the bundled Apprise API.
+      tag: 1.3.3
+      pullPolicy: IfNotPresent
+  wecomCallbackAdapter:
+    name: wecom-callback-adapter
+    # -- Platform image name for the WeCom callback adapter.
+    imageName: wecom-callback-adapter
+  wecomRobotDefaultCallbackAdapter:
+    name: wecom-robot-default-callback-adapter
+    # -- Platform image name for the default WeCom robot callback adapter.
+    imageName: wecom-callback-adapter

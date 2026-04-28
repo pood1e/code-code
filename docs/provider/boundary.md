@@ -22,5 +22,5 @@
   provider-native model id, and canonical model ref into `ProviderRunBinding`
 - provider accounts do not own default models
 - `model_ref` only expresses authority binding when present
-- provider read paths do not read credential Secret material
+- provider read paths do not read credential material except fields explicitly declared by support-owned observability policy
 - endpoint-shaped projections are internal compatibility details only

@@ -119,7 +119,7 @@ func TestValidateResolvedProviderModelAcceptsResolvedCatalogSource(t *testing.T)
 		Surface:         &ResolvedProviderSurface{Surface: testAPISurfaceRuntime()},
 		Model: &modelv1.ResolvedModel{
 			ModelId: "gpt-4o-mini",
-			EffectiveDefinition: &modelv1.ModelDefinition{
+			EffectiveDefinition: &modelv1.ModelVersion{
 				ModelId:      "gpt-4o-mini",
 				VendorId:     "openai",
 				PrimaryShape: modelv1.ModelShape_MODEL_SHAPE_CHAT_COMPLETIONS,

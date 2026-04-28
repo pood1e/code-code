@@ -22,154 +22,111 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type EgressAction int32
+type EgressProtocol int32
 
 const (
-	EgressAction_EGRESS_ACTION_UNSPECIFIED EgressAction = 0
-	EgressAction_EGRESS_ACTION_DIRECT      EgressAction = 1
-	EgressAction_EGRESS_ACTION_PROXY       EgressAction = 2
+	EgressProtocol_EGRESS_PROTOCOL_UNSPECIFIED EgressProtocol = 0
+	EgressProtocol_EGRESS_PROTOCOL_HTTP        EgressProtocol = 1
+	EgressProtocol_EGRESS_PROTOCOL_TLS         EgressProtocol = 2
+	EgressProtocol_EGRESS_PROTOCOL_TCP         EgressProtocol = 3
+	EgressProtocol_EGRESS_PROTOCOL_HTTPS       EgressProtocol = 4
 )
 
-// Enum value maps for EgressAction.
+// Enum value maps for EgressProtocol.
 var (
-	EgressAction_name = map[int32]string{
-		0: "EGRESS_ACTION_UNSPECIFIED",
-		1: "EGRESS_ACTION_DIRECT",
-		2: "EGRESS_ACTION_PROXY",
+	EgressProtocol_name = map[int32]string{
+		0: "EGRESS_PROTOCOL_UNSPECIFIED",
+		1: "EGRESS_PROTOCOL_HTTP",
+		2: "EGRESS_PROTOCOL_TLS",
+		3: "EGRESS_PROTOCOL_TCP",
+		4: "EGRESS_PROTOCOL_HTTPS",
 	}
-	EgressAction_value = map[string]int32{
-		"EGRESS_ACTION_UNSPECIFIED": 0,
-		"EGRESS_ACTION_DIRECT":      1,
-		"EGRESS_ACTION_PROXY":       2,
+	EgressProtocol_value = map[string]int32{
+		"EGRESS_PROTOCOL_UNSPECIFIED": 0,
+		"EGRESS_PROTOCOL_HTTP":        1,
+		"EGRESS_PROTOCOL_TLS":         2,
+		"EGRESS_PROTOCOL_TCP":         3,
+		"EGRESS_PROTOCOL_HTTPS":       4,
 	}
 )
 
-func (x EgressAction) Enum() *EgressAction {
-	p := new(EgressAction)
+func (x EgressProtocol) Enum() *EgressProtocol {
+	p := new(EgressProtocol)
 	*p = x
 	return p
 }
 
-func (x EgressAction) String() string {
+func (x EgressProtocol) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (EgressAction) Descriptor() protoreflect.EnumDescriptor {
+func (EgressProtocol) Descriptor() protoreflect.EnumDescriptor {
 	return file_egress_v1_policy_proto_enumTypes[0].Descriptor()
 }
 
-func (EgressAction) Type() protoreflect.EnumType {
+func (EgressProtocol) Type() protoreflect.EnumType {
 	return &file_egress_v1_policy_proto_enumTypes[0]
 }
 
-func (x EgressAction) Number() protoreflect.EnumNumber {
+func (x EgressProtocol) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use EgressAction.Descriptor instead.
-func (EgressAction) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use EgressProtocol.Descriptor instead.
+func (EgressProtocol) EnumDescriptor() ([]byte, []int) {
 	return file_egress_v1_policy_proto_rawDescGZIP(), []int{0}
 }
 
-type EgressProxyProtocol int32
+type EgressResolution int32
 
 const (
-	EgressProxyProtocol_EGRESS_PROXY_PROTOCOL_UNSPECIFIED EgressProxyProtocol = 0
-	EgressProxyProtocol_EGRESS_PROXY_PROTOCOL_HTTP        EgressProxyProtocol = 1
+	EgressResolution_EGRESS_RESOLUTION_UNSPECIFIED EgressResolution = 0
+	EgressResolution_EGRESS_RESOLUTION_DNS         EgressResolution = 1
+	EgressResolution_EGRESS_RESOLUTION_DYNAMIC_DNS EgressResolution = 2
+	EgressResolution_EGRESS_RESOLUTION_NONE        EgressResolution = 3
 )
 
-// Enum value maps for EgressProxyProtocol.
+// Enum value maps for EgressResolution.
 var (
-	EgressProxyProtocol_name = map[int32]string{
-		0: "EGRESS_PROXY_PROTOCOL_UNSPECIFIED",
-		1: "EGRESS_PROXY_PROTOCOL_HTTP",
+	EgressResolution_name = map[int32]string{
+		0: "EGRESS_RESOLUTION_UNSPECIFIED",
+		1: "EGRESS_RESOLUTION_DNS",
+		2: "EGRESS_RESOLUTION_DYNAMIC_DNS",
+		3: "EGRESS_RESOLUTION_NONE",
 	}
-	EgressProxyProtocol_value = map[string]int32{
-		"EGRESS_PROXY_PROTOCOL_UNSPECIFIED": 0,
-		"EGRESS_PROXY_PROTOCOL_HTTP":        1,
+	EgressResolution_value = map[string]int32{
+		"EGRESS_RESOLUTION_UNSPECIFIED": 0,
+		"EGRESS_RESOLUTION_DNS":         1,
+		"EGRESS_RESOLUTION_DYNAMIC_DNS": 2,
+		"EGRESS_RESOLUTION_NONE":        3,
 	}
 )
 
-func (x EgressProxyProtocol) Enum() *EgressProxyProtocol {
-	p := new(EgressProxyProtocol)
+func (x EgressResolution) Enum() *EgressResolution {
+	p := new(EgressResolution)
 	*p = x
 	return p
 }
 
-func (x EgressProxyProtocol) String() string {
+func (x EgressResolution) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (EgressProxyProtocol) Descriptor() protoreflect.EnumDescriptor {
+func (EgressResolution) Descriptor() protoreflect.EnumDescriptor {
 	return file_egress_v1_policy_proto_enumTypes[1].Descriptor()
 }
 
-func (EgressProxyProtocol) Type() protoreflect.EnumType {
+func (EgressResolution) Type() protoreflect.EnumType {
 	return &file_egress_v1_policy_proto_enumTypes[1]
 }
 
-func (x EgressProxyProtocol) Number() protoreflect.EnumNumber {
+func (x EgressResolution) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use EgressProxyProtocol.Descriptor instead.
-func (EgressProxyProtocol) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use EgressResolution.Descriptor instead.
+func (EgressResolution) EnumDescriptor() ([]byte, []int) {
 	return file_egress_v1_policy_proto_rawDescGZIP(), []int{1}
-}
-
-type EgressExternalRuleSetLoadPhase int32
-
-const (
-	EgressExternalRuleSetLoadPhase_EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED EgressExternalRuleSetLoadPhase = 0
-	EgressExternalRuleSetLoadPhase_EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_DISABLED    EgressExternalRuleSetLoadPhase = 1
-	EgressExternalRuleSetLoadPhase_EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_LOADED      EgressExternalRuleSetLoadPhase = 2
-	EgressExternalRuleSetLoadPhase_EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_NOT_LOADED  EgressExternalRuleSetLoadPhase = 3
-	EgressExternalRuleSetLoadPhase_EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_FAILED      EgressExternalRuleSetLoadPhase = 4
-)
-
-// Enum value maps for EgressExternalRuleSetLoadPhase.
-var (
-	EgressExternalRuleSetLoadPhase_name = map[int32]string{
-		0: "EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED",
-		1: "EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_DISABLED",
-		2: "EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_LOADED",
-		3: "EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_NOT_LOADED",
-		4: "EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_FAILED",
-	}
-	EgressExternalRuleSetLoadPhase_value = map[string]int32{
-		"EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED": 0,
-		"EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_DISABLED":    1,
-		"EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_LOADED":      2,
-		"EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_NOT_LOADED":  3,
-		"EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_FAILED":      4,
-	}
-)
-
-func (x EgressExternalRuleSetLoadPhase) Enum() *EgressExternalRuleSetLoadPhase {
-	p := new(EgressExternalRuleSetLoadPhase)
-	*p = x
-	return p
-}
-
-func (x EgressExternalRuleSetLoadPhase) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (EgressExternalRuleSetLoadPhase) Descriptor() protoreflect.EnumDescriptor {
-	return file_egress_v1_policy_proto_enumTypes[2].Descriptor()
-}
-
-func (EgressExternalRuleSetLoadPhase) Type() protoreflect.EnumType {
-	return &file_egress_v1_policy_proto_enumTypes[2]
-}
-
-func (x EgressExternalRuleSetLoadPhase) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use EgressExternalRuleSetLoadPhase.Descriptor instead.
-func (EgressExternalRuleSetLoadPhase) EnumDescriptor() ([]byte, []int) {
-	return file_egress_v1_policy_proto_rawDescGZIP(), []int{2}
 }
 
 type EgressSyncPhase int32
@@ -208,11 +165,11 @@ func (x EgressSyncPhase) String() string {
 }
 
 func (EgressSyncPhase) Descriptor() protoreflect.EnumDescriptor {
-	return file_egress_v1_policy_proto_enumTypes[3].Descriptor()
+	return file_egress_v1_policy_proto_enumTypes[2].Descriptor()
 }
 
 func (EgressSyncPhase) Type() protoreflect.EnumType {
-	return &file_egress_v1_policy_proto_enumTypes[3]
+	return &file_egress_v1_policy_proto_enumTypes[2]
 }
 
 func (x EgressSyncPhase) Number() protoreflect.EnumNumber {
@@ -221,19 +178,16 @@ func (x EgressSyncPhase) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EgressSyncPhase.Descriptor instead.
 func (EgressSyncPhase) EnumDescriptor() ([]byte, []int) {
-	return file_egress_v1_policy_proto_rawDescGZIP(), []int{3}
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{2}
 }
 
-// EgressPolicy declares one Istio-owned outbound policy intent.
 type EgressPolicy struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	PolicyId        string                 `protobuf:"bytes,1,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
-	DisplayName     string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Proxies         []*EgressProxy         `protobuf:"bytes,4,rep,name=proxies,proto3" json:"proxies,omitempty"`
-	CustomRules     []*EgressRule          `protobuf:"bytes,5,rep,name=custom_rules,json=customRules,proto3" json:"custom_rules,omitempty"`
-	ExternalRuleSet *EgressExternalRuleSet `protobuf:"bytes,6,opt,name=external_rule_set,json=externalRuleSet,proto3" json:"external_rule_set,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PolicyId      string                 `protobuf:"bytes,1,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	AccessSets    []*ExternalAccessSet   `protobuf:"bytes,3,rep,name=access_sets,json=accessSets,proto3" json:"access_sets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EgressPolicy) Reset() {
@@ -280,52 +234,40 @@ func (x *EgressPolicy) GetDisplayName() string {
 	return ""
 }
 
-func (x *EgressPolicy) GetProxies() []*EgressProxy {
+func (x *EgressPolicy) GetAccessSets() []*ExternalAccessSet {
 	if x != nil {
-		return x.Proxies
+		return x.AccessSets
 	}
 	return nil
 }
 
-func (x *EgressPolicy) GetCustomRules() []*EgressRule {
-	if x != nil {
-		return x.CustomRules
-	}
-	return nil
-}
-
-func (x *EgressPolicy) GetExternalRuleSet() *EgressExternalRuleSet {
-	if x != nil {
-		return x.ExternalRuleSet
-	}
-	return nil
-}
-
-// EgressProxy declares one selectable HTTP proxy target.
-type EgressProxy struct {
+type ExternalAccessSet struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProxyId       string                 `protobuf:"bytes,1,opt,name=proxy_id,json=proxyId,proto3" json:"proxy_id,omitempty"`
+	AccessSetId   string                 `protobuf:"bytes,1,opt,name=access_set_id,json=accessSetId,proto3" json:"access_set_id,omitempty"`
 	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Protocol      EgressProxyProtocol    `protobuf:"varint,3,opt,name=protocol,proto3,enum=egress.v1.EgressProxyProtocol" json:"protocol,omitempty"`
-	Url           string                 `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
+	OwnerService  string                 `protobuf:"bytes,3,opt,name=owner_service,json=ownerService,proto3" json:"owner_service,omitempty"`
+	PolicyId      string                 `protobuf:"bytes,4,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
+	ExternalRules []*ExternalRule        `protobuf:"bytes,5,rep,name=external_rules,json=externalRules,proto3" json:"external_rules,omitempty"`
+	ServiceRules  []*ServiceRule         `protobuf:"bytes,6,rep,name=service_rules,json=serviceRules,proto3" json:"service_rules,omitempty"`
+	HttpRoutes    []*HttpEgressRoute     `protobuf:"bytes,7,rep,name=http_routes,json=httpRoutes,proto3" json:"http_routes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EgressProxy) Reset() {
-	*x = EgressProxy{}
+func (x *ExternalAccessSet) Reset() {
+	*x = ExternalAccessSet{}
 	mi := &file_egress_v1_policy_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EgressProxy) String() string {
+func (x *ExternalAccessSet) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EgressProxy) ProtoMessage() {}
+func (*ExternalAccessSet) ProtoMessage() {}
 
-func (x *EgressProxy) ProtoReflect() protoreflect.Message {
+func (x *ExternalAccessSet) ProtoReflect() protoreflect.Message {
 	mi := &file_egress_v1_policy_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -337,142 +279,183 @@ func (x *EgressProxy) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EgressProxy.ProtoReflect.Descriptor instead.
-func (*EgressProxy) Descriptor() ([]byte, []int) {
+// Deprecated: Use ExternalAccessSet.ProtoReflect.Descriptor instead.
+func (*ExternalAccessSet) Descriptor() ([]byte, []int) {
 	return file_egress_v1_policy_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *EgressProxy) GetProxyId() string {
+func (x *ExternalAccessSet) GetAccessSetId() string {
 	if x != nil {
-		return x.ProxyId
+		return x.AccessSetId
 	}
 	return ""
 }
 
-func (x *EgressProxy) GetDisplayName() string {
+func (x *ExternalAccessSet) GetDisplayName() string {
 	if x != nil {
 		return x.DisplayName
 	}
 	return ""
 }
 
-func (x *EgressProxy) GetProtocol() EgressProxyProtocol {
+func (x *ExternalAccessSet) GetOwnerService() string {
 	if x != nil {
-		return x.Protocol
-	}
-	return EgressProxyProtocol_EGRESS_PROXY_PROTOCOL_UNSPECIFIED
-}
-
-func (x *EgressProxy) GetUrl() string {
-	if x != nil {
-		return x.Url
+		return x.OwnerService
 	}
 	return ""
 }
 
-// EgressRule declares one user-controlled host matching rule.
-type EgressRule struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RuleId        string                 `protobuf:"bytes,1,opt,name=rule_id,json=ruleId,proto3" json:"rule_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Match         *EgressRuleMatch       `protobuf:"bytes,3,opt,name=match,proto3" json:"match,omitempty"`
-	Action        EgressAction           `protobuf:"varint,4,opt,name=action,proto3,enum=egress.v1.EgressAction" json:"action,omitempty"`
-	ProxyId       string                 `protobuf:"bytes,5,opt,name=proxy_id,json=proxyId,proto3" json:"proxy_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *EgressRule) Reset() {
-	*x = EgressRule{}
-	mi := &file_egress_v1_policy_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EgressRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EgressRule) ProtoMessage() {}
-
-func (x *EgressRule) ProtoReflect() protoreflect.Message {
-	mi := &file_egress_v1_policy_proto_msgTypes[2]
+func (x *ExternalAccessSet) GetPolicyId() string {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EgressRule.ProtoReflect.Descriptor instead.
-func (*EgressRule) Descriptor() ([]byte, []int) {
-	return file_egress_v1_policy_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *EgressRule) GetRuleId() string {
-	if x != nil {
-		return x.RuleId
+		return x.PolicyId
 	}
 	return ""
 }
 
-func (x *EgressRule) GetDisplayName() string {
+func (x *ExternalAccessSet) GetExternalRules() []*ExternalRule {
 	if x != nil {
-		return x.DisplayName
-	}
-	return ""
-}
-
-func (x *EgressRule) GetMatch() *EgressRuleMatch {
-	if x != nil {
-		return x.Match
+		return x.ExternalRules
 	}
 	return nil
 }
 
-func (x *EgressRule) GetAction() EgressAction {
+func (x *ExternalAccessSet) GetServiceRules() []*ServiceRule {
 	if x != nil {
-		return x.Action
+		return x.ServiceRules
 	}
-	return EgressAction_EGRESS_ACTION_UNSPECIFIED
+	return nil
 }
 
-func (x *EgressRule) GetProxyId() string {
+func (x *ExternalAccessSet) GetHttpRoutes() []*HttpEgressRoute {
 	if x != nil {
-		return x.ProxyId
+		return x.HttpRoutes
+	}
+	return nil
+}
+
+type ExternalRule struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ExternalRuleId string                 `protobuf:"bytes,1,opt,name=external_rule_id,json=externalRuleId,proto3" json:"external_rule_id,omitempty"`
+	DestinationId  string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
+	DisplayName    string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	HostMatch      *HostMatch             `protobuf:"bytes,4,opt,name=host_match,json=hostMatch,proto3" json:"host_match,omitempty"`
+	Port           int32                  `protobuf:"varint,5,opt,name=port,proto3" json:"port,omitempty"`
+	Protocol       EgressProtocol         `protobuf:"varint,6,opt,name=protocol,proto3,enum=egress.v1.EgressProtocol" json:"protocol,omitempty"`
+	Resolution     EgressResolution       `protobuf:"varint,7,opt,name=resolution,proto3,enum=egress.v1.EgressResolution" json:"resolution,omitempty"`
+	AddressCidr    string                 `protobuf:"bytes,9,opt,name=address_cidr,json=addressCidr,proto3" json:"address_cidr,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ExternalRule) Reset() {
+	*x = ExternalRule{}
+	mi := &file_egress_v1_policy_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExternalRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExternalRule) ProtoMessage() {}
+
+func (x *ExternalRule) ProtoReflect() protoreflect.Message {
+	mi := &file_egress_v1_policy_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExternalRule.ProtoReflect.Descriptor instead.
+func (*ExternalRule) Descriptor() ([]byte, []int) {
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ExternalRule) GetExternalRuleId() string {
+	if x != nil {
+		return x.ExternalRuleId
 	}
 	return ""
 }
 
-// EgressRuleMatch describes how one rule matches an outbound host.
-type EgressRuleMatch struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Kind:
-	//
-	//	*EgressRuleMatch_HostExact
-	//	*EgressRuleMatch_HostSuffix
-	Kind          isEgressRuleMatch_Kind `protobuf_oneof:"kind"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x *ExternalRule) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
+	}
+	return ""
 }
 
-func (x *EgressRuleMatch) Reset() {
-	*x = EgressRuleMatch{}
+func (x *ExternalRule) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *ExternalRule) GetHostMatch() *HostMatch {
+	if x != nil {
+		return x.HostMatch
+	}
+	return nil
+}
+
+func (x *ExternalRule) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *ExternalRule) GetProtocol() EgressProtocol {
+	if x != nil {
+		return x.Protocol
+	}
+	return EgressProtocol_EGRESS_PROTOCOL_UNSPECIFIED
+}
+
+func (x *ExternalRule) GetResolution() EgressResolution {
+	if x != nil {
+		return x.Resolution
+	}
+	return EgressResolution_EGRESS_RESOLUTION_UNSPECIFIED
+}
+
+func (x *ExternalRule) GetAddressCidr() string {
+	if x != nil {
+		return x.AddressCidr
+	}
+	return ""
+}
+
+type ServiceRule struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	ServiceRuleId         string                 `protobuf:"bytes,1,opt,name=service_rule_id,json=serviceRuleId,proto3" json:"service_rule_id,omitempty"`
+	DestinationId         string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
+	SourceServiceAccounts []string               `protobuf:"bytes,3,rep,name=source_service_accounts,json=sourceServiceAccounts,proto3" json:"source_service_accounts,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *ServiceRule) Reset() {
+	*x = ServiceRule{}
 	mi := &file_egress_v1_policy_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EgressRuleMatch) String() string {
+func (x *ServiceRule) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EgressRuleMatch) ProtoMessage() {}
+func (*ServiceRule) ProtoMessage() {}
 
-func (x *EgressRuleMatch) ProtoReflect() protoreflect.Message {
+func (x *ServiceRule) ProtoReflect() protoreflect.Message {
 	mi := &file_egress_v1_policy_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -484,210 +467,378 @@ func (x *EgressRuleMatch) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EgressRuleMatch.ProtoReflect.Descriptor instead.
-func (*EgressRuleMatch) Descriptor() ([]byte, []int) {
+// Deprecated: Use ServiceRule.ProtoReflect.Descriptor instead.
+func (*ServiceRule) Descriptor() ([]byte, []int) {
 	return file_egress_v1_policy_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *EgressRuleMatch) GetKind() isEgressRuleMatch_Kind {
+func (x *ServiceRule) GetServiceRuleId() string {
+	if x != nil {
+		return x.ServiceRuleId
+	}
+	return ""
+}
+
+func (x *ServiceRule) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
+	}
+	return ""
+}
+
+func (x *ServiceRule) GetSourceServiceAccounts() []string {
+	if x != nil {
+		return x.SourceServiceAccounts
+	}
+	return nil
+}
+
+type HttpEgressRoute struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	RouteId            string                 `protobuf:"bytes,1,opt,name=route_id,json=routeId,proto3" json:"route_id,omitempty"`
+	DisplayName        string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	DestinationId      string                 `protobuf:"bytes,3,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
+	Matches            []*HttpRouteMatch      `protobuf:"bytes,4,rep,name=matches,proto3" json:"matches,omitempty"`
+	RequestHeaders     *HttpHeaderPolicy      `protobuf:"bytes,5,opt,name=request_headers,json=requestHeaders,proto3" json:"request_headers,omitempty"`
+	ResponseHeaders    *HttpHeaderPolicy      `protobuf:"bytes,6,opt,name=response_headers,json=responseHeaders,proto3" json:"response_headers,omitempty"`
+	AuthPolicyId       string                 `protobuf:"bytes,7,opt,name=auth_policy_id,json=authPolicyId,proto3" json:"auth_policy_id,omitempty"`
+	DynamicHeaderAuthz bool                   `protobuf:"varint,8,opt,name=dynamic_header_authz,json=dynamicHeaderAuthz,proto3" json:"dynamic_header_authz,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *HttpEgressRoute) Reset() {
+	*x = HttpEgressRoute{}
+	mi := &file_egress_v1_policy_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HttpEgressRoute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HttpEgressRoute) ProtoMessage() {}
+
+func (x *HttpEgressRoute) ProtoReflect() protoreflect.Message {
+	mi := &file_egress_v1_policy_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HttpEgressRoute.ProtoReflect.Descriptor instead.
+func (*HttpEgressRoute) Descriptor() ([]byte, []int) {
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *HttpEgressRoute) GetRouteId() string {
+	if x != nil {
+		return x.RouteId
+	}
+	return ""
+}
+
+func (x *HttpEgressRoute) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *HttpEgressRoute) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
+	}
+	return ""
+}
+
+func (x *HttpEgressRoute) GetMatches() []*HttpRouteMatch {
+	if x != nil {
+		return x.Matches
+	}
+	return nil
+}
+
+func (x *HttpEgressRoute) GetRequestHeaders() *HttpHeaderPolicy {
+	if x != nil {
+		return x.RequestHeaders
+	}
+	return nil
+}
+
+func (x *HttpEgressRoute) GetResponseHeaders() *HttpHeaderPolicy {
+	if x != nil {
+		return x.ResponseHeaders
+	}
+	return nil
+}
+
+func (x *HttpEgressRoute) GetAuthPolicyId() string {
+	if x != nil {
+		return x.AuthPolicyId
+	}
+	return ""
+}
+
+func (x *HttpEgressRoute) GetDynamicHeaderAuthz() bool {
+	if x != nil {
+		return x.DynamicHeaderAuthz
+	}
+	return false
+}
+
+type HttpRouteMatch struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PathPrefixes  []string               `protobuf:"bytes,1,rep,name=path_prefixes,json=pathPrefixes,proto3" json:"path_prefixes,omitempty"`
+	Methods       []string               `protobuf:"bytes,2,rep,name=methods,proto3" json:"methods,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HttpRouteMatch) Reset() {
+	*x = HttpRouteMatch{}
+	mi := &file_egress_v1_policy_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HttpRouteMatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HttpRouteMatch) ProtoMessage() {}
+
+func (x *HttpRouteMatch) ProtoReflect() protoreflect.Message {
+	mi := &file_egress_v1_policy_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HttpRouteMatch.ProtoReflect.Descriptor instead.
+func (*HttpRouteMatch) Descriptor() ([]byte, []int) {
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *HttpRouteMatch) GetPathPrefixes() []string {
+	if x != nil {
+		return x.PathPrefixes
+	}
+	return nil
+}
+
+func (x *HttpRouteMatch) GetMethods() []string {
+	if x != nil {
+		return x.Methods
+	}
+	return nil
+}
+
+type HttpHeaderPolicy struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Add           []*HttpHeaderValue     `protobuf:"bytes,1,rep,name=add,proto3" json:"add,omitempty"`
+	Set           []*HttpHeaderValue     `protobuf:"bytes,2,rep,name=set,proto3" json:"set,omitempty"`
+	Remove        []string               `protobuf:"bytes,3,rep,name=remove,proto3" json:"remove,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HttpHeaderPolicy) Reset() {
+	*x = HttpHeaderPolicy{}
+	mi := &file_egress_v1_policy_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HttpHeaderPolicy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HttpHeaderPolicy) ProtoMessage() {}
+
+func (x *HttpHeaderPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_egress_v1_policy_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HttpHeaderPolicy.ProtoReflect.Descriptor instead.
+func (*HttpHeaderPolicy) Descriptor() ([]byte, []int) {
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *HttpHeaderPolicy) GetAdd() []*HttpHeaderValue {
+	if x != nil {
+		return x.Add
+	}
+	return nil
+}
+
+func (x *HttpHeaderPolicy) GetSet() []*HttpHeaderValue {
+	if x != nil {
+		return x.Set
+	}
+	return nil
+}
+
+func (x *HttpHeaderPolicy) GetRemove() []string {
+	if x != nil {
+		return x.Remove
+	}
+	return nil
+}
+
+type HttpHeaderValue struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HttpHeaderValue) Reset() {
+	*x = HttpHeaderValue{}
+	mi := &file_egress_v1_policy_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HttpHeaderValue) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HttpHeaderValue) ProtoMessage() {}
+
+func (x *HttpHeaderValue) ProtoReflect() protoreflect.Message {
+	mi := &file_egress_v1_policy_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HttpHeaderValue.ProtoReflect.Descriptor instead.
+func (*HttpHeaderValue) Descriptor() ([]byte, []int) {
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *HttpHeaderValue) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *HttpHeaderValue) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type HostMatch struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Kind:
+	//
+	//	*HostMatch_HostExact
+	//	*HostMatch_HostWildcard
+	Kind          isHostMatch_Kind `protobuf_oneof:"kind"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HostMatch) Reset() {
+	*x = HostMatch{}
+	mi := &file_egress_v1_policy_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HostMatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostMatch) ProtoMessage() {}
+
+func (x *HostMatch) ProtoReflect() protoreflect.Message {
+	mi := &file_egress_v1_policy_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HostMatch.ProtoReflect.Descriptor instead.
+func (*HostMatch) Descriptor() ([]byte, []int) {
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *HostMatch) GetKind() isHostMatch_Kind {
 	if x != nil {
 		return x.Kind
 	}
 	return nil
 }
 
-func (x *EgressRuleMatch) GetHostExact() string {
+func (x *HostMatch) GetHostExact() string {
 	if x != nil {
-		if x, ok := x.Kind.(*EgressRuleMatch_HostExact); ok {
+		if x, ok := x.Kind.(*HostMatch_HostExact); ok {
 			return x.HostExact
 		}
 	}
 	return ""
 }
 
-func (x *EgressRuleMatch) GetHostSuffix() string {
+func (x *HostMatch) GetHostWildcard() string {
 	if x != nil {
-		if x, ok := x.Kind.(*EgressRuleMatch_HostSuffix); ok {
-			return x.HostSuffix
+		if x, ok := x.Kind.(*HostMatch_HostWildcard); ok {
+			return x.HostWildcard
 		}
 	}
 	return ""
 }
 
-type isEgressRuleMatch_Kind interface {
-	isEgressRuleMatch_Kind()
+type isHostMatch_Kind interface {
+	isHostMatch_Kind()
 }
 
-type EgressRuleMatch_HostExact struct {
+type HostMatch_HostExact struct {
 	HostExact string `protobuf:"bytes,1,opt,name=host_exact,json=hostExact,proto3,oneof"`
 }
 
-type EgressRuleMatch_HostSuffix struct {
-	// host_suffix matches the suffix domain itself and all subdomains.
-	// For example: host_suffix="example.com" matches example.com and
-	// api.example.com.
-	HostSuffix string `protobuf:"bytes,2,opt,name=host_suffix,json=hostSuffix,proto3,oneof"`
+type HostMatch_HostWildcard struct {
+	HostWildcard string `protobuf:"bytes,2,opt,name=host_wildcard,json=hostWildcard,proto3,oneof"`
 }
 
-func (*EgressRuleMatch_HostExact) isEgressRuleMatch_Kind() {}
+func (*HostMatch_HostExact) isHostMatch_Kind() {}
 
-func (*EgressRuleMatch_HostSuffix) isEgressRuleMatch_Kind() {}
+func (*HostMatch_HostWildcard) isHostMatch_Kind() {}
 
-// EgressExternalRuleSet declares the single user-configured AutoProxy source.
-type EgressExternalRuleSet struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SourceUrl     string                 `protobuf:"bytes,1,opt,name=source_url,json=sourceUrl,proto3" json:"source_url,omitempty"`
-	Enabled       bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	Action        EgressAction           `protobuf:"varint,3,opt,name=action,proto3,enum=egress.v1.EgressAction" json:"action,omitempty"`
-	ProxyId       string                 `protobuf:"bytes,4,opt,name=proxy_id,json=proxyId,proto3" json:"proxy_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *EgressExternalRuleSet) Reset() {
-	*x = EgressExternalRuleSet{}
-	mi := &file_egress_v1_policy_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EgressExternalRuleSet) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EgressExternalRuleSet) ProtoMessage() {}
-
-func (x *EgressExternalRuleSet) ProtoReflect() protoreflect.Message {
-	mi := &file_egress_v1_policy_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EgressExternalRuleSet.ProtoReflect.Descriptor instead.
-func (*EgressExternalRuleSet) Descriptor() ([]byte, []int) {
-	return file_egress_v1_policy_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *EgressExternalRuleSet) GetSourceUrl() string {
-	if x != nil {
-		return x.SourceUrl
-	}
-	return ""
-}
-
-func (x *EgressExternalRuleSet) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
-}
-
-func (x *EgressExternalRuleSet) GetAction() EgressAction {
-	if x != nil {
-		return x.Action
-	}
-	return EgressAction_EGRESS_ACTION_UNSPECIFIED
-}
-
-func (x *EgressExternalRuleSet) GetProxyId() string {
-	if x != nil {
-		return x.ProxyId
-	}
-	return ""
-}
-
-// EgressExternalRuleSetStatus stores the latest observed external rule load result.
-type EgressExternalRuleSetStatus struct {
-	state            protoimpl.MessageState         `protogen:"open.v1"`
-	Phase            EgressExternalRuleSetLoadPhase `protobuf:"varint,1,opt,name=phase,proto3,enum=egress.v1.EgressExternalRuleSetLoadPhase" json:"phase,omitempty"`
-	SourceUrl        string                         `protobuf:"bytes,2,opt,name=source_url,json=sourceUrl,proto3" json:"source_url,omitempty"`
-	LoadedHostCount  int32                          `protobuf:"varint,3,opt,name=loaded_host_count,json=loadedHostCount,proto3" json:"loaded_host_count,omitempty"`
-	SkippedRuleCount int32                          `protobuf:"varint,4,opt,name=skipped_rule_count,json=skippedRuleCount,proto3" json:"skipped_rule_count,omitempty"`
-	Message          string                         `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
-	LoadedAt         *timestamppb.Timestamp         `protobuf:"bytes,6,opt,name=loaded_at,json=loadedAt,proto3" json:"loaded_at,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *EgressExternalRuleSetStatus) Reset() {
-	*x = EgressExternalRuleSetStatus{}
-	mi := &file_egress_v1_policy_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EgressExternalRuleSetStatus) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EgressExternalRuleSetStatus) ProtoMessage() {}
-
-func (x *EgressExternalRuleSetStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_egress_v1_policy_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EgressExternalRuleSetStatus.ProtoReflect.Descriptor instead.
-func (*EgressExternalRuleSetStatus) Descriptor() ([]byte, []int) {
-	return file_egress_v1_policy_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *EgressExternalRuleSetStatus) GetPhase() EgressExternalRuleSetLoadPhase {
-	if x != nil {
-		return x.Phase
-	}
-	return EgressExternalRuleSetLoadPhase_EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED
-}
-
-func (x *EgressExternalRuleSetStatus) GetSourceUrl() string {
-	if x != nil {
-		return x.SourceUrl
-	}
-	return ""
-}
-
-func (x *EgressExternalRuleSetStatus) GetLoadedHostCount() int32 {
-	if x != nil {
-		return x.LoadedHostCount
-	}
-	return 0
-}
-
-func (x *EgressExternalRuleSetStatus) GetSkippedRuleCount() int32 {
-	if x != nil {
-		return x.SkippedRuleCount
-	}
-	return 0
-}
-
-func (x *EgressExternalRuleSetStatus) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *EgressExternalRuleSetStatus) GetLoadedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.LoadedAt
-	}
-	return nil
-}
-
-// EgressResourceRef references one Istio egress resource.
 type EgressResourceRef struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
@@ -699,7 +850,7 @@ type EgressResourceRef struct {
 
 func (x *EgressResourceRef) Reset() {
 	*x = EgressResourceRef{}
-	mi := &file_egress_v1_policy_proto_msgTypes[6]
+	mi := &file_egress_v1_policy_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -711,7 +862,7 @@ func (x *EgressResourceRef) String() string {
 func (*EgressResourceRef) ProtoMessage() {}
 
 func (x *EgressResourceRef) ProtoReflect() protoreflect.Message {
-	mi := &file_egress_v1_policy_proto_msgTypes[6]
+	mi := &file_egress_v1_policy_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -724,7 +875,7 @@ func (x *EgressResourceRef) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressResourceRef.ProtoReflect.Descriptor instead.
 func (*EgressResourceRef) Descriptor() ([]byte, []int) {
-	return file_egress_v1_policy_proto_rawDescGZIP(), []int{6}
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *EgressResourceRef) GetKind() string {
@@ -748,7 +899,6 @@ func (x *EgressResourceRef) GetName() string {
 	return ""
 }
 
-// EgressSyncStatus stores observed Istio egress sync state.
 type EgressSyncStatus struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Phase              EgressSyncPhase        `protobuf:"varint,1,opt,name=phase,proto3,enum=egress.v1.EgressSyncPhase" json:"phase,omitempty"`
@@ -763,7 +913,7 @@ type EgressSyncStatus struct {
 
 func (x *EgressSyncStatus) Reset() {
 	*x = EgressSyncStatus{}
-	mi := &file_egress_v1_policy_proto_msgTypes[7]
+	mi := &file_egress_v1_policy_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -775,7 +925,7 @@ func (x *EgressSyncStatus) String() string {
 func (*EgressSyncStatus) ProtoMessage() {}
 
 func (x *EgressSyncStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_egress_v1_policy_proto_msgTypes[7]
+	mi := &file_egress_v1_policy_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -788,7 +938,7 @@ func (x *EgressSyncStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressSyncStatus.ProtoReflect.Descriptor instead.
 func (*EgressSyncStatus) Descriptor() ([]byte, []int) {
-	return file_egress_v1_policy_proto_rawDescGZIP(), []int{7}
+	return file_egress_v1_policy_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *EgressSyncStatus) GetPhase() EgressSyncPhase {
@@ -837,45 +987,61 @@ var File_egress_v1_policy_proto protoreflect.FileDescriptor
 
 const file_egress_v1_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x16egress/v1/policy.proto\x12\tegress.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x88\x02\n" +
+	"\x16egress/v1/policy.proto\x12\tegress.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8d\x01\n" +
 	"\fEgressPolicy\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x120\n" +
-	"\aproxies\x18\x04 \x03(\v2\x16.egress.v1.EgressProxyR\aproxies\x128\n" +
-	"\fcustom_rules\x18\x05 \x03(\v2\x15.egress.v1.EgressRuleR\vcustomRules\x12L\n" +
-	"\x11external_rule_set\x18\x06 \x01(\v2 .egress.v1.EgressExternalRuleSetR\x0fexternalRuleSet\"\x99\x01\n" +
-	"\vEgressProxy\x12\x19\n" +
-	"\bproxy_id\x18\x01 \x01(\tR\aproxyId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12:\n" +
-	"\bprotocol\x18\x03 \x01(\x0e2\x1e.egress.v1.EgressProxyProtocolR\bprotocol\x12\x10\n" +
-	"\x03url\x18\x04 \x01(\tR\x03url\"\xc6\x01\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12=\n" +
+	"\vaccess_sets\x18\x03 \x03(\v2\x1c.egress.v1.ExternalAccessSetR\n" +
+	"accessSets\"\xd6\x02\n" +
+	"\x11ExternalAccessSet\x12\"\n" +
+	"\raccess_set_id\x18\x01 \x01(\tR\vaccessSetId\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12#\n" +
+	"\rowner_service\x18\x03 \x01(\tR\fownerService\x12\x1b\n" +
+	"\tpolicy_id\x18\x04 \x01(\tR\bpolicyId\x12>\n" +
+	"\x0eexternal_rules\x18\x05 \x03(\v2\x17.egress.v1.ExternalRuleR\rexternalRules\x12;\n" +
+	"\rservice_rules\x18\x06 \x03(\v2\x16.egress.v1.ServiceRuleR\fserviceRules\x12;\n" +
+	"\vhttp_routes\x18\a \x03(\v2\x1a.egress.v1.HttpEgressRouteR\n" +
+	"httpRoutes\"\xe2\x02\n" +
+	"\fExternalRule\x12(\n" +
+	"\x10external_rule_id\x18\x01 \x01(\tR\x0eexternalRuleId\x12%\n" +
+	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\x12!\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x123\n" +
 	"\n" +
-	"EgressRule\x12\x17\n" +
-	"\arule_id\x18\x01 \x01(\tR\x06ruleId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x120\n" +
-	"\x05match\x18\x03 \x01(\v2\x1a.egress.v1.EgressRuleMatchR\x05match\x12/\n" +
-	"\x06action\x18\x04 \x01(\x0e2\x17.egress.v1.EgressActionR\x06action\x12\x19\n" +
-	"\bproxy_id\x18\x05 \x01(\tR\aproxyId\"]\n" +
-	"\x0fEgressRuleMatch\x12\x1f\n" +
+	"host_match\x18\x04 \x01(\v2\x14.egress.v1.HostMatchR\thostMatch\x12\x12\n" +
+	"\x04port\x18\x05 \x01(\x05R\x04port\x125\n" +
+	"\bprotocol\x18\x06 \x01(\x0e2\x19.egress.v1.EgressProtocolR\bprotocol\x12;\n" +
 	"\n" +
-	"host_exact\x18\x01 \x01(\tH\x00R\thostExact\x12!\n" +
-	"\vhost_suffix\x18\x02 \x01(\tH\x00R\n" +
-	"hostSuffixB\x06\n" +
-	"\x04kind\"\x9c\x01\n" +
-	"\x15EgressExternalRuleSet\x12\x1d\n" +
+	"resolution\x18\a \x01(\x0e2\x1b.egress.v1.EgressResolutionR\n" +
+	"resolution\x12!\n" +
+	"\faddress_cidr\x18\t \x01(\tR\vaddressCidr\"\x94\x01\n" +
+	"\vServiceRule\x12&\n" +
+	"\x0fservice_rule_id\x18\x01 \x01(\tR\rserviceRuleId\x12%\n" +
+	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\x126\n" +
+	"\x17source_service_accounts\x18\x03 \x03(\tR\x15sourceServiceAccounts\"\x91\x03\n" +
+	"\x0fHttpEgressRoute\x12\x19\n" +
+	"\broute_id\x18\x01 \x01(\tR\arouteId\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12%\n" +
+	"\x0edestination_id\x18\x03 \x01(\tR\rdestinationId\x123\n" +
+	"\amatches\x18\x04 \x03(\v2\x19.egress.v1.HttpRouteMatchR\amatches\x12D\n" +
+	"\x0frequest_headers\x18\x05 \x01(\v2\x1b.egress.v1.HttpHeaderPolicyR\x0erequestHeaders\x12F\n" +
+	"\x10response_headers\x18\x06 \x01(\v2\x1b.egress.v1.HttpHeaderPolicyR\x0fresponseHeaders\x12$\n" +
+	"\x0eauth_policy_id\x18\a \x01(\tR\fauthPolicyId\x120\n" +
+	"\x14dynamic_header_authz\x18\b \x01(\bR\x12dynamicHeaderAuthz\"O\n" +
+	"\x0eHttpRouteMatch\x12#\n" +
+	"\rpath_prefixes\x18\x01 \x03(\tR\fpathPrefixes\x12\x18\n" +
+	"\amethods\x18\x02 \x03(\tR\amethods\"\x86\x01\n" +
+	"\x10HttpHeaderPolicy\x12,\n" +
+	"\x03add\x18\x01 \x03(\v2\x1a.egress.v1.HttpHeaderValueR\x03add\x12,\n" +
+	"\x03set\x18\x02 \x03(\v2\x1a.egress.v1.HttpHeaderValueR\x03set\x12\x16\n" +
+	"\x06remove\x18\x03 \x03(\tR\x06remove\";\n" +
+	"\x0fHttpHeaderValue\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"[\n" +
+	"\tHostMatch\x12\x1f\n" +
 	"\n" +
-	"source_url\x18\x01 \x01(\tR\tsourceUrl\x12\x18\n" +
-	"\aenabled\x18\x02 \x01(\bR\aenabled\x12/\n" +
-	"\x06action\x18\x03 \x01(\x0e2\x17.egress.v1.EgressActionR\x06action\x12\x19\n" +
-	"\bproxy_id\x18\x04 \x01(\tR\aproxyId\"\xaa\x02\n" +
-	"\x1bEgressExternalRuleSetStatus\x12?\n" +
-	"\x05phase\x18\x01 \x01(\x0e2).egress.v1.EgressExternalRuleSetLoadPhaseR\x05phase\x12\x1d\n" +
-	"\n" +
-	"source_url\x18\x02 \x01(\tR\tsourceUrl\x12*\n" +
-	"\x11loaded_host_count\x18\x03 \x01(\x05R\x0floadedHostCount\x12,\n" +
-	"\x12skipped_rule_count\x18\x04 \x01(\x05R\x10skippedRuleCount\x12\x18\n" +
-	"\amessage\x18\x05 \x01(\tR\amessage\x127\n" +
-	"\tloaded_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\bloadedAt\"Y\n" +
+	"host_exact\x18\x01 \x01(\tH\x00R\thostExact\x12%\n" +
+	"\rhost_wildcard\x18\x02 \x01(\tH\x00R\fhostWildcardB\x06\n" +
+	"\x04kind\"Y\n" +
 	"\x11EgressResourceRef\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x1c\n" +
 	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12\x12\n" +
@@ -886,20 +1052,18 @@ const file_egress_v1_policy_proto_rawDesc = "" +
 	"\x13observed_generation\x18\x03 \x01(\x03R\x12observedGeneration\x12C\n" +
 	"\x0etarget_gateway\x18\x04 \x01(\v2\x1c.egress.v1.EgressResourceRefR\rtargetGateway\x12I\n" +
 	"\x11applied_resources\x18\x05 \x03(\v2\x1c.egress.v1.EgressResourceRefR\x10appliedResources\x12@\n" +
-	"\x0elast_synced_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncedAt*`\n" +
-	"\fEgressAction\x12\x1d\n" +
-	"\x19EGRESS_ACTION_UNSPECIFIED\x10\x00\x12\x18\n" +
-	"\x14EGRESS_ACTION_DIRECT\x10\x01\x12\x17\n" +
-	"\x13EGRESS_ACTION_PROXY\x10\x02*\\\n" +
-	"\x13EgressProxyProtocol\x12%\n" +
-	"!EGRESS_PROXY_PROTOCOL_UNSPECIFIED\x10\x00\x12\x1e\n" +
-	"\x1aEGRESS_PROXY_PROTOCOL_HTTP\x10\x01*\x9b\x02\n" +
-	"\x1eEgressExternalRuleSetLoadPhase\x123\n" +
-	"/EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED\x10\x00\x120\n" +
-	",EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_DISABLED\x10\x01\x12.\n" +
-	"*EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_LOADED\x10\x02\x122\n" +
-	".EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_NOT_LOADED\x10\x03\x12.\n" +
-	"*EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_FAILED\x10\x04*\x8f\x01\n" +
+	"\x0elast_synced_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\flastSyncedAt*\x98\x01\n" +
+	"\x0eEgressProtocol\x12\x1f\n" +
+	"\x1bEGRESS_PROTOCOL_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14EGRESS_PROTOCOL_HTTP\x10\x01\x12\x17\n" +
+	"\x13EGRESS_PROTOCOL_TLS\x10\x02\x12\x17\n" +
+	"\x13EGRESS_PROTOCOL_TCP\x10\x03\x12\x19\n" +
+	"\x15EGRESS_PROTOCOL_HTTPS\x10\x04*\x8f\x01\n" +
+	"\x10EgressResolution\x12!\n" +
+	"\x1dEGRESS_RESOLUTION_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15EGRESS_RESOLUTION_DNS\x10\x01\x12!\n" +
+	"\x1dEGRESS_RESOLUTION_DYNAMIC_DNS\x10\x02\x12\x1a\n" +
+	"\x16EGRESS_RESOLUTION_NONE\x10\x03*\x8f\x01\n" +
 	"\x0fEgressSyncPhase\x12!\n" +
 	"\x1dEGRESS_SYNC_PHASE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19EGRESS_SYNC_PHASE_PENDING\x10\x01\x12\x1c\n" +
@@ -918,42 +1082,47 @@ func file_egress_v1_policy_proto_rawDescGZIP() []byte {
 	return file_egress_v1_policy_proto_rawDescData
 }
 
-var file_egress_v1_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_egress_v1_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_egress_v1_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_egress_v1_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_egress_v1_policy_proto_goTypes = []any{
-	(EgressAction)(0),                   // 0: egress.v1.EgressAction
-	(EgressProxyProtocol)(0),            // 1: egress.v1.EgressProxyProtocol
-	(EgressExternalRuleSetLoadPhase)(0), // 2: egress.v1.EgressExternalRuleSetLoadPhase
-	(EgressSyncPhase)(0),                // 3: egress.v1.EgressSyncPhase
-	(*EgressPolicy)(nil),                // 4: egress.v1.EgressPolicy
-	(*EgressProxy)(nil),                 // 5: egress.v1.EgressProxy
-	(*EgressRule)(nil),                  // 6: egress.v1.EgressRule
-	(*EgressRuleMatch)(nil),             // 7: egress.v1.EgressRuleMatch
-	(*EgressExternalRuleSet)(nil),       // 8: egress.v1.EgressExternalRuleSet
-	(*EgressExternalRuleSetStatus)(nil), // 9: egress.v1.EgressExternalRuleSetStatus
-	(*EgressResourceRef)(nil),           // 10: egress.v1.EgressResourceRef
-	(*EgressSyncStatus)(nil),            // 11: egress.v1.EgressSyncStatus
-	(*timestamppb.Timestamp)(nil),       // 12: google.protobuf.Timestamp
+	(EgressProtocol)(0),           // 0: egress.v1.EgressProtocol
+	(EgressResolution)(0),         // 1: egress.v1.EgressResolution
+	(EgressSyncPhase)(0),          // 2: egress.v1.EgressSyncPhase
+	(*EgressPolicy)(nil),          // 3: egress.v1.EgressPolicy
+	(*ExternalAccessSet)(nil),     // 4: egress.v1.ExternalAccessSet
+	(*ExternalRule)(nil),          // 5: egress.v1.ExternalRule
+	(*ServiceRule)(nil),           // 6: egress.v1.ServiceRule
+	(*HttpEgressRoute)(nil),       // 7: egress.v1.HttpEgressRoute
+	(*HttpRouteMatch)(nil),        // 8: egress.v1.HttpRouteMatch
+	(*HttpHeaderPolicy)(nil),      // 9: egress.v1.HttpHeaderPolicy
+	(*HttpHeaderValue)(nil),       // 10: egress.v1.HttpHeaderValue
+	(*HostMatch)(nil),             // 11: egress.v1.HostMatch
+	(*EgressResourceRef)(nil),     // 12: egress.v1.EgressResourceRef
+	(*EgressSyncStatus)(nil),      // 13: egress.v1.EgressSyncStatus
+	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
 }
 var file_egress_v1_policy_proto_depIdxs = []int32{
-	5,  // 0: egress.v1.EgressPolicy.proxies:type_name -> egress.v1.EgressProxy
-	6,  // 1: egress.v1.EgressPolicy.custom_rules:type_name -> egress.v1.EgressRule
-	8,  // 2: egress.v1.EgressPolicy.external_rule_set:type_name -> egress.v1.EgressExternalRuleSet
-	1,  // 3: egress.v1.EgressProxy.protocol:type_name -> egress.v1.EgressProxyProtocol
-	7,  // 4: egress.v1.EgressRule.match:type_name -> egress.v1.EgressRuleMatch
-	0,  // 5: egress.v1.EgressRule.action:type_name -> egress.v1.EgressAction
-	0,  // 6: egress.v1.EgressExternalRuleSet.action:type_name -> egress.v1.EgressAction
-	2,  // 7: egress.v1.EgressExternalRuleSetStatus.phase:type_name -> egress.v1.EgressExternalRuleSetLoadPhase
-	12, // 8: egress.v1.EgressExternalRuleSetStatus.loaded_at:type_name -> google.protobuf.Timestamp
-	3,  // 9: egress.v1.EgressSyncStatus.phase:type_name -> egress.v1.EgressSyncPhase
-	10, // 10: egress.v1.EgressSyncStatus.target_gateway:type_name -> egress.v1.EgressResourceRef
-	10, // 11: egress.v1.EgressSyncStatus.applied_resources:type_name -> egress.v1.EgressResourceRef
-	12, // 12: egress.v1.EgressSyncStatus.last_synced_at:type_name -> google.protobuf.Timestamp
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	4,  // 0: egress.v1.EgressPolicy.access_sets:type_name -> egress.v1.ExternalAccessSet
+	5,  // 1: egress.v1.ExternalAccessSet.external_rules:type_name -> egress.v1.ExternalRule
+	6,  // 2: egress.v1.ExternalAccessSet.service_rules:type_name -> egress.v1.ServiceRule
+	7,  // 3: egress.v1.ExternalAccessSet.http_routes:type_name -> egress.v1.HttpEgressRoute
+	11, // 4: egress.v1.ExternalRule.host_match:type_name -> egress.v1.HostMatch
+	0,  // 5: egress.v1.ExternalRule.protocol:type_name -> egress.v1.EgressProtocol
+	1,  // 6: egress.v1.ExternalRule.resolution:type_name -> egress.v1.EgressResolution
+	8,  // 7: egress.v1.HttpEgressRoute.matches:type_name -> egress.v1.HttpRouteMatch
+	9,  // 8: egress.v1.HttpEgressRoute.request_headers:type_name -> egress.v1.HttpHeaderPolicy
+	9,  // 9: egress.v1.HttpEgressRoute.response_headers:type_name -> egress.v1.HttpHeaderPolicy
+	10, // 10: egress.v1.HttpHeaderPolicy.add:type_name -> egress.v1.HttpHeaderValue
+	10, // 11: egress.v1.HttpHeaderPolicy.set:type_name -> egress.v1.HttpHeaderValue
+	2,  // 12: egress.v1.EgressSyncStatus.phase:type_name -> egress.v1.EgressSyncPhase
+	12, // 13: egress.v1.EgressSyncStatus.target_gateway:type_name -> egress.v1.EgressResourceRef
+	12, // 14: egress.v1.EgressSyncStatus.applied_resources:type_name -> egress.v1.EgressResourceRef
+	14, // 15: egress.v1.EgressSyncStatus.last_synced_at:type_name -> google.protobuf.Timestamp
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_egress_v1_policy_proto_init() }
@@ -961,17 +1130,17 @@ func file_egress_v1_policy_proto_init() {
 	if File_egress_v1_policy_proto != nil {
 		return
 	}
-	file_egress_v1_policy_proto_msgTypes[3].OneofWrappers = []any{
-		(*EgressRuleMatch_HostExact)(nil),
-		(*EgressRuleMatch_HostSuffix)(nil),
+	file_egress_v1_policy_proto_msgTypes[8].OneofWrappers = []any{
+		(*HostMatch_HostExact)(nil),
+		(*HostMatch_HostWildcard)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_egress_v1_policy_proto_rawDesc), len(file_egress_v1_policy_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   8,
+			NumEnums:      3,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

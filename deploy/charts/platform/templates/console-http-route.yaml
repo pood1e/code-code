@@ -1,0 +1,3 @@
+{{- if .Values.consoleRoute.enabled }}
+{{ include "platform.renderHttpRoute" (dict "root" . "name" "console" "namespace" .Values.global.consoleNamespace "route" .Values.consoleRoute "apiComponent" .Values.components.consoleApi "webComponent" .Values.components.consoleWeb) }}
+{{- end }}

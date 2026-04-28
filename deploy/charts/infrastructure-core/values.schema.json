@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "partOf": { "type": "string", "minLength": 1 },
+        "platformNamespace": { "type": "string", "minLength": 1 },
+        "consoleNamespace": { "type": "string", "minLength": 1 },
+        "showcaseNamespace": { "type": "string", "minLength": 1 },
+        "infraNamespace": { "type": "string", "minLength": 1 },
+        "observabilityNamespace": { "type": "string", "minLength": 1 },
+        "observabilityAmbientPodOptOut": { "type": "boolean" },
+        "networkNamespace": { "type": "string", "minLength": 1 },
+        "runNamespace": { "type": "string", "minLength": 1 },
+        "postgresSecretName": { "type": "string", "minLength": 1 },
+        "alertmanagerReceiversSecretName": { "type": "string", "minLength": 1 }
+      },
+      "required": [
+        "partOf",
+        "platformNamespace",
+        "consoleNamespace",
+        "showcaseNamespace",
+        "infraNamespace",
+        "observabilityNamespace",
+        "observabilityAmbientPodOptOut",
+        "networkNamespace",
+        "runNamespace",
+        "postgresSecretName",
+        "alertmanagerReceiversSecretName"
+      ]
+    },
+    "postgres": { "$ref": "#/$defs/statefulAddon" },
+    "nats": { "$ref": "#/$defs/statefulAddon" },
+    "otelCollector": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "tempoEnabled": { "type": "boolean" },
+        "tempoEndpoint": { "type": "string" }
+      },
+      "required": ["enabled", "image", "tempoEnabled", "tempoEndpoint"]
+    },
+    "prometheus": { "$ref": "#/$defs/statefulAddon" },
+    "blackbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 }
+      },
+      "required": ["enabled", "image", "module"]
+    },
+    "providerHostTelemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "module": { "type": "string", "minLength": 1 },
+        "scrapeInterval": { "type": "string", "minLength": 1 },
+        "scrapeTimeout": { "type": "string", "minLength": 1 },
+        "refreshInterval": { "type": "string", "minLength": 1 },
+        "moduleTimeout": { "type": "string", "minLength": 1 },
+        "discoveryUrl": { "type": "string" },
+        "resources": { "type": "object" }
+      },
+      "required": ["enabled", "module", "scrapeInterval", "scrapeTimeout", "refreshInterval", "moduleTimeout", "discoveryUrl", "resources"]
+    },
+    "healthChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "additionalTargets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "url": { "type": "string", "minLength": 1 }
+            },
+            "required": ["name", "url"]
+          }
+        }
+      },
+      "required": ["enabled", "additionalTargets"]
+    },
+    "alertmanager": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "storageSize": { "type": "string", "minLength": 1 },
+        "wechat": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "corpId": { "type": "string", "minLength": 1 },
+            "agentId": { "type": "string", "minLength": 1 },
+            "partyId": { "type": "string", "minLength": 1 }
+          },
+          "required": ["corpId", "agentId", "partyId"]
+        }
+      },
+      "required": ["enabled", "image", "storageSize", "wechat"]
+    }
+  },
+  "required": ["global", "postgres", "nats", "otelCollector", "prometheus", "blackbox", "providerHostTelemetry", "healthChecks", "alertmanager"],
+  "$defs": {
+    "statefulAddon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": { "type": "string", "minLength": 1 },
+        "storageSize": { "type": "string", "minLength": 1 }
+      },
+      "required": ["enabled", "image", "storageSize"]
+    }
+  }
+}

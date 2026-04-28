@@ -9,6 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "2.11.0",
+    "@code-code/agent-contract": "workspace:*",
     "@code-code/console-web-agentprofile": "workspace:*",
     "@code-code/console-web-chat": "workspace:*",
     "@code-code/console-web-provider": "workspace:*",

@@ -1,24 +1,20 @@
-import { useState } from "react";
 import type { VendorView } from "@code-code/agent-contract/platform/provider/v1";
 import type { ModelRegistryEntry } from "@code-code/agent-contract/platform/model/v1";
-import { Table } from "@radix-ui/themes";
+import { Box, Button, Table } from "@radix-ui/themes";
 import { NoDataCallout } from "@code-code/console-web-ui";
-import type { ProxyModelGroups } from "../proxy-model-groups";
-import { proxyGroupKeyForDefinition } from "../proxy-model-groups";
+import { vendorLookupKey } from "../vendor-index";
 import { ModelRow } from "./model-row";
 import { ModelsTableHeader } from "./models-table-header";
 
 type ModelsTableProps = {
   models: ModelRegistryEntry[];
   vendorsById: Record<string, VendorView>;
-  proxyGroups: ProxyModelGroups;
-  proxyLoading: boolean;
-  proxyTruncated: boolean;
   selectedSourceIds: string[];
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 };
 
-export function ModelsTable({ models, vendorsById, proxyGroups, proxyLoading, proxyTruncated, selectedSourceIds }: ModelsTableProps) {
-  const [expandedKey, setExpandedKey] = useState("");
+export function ModelsTable({ models, vendorsById, selectedSourceIds, hasActiveFilters, onClearFilters }: ModelsTableProps) {
   return (
     <Table.Root>
       <ModelsTableHeader />
@@ -26,7 +22,18 @@ export function ModelsTable({ models, vendorsById, proxyGroups, proxyLoading, pr
         {models.length === 0 ? (
           <Table.Row>
             <Table.Cell colSpan={5}>
-              <NoDataCallout>No models found.</NoDataCallout>
+              <NoDataCallout>
+                {hasActiveFilters
+                  ? "No models match your current filters."
+                  : "No models found."}
+                {hasActiveFilters && onClearFilters ? (
+                  <Box mt="2">
+                    <Button size="1" variant="soft" color="gray" onClick={onClearFilters}>
+                      Clear all filters
+                    </Button>
+                  </Box>
+                ) : null}
+              </NoDataCallout>
             </Table.Cell>
           </Table.Row>
         ) : (
@@ -34,17 +41,9 @@ export function ModelsTable({ models, vendorsById, proxyGroups, proxyLoading, pr
             <ModelRow
               key={`${model.definition?.vendorId || "unknown"}:${model.definition?.modelId || "unknown"}`}
               model={model}
-              vendor={vendorsById[model.definition?.vendorId || ""]}
+              vendor={vendorsById[vendorLookupKey(model.definition?.vendorId || "")]}
               vendorsById={vendorsById}
-              proxyRows={proxyGroups[proxyGroupKeyForDefinition(model)] || []}
-              proxyLoading={proxyLoading}
-              proxyTruncated={proxyTruncated}
               selectedSourceIds={selectedSourceIds}
-              expanded={expandedKey === proxyGroupKeyForDefinition(model)}
-              onToggle={() => {
-                const key = proxyGroupKeyForDefinition(model);
-                setExpandedKey((current) => current === key ? "" : key);
-              }}
             />
           ))
         )}

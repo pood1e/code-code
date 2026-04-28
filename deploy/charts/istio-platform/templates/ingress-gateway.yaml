@@ -1,0 +1,47 @@
+{{- if .Values.components.ingressGateway.enabled }}
+{{- $gateway := .Values.components.ingressGateway -}}
+{{- $httpNodePort := int (default 0 $gateway.httpNodePort) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-options" $gateway.name }}
+  namespace: {{ .Values.global.ingressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" $gateway.name "componentLabel" "ingress") | nindent 4 }}
+data:
+  service: |-
+    spec:
+      type: {{ $gateway.serviceType }}
+      {{- if and (eq $gateway.serviceType "NodePort") (gt $httpNodePort 0) }}
+      ports:
+        - name: http
+          protocol: TCP
+          port: {{ $gateway.httpPort }}
+          targetPort: {{ $gateway.httpPort }}
+          nodePort: {{ $httpNodePort }}
+      {{- end }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ $gateway.name }}
+  namespace: {{ .Values.global.ingressNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" $gateway.name "componentLabel" "ingress") | nindent 4 }}
+spec:
+  infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: {{ printf "%s-options" $gateway.name }}
+  gatewayClassName: istio
+  listeners:
+    - name: http
+      port: {{ $gateway.httpPort }}
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+{{ toYaml $gateway.allowedRouteNamespaceSelector | nindent 12 }}
+{{- end }}

@@ -1,0 +1,9 @@
+global:
+  imageRegistry: localhost:5001
+  imageTag: dev-local
+
+notificationDispatcher:
+  route:
+    hosts:
+      - notifications.localhost
+      - notifications-alt.localhost

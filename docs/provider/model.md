@@ -20,7 +20,7 @@ Provider owns account identity, selected surface, credential grant reference,
 source reference, account-level provider model catalog, and callable access
 targets.
 
-Provider does not own credential secret material, canonical model truth, agent
+Provider does not own credential material, canonical model truth, agent
 runtime image selection, user/session default model selection, provider-card
 metadata, or vendor presentation assets.
 

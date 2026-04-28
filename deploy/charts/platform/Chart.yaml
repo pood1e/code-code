@@ -1,0 +1,23 @@
+apiVersion: v2
+name: platform
+description: code-code platform control-plane services (auth / model / provider / agent-runtime / cli-runtime / chat / console).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.31.0-0 <1.37.0-0"
+home: https://github.com/pood1e/code-code
+icon: https://raw.githubusercontent.com/pood1e/code-code/main/docs/assets/code-code-chart-icon.svg
+sources:
+  - https://github.com/pood1e/code-code
+keywords:
+  - kubernetes
+  - platform
+  - control-plane
+  - agent-runtime
+maintainers:
+  - name: code-code platform team
+annotations:
+  artifacthub.io/changes: |
+    - Standardized chart layout (NOTES.txt, .helmignore, templates/tests/, hpa, pdb).
+    - Made consoleRoute, service.type, hpa, pdb tunable via values.
+  artifacthub.io/containsSecurityUpdates: "false"

@@ -65,7 +65,7 @@
 - [provider-account-projection.md](./provider-account-projection.md)
   作用：定义 `Provider` 读模型与 account-level mutation 主线。
 - [credential-resource.md](./credential-resource.md)
-  作用：定义 `Credential` 写入模型、CRD/Secret 映射与更新主线。
+  作用：定义 `Credential` 写入模型、CRD/material store 映射与更新主线。
 - [provider-connect-mainline.md](./provider-connect-mainline.md)
   作用：定义 `providerconnect` 的 command / target / session 主线。
 - [agent-provider-binding.md](./agent-provider-binding.md)

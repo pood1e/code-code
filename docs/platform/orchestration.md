@@ -142,7 +142,7 @@ credential、egress policy、model 的 runtime contract 分别直接复用各自
 - `AgentRunStatus.ObservedGeneration` 与 `AgentRunCondition.ObservedGeneration` 表达 controller 已处理到的 desired state generation。
 - `AgentSessionStatus.RuntimeConfigGeneration` 与 `AgentSessionStatus.ResourceConfigGeneration` 表达当前可用于新 turn 的配置 generation。
 - `AgentSessionReconciler` 的 implementation 组合 `AgentSessionReader`、`AgentSessionStatusWriter` 与 implementation-owned session state adapter。
-- `AgentSession` controller 应放在 `packages/platform-k8s/agentsessions/`，统一使用 `agentSession` 命名，避免与其他 `session` 概念混淆。
+- `AgentSession` controller 应放在 `packages/platform-k8s/internal/agentruntime/agentsessions/`，统一使用 `agentSession` 命名，避免与其他 `session` 概念混淆。
 - `AgentRunReconciler` 的 implementation 组合 `AgentRunReader`、`AgentRunStatusWriter` 与 implementation-owned workload applicator。
 - 当 execution plane 是 Kubernetes 时，runtime workload 由 Kubernetes Job 执行；`AgentSession` / `AgentRun` summary state 由 platform control-plane 持久化。
 - 当 execution runtime 使用 Temporal 时，所有会修改同一 session workspace/home state 的 workflow 都必须按 `session_id` 进入同一串行域。

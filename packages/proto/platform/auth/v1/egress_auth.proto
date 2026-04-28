@@ -17,6 +17,10 @@ message ResolveEgressRequestHeadersRequest {
   repeated string allowed_header_names = 10;
   EgressRequestSource runtime_source = 11;
   string target_path = 12;
+  string source_principal = 13;
+  string provider_surface_binding_id = 14;
+  string egress_policy_id = 15;
+  string auth_policy_id = 16;
 }
 
 message ResolveEgressResponseHeadersRequest {
@@ -34,6 +38,10 @@ message ResolveEgressResponseHeadersRequest {
   string target_path = 12;
   uint32 status_code = 13;
   string header_value_prefix = 14;
+  string source_principal = 15;
+  string provider_surface_binding_id = 16;
+  string egress_policy_id = 17;
+  string auth_policy_id = 18;
 }
 
 message EgressHeaderReplacementItem {
@@ -49,15 +57,28 @@ message EgressSimpleReplacementRule {
   string template = 5;
 }
 
+message EgressHeaderMutation {
+  string name = 1;
+  string value = 2;
+  EgressHeaderAppendAction append_action = 3;
+}
+
+enum EgressHeaderAppendAction {
+  EGRESS_HEADER_APPEND_ACTION_UNSPECIFIED = 0;
+  EGRESS_HEADER_APPEND_ACTION_OVERWRITE_IF_EXISTS_OR_ADD = 1;
+  EGRESS_HEADER_APPEND_ACTION_APPEND_IF_EXISTS_OR_ADD = 2;
+  EGRESS_HEADER_APPEND_ACTION_ADD_IF_ABSENT = 3;
+}
+
 message ResolveEgressRequestHeadersResponse {
-  map<string, string> headers = 1;
+  repeated EgressHeaderMutation headers = 1;
   repeated string remove_headers = 2;
   string error = 3;
   bool skipped = 4;
 }
 
 message ResolveEgressResponseHeadersResponse {
-  map<string, string> headers = 1;
+  repeated EgressHeaderMutation headers = 1;
   repeated string remove_headers = 2;
   string error = 3;
   bool skipped = 4;

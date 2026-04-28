@@ -20,9 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	EgressService_ListEgressPolicies_FullMethodName     = "/platform.egress.v1.EgressService/ListEgressPolicies"
-	EgressService_UpdateEgressPolicy_FullMethodName     = "/platform.egress.v1.EgressService/UpdateEgressPolicy"
-	EgressService_GetEgressRuntimePolicy_FullMethodName = "/platform.egress.v1.EgressService/GetEgressRuntimePolicy"
+	EgressService_ListEgressPolicies_FullMethodName              = "/platform.egress.v1.EgressService/ListEgressPolicies"
+	EgressService_UpdateEgressPolicy_FullMethodName              = "/platform.egress.v1.EgressService/UpdateEgressPolicy"
+	EgressService_ApplyExternalAccessSet_FullMethodName          = "/platform.egress.v1.EgressService/ApplyExternalAccessSet"
+	EgressService_DeleteExternalAccessSet_FullMethodName         = "/platform.egress.v1.EgressService/DeleteExternalAccessSet"
+	EgressService_GetEgressRuntimePolicy_FullMethodName          = "/platform.egress.v1.EgressService/GetEgressRuntimePolicy"
+	EgressService_ApplyRuntimeTelemetryProfileSet_FullMethodName = "/platform.egress.v1.EgressService/ApplyRuntimeTelemetryProfileSet"
 )
 
 // EgressServiceClient is the client API for EgressService service.
@@ -31,7 +34,10 @@ const (
 type EgressServiceClient interface {
 	ListEgressPolicies(ctx context.Context, in *v1.ListEgressPoliciesRequest, opts ...grpc.CallOption) (*v1.ListEgressPoliciesResponse, error)
 	UpdateEgressPolicy(ctx context.Context, in *v1.UpdateEgressPolicyRequest, opts ...grpc.CallOption) (*v1.UpdateEgressPolicyResponse, error)
+	ApplyExternalAccessSet(ctx context.Context, in *ApplyExternalAccessSetRequest, opts ...grpc.CallOption) (*ApplyExternalAccessSetResponse, error)
+	DeleteExternalAccessSet(ctx context.Context, in *DeleteExternalAccessSetRequest, opts ...grpc.CallOption) (*DeleteExternalAccessSetResponse, error)
 	GetEgressRuntimePolicy(ctx context.Context, in *GetEgressRuntimePolicyRequest, opts ...grpc.CallOption) (*GetEgressRuntimePolicyResponse, error)
+	ApplyRuntimeTelemetryProfileSet(ctx context.Context, in *ApplyRuntimeTelemetryProfileSetRequest, opts ...grpc.CallOption) (*ApplyRuntimeTelemetryProfileSetResponse, error)
 }
 
 type egressServiceClient struct {
@@ -62,10 +68,40 @@ func (c *egressServiceClient) UpdateEgressPolicy(ctx context.Context, in *v1.Upd
 	return out, nil
 }
 
+func (c *egressServiceClient) ApplyExternalAccessSet(ctx context.Context, in *ApplyExternalAccessSetRequest, opts ...grpc.CallOption) (*ApplyExternalAccessSetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApplyExternalAccessSetResponse)
+	err := c.cc.Invoke(ctx, EgressService_ApplyExternalAccessSet_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *egressServiceClient) DeleteExternalAccessSet(ctx context.Context, in *DeleteExternalAccessSetRequest, opts ...grpc.CallOption) (*DeleteExternalAccessSetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteExternalAccessSetResponse)
+	err := c.cc.Invoke(ctx, EgressService_DeleteExternalAccessSet_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *egressServiceClient) GetEgressRuntimePolicy(ctx context.Context, in *GetEgressRuntimePolicyRequest, opts ...grpc.CallOption) (*GetEgressRuntimePolicyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetEgressRuntimePolicyResponse)
 	err := c.cc.Invoke(ctx, EgressService_GetEgressRuntimePolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *egressServiceClient) ApplyRuntimeTelemetryProfileSet(ctx context.Context, in *ApplyRuntimeTelemetryProfileSetRequest, opts ...grpc.CallOption) (*ApplyRuntimeTelemetryProfileSetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApplyRuntimeTelemetryProfileSetResponse)
+	err := c.cc.Invoke(ctx, EgressService_ApplyRuntimeTelemetryProfileSet_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +114,10 @@ func (c *egressServiceClient) GetEgressRuntimePolicy(ctx context.Context, in *Ge
 type EgressServiceServer interface {
 	ListEgressPolicies(context.Context, *v1.ListEgressPoliciesRequest) (*v1.ListEgressPoliciesResponse, error)
 	UpdateEgressPolicy(context.Context, *v1.UpdateEgressPolicyRequest) (*v1.UpdateEgressPolicyResponse, error)
+	ApplyExternalAccessSet(context.Context, *ApplyExternalAccessSetRequest) (*ApplyExternalAccessSetResponse, error)
+	DeleteExternalAccessSet(context.Context, *DeleteExternalAccessSetRequest) (*DeleteExternalAccessSetResponse, error)
 	GetEgressRuntimePolicy(context.Context, *GetEgressRuntimePolicyRequest) (*GetEgressRuntimePolicyResponse, error)
+	ApplyRuntimeTelemetryProfileSet(context.Context, *ApplyRuntimeTelemetryProfileSetRequest) (*ApplyRuntimeTelemetryProfileSetResponse, error)
 	mustEmbedUnimplementedEgressServiceServer()
 }
 
@@ -95,8 +134,17 @@ func (UnimplementedEgressServiceServer) ListEgressPolicies(context.Context, *v1.
 func (UnimplementedEgressServiceServer) UpdateEgressPolicy(context.Context, *v1.UpdateEgressPolicyRequest) (*v1.UpdateEgressPolicyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateEgressPolicy not implemented")
 }
+func (UnimplementedEgressServiceServer) ApplyExternalAccessSet(context.Context, *ApplyExternalAccessSetRequest) (*ApplyExternalAccessSetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApplyExternalAccessSet not implemented")
+}
+func (UnimplementedEgressServiceServer) DeleteExternalAccessSet(context.Context, *DeleteExternalAccessSetRequest) (*DeleteExternalAccessSetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteExternalAccessSet not implemented")
+}
 func (UnimplementedEgressServiceServer) GetEgressRuntimePolicy(context.Context, *GetEgressRuntimePolicyRequest) (*GetEgressRuntimePolicyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEgressRuntimePolicy not implemented")
+}
+func (UnimplementedEgressServiceServer) ApplyRuntimeTelemetryProfileSet(context.Context, *ApplyRuntimeTelemetryProfileSetRequest) (*ApplyRuntimeTelemetryProfileSetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApplyRuntimeTelemetryProfileSet not implemented")
 }
 func (UnimplementedEgressServiceServer) mustEmbedUnimplementedEgressServiceServer() {}
 func (UnimplementedEgressServiceServer) testEmbeddedByValue()                       {}
@@ -155,6 +203,42 @@ func _EgressService_UpdateEgressPolicy_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EgressService_ApplyExternalAccessSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyExternalAccessSetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EgressServiceServer).ApplyExternalAccessSet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EgressService_ApplyExternalAccessSet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EgressServiceServer).ApplyExternalAccessSet(ctx, req.(*ApplyExternalAccessSetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EgressService_DeleteExternalAccessSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteExternalAccessSetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EgressServiceServer).DeleteExternalAccessSet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EgressService_DeleteExternalAccessSet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EgressServiceServer).DeleteExternalAccessSet(ctx, req.(*DeleteExternalAccessSetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _EgressService_GetEgressRuntimePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetEgressRuntimePolicyRequest)
 	if err := dec(in); err != nil {
@@ -169,6 +253,24 @@ func _EgressService_GetEgressRuntimePolicy_Handler(srv interface{}, ctx context.
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EgressServiceServer).GetEgressRuntimePolicy(ctx, req.(*GetEgressRuntimePolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EgressService_ApplyRuntimeTelemetryProfileSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyRuntimeTelemetryProfileSetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EgressServiceServer).ApplyRuntimeTelemetryProfileSet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EgressService_ApplyRuntimeTelemetryProfileSet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EgressServiceServer).ApplyRuntimeTelemetryProfileSet(ctx, req.(*ApplyRuntimeTelemetryProfileSetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -189,8 +291,20 @@ var EgressService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _EgressService_UpdateEgressPolicy_Handler,
 		},
 		{
+			MethodName: "ApplyExternalAccessSet",
+			Handler:    _EgressService_ApplyExternalAccessSet_Handler,
+		},
+		{
+			MethodName: "DeleteExternalAccessSet",
+			Handler:    _EgressService_DeleteExternalAccessSet_Handler,
+		},
+		{
 			MethodName: "GetEgressRuntimePolicy",
 			Handler:    _EgressService_GetEgressRuntimePolicy_Handler,
+		},
+		{
+			MethodName: "ApplyRuntimeTelemetryProfileSet",
+			Handler:    _EgressService_ApplyRuntimeTelemetryProfileSet_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -13,5 +13,5 @@
 ## Implementation Notes
 
 - Runtime execution Jobs use `automountServiceAccountToken: false` and run under default-deny network policy.
-- Runtime PVCs are owned by session/run resources; projected credential Secrets are label-owned by `platform-auth-service` and cleaned by AgentRun cleanup workflow.
+- Runtime PVCs are owned by session/run resources. Runtime auth projection metadata is derived from frozen `AgentRun.spec.authRequirement` and service-owned policy lookups; no Kubernetes Secret is created for placeholder auth projection. Real credential material stays in auth-service storage.
 - Runtime network access is default-deny and allows only DNS, Envoy egress, control-plane internal HTTP/gRPC, NATS, and OTel Collector OTLP HTTP.

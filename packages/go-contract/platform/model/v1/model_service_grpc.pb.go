@@ -19,20 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ModelService_ListModelDefinitions_FullMethodName    = "/platform.model.v1.ModelService/ListModelDefinitions"
-	ModelService_GetOrFetchCatalogModels_FullMethodName = "/platform.model.v1.ModelService/GetOrFetchCatalogModels"
-	ModelService_FetchCatalogModels_FullMethodName      = "/platform.model.v1.ModelService/FetchCatalogModels"
-	ModelService_SyncModelDefinitions_FullMethodName    = "/platform.model.v1.ModelService/SyncModelDefinitions"
+	ModelService_ListModels_FullMethodName           = "/platform.model.v1.ModelService/ListModels"
+	ModelService_ResolveModelRef_FullMethodName      = "/platform.model.v1.ModelService/ResolveModelRef"
+	ModelService_GetModelVersion_FullMethodName      = "/platform.model.v1.ModelService/GetModelVersion"
+	ModelService_SyncModelDefinitions_FullMethodName = "/platform.model.v1.ModelService/SyncModelDefinitions"
+	ModelService_GetModelCard_FullMethodName         = "/platform.model.v1.ModelService/GetModelCard"
 )
 
 // ModelServiceClient is the client API for ModelService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ModelServiceClient interface {
-	ListModelDefinitions(ctx context.Context, in *ListModelDefinitionsRequest, opts ...grpc.CallOption) (*ListModelDefinitionsResponse, error)
-	GetOrFetchCatalogModels(ctx context.Context, in *GetOrFetchCatalogModelsRequest, opts ...grpc.CallOption) (*GetOrFetchCatalogModelsResponse, error)
-	FetchCatalogModels(ctx context.Context, in *FetchCatalogModelsRequest, opts ...grpc.CallOption) (*FetchCatalogModelsResponse, error)
+	ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error)
+	ResolveModelRef(ctx context.Context, in *ResolveModelRefRequest, opts ...grpc.CallOption) (*ResolveModelRefResponse, error)
+	GetModelVersion(ctx context.Context, in *GetModelVersionRequest, opts ...grpc.CallOption) (*GetModelVersionResponse, error)
 	SyncModelDefinitions(ctx context.Context, in *SyncModelDefinitionsRequest, opts ...grpc.CallOption) (*SyncModelDefinitionsResponse, error)
+	GetModelCard(ctx context.Context, in *GetModelCardRequest, opts ...grpc.CallOption) (*GetModelCardResponse, error)
 }
 
 type modelServiceClient struct {
@@ -43,30 +45,30 @@ func NewModelServiceClient(cc grpc.ClientConnInterface) ModelServiceClient {
 	return &modelServiceClient{cc}
 }
 
-func (c *modelServiceClient) ListModelDefinitions(ctx context.Context, in *ListModelDefinitionsRequest, opts ...grpc.CallOption) (*ListModelDefinitionsResponse, error) {
+func (c *modelServiceClient) ListModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (*ListModelsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListModelDefinitionsResponse)
-	err := c.cc.Invoke(ctx, ModelService_ListModelDefinitions_FullMethodName, in, out, cOpts...)
+	out := new(ListModelsResponse)
+	err := c.cc.Invoke(ctx, ModelService_ListModels_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *modelServiceClient) GetOrFetchCatalogModels(ctx context.Context, in *GetOrFetchCatalogModelsRequest, opts ...grpc.CallOption) (*GetOrFetchCatalogModelsResponse, error) {
+func (c *modelServiceClient) ResolveModelRef(ctx context.Context, in *ResolveModelRefRequest, opts ...grpc.CallOption) (*ResolveModelRefResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetOrFetchCatalogModelsResponse)
-	err := c.cc.Invoke(ctx, ModelService_GetOrFetchCatalogModels_FullMethodName, in, out, cOpts...)
+	out := new(ResolveModelRefResponse)
+	err := c.cc.Invoke(ctx, ModelService_ResolveModelRef_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *modelServiceClient) FetchCatalogModels(ctx context.Context, in *FetchCatalogModelsRequest, opts ...grpc.CallOption) (*FetchCatalogModelsResponse, error) {
+func (c *modelServiceClient) GetModelVersion(ctx context.Context, in *GetModelVersionRequest, opts ...grpc.CallOption) (*GetModelVersionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FetchCatalogModelsResponse)
-	err := c.cc.Invoke(ctx, ModelService_FetchCatalogModels_FullMethodName, in, out, cOpts...)
+	out := new(GetModelVersionResponse)
+	err := c.cc.Invoke(ctx, ModelService_GetModelVersion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,14 +85,25 @@ func (c *modelServiceClient) SyncModelDefinitions(ctx context.Context, in *SyncM
 	return out, nil
 }
 
+func (c *modelServiceClient) GetModelCard(ctx context.Context, in *GetModelCardRequest, opts ...grpc.CallOption) (*GetModelCardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetModelCardResponse)
+	err := c.cc.Invoke(ctx, ModelService_GetModelCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ModelServiceServer is the server API for ModelService service.
 // All implementations must embed UnimplementedModelServiceServer
 // for forward compatibility.
 type ModelServiceServer interface {
-	ListModelDefinitions(context.Context, *ListModelDefinitionsRequest) (*ListModelDefinitionsResponse, error)
-	GetOrFetchCatalogModels(context.Context, *GetOrFetchCatalogModelsRequest) (*GetOrFetchCatalogModelsResponse, error)
-	FetchCatalogModels(context.Context, *FetchCatalogModelsRequest) (*FetchCatalogModelsResponse, error)
+	ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error)
+	ResolveModelRef(context.Context, *ResolveModelRefRequest) (*ResolveModelRefResponse, error)
+	GetModelVersion(context.Context, *GetModelVersionRequest) (*GetModelVersionResponse, error)
 	SyncModelDefinitions(context.Context, *SyncModelDefinitionsRequest) (*SyncModelDefinitionsResponse, error)
+	GetModelCard(context.Context, *GetModelCardRequest) (*GetModelCardResponse, error)
 	mustEmbedUnimplementedModelServiceServer()
 }
 
@@ -101,17 +114,20 @@ type ModelServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedModelServiceServer struct{}
 
-func (UnimplementedModelServiceServer) ListModelDefinitions(context.Context, *ListModelDefinitionsRequest) (*ListModelDefinitionsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListModelDefinitions not implemented")
+func (UnimplementedModelServiceServer) ListModels(context.Context, *ListModelsRequest) (*ListModelsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListModels not implemented")
 }
-func (UnimplementedModelServiceServer) GetOrFetchCatalogModels(context.Context, *GetOrFetchCatalogModelsRequest) (*GetOrFetchCatalogModelsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetOrFetchCatalogModels not implemented")
+func (UnimplementedModelServiceServer) ResolveModelRef(context.Context, *ResolveModelRefRequest) (*ResolveModelRefResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveModelRef not implemented")
 }
-func (UnimplementedModelServiceServer) FetchCatalogModels(context.Context, *FetchCatalogModelsRequest) (*FetchCatalogModelsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FetchCatalogModels not implemented")
+func (UnimplementedModelServiceServer) GetModelVersion(context.Context, *GetModelVersionRequest) (*GetModelVersionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetModelVersion not implemented")
 }
 func (UnimplementedModelServiceServer) SyncModelDefinitions(context.Context, *SyncModelDefinitionsRequest) (*SyncModelDefinitionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncModelDefinitions not implemented")
+}
+func (UnimplementedModelServiceServer) GetModelCard(context.Context, *GetModelCardRequest) (*GetModelCardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetModelCard not implemented")
 }
 func (UnimplementedModelServiceServer) mustEmbedUnimplementedModelServiceServer() {}
 func (UnimplementedModelServiceServer) testEmbeddedByValue()                      {}
@@ -134,56 +150,56 @@ func RegisterModelServiceServer(s grpc.ServiceRegistrar, srv ModelServiceServer)
 	s.RegisterService(&ModelService_ServiceDesc, srv)
 }
 
-func _ModelService_ListModelDefinitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListModelDefinitionsRequest)
+func _ModelService_ListModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListModelsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServiceServer).ListModelDefinitions(ctx, in)
+		return srv.(ModelServiceServer).ListModels(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ModelService_ListModelDefinitions_FullMethodName,
+		FullMethod: ModelService_ListModels_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServiceServer).ListModelDefinitions(ctx, req.(*ListModelDefinitionsRequest))
+		return srv.(ModelServiceServer).ListModels(ctx, req.(*ListModelsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ModelService_GetOrFetchCatalogModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetOrFetchCatalogModelsRequest)
+func _ModelService_ResolveModelRef_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveModelRefRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServiceServer).GetOrFetchCatalogModels(ctx, in)
+		return srv.(ModelServiceServer).ResolveModelRef(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ModelService_GetOrFetchCatalogModels_FullMethodName,
+		FullMethod: ModelService_ResolveModelRef_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServiceServer).GetOrFetchCatalogModels(ctx, req.(*GetOrFetchCatalogModelsRequest))
+		return srv.(ModelServiceServer).ResolveModelRef(ctx, req.(*ResolveModelRefRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ModelService_FetchCatalogModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchCatalogModelsRequest)
+func _ModelService_GetModelVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetModelVersionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServiceServer).FetchCatalogModels(ctx, in)
+		return srv.(ModelServiceServer).GetModelVersion(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ModelService_FetchCatalogModels_FullMethodName,
+		FullMethod: ModelService_GetModelVersion_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServiceServer).FetchCatalogModels(ctx, req.(*FetchCatalogModelsRequest))
+		return srv.(ModelServiceServer).GetModelVersion(ctx, req.(*GetModelVersionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -206,6 +222,24 @@ func _ModelService_SyncModelDefinitions_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ModelService_GetModelCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetModelCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelServiceServer).GetModelCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModelService_GetModelCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelServiceServer).GetModelCard(ctx, req.(*GetModelCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ModelService_ServiceDesc is the grpc.ServiceDesc for ModelService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -214,20 +248,24 @@ var ModelService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ModelServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ListModelDefinitions",
-			Handler:    _ModelService_ListModelDefinitions_Handler,
+			MethodName: "ListModels",
+			Handler:    _ModelService_ListModels_Handler,
 		},
 		{
-			MethodName: "GetOrFetchCatalogModels",
-			Handler:    _ModelService_GetOrFetchCatalogModels_Handler,
+			MethodName: "ResolveModelRef",
+			Handler:    _ModelService_ResolveModelRef_Handler,
 		},
 		{
-			MethodName: "FetchCatalogModels",
-			Handler:    _ModelService_FetchCatalogModels_Handler,
+			MethodName: "GetModelVersion",
+			Handler:    _ModelService_GetModelVersion_Handler,
 		},
 		{
 			MethodName: "SyncModelDefinitions",
 			Handler:    _ModelService_SyncModelDefinitions_Handler,
+		},
+		{
+			MethodName: "GetModelCard",
+			Handler:    _ModelService_GetModelCard_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

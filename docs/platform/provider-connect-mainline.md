@@ -53,5 +53,5 @@
 - `TemporalPostConnectWorkflowRuntime` owns shared Temporal workflow submission for post-connect model discovery, catalog binding, and auth-service observability probe steps
 - API-key connect persists endpoints before catalog discovery; endpoint model catalog may be empty until the post-connect Temporal workflow or operator edit fills it
 - API-key connect returns the provider view from the provider write result so the console can display the saved provider immediately
-- credential create writes Secret then CredentialDefinitionResource; if the second write fails, the created Secret is deleted before returning the error
+- credential create writes CredentialDefinitionResource, then encrypted material; material write failure rolls back the created definition before returning the error
 - service only coordinates dependencies: credential write, provider endpoint write, session store, OAuth runtime, and post-connect dispatch

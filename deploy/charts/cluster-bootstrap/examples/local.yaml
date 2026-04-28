@@ -1,0 +1,11 @@
+global:
+  platformNamespace: code-code
+  consoleNamespace: code-code-console
+  showcaseNamespace: code-code-showcase
+  infraNamespace: code-code-infra
+  observabilityNamespace: code-code-observability
+  networkNamespace: code-code-net
+  runNamespace: code-code-runs
+
+namespaces:
+  enabled: true

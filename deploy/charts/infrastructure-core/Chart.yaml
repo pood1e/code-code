@@ -1,0 +1,20 @@
+apiVersion: v2
+name: infrastructure-core
+description: Required infrastructure services for the code-code platform.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.31.0-0 <1.37.0-0"
+home: https://github.com/pood1e/code-code
+icon: https://raw.githubusercontent.com/pood1e/code-code/main/docs/assets/code-code-chart-icon.svg
+sources:
+  - https://github.com/pood1e/code-code
+keywords:
+  - kubernetes
+  - platform
+  - observability
+  - database
+maintainers:
+  - name: code-code platform team
+annotations:
+  artifacthub.io/containsSecurityUpdates: "false"

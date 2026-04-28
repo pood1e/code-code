@@ -11,6 +11,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./components": {
+      "types": "./dist/components.d.ts",
+      "default": "./dist/components.js"
+    },
+    "./pages": {
+      "types": "./dist/pages.d.ts",
+      "default": "./dist/pages.js"
     }
   },
   "scripts": {

@@ -9,4 +9,5 @@ use (
 	./packages/platform-contract
 	./packages/platform-k8s
 	./packages/session
+	./packages/showcase-api
 )

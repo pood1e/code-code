@@ -23,6 +23,6 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm --filter @code-code/agent-contract build && pnpm --filter @code-code/console-web-ui build && pnpm -r typecheck",
     "test": "pnpm --filter @code-code/agent-contract build && pnpm --filter @code-code/console-web-ui build && pnpm -r test",
-    "lint": "eslint 'packages/*/src/**/*.{ts,tsx}' 'app/src/**/*.{ts,tsx}'"
+    "lint": "eslint 'packages/*/src/**/*.{ts,tsx}' 'app/src/**/*.{ts,tsx}' 'showcase/src/**/*.{ts,tsx}'"
   }
 }

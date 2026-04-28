@@ -1,4 +1,3 @@
-import type { ModelDefinition } from "@code-code/agent-contract/model/v1";
 import type { VendorView } from "@code-code/agent-contract/platform/provider/v1";
 import type { ModelRegistryEntry } from "@code-code/agent-contract/platform/model/v1";
 import type { ReactNode } from "react";
@@ -18,7 +17,8 @@ type ModelDetailsDialogProps = {
 };
 
 export function ModelDetailsDialog({ row, vendorsById, open, onOpenChange, trigger }: ModelDetailsDialogProps) {
-  const model = row.definition as ModelDefinition;
+  const model = row.definition;
+  if (!model) return null;
   const displayName = model.displayName || model.modelId;
   const controlled = open !== undefined;
 

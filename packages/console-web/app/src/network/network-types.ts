@@ -1,38 +1,3 @@
-export type EgressAction = "direct" | "proxy";
-export type ExternalRuleSetLoadPhase = "disabled" | "loaded" | "not-loaded" | "failed";
-
-export type EgressRule = {
-  id: string;
-  name: string;
-  match: string;
-  matchKind: "hostExact" | "hostSuffix";
-  action: EgressAction;
-  proxyId: string;
-};
-
-export type ExternalRuleSet = {
-  sourceUrl: string;
-  enabled: boolean;
-  action: EgressAction;
-  proxyId: string;
-};
-
-export type ExternalRuleSetStatus = {
-  phase: ExternalRuleSetLoadPhase;
-  sourceUrl: string;
-  loadedHostCount: number;
-  skippedRuleCount: number;
-  message: string;
-  loadedAt?: string;
-};
-
-export type EgressProxy = {
-  id: string;
-  name: string;
-  endpoint: string;
-  protocol: "http";
-};
-
 export type EgressConfigSourceKind = "cli" | "vendor" | "service";
 
 export type EgressConfigSource = {
@@ -51,8 +16,35 @@ export type EgressConsumer = {
   crdKind: "Provider";
 };
 
+export type ExternalRule = {
+  id: string;
+  destinationId: string;
+  name: string;
+  host: string;
+  hostKind: "exact" | "wildcard";
+  port: number;
+  protocol: "http" | "https" | "tls" | "tcp" | "unspecified";
+  resolution: "dns" | "dynamic-dns" | "none" | "unspecified";
+  addressCidr: string;
+};
+
+export type ServiceRule = {
+  id: string;
+  destinationId: string;
+  sourceServiceAccounts: string[];
+};
+
+export type ExternalAccessSet = {
+  id: string;
+  displayName: string;
+  ownerService: string;
+  policyId: string;
+  externalRules: ExternalRule[];
+  serviceRules: ServiceRule[];
+};
+
 export type IstioEgressResourceRef = {
-  kind: "Gateway" | "ServiceEntry" | "VirtualService" | "DestinationRule";
+  kind: "Gateway" | "ServiceEntry" | "AuthorizationPolicy" | "HTTPRoute" | "TLSRoute" | "TCPRoute" | "DestinationRule";
   namespace: string;
   name: string;
 };
@@ -66,43 +58,16 @@ export type IstioEgressSync = {
   lastSyncedAt?: string;
 };
 
-export type HeaderModification = {
-  scope: string;
-  header: string;
-  action: "set" | "add" | "remove";
-  valueSource: string;
-};
-
-export type HeaderMetricRule = {
-  profile: string;
-  header: string;
-  metric: string;
-  valueType: string;
-  labels?: string[];
-};
-
 export type IstioEgressPolicy = {
   id: string;
   displayName: string;
   owner: "istio";
   sync: IstioEgressSync;
   configuredBy: EgressConfigSource;
-  proxies?: EgressProxy[];
-  rules?: EgressRule[];
-  externalRuleSet: ExternalRuleSet;
-  externalRuleSetStatus: ExternalRuleSetStatus;
-  headerModifications?: HeaderModification[];
-  headerMetrics?: HeaderMetricRule[];
+  accessSets: ExternalAccessSet[];
   consumers: EgressConsumer[];
 };
 
 export type EgressPolicyCatalog = {
   policies: IstioEgressPolicy[];
-};
-
-export type EgressDecision = {
-  action: EgressAction;
-  reason: string;
-  matchedRule?: string;
-  upstream?: string;
 };

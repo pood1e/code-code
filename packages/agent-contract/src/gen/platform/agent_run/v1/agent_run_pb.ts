@@ -12,8 +12,6 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { ProviderRunBinding } from "../../../provider/v1/provider_pb";
 import { file_provider_v1_provider } from "../../../provider/v1/provider_pb";
-import type { HeaderValueType } from "../../../observability/v1/observability_pb";
-import { file_observability_v1_observability } from "../../../observability/v1/observability_pb";
 import type { Condition } from "../../condition/v1/condition_pb";
 import { file_platform_condition_v1_condition } from "../../condition/v1/condition_pb";
 import type { Message } from "@bufbuild/protobuf";
@@ -22,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file platform/agent_run/v1/agent_run.proto.
  */
 export const file_platform_agent_run_v1_agent_run: GenFile = /*@__PURE__*/
-  fileDesc("CiVwbGF0Zm9ybS9hZ2VudF9ydW4vdjEvYWdlbnRfcnVuLnByb3RvEhVwbGF0Zm9ybS5hZ2VudF9ydW4udjEi+wQKDEFnZW50UnVuU3BlYxIOCgZydW5faWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIaChJzZXNzaW9uX2dlbmVyYXRpb24YAyABKAMSIQoZcnVudGltZV9jb25maWdfZ2VuZXJhdGlvbhgEIAEoAxIiChpyZXNvdXJjZV9jb25maWdfZ2VuZXJhdGlvbhgFIAEoAxIYChBzdGF0ZV9nZW5lcmF0aW9uGAYgASgDEioKB3JlcXVlc3QYByABKAsyGS5hZ2VudC5jb3JlLnYxLlJ1blJlcXVlc3QSFwoPZXhlY3V0aW9uX2NsYXNzGAggASgJEhcKD2NvbnRhaW5lcl9pbWFnZRgJIAEoCRITCgtjcHVfcmVxdWVzdBgKIAEoCRIWCg5tZW1vcnlfcmVxdWVzdBgLIAEoCRITCgtwcm92aWRlcl9pZBgMIAEoCRJIChBhdXRoX3JlcXVpcmVtZW50GA0gASgLMi4ucGxhdGZvcm0uYWdlbnRfcnVuLnYxLkFnZW50UnVuQXV0aFJlcXVpcmVtZW50EhgKEGNhbmNlbF9yZXF1ZXN0ZWQYDiABKAgSPgoTcnVudGltZV9lbnZpcm9ubWVudBgPIAEoCzIhLmFnZW50LmNvcmUudjEuUnVudGltZUVudmlyb25tZW50EhQKDHdvcmtzcGFjZV9pZBgQIAEoCRIVCg1ob21lX3N0YXRlX2lkGBEgASgJEj8KDHByZXBhcmVfam9icxgSIAMoCzIpLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blByZXBhcmVKb2ISGAoQYWdlbnRfcnVudGltZV9pZBgTIAEoCSLZAQoXQWdlbnRSdW5BdXRoUmVxdWlyZW1lbnQSEwoLcHJvdmlkZXJfaWQYASABKAkSIwobcHJvdmlkZXJfc3VyZmFjZV9iaW5kaW5nX2lkGAIgASgJEhMKC2F1dGhfc3RhdHVzGAMgASgJEhMKC3J1bnRpbWVfdXJsGAQgASgJEhsKE21hdGVyaWFsaXphdGlvbl9rZXkYBSABKAkSPQoUcHJvdmlkZXJfcnVuX2JpbmRpbmcYBiABKAsyHy5wcm92aWRlci52MS5Qcm92aWRlclJ1bkJpbmRpbmciyAEKEkFnZW50UnVuUHJlcGFyZUpvYhIOCgZqb2JfaWQYASABKAkSEAoIam9iX3R5cGUYAiABKAkSQgoIcnVuX3R5cGUYAyABKA4yMC5wbGF0Zm9ybS5hZ2VudF9ydW4udjEuQWdlbnRSdW5QcmVwYXJlSm9iUnVuVHlwZRISCgpjaGFuZ2Vfa2V5GAQgASgJEg8KB2NsZWFudXAYBSABKAgSFwoPcGFyYW1ldGVyc195YW1sGAYgASgJEg4KBmNsaV9pZBgHIAEoCSLbAQoYQWdlbnRSdW5QcmVwYXJlSm9iU3RhdHVzEg4KBmpvYl9pZBgBIAEoCRI9CgVwaGFzZRgCIAEoDjIuLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blByZXBhcmVKb2JQaGFzZRIPCgdtZXNzYWdlGAMgASgJEi4KCnN0YXJ0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2ZpbmlzaGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKEAgoaQWdlbnRSdW5SZXNwb25zZUhlYWRlclJ1bGUSEwoLaGVhZGVyX25hbWUYASABKAkSEwoLbWV0cmljX25hbWUYAiABKAkSNQoKdmFsdWVfdHlwZRgDIAEoDjIhLm9ic2VydmFiaWxpdHkudjEuSGVhZGVyVmFsdWVUeXBlEjoKBmxhYmVscxgEIAMoCzIqLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1bk1ldHJpY0xhYmVsEkkKB2NvbnRleHQYBSABKA4yOC5wbGF0Zm9ybS5hZ2VudF9ydW4udjEuQWdlbnRSdW5SZXNwb25zZUhlYWRlclJ1bGVDb250ZXh0IjIKE0FnZW50UnVuTWV0cmljTGFiZWwSDAoEbmFtZRgBIAEoCRINCgV2YWx1ZRgCIAEoCSIdCgtBZ2VudFJ1blJlZhIOCgZydW5faWQYASABKAkiIgoLV29ya2xvYWRSZWYSEwoLd29ya2xvYWRfaWQYASABKAkikgMKDkFnZW50UnVuU3RhdHVzEg4KBnJ1bl9pZBgBIAEoCRIzCgVwaGFzZRgCIAEoDjIkLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blBoYXNlEhsKE29ic2VydmVkX2dlbmVyYXRpb24YAyABKAMSDwoHbWVzc2FnZRgEIAEoCRI0Cgh3b3JrbG9hZBgFIAEoCzIiLnBsYXRmb3JtLmFnZW50X3J1bi52MS5Xb3JrbG9hZFJlZhI0Cgpjb25kaXRpb25zGAYgAygLMiAucGxhdGZvcm0uY29uZGl0aW9uLnYxLkNvbmRpdGlvbhIqCgZyZXN1bHQYByABKAsyGi5hZ2VudC5yZXN1bHQudjEuUnVuUmVzdWx0Ei4KCnVwZGF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEkUKDHByZXBhcmVfam9icxgJIAMoCzIvLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blByZXBhcmVKb2JTdGF0dXMijQEKDUFnZW50UnVuU3RhdGUSEgoKZ2VuZXJhdGlvbhgBIAEoAxIxCgRzcGVjGAIgASgLMiMucGxhdGZvcm0uYWdlbnRfcnVuLnYxLkFnZW50UnVuU3BlYxI1CgZzdGF0dXMYAyABKAsyJS5wbGF0Zm9ybS5hZ2VudF9ydW4udjEuQWdlbnRSdW5TdGF0dXMqzgEKIUFnZW50UnVuUmVzcG9uc2VIZWFkZXJSdWxlQ29udGV4dBI2CjJBR0VOVF9SVU5fUkVTUE9OU0VfSEVBREVSX1JVTEVfQ09OVEVYVF9VTlNQRUNJRklFRBAAEjYKMkFHRU5UX1JVTl9SRVNQT05TRV9IRUFERVJfUlVMRV9DT05URVhUX0NMSV9SVU5USU1FEAESOQo1QUdFTlRfUlVOX1JFU1BPTlNFX0hFQURFUl9SVUxFX0NPTlRFWFRfVkVORE9SX1JVTlRJTUUQAirPAQoZQWdlbnRSdW5QcmVwYXJlSm9iUnVuVHlwZRIuCipBR0VOVF9SVU5fUFJFUEFSRV9KT0JfUlVOX1RZUEVfVU5TUEVDSUZJRUQQABInCiNBR0VOVF9SVU5fUFJFUEFSRV9KT0JfUlVOX1RZUEVfSU5JVBABEioKJkFHRU5UX1JVTl9QUkVQQVJFX0pPQl9SVU5fVFlQRV9QRVJfUlVOEAISLQopQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1JVTl9UWVBFX09OX0NIQU5HRUQQAyq+AgoXQWdlbnRSdW5QcmVwYXJlSm9iUGhhc2USKwonQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1BIQVNFX1VOU1BFQ0lGSUVEEAASJwojQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1BIQVNFX1BFTkRJTkcQARInCiNBR0VOVF9SVU5fUFJFUEFSRV9KT0JfUEhBU0VfU0tJUFBFRBACEicKI0FHRU5UX1JVTl9QUkVQQVJFX0pPQl9QSEFTRV9SVU5OSU5HEAMSKQolQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1BIQVNFX1NVQ0NFRURFRBAEEiYKIkFHRU5UX1JVTl9QUkVQQVJFX0pPQl9QSEFTRV9GQUlMRUQQBRIoCiRBR0VOVF9SVU5fUFJFUEFSRV9KT0JfUEhBU0VfQ0FOQ0VMRUQQBiriAQoNQWdlbnRSdW5QaGFzZRIfChtBR0VOVF9SVU5fUEhBU0VfVU5TUEVDSUZJRUQQABIbChdBR0VOVF9SVU5fUEhBU0VfUEVORElORxABEh0KGUFHRU5UX1JVTl9QSEFTRV9TQ0hFRFVMRUQQAhIbChdBR0VOVF9SVU5fUEhBU0VfUlVOTklORxADEh0KGUFHRU5UX1JVTl9QSEFTRV9TVUNDRUVERUQQBBIaChZBR0VOVF9SVU5fUEhBU0VfRkFJTEVEEAUSHAoYQUdFTlRfUlVOX1BIQVNFX0NBTkNFTEVEEAZCQVo/Y29kZS1jb2RlLmludGVybmFsL2dvLWNvbnRyYWN0L3BsYXRmb3JtL2FnZW50X3J1bi92MTthZ2VudHJ1bnYxYgZwcm90bzM", [file_agent_core_v1_agent, file_agent_result_v1_result, file_google_protobuf_timestamp, file_provider_v1_provider, file_observability_v1_observability, file_platform_condition_v1_condition]);
+  fileDesc("CiVwbGF0Zm9ybS9hZ2VudF9ydW4vdjEvYWdlbnRfcnVuLnByb3RvEhVwbGF0Zm9ybS5hZ2VudF9ydW4udjEi+wQKDEFnZW50UnVuU3BlYxIOCgZydW5faWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIaChJzZXNzaW9uX2dlbmVyYXRpb24YAyABKAMSIQoZcnVudGltZV9jb25maWdfZ2VuZXJhdGlvbhgEIAEoAxIiChpyZXNvdXJjZV9jb25maWdfZ2VuZXJhdGlvbhgFIAEoAxIYChBzdGF0ZV9nZW5lcmF0aW9uGAYgASgDEioKB3JlcXVlc3QYByABKAsyGS5hZ2VudC5jb3JlLnYxLlJ1blJlcXVlc3QSFwoPZXhlY3V0aW9uX2NsYXNzGAggASgJEhcKD2NvbnRhaW5lcl9pbWFnZRgJIAEoCRITCgtjcHVfcmVxdWVzdBgKIAEoCRIWCg5tZW1vcnlfcmVxdWVzdBgLIAEoCRITCgtwcm92aWRlcl9pZBgMIAEoCRJIChBhdXRoX3JlcXVpcmVtZW50GA0gASgLMi4ucGxhdGZvcm0uYWdlbnRfcnVuLnYxLkFnZW50UnVuQXV0aFJlcXVpcmVtZW50EhgKEGNhbmNlbF9yZXF1ZXN0ZWQYDiABKAgSPgoTcnVudGltZV9lbnZpcm9ubWVudBgPIAEoCzIhLmFnZW50LmNvcmUudjEuUnVudGltZUVudmlyb25tZW50EhQKDHdvcmtzcGFjZV9pZBgQIAEoCRIVCg1ob21lX3N0YXRlX2lkGBEgASgJEj8KDHByZXBhcmVfam9icxgSIAMoCzIpLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blByZXBhcmVKb2ISGAoQYWdlbnRfcnVudGltZV9pZBgTIAEoCSLZAQoXQWdlbnRSdW5BdXRoUmVxdWlyZW1lbnQSEwoLcHJvdmlkZXJfaWQYASABKAkSIwobcHJvdmlkZXJfc3VyZmFjZV9iaW5kaW5nX2lkGAIgASgJEhMKC2F1dGhfc3RhdHVzGAMgASgJEhMKC3J1bnRpbWVfdXJsGAQgASgJEhsKE21hdGVyaWFsaXphdGlvbl9rZXkYBSABKAkSPQoUcHJvdmlkZXJfcnVuX2JpbmRpbmcYBiABKAsyHy5wcm92aWRlci52MS5Qcm92aWRlclJ1bkJpbmRpbmciyAEKEkFnZW50UnVuUHJlcGFyZUpvYhIOCgZqb2JfaWQYASABKAkSEAoIam9iX3R5cGUYAiABKAkSQgoIcnVuX3R5cGUYAyABKA4yMC5wbGF0Zm9ybS5hZ2VudF9ydW4udjEuQWdlbnRSdW5QcmVwYXJlSm9iUnVuVHlwZRISCgpjaGFuZ2Vfa2V5GAQgASgJEg8KB2NsZWFudXAYBSABKAgSFwoPcGFyYW1ldGVyc195YW1sGAYgASgJEg4KBmNsaV9pZBgHIAEoCSLbAQoYQWdlbnRSdW5QcmVwYXJlSm9iU3RhdHVzEg4KBmpvYl9pZBgBIAEoCRI9CgVwaGFzZRgCIAEoDjIuLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blByZXBhcmVKb2JQaGFzZRIPCgdtZXNzYWdlGAMgASgJEi4KCnN0YXJ0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2ZpbmlzaGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIdCgtBZ2VudFJ1blJlZhIOCgZydW5faWQYASABKAkiIgoLV29ya2xvYWRSZWYSEwoLd29ya2xvYWRfaWQYASABKAkikgMKDkFnZW50UnVuU3RhdHVzEg4KBnJ1bl9pZBgBIAEoCRIzCgVwaGFzZRgCIAEoDjIkLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blBoYXNlEhsKE29ic2VydmVkX2dlbmVyYXRpb24YAyABKAMSDwoHbWVzc2FnZRgEIAEoCRI0Cgh3b3JrbG9hZBgFIAEoCzIiLnBsYXRmb3JtLmFnZW50X3J1bi52MS5Xb3JrbG9hZFJlZhI0Cgpjb25kaXRpb25zGAYgAygLMiAucGxhdGZvcm0uY29uZGl0aW9uLnYxLkNvbmRpdGlvbhIqCgZyZXN1bHQYByABKAsyGi5hZ2VudC5yZXN1bHQudjEuUnVuUmVzdWx0Ei4KCnVwZGF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEkUKDHByZXBhcmVfam9icxgJIAMoCzIvLnBsYXRmb3JtLmFnZW50X3J1bi52MS5BZ2VudFJ1blByZXBhcmVKb2JTdGF0dXMijQEKDUFnZW50UnVuU3RhdGUSEgoKZ2VuZXJhdGlvbhgBIAEoAxIxCgRzcGVjGAIgASgLMiMucGxhdGZvcm0uYWdlbnRfcnVuLnYxLkFnZW50UnVuU3BlYxI1CgZzdGF0dXMYAyABKAsyJS5wbGF0Zm9ybS5hZ2VudF9ydW4udjEuQWdlbnRSdW5TdGF0dXMqzwEKGUFnZW50UnVuUHJlcGFyZUpvYlJ1blR5cGUSLgoqQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1JVTl9UWVBFX1VOU1BFQ0lGSUVEEAASJwojQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1JVTl9UWVBFX0lOSVQQARIqCiZBR0VOVF9SVU5fUFJFUEFSRV9KT0JfUlVOX1RZUEVfUEVSX1JVThACEi0KKUFHRU5UX1JVTl9QUkVQQVJFX0pPQl9SVU5fVFlQRV9PTl9DSEFOR0VEEAMqvgIKF0FnZW50UnVuUHJlcGFyZUpvYlBoYXNlEisKJ0FHRU5UX1JVTl9QUkVQQVJFX0pPQl9QSEFTRV9VTlNQRUNJRklFRBAAEicKI0FHRU5UX1JVTl9QUkVQQVJFX0pPQl9QSEFTRV9QRU5ESU5HEAESJwojQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1BIQVNFX1NLSVBQRUQQAhInCiNBR0VOVF9SVU5fUFJFUEFSRV9KT0JfUEhBU0VfUlVOTklORxADEikKJUFHRU5UX1JVTl9QUkVQQVJFX0pPQl9QSEFTRV9TVUNDRUVERUQQBBImCiJBR0VOVF9SVU5fUFJFUEFSRV9KT0JfUEhBU0VfRkFJTEVEEAUSKAokQUdFTlRfUlVOX1BSRVBBUkVfSk9CX1BIQVNFX0NBTkNFTEVEEAYq4gEKDUFnZW50UnVuUGhhc2USHwobQUdFTlRfUlVOX1BIQVNFX1VOU1BFQ0lGSUVEEAASGwoXQUdFTlRfUlVOX1BIQVNFX1BFTkRJTkcQARIdChlBR0VOVF9SVU5fUEhBU0VfU0NIRURVTEVEEAISGwoXQUdFTlRfUlVOX1BIQVNFX1JVTk5JTkcQAxIdChlBR0VOVF9SVU5fUEhBU0VfU1VDQ0VFREVEEAQSGgoWQUdFTlRfUlVOX1BIQVNFX0ZBSUxFRBAFEhwKGEFHRU5UX1JVTl9QSEFTRV9DQU5DRUxFRBAGQkFaP2NvZGUtY29kZS5pbnRlcm5hbC9nby1jb250cmFjdC9wbGF0Zm9ybS9hZ2VudF9ydW4vdjE7YWdlbnRydW52MWIGcHJvdG8z", [file_agent_core_v1_agent, file_agent_result_v1_result, file_google_protobuf_timestamp, file_provider_v1_provider, file_platform_condition_v1_condition]);
 
 /**
  * AgentRunSpec describes the desired state for one turn within one
@@ -269,70 +267,6 @@ export const AgentRunPrepareJobStatusSchema: GenMessage<AgentRunPrepareJobStatus
   messageDesc(file_platform_agent_run_v1_agent_run, 3);
 
 /**
- * AgentRunResponseHeaderRule captures one runtime response-header rule frozen
- * at submit time.
- *
- * @generated from message platform.agent_run.v1.AgentRunResponseHeaderRule
- */
-export type AgentRunResponseHeaderRule = Message<"platform.agent_run.v1.AgentRunResponseHeaderRule"> & {
-  /**
-   * @generated from field: string header_name = 1;
-   */
-  headerName: string;
-
-  /**
-   * @generated from field: string metric_name = 2;
-   */
-  metricName: string;
-
-  /**
-   * @generated from field: observability.v1.HeaderValueType value_type = 3;
-   */
-  valueType: HeaderValueType;
-
-  /**
-   * @generated from field: repeated platform.agent_run.v1.AgentRunMetricLabel labels = 4;
-   */
-  labels: AgentRunMetricLabel[];
-
-  /**
-   * @generated from field: platform.agent_run.v1.AgentRunResponseHeaderRuleContext context = 5;
-   */
-  context: AgentRunResponseHeaderRuleContext;
-};
-
-/**
- * Describes the message platform.agent_run.v1.AgentRunResponseHeaderRule.
- * Use `create(AgentRunResponseHeaderRuleSchema)` to create a new message.
- */
-export const AgentRunResponseHeaderRuleSchema: GenMessage<AgentRunResponseHeaderRule> = /*@__PURE__*/
-  messageDesc(file_platform_agent_run_v1_agent_run, 4);
-
-/**
- * AgentRunMetricLabel stores one fixed runtime metric label.
- *
- * @generated from message platform.agent_run.v1.AgentRunMetricLabel
- */
-export type AgentRunMetricLabel = Message<"platform.agent_run.v1.AgentRunMetricLabel"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: string value = 2;
-   */
-  value: string;
-};
-
-/**
- * Describes the message platform.agent_run.v1.AgentRunMetricLabel.
- * Use `create(AgentRunMetricLabelSchema)` to create a new message.
- */
-export const AgentRunMetricLabelSchema: GenMessage<AgentRunMetricLabel> = /*@__PURE__*/
-  messageDesc(file_platform_agent_run_v1_agent_run, 5);
-
-/**
  * AgentRunRef identifies one submitted agent run.
  *
  * @generated from message platform.agent_run.v1.AgentRunRef
@@ -349,7 +283,7 @@ export type AgentRunRef = Message<"platform.agent_run.v1.AgentRunRef"> & {
  * Use `create(AgentRunRefSchema)` to create a new message.
  */
 export const AgentRunRefSchema: GenMessage<AgentRunRef> = /*@__PURE__*/
-  messageDesc(file_platform_agent_run_v1_agent_run, 6);
+  messageDesc(file_platform_agent_run_v1_agent_run, 4);
 
 /**
  * WorkloadRef identifies the workload backing one agent run.
@@ -368,7 +302,7 @@ export type WorkloadRef = Message<"platform.agent_run.v1.WorkloadRef"> & {
  * Use `create(WorkloadRefSchema)` to create a new message.
  */
 export const WorkloadRefSchema: GenMessage<WorkloadRef> = /*@__PURE__*/
-  messageDesc(file_platform_agent_run_v1_agent_run, 7);
+  messageDesc(file_platform_agent_run_v1_agent_run, 5);
 
 /**
  * AgentRunStatus describes observed summary state for one turn. run_id
@@ -429,7 +363,7 @@ export type AgentRunStatus = Message<"platform.agent_run.v1.AgentRunStatus"> & {
  * Use `create(AgentRunStatusSchema)` to create a new message.
  */
 export const AgentRunStatusSchema: GenMessage<AgentRunStatus> = /*@__PURE__*/
-  messageDesc(file_platform_agent_run_v1_agent_run, 8);
+  messageDesc(file_platform_agent_run_v1_agent_run, 6);
 
 /**
  * AgentRunState combines desired state and observed state for one turn.
@@ -459,36 +393,7 @@ export type AgentRunState = Message<"platform.agent_run.v1.AgentRunState"> & {
  * Use `create(AgentRunStateSchema)` to create a new message.
  */
 export const AgentRunStateSchema: GenMessage<AgentRunState> = /*@__PURE__*/
-  messageDesc(file_platform_agent_run_v1_agent_run, 9);
-
-/**
- * AgentRunResponseHeaderRuleContext identifies the runtime label context used
- * when exporting one header-derived metric.
- *
- * @generated from enum platform.agent_run.v1.AgentRunResponseHeaderRuleContext
- */
-export enum AgentRunResponseHeaderRuleContext {
-  /**
-   * @generated from enum value: AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_CLI_RUNTIME = 1;
-   */
-  CLI_RUNTIME = 1,
-
-  /**
-   * @generated from enum value: AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_VENDOR_RUNTIME = 2;
-   */
-  VENDOR_RUNTIME = 2,
-}
-
-/**
- * Describes the enum platform.agent_run.v1.AgentRunResponseHeaderRuleContext.
- */
-export const AgentRunResponseHeaderRuleContextSchema: GenEnum<AgentRunResponseHeaderRuleContext> = /*@__PURE__*/
-  enumDesc(file_platform_agent_run_v1_agent_run, 0);
+  messageDesc(file_platform_agent_run_v1_agent_run, 7);
 
 /**
  * AgentRunPrepareJobRunType identifies when one prepare job should run.
@@ -521,7 +426,7 @@ export enum AgentRunPrepareJobRunType {
  * Describes the enum platform.agent_run.v1.AgentRunPrepareJobRunType.
  */
 export const AgentRunPrepareJobRunTypeSchema: GenEnum<AgentRunPrepareJobRunType> = /*@__PURE__*/
-  enumDesc(file_platform_agent_run_v1_agent_run, 1);
+  enumDesc(file_platform_agent_run_v1_agent_run, 0);
 
 /**
  * AgentRunPrepareJobPhase describes the observed lifecycle phase of one prepare job.
@@ -569,7 +474,7 @@ export enum AgentRunPrepareJobPhase {
  * Describes the enum platform.agent_run.v1.AgentRunPrepareJobPhase.
  */
 export const AgentRunPrepareJobPhaseSchema: GenEnum<AgentRunPrepareJobPhase> = /*@__PURE__*/
-  enumDesc(file_platform_agent_run_v1_agent_run, 2);
+  enumDesc(file_platform_agent_run_v1_agent_run, 1);
 
 /**
  * AgentRunPhase describes the observed lifecycle phase of one turn.
@@ -617,5 +522,5 @@ export enum AgentRunPhase {
  * Describes the enum platform.agent_run.v1.AgentRunPhase.
  */
 export const AgentRunPhaseSchema: GenEnum<AgentRunPhase> = /*@__PURE__*/
-  enumDesc(file_platform_agent_run_v1_agent_run, 3);
+  enumDesc(file_platform_agent_run_v1_agent_run, 2);
 

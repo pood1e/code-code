@@ -6,7 +6,6 @@ import "agent/core/v1/agent.proto";
 import "agent/result/v1/result.proto";
 import "google/protobuf/timestamp.proto";
 import "provider/v1/provider.proto";
-import "observability/v1/observability.proto";
 import "platform/condition/v1/condition.proto";
 
 option go_package = "code-code.internal/go-contract/platform/agent_run/v1;agentrunv1";
@@ -65,30 +64,6 @@ message AgentRunPrepareJobStatus {
   string message = 3;
   google.protobuf.Timestamp started_at = 4;
   google.protobuf.Timestamp finished_at = 5;
-}
-
-// AgentRunResponseHeaderRule captures one runtime response-header rule frozen
-// at submit time.
-message AgentRunResponseHeaderRule {
-  string header_name = 1;
-  string metric_name = 2;
-  observability.v1.HeaderValueType value_type = 3;
-  repeated AgentRunMetricLabel labels = 4;
-  AgentRunResponseHeaderRuleContext context = 5;
-}
-
-// AgentRunMetricLabel stores one fixed runtime metric label.
-message AgentRunMetricLabel {
-  string name = 1;
-  string value = 2;
-}
-
-// AgentRunResponseHeaderRuleContext identifies the runtime label context used
-// when exporting one header-derived metric.
-enum AgentRunResponseHeaderRuleContext {
-  AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED = 0;
-  AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_CLI_RUNTIME = 1;
-  AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_VENDOR_RUNTIME = 2;
 }
 
 // AgentRunPrepareJobRunType identifies when one prepare job should run.

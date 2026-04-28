@@ -7,7 +7,7 @@
 `cli oauth observability` 负责：
 
 - 为每个 `cli oauth` surface 声明 OTel-compatible metric contract
-- 明确 Envoy auth processor 可被动采集的 response header 到 metric 映射
+- 明确 L7 access-log 流里可被动采集的 HTTP header 到 metric 映射
 - 明确 management-plane 可导出的 session / refresh / sync 指标
 - 为 OTLP metrics 保持稳定 metric name、unit、attribute shape
 
@@ -47,8 +47,8 @@
      - `gen_ai_provider_cli_oauth_credential_*`
      - `gen_ai_provider_cli_oauth_refresh_*`
 
-2. `oauth_runtime_headers`
-   - collection: `response_headers`
+2. `oauth_runtime_http_telemetry`
+   - collection: `passive_http`
    - metric family:
      - `gen_ai_provider_runtime_requests_total`
      - `gen_ai_provider_runtime_rate_limit_events_total`
@@ -68,16 +68,15 @@ management attribute contract:
 - session metrics: `cli_id`, `flow`, `terminal_phase`
 - provider endpoint state metrics: `cli_id`, `provider_surface_binding_id`
 
-Envoy auth processor contract:
+Runtime HTTP telemetry contract:
 
-- Pod annotations:
-  - `auth.code-code.internal/cli-id`
-  - `auth.code-code.internal/provider-id`
-  - `auth.code-code.internal/provider-account-surface-id`
-  - `auth.code-code.internal/model-id`
-  - `auth.code-code.internal/response-header-rules-json`
-- declarative response-header rules 只映射可解析成 numeric sample 的 headers
-- `request-id` / `x-request-id` 作为默认 capture headers 保留，用于日志关联
+- Profiles are declared in support-owned capability data.
+- Support syncs profiles to `platform-egress-service` after startup.
+- Istio egress waypoint/gateway emits selected header attributes through
+  `envoyOtelAls`.
+- OTel Collector converts selected header attributes to numeric metrics.
+- `request-id` / `x-request-id` can be captured by the access-log provider for
+  log correlation when explicitly declared.
 
 ## Active Probe Runtime
 
@@ -103,10 +102,10 @@ Envoy auth processor contract:
 
 - invalid metric name, unit, attribute, query reference:
   - package materialization fail fast
-- conflicting response header mappings:
+- conflicting passive HTTP telemetry mappings:
   - package materialization fail fast
-- Envoy auth processor header parse failure:
-  - 丢弃该 header sample，只保留 hashed/log payload
+- OTel Collector header parse failure:
+  - 丢弃该 header sample；debug header log 只有在显式开关打开时才导出
 - provider endpoint 未绑定：
   - 不导出 instance-scoped refresh counter series
 - collector list/get secret 失败：
@@ -116,6 +115,6 @@ Envoy auth processor contract:
 
 ## Extension Points
 
-- 可以为单个 CLI 增加更多 `response_headers.header_metric_mappings`
+- 可以为单个 CLI 增加更多 `passive_http.transforms`
 - 可以在后续引入 availability judgment，而不改现有 metric families
 - 可以在真实 runtime workload owner 出现后，把同一 annotation contract 接入 Pod template materializer

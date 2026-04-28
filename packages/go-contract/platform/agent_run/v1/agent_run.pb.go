@@ -8,9 +8,8 @@ package agentrunv1
 
 import (
 	v1 "code-code.internal/go-contract/agent/core/v1"
-	v14 "code-code.internal/go-contract/agent/result/v1"
-	v12 "code-code.internal/go-contract/observability/v1"
-	v13 "code-code.internal/go-contract/platform/condition/v1"
+	v13 "code-code.internal/go-contract/agent/result/v1"
+	v12 "code-code.internal/go-contract/platform/condition/v1"
 	v11 "code-code.internal/go-contract/provider/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -26,57 +25,6 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
-
-// AgentRunResponseHeaderRuleContext identifies the runtime label context used
-// when exporting one header-derived metric.
-type AgentRunResponseHeaderRuleContext int32
-
-const (
-	AgentRunResponseHeaderRuleContext_AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED    AgentRunResponseHeaderRuleContext = 0
-	AgentRunResponseHeaderRuleContext_AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_CLI_RUNTIME    AgentRunResponseHeaderRuleContext = 1
-	AgentRunResponseHeaderRuleContext_AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_VENDOR_RUNTIME AgentRunResponseHeaderRuleContext = 2
-)
-
-// Enum value maps for AgentRunResponseHeaderRuleContext.
-var (
-	AgentRunResponseHeaderRuleContext_name = map[int32]string{
-		0: "AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED",
-		1: "AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_CLI_RUNTIME",
-		2: "AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_VENDOR_RUNTIME",
-	}
-	AgentRunResponseHeaderRuleContext_value = map[string]int32{
-		"AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED":    0,
-		"AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_CLI_RUNTIME":    1,
-		"AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_VENDOR_RUNTIME": 2,
-	}
-)
-
-func (x AgentRunResponseHeaderRuleContext) Enum() *AgentRunResponseHeaderRuleContext {
-	p := new(AgentRunResponseHeaderRuleContext)
-	*p = x
-	return p
-}
-
-func (x AgentRunResponseHeaderRuleContext) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (AgentRunResponseHeaderRuleContext) Descriptor() protoreflect.EnumDescriptor {
-	return file_platform_agent_run_v1_agent_run_proto_enumTypes[0].Descriptor()
-}
-
-func (AgentRunResponseHeaderRuleContext) Type() protoreflect.EnumType {
-	return &file_platform_agent_run_v1_agent_run_proto_enumTypes[0]
-}
-
-func (x AgentRunResponseHeaderRuleContext) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use AgentRunResponseHeaderRuleContext.Descriptor instead.
-func (AgentRunResponseHeaderRuleContext) EnumDescriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{0}
-}
 
 // AgentRunPrepareJobRunType identifies when one prepare job should run.
 type AgentRunPrepareJobRunType int32
@@ -115,11 +63,11 @@ func (x AgentRunPrepareJobRunType) String() string {
 }
 
 func (AgentRunPrepareJobRunType) Descriptor() protoreflect.EnumDescriptor {
-	return file_platform_agent_run_v1_agent_run_proto_enumTypes[1].Descriptor()
+	return file_platform_agent_run_v1_agent_run_proto_enumTypes[0].Descriptor()
 }
 
 func (AgentRunPrepareJobRunType) Type() protoreflect.EnumType {
-	return &file_platform_agent_run_v1_agent_run_proto_enumTypes[1]
+	return &file_platform_agent_run_v1_agent_run_proto_enumTypes[0]
 }
 
 func (x AgentRunPrepareJobRunType) Number() protoreflect.EnumNumber {
@@ -128,7 +76,7 @@ func (x AgentRunPrepareJobRunType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AgentRunPrepareJobRunType.Descriptor instead.
 func (AgentRunPrepareJobRunType) EnumDescriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{1}
+	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{0}
 }
 
 // AgentRunPrepareJobPhase describes the observed lifecycle phase of one prepare job.
@@ -177,11 +125,11 @@ func (x AgentRunPrepareJobPhase) String() string {
 }
 
 func (AgentRunPrepareJobPhase) Descriptor() protoreflect.EnumDescriptor {
-	return file_platform_agent_run_v1_agent_run_proto_enumTypes[2].Descriptor()
+	return file_platform_agent_run_v1_agent_run_proto_enumTypes[1].Descriptor()
 }
 
 func (AgentRunPrepareJobPhase) Type() protoreflect.EnumType {
-	return &file_platform_agent_run_v1_agent_run_proto_enumTypes[2]
+	return &file_platform_agent_run_v1_agent_run_proto_enumTypes[1]
 }
 
 func (x AgentRunPrepareJobPhase) Number() protoreflect.EnumNumber {
@@ -190,7 +138,7 @@ func (x AgentRunPrepareJobPhase) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AgentRunPrepareJobPhase.Descriptor instead.
 func (AgentRunPrepareJobPhase) EnumDescriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{2}
+	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{1}
 }
 
 // AgentRunPhase describes the observed lifecycle phase of one turn.
@@ -239,11 +187,11 @@ func (x AgentRunPhase) String() string {
 }
 
 func (AgentRunPhase) Descriptor() protoreflect.EnumDescriptor {
-	return file_platform_agent_run_v1_agent_run_proto_enumTypes[3].Descriptor()
+	return file_platform_agent_run_v1_agent_run_proto_enumTypes[2].Descriptor()
 }
 
 func (AgentRunPhase) Type() protoreflect.EnumType {
-	return &file_platform_agent_run_v1_agent_run_proto_enumTypes[3]
+	return &file_platform_agent_run_v1_agent_run_proto_enumTypes[2]
 }
 
 func (x AgentRunPhase) Number() protoreflect.EnumNumber {
@@ -252,7 +200,7 @@ func (x AgentRunPhase) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AgentRunPhase.Descriptor instead.
 func (AgentRunPhase) EnumDescriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{3}
+	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{2}
 }
 
 // AgentRunSpec describes the desired state for one turn within one
@@ -702,137 +650,6 @@ func (x *AgentRunPrepareJobStatus) GetFinishedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-// AgentRunResponseHeaderRule captures one runtime response-header rule frozen
-// at submit time.
-type AgentRunResponseHeaderRule struct {
-	state         protoimpl.MessageState            `protogen:"open.v1"`
-	HeaderName    string                            `protobuf:"bytes,1,opt,name=header_name,json=headerName,proto3" json:"header_name,omitempty"`
-	MetricName    string                            `protobuf:"bytes,2,opt,name=metric_name,json=metricName,proto3" json:"metric_name,omitempty"`
-	ValueType     v12.HeaderValueType               `protobuf:"varint,3,opt,name=value_type,json=valueType,proto3,enum=observability.v1.HeaderValueType" json:"value_type,omitempty"`
-	Labels        []*AgentRunMetricLabel            `protobuf:"bytes,4,rep,name=labels,proto3" json:"labels,omitempty"`
-	Context       AgentRunResponseHeaderRuleContext `protobuf:"varint,5,opt,name=context,proto3,enum=platform.agent_run.v1.AgentRunResponseHeaderRuleContext" json:"context,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AgentRunResponseHeaderRule) Reset() {
-	*x = AgentRunResponseHeaderRule{}
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AgentRunResponseHeaderRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AgentRunResponseHeaderRule) ProtoMessage() {}
-
-func (x *AgentRunResponseHeaderRule) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AgentRunResponseHeaderRule.ProtoReflect.Descriptor instead.
-func (*AgentRunResponseHeaderRule) Descriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *AgentRunResponseHeaderRule) GetHeaderName() string {
-	if x != nil {
-		return x.HeaderName
-	}
-	return ""
-}
-
-func (x *AgentRunResponseHeaderRule) GetMetricName() string {
-	if x != nil {
-		return x.MetricName
-	}
-	return ""
-}
-
-func (x *AgentRunResponseHeaderRule) GetValueType() v12.HeaderValueType {
-	if x != nil {
-		return x.ValueType
-	}
-	return v12.HeaderValueType(0)
-}
-
-func (x *AgentRunResponseHeaderRule) GetLabels() []*AgentRunMetricLabel {
-	if x != nil {
-		return x.Labels
-	}
-	return nil
-}
-
-func (x *AgentRunResponseHeaderRule) GetContext() AgentRunResponseHeaderRuleContext {
-	if x != nil {
-		return x.Context
-	}
-	return AgentRunResponseHeaderRuleContext_AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED
-}
-
-// AgentRunMetricLabel stores one fixed runtime metric label.
-type AgentRunMetricLabel struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AgentRunMetricLabel) Reset() {
-	*x = AgentRunMetricLabel{}
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AgentRunMetricLabel) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AgentRunMetricLabel) ProtoMessage() {}
-
-func (x *AgentRunMetricLabel) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AgentRunMetricLabel.ProtoReflect.Descriptor instead.
-func (*AgentRunMetricLabel) Descriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *AgentRunMetricLabel) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *AgentRunMetricLabel) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
 // AgentRunRef identifies one submitted agent run.
 type AgentRunRef struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -843,7 +660,7 @@ type AgentRunRef struct {
 
 func (x *AgentRunRef) Reset() {
 	*x = AgentRunRef{}
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[6]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -855,7 +672,7 @@ func (x *AgentRunRef) String() string {
 func (*AgentRunRef) ProtoMessage() {}
 
 func (x *AgentRunRef) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[6]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -868,7 +685,7 @@ func (x *AgentRunRef) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentRunRef.ProtoReflect.Descriptor instead.
 func (*AgentRunRef) Descriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{6}
+	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AgentRunRef) GetRunId() string {
@@ -888,7 +705,7 @@ type WorkloadRef struct {
 
 func (x *WorkloadRef) Reset() {
 	*x = WorkloadRef{}
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[7]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -900,7 +717,7 @@ func (x *WorkloadRef) String() string {
 func (*WorkloadRef) ProtoMessage() {}
 
 func (x *WorkloadRef) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[7]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -913,7 +730,7 @@ func (x *WorkloadRef) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkloadRef.ProtoReflect.Descriptor instead.
 func (*WorkloadRef) Descriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{7}
+	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *WorkloadRef) GetWorkloadId() string {
@@ -933,8 +750,8 @@ type AgentRunStatus struct {
 	ObservedGeneration int64                       `protobuf:"varint,3,opt,name=observed_generation,json=observedGeneration,proto3" json:"observed_generation,omitempty"`
 	Message            string                      `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
 	Workload           *WorkloadRef                `protobuf:"bytes,5,opt,name=workload,proto3" json:"workload,omitempty"`
-	Conditions         []*v13.Condition            `protobuf:"bytes,6,rep,name=conditions,proto3" json:"conditions,omitempty"`
-	Result             *v14.RunResult              `protobuf:"bytes,7,opt,name=result,proto3" json:"result,omitempty"`
+	Conditions         []*v12.Condition            `protobuf:"bytes,6,rep,name=conditions,proto3" json:"conditions,omitempty"`
+	Result             *v13.RunResult              `protobuf:"bytes,7,opt,name=result,proto3" json:"result,omitempty"`
 	UpdatedAt          *timestamppb.Timestamp      `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	PrepareJobs        []*AgentRunPrepareJobStatus `protobuf:"bytes,9,rep,name=prepare_jobs,json=prepareJobs,proto3" json:"prepare_jobs,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -943,7 +760,7 @@ type AgentRunStatus struct {
 
 func (x *AgentRunStatus) Reset() {
 	*x = AgentRunStatus{}
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[8]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -955,7 +772,7 @@ func (x *AgentRunStatus) String() string {
 func (*AgentRunStatus) ProtoMessage() {}
 
 func (x *AgentRunStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[8]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -968,7 +785,7 @@ func (x *AgentRunStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentRunStatus.ProtoReflect.Descriptor instead.
 func (*AgentRunStatus) Descriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{8}
+	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *AgentRunStatus) GetRunId() string {
@@ -1006,14 +823,14 @@ func (x *AgentRunStatus) GetWorkload() *WorkloadRef {
 	return nil
 }
 
-func (x *AgentRunStatus) GetConditions() []*v13.Condition {
+func (x *AgentRunStatus) GetConditions() []*v12.Condition {
 	if x != nil {
 		return x.Conditions
 	}
 	return nil
 }
 
-func (x *AgentRunStatus) GetResult() *v14.RunResult {
+func (x *AgentRunStatus) GetResult() *v13.RunResult {
 	if x != nil {
 		return x.Result
 	}
@@ -1047,7 +864,7 @@ type AgentRunState struct {
 
 func (x *AgentRunState) Reset() {
 	*x = AgentRunState{}
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[9]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1059,7 +876,7 @@ func (x *AgentRunState) String() string {
 func (*AgentRunState) ProtoMessage() {}
 
 func (x *AgentRunState) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[9]
+	mi := &file_platform_agent_run_v1_agent_run_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1072,7 +889,7 @@ func (x *AgentRunState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentRunState.ProtoReflect.Descriptor instead.
 func (*AgentRunState) Descriptor() ([]byte, []int) {
-	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{9}
+	return file_platform_agent_run_v1_agent_run_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *AgentRunState) GetGeneration() int64 {
@@ -1100,7 +917,7 @@ var File_platform_agent_run_v1_agent_run_proto protoreflect.FileDescriptor
 
 const file_platform_agent_run_v1_agent_run_proto_rawDesc = "" +
 	"\n" +
-	"%platform/agent_run/v1/agent_run.proto\x12\x15platform.agent_run.v1\x1a\x19agent/core/v1/agent.proto\x1a\x1cagent/result/v1/result.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1aprovider/v1/provider.proto\x1a$observability/v1/observability.proto\x1a%platform/condition/v1/condition.proto\"\xa1\a\n" +
+	"%platform/agent_run/v1/agent_run.proto\x12\x15platform.agent_run.v1\x1a\x19agent/core/v1/agent.proto\x1a\x1cagent/result/v1/result.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1aprovider/v1/provider.proto\x1a%platform/condition/v1/condition.proto\"\xa1\a\n" +
 	"\fAgentRunSpec\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
 	"\n" +
@@ -1151,19 +968,7 @@ const file_platform_agent_run_v1_agent_run_proto_rawDesc = "" +
 	"\n" +
 	"started_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12;\n" +
 	"\vfinished_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"finishedAt\"\xb8\x02\n" +
-	"\x1aAgentRunResponseHeaderRule\x12\x1f\n" +
-	"\vheader_name\x18\x01 \x01(\tR\n" +
-	"headerName\x12\x1f\n" +
-	"\vmetric_name\x18\x02 \x01(\tR\n" +
-	"metricName\x12@\n" +
-	"\n" +
-	"value_type\x18\x03 \x01(\x0e2!.observability.v1.HeaderValueTypeR\tvalueType\x12B\n" +
-	"\x06labels\x18\x04 \x03(\v2*.platform.agent_run.v1.AgentRunMetricLabelR\x06labels\x12R\n" +
-	"\acontext\x18\x05 \x01(\x0e28.platform.agent_run.v1.AgentRunResponseHeaderRuleContextR\acontext\"?\n" +
-	"\x13AgentRunMetricLabel\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"$\n" +
+	"finishedAt\"$\n" +
 	"\vAgentRunRef\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\".\n" +
 	"\vWorkloadRef\x12\x1f\n" +
@@ -1187,11 +992,7 @@ const file_platform_agent_run_v1_agent_run_proto_rawDesc = "" +
 	"generation\x18\x01 \x01(\x03R\n" +
 	"generation\x127\n" +
 	"\x04spec\x18\x02 \x01(\v2#.platform.agent_run.v1.AgentRunSpecR\x04spec\x12=\n" +
-	"\x06status\x18\x03 \x01(\v2%.platform.agent_run.v1.AgentRunStatusR\x06status*\xce\x01\n" +
-	"!AgentRunResponseHeaderRuleContext\x126\n" +
-	"2AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_UNSPECIFIED\x10\x00\x126\n" +
-	"2AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_CLI_RUNTIME\x10\x01\x129\n" +
-	"5AGENT_RUN_RESPONSE_HEADER_RULE_CONTEXT_VENDOR_RUNTIME\x10\x02*\xcf\x01\n" +
+	"\x06status\x18\x03 \x01(\v2%.platform.agent_run.v1.AgentRunStatusR\x06status*\xcf\x01\n" +
 	"\x19AgentRunPrepareJobRunType\x12.\n" +
 	"*AGENT_RUN_PREPARE_JOB_RUN_TYPE_UNSPECIFIED\x10\x00\x12'\n" +
 	"#AGENT_RUN_PREPARE_JOB_RUN_TYPE_INIT\x10\x01\x12*\n" +
@@ -1226,57 +1027,50 @@ func file_platform_agent_run_v1_agent_run_proto_rawDescGZIP() []byte {
 	return file_platform_agent_run_v1_agent_run_proto_rawDescData
 }
 
-var file_platform_agent_run_v1_agent_run_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_platform_agent_run_v1_agent_run_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_platform_agent_run_v1_agent_run_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_platform_agent_run_v1_agent_run_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_platform_agent_run_v1_agent_run_proto_goTypes = []any{
-	(AgentRunResponseHeaderRuleContext)(0), // 0: platform.agent_run.v1.AgentRunResponseHeaderRuleContext
-	(AgentRunPrepareJobRunType)(0),         // 1: platform.agent_run.v1.AgentRunPrepareJobRunType
-	(AgentRunPrepareJobPhase)(0),           // 2: platform.agent_run.v1.AgentRunPrepareJobPhase
-	(AgentRunPhase)(0),                     // 3: platform.agent_run.v1.AgentRunPhase
-	(*AgentRunSpec)(nil),                   // 4: platform.agent_run.v1.AgentRunSpec
-	(*AgentRunAuthRequirement)(nil),        // 5: platform.agent_run.v1.AgentRunAuthRequirement
-	(*AgentRunPrepareJob)(nil),             // 6: platform.agent_run.v1.AgentRunPrepareJob
-	(*AgentRunPrepareJobStatus)(nil),       // 7: platform.agent_run.v1.AgentRunPrepareJobStatus
-	(*AgentRunResponseHeaderRule)(nil),     // 8: platform.agent_run.v1.AgentRunResponseHeaderRule
-	(*AgentRunMetricLabel)(nil),            // 9: platform.agent_run.v1.AgentRunMetricLabel
-	(*AgentRunRef)(nil),                    // 10: platform.agent_run.v1.AgentRunRef
-	(*WorkloadRef)(nil),                    // 11: platform.agent_run.v1.WorkloadRef
-	(*AgentRunStatus)(nil),                 // 12: platform.agent_run.v1.AgentRunStatus
-	(*AgentRunState)(nil),                  // 13: platform.agent_run.v1.AgentRunState
-	(*v1.RunRequest)(nil),                  // 14: agent.core.v1.RunRequest
-	(*v1.RuntimeEnvironment)(nil),          // 15: agent.core.v1.RuntimeEnvironment
-	(*v11.ProviderRunBinding)(nil),         // 16: provider.v1.ProviderRunBinding
-	(*timestamppb.Timestamp)(nil),          // 17: google.protobuf.Timestamp
-	(v12.HeaderValueType)(0),               // 18: observability.v1.HeaderValueType
-	(*v13.Condition)(nil),                  // 19: platform.condition.v1.Condition
-	(*v14.RunResult)(nil),                  // 20: agent.result.v1.RunResult
+	(AgentRunPrepareJobRunType)(0),   // 0: platform.agent_run.v1.AgentRunPrepareJobRunType
+	(AgentRunPrepareJobPhase)(0),     // 1: platform.agent_run.v1.AgentRunPrepareJobPhase
+	(AgentRunPhase)(0),               // 2: platform.agent_run.v1.AgentRunPhase
+	(*AgentRunSpec)(nil),             // 3: platform.agent_run.v1.AgentRunSpec
+	(*AgentRunAuthRequirement)(nil),  // 4: platform.agent_run.v1.AgentRunAuthRequirement
+	(*AgentRunPrepareJob)(nil),       // 5: platform.agent_run.v1.AgentRunPrepareJob
+	(*AgentRunPrepareJobStatus)(nil), // 6: platform.agent_run.v1.AgentRunPrepareJobStatus
+	(*AgentRunRef)(nil),              // 7: platform.agent_run.v1.AgentRunRef
+	(*WorkloadRef)(nil),              // 8: platform.agent_run.v1.WorkloadRef
+	(*AgentRunStatus)(nil),           // 9: platform.agent_run.v1.AgentRunStatus
+	(*AgentRunState)(nil),            // 10: platform.agent_run.v1.AgentRunState
+	(*v1.RunRequest)(nil),            // 11: agent.core.v1.RunRequest
+	(*v1.RuntimeEnvironment)(nil),    // 12: agent.core.v1.RuntimeEnvironment
+	(*v11.ProviderRunBinding)(nil),   // 13: provider.v1.ProviderRunBinding
+	(*timestamppb.Timestamp)(nil),    // 14: google.protobuf.Timestamp
+	(*v12.Condition)(nil),            // 15: platform.condition.v1.Condition
+	(*v13.RunResult)(nil),            // 16: agent.result.v1.RunResult
 }
 var file_platform_agent_run_v1_agent_run_proto_depIdxs = []int32{
-	14, // 0: platform.agent_run.v1.AgentRunSpec.request:type_name -> agent.core.v1.RunRequest
-	5,  // 1: platform.agent_run.v1.AgentRunSpec.auth_requirement:type_name -> platform.agent_run.v1.AgentRunAuthRequirement
-	15, // 2: platform.agent_run.v1.AgentRunSpec.runtime_environment:type_name -> agent.core.v1.RuntimeEnvironment
-	6,  // 3: platform.agent_run.v1.AgentRunSpec.prepare_jobs:type_name -> platform.agent_run.v1.AgentRunPrepareJob
-	16, // 4: platform.agent_run.v1.AgentRunAuthRequirement.provider_run_binding:type_name -> provider.v1.ProviderRunBinding
-	1,  // 5: platform.agent_run.v1.AgentRunPrepareJob.run_type:type_name -> platform.agent_run.v1.AgentRunPrepareJobRunType
-	2,  // 6: platform.agent_run.v1.AgentRunPrepareJobStatus.phase:type_name -> platform.agent_run.v1.AgentRunPrepareJobPhase
-	17, // 7: platform.agent_run.v1.AgentRunPrepareJobStatus.started_at:type_name -> google.protobuf.Timestamp
-	17, // 8: platform.agent_run.v1.AgentRunPrepareJobStatus.finished_at:type_name -> google.protobuf.Timestamp
-	18, // 9: platform.agent_run.v1.AgentRunResponseHeaderRule.value_type:type_name -> observability.v1.HeaderValueType
-	9,  // 10: platform.agent_run.v1.AgentRunResponseHeaderRule.labels:type_name -> platform.agent_run.v1.AgentRunMetricLabel
-	0,  // 11: platform.agent_run.v1.AgentRunResponseHeaderRule.context:type_name -> platform.agent_run.v1.AgentRunResponseHeaderRuleContext
-	3,  // 12: platform.agent_run.v1.AgentRunStatus.phase:type_name -> platform.agent_run.v1.AgentRunPhase
-	11, // 13: platform.agent_run.v1.AgentRunStatus.workload:type_name -> platform.agent_run.v1.WorkloadRef
-	19, // 14: platform.agent_run.v1.AgentRunStatus.conditions:type_name -> platform.condition.v1.Condition
-	20, // 15: platform.agent_run.v1.AgentRunStatus.result:type_name -> agent.result.v1.RunResult
-	17, // 16: platform.agent_run.v1.AgentRunStatus.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 17: platform.agent_run.v1.AgentRunStatus.prepare_jobs:type_name -> platform.agent_run.v1.AgentRunPrepareJobStatus
-	4,  // 18: platform.agent_run.v1.AgentRunState.spec:type_name -> platform.agent_run.v1.AgentRunSpec
-	12, // 19: platform.agent_run.v1.AgentRunState.status:type_name -> platform.agent_run.v1.AgentRunStatus
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	11, // 0: platform.agent_run.v1.AgentRunSpec.request:type_name -> agent.core.v1.RunRequest
+	4,  // 1: platform.agent_run.v1.AgentRunSpec.auth_requirement:type_name -> platform.agent_run.v1.AgentRunAuthRequirement
+	12, // 2: platform.agent_run.v1.AgentRunSpec.runtime_environment:type_name -> agent.core.v1.RuntimeEnvironment
+	5,  // 3: platform.agent_run.v1.AgentRunSpec.prepare_jobs:type_name -> platform.agent_run.v1.AgentRunPrepareJob
+	13, // 4: platform.agent_run.v1.AgentRunAuthRequirement.provider_run_binding:type_name -> provider.v1.ProviderRunBinding
+	0,  // 5: platform.agent_run.v1.AgentRunPrepareJob.run_type:type_name -> platform.agent_run.v1.AgentRunPrepareJobRunType
+	1,  // 6: platform.agent_run.v1.AgentRunPrepareJobStatus.phase:type_name -> platform.agent_run.v1.AgentRunPrepareJobPhase
+	14, // 7: platform.agent_run.v1.AgentRunPrepareJobStatus.started_at:type_name -> google.protobuf.Timestamp
+	14, // 8: platform.agent_run.v1.AgentRunPrepareJobStatus.finished_at:type_name -> google.protobuf.Timestamp
+	2,  // 9: platform.agent_run.v1.AgentRunStatus.phase:type_name -> platform.agent_run.v1.AgentRunPhase
+	8,  // 10: platform.agent_run.v1.AgentRunStatus.workload:type_name -> platform.agent_run.v1.WorkloadRef
+	15, // 11: platform.agent_run.v1.AgentRunStatus.conditions:type_name -> platform.condition.v1.Condition
+	16, // 12: platform.agent_run.v1.AgentRunStatus.result:type_name -> agent.result.v1.RunResult
+	14, // 13: platform.agent_run.v1.AgentRunStatus.updated_at:type_name -> google.protobuf.Timestamp
+	6,  // 14: platform.agent_run.v1.AgentRunStatus.prepare_jobs:type_name -> platform.agent_run.v1.AgentRunPrepareJobStatus
+	3,  // 15: platform.agent_run.v1.AgentRunState.spec:type_name -> platform.agent_run.v1.AgentRunSpec
+	9,  // 16: platform.agent_run.v1.AgentRunState.status:type_name -> platform.agent_run.v1.AgentRunStatus
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_platform_agent_run_v1_agent_run_proto_init() }
@@ -1289,8 +1083,8 @@ func file_platform_agent_run_v1_agent_run_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_platform_agent_run_v1_agent_run_proto_rawDesc), len(file_platform_agent_run_v1_agent_run_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   10,
+			NumEnums:      3,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

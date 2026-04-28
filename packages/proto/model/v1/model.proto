@@ -6,62 +6,103 @@ import "google/protobuf/field_mask.proto";
 
 option go_package = "code-code.internal/go-contract/model/v1;modelv1";
 
-// ModelRef references one default model definition by stable identity.
+// ModelRef references one canonical model by stable identity.
 // Canonical identity is vendor_id + model_id.
 message ModelRef {
   string model_id = 1;
   string vendor_id = 2;
 }
 
-// ModelDefinition describes one default model definition.
-message ModelDefinition {
+// ModelVersion describes one canonical model version.
+// Replaces the former ModelDefinition with richer metadata.
+message ModelVersion {
   string model_id = 1;
   string display_name = 2;
   repeated ModelAlias aliases = 3;
-  int64 context_window_tokens = 4;
-  int64 max_output_tokens = 5;
+  reserved 4; // was context_window_tokens
+  reserved 5; // was max_output_tokens
   repeated ModelCapability capabilities = 6;
   ModelShape primary_shape = 7;
   repeated ModelShape supported_shapes = 8;
   repeated Modality input_modalities = 9;
   repeated Modality output_modalities = 10;
   reserved 11, 12, 13, 14;
-  reserved "knowledge_cutoff", "training_cutoff", "pricing", "lifecycle";
+  reserved "knowledge_cutoff", "training_cutoff_old", "pricing", "lifecycle";
 
-  // Model vendor stable identifier aligned with industry APIs
-  // (OpenAI owned_by, Gemini publisher prefix).
-  // Examples: "openai", "anthropic", "google", "meta", "deepseek".
+  // Model vendor stable identifier aligned with industry APIs.
   string vendor_id = 15;
 
-  reserved 16, 17, 18;
-  reserved "family_id", "description", "labels";
+  reserved 16;
+  reserved "family_id";
+
+  // Model family slug without version suffix.
+  // Example: "claude-sonnet", "gpt-4o", "gemini-pro".
+  string family_slug = 17;
+
+  reserved 18;
+  reserved "labels";
+
+  // Model category.
+  ModelCategory category = 19;
+
+  // Explicit version string from the model owner.
+  // Example: "2024-10-22", "001", "4o-2024-08-06".
+  string version = 20;
+
+  // Fully qualified canonical model identifier.
+  // Format: "{vendor_id}/{family_slug}@{version}".
+  string canonical_model_id = 21;
+
+  // Lifecycle status of this model version.
+  ModelLifecycleStatus lifecycle_status = 22;
+
+  // Context and token limit specification.
+  ContextSpec context_spec = 23;
+
+  // Release date in ISO 8601 format (YYYY-MM-DD).
+  string release_date = 24;
+
+  // Training data cutoff date in ISO 8601 format (YYYY-MM-DD).
+  string training_cutoff = 25;
+
+  // License type identifier.
+  string license_type = 26;
+
+  // Whether model weights are publicly available.
+  bool is_open_weights = 27;
+
+  // Human-readable description of the model.
+  string description = 28;
 }
 
-// ModelOverride describes provider-supplied overrides for one default model
-// definition.
+// ModelOverride describes provider-supplied overrides for one canonical model
+// version.
 message ModelOverride {
   google.protobuf.FieldMask field_mask = 1;
   optional string display_name = 2;
   reserved 3;
   reserved "aliases";
-  optional int64 context_window_tokens = 4;
-  optional int64 max_output_tokens = 5;
+  reserved 4; // was context_window_tokens
+  reserved 5; // was max_output_tokens
   repeated ModelCapability capabilities = 6;
   optional ModelShape primary_shape = 7;
   repeated ModelShape supported_shapes = 8;
   repeated Modality input_modalities = 9;
   repeated Modality output_modalities = 10;
   reserved 11, 12, 13, 14;
-  reserved "knowledge_cutoff", "training_cutoff", "pricing", "lifecycle";
+  reserved "knowledge_cutoff", "training_cutoff_old", "pricing_old", "lifecycle_old";
   reserved 15, 16, 17, 18;
-  reserved "vendor_id", "family_id", "description", "labels";
+  reserved "vendor_id", "family_id_old", "description_old", "labels_old";
+
+  // Override context specification.
+  optional ContextSpec context_spec = 19;
 }
 
 // ResolvedModel describes the effective model after merging the default
-// definition with an optional override.
+// version with an optional override.
 message ResolvedModel {
   string model_id = 1;
-  ModelDefinition effective_definition = 2;
+  ModelVersion effective_definition = 2;
 }
 
 // ModelAlias describes an alternate model identifier.
@@ -86,6 +127,16 @@ enum ModelCapability {
   MODEL_CAPABILITY_STRUCTURED_OUTPUT = 2;
   MODEL_CAPABILITY_IMAGE_INPUT = 3;
   MODEL_CAPABILITY_STREAMING = 4;
+  MODEL_CAPABILITY_REASONING = 5;
+  MODEL_CAPABILITY_BATCH = 6;
+  MODEL_CAPABILITY_FINE_TUNE = 7;
+  MODEL_CAPABILITY_EMBEDDING = 8;
+  MODEL_CAPABILITY_RERANK = 9;
+  MODEL_CAPABILITY_JSON_MODE = 10;
+  MODEL_CAPABILITY_JSON_SCHEMA = 11;
+  MODEL_CAPABILITY_AUDIO_INPUT = 12;
+  MODEL_CAPABILITY_AUDIO_OUTPUT = 13;
+  MODEL_CAPABILITY_VIDEO_INPUT = 14;
 }
 
 // ModelShape identifies the request/response surface used to call one model.
@@ -103,4 +154,42 @@ enum Modality {
   MODALITY_IMAGE = 2;
   MODALITY_AUDIO = 3;
   MODALITY_VIDEO = 4;
+}
+
+// ModelCategory identifies the primary function category of a model.
+enum ModelCategory {
+  MODEL_CATEGORY_UNSPECIFIED = 0;
+  MODEL_CATEGORY_CHAT = 1;
+  MODEL_CATEGORY_EMBEDDING = 2;
+  MODEL_CATEGORY_RERANK = 3;
+  MODEL_CATEGORY_IMAGE_GEN = 4;
+  MODEL_CATEGORY_AUDIO = 5;
+  MODEL_CATEGORY_VIDEO = 6;
+  MODEL_CATEGORY_MODERATION = 7;
+}
+
+// ModelLifecycleStatus represents the lifecycle stage of a model version.
+enum ModelLifecycleStatus {
+  MODEL_LIFECYCLE_STATUS_UNSPECIFIED = 0;
+  MODEL_LIFECYCLE_STATUS_ACTIVE = 1;
+  MODEL_LIFECYCLE_STATUS_LEGACY = 2;
+  MODEL_LIFECYCLE_STATUS_DEPRECATED = 3;
+  MODEL_LIFECYCLE_STATUS_EOL = 4;
+  MODEL_LIFECYCLE_STATUS_BLOCKED = 5;
+}
+
+// ContextSpec describes token limits and tokenizer information for a model.
+message ContextSpec {
+  // Maximum number of input tokens the model accepts.
+  int64 max_input_tokens = 1;
+  // Maximum number of output tokens the model can generate.
+  int64 max_output_tokens = 2;
+  // Maximum total context window (input + output).
+  int64 max_context_tokens = 3;
+  // Maximum reasoning/thinking tokens, if applicable.
+  int64 max_reasoning_tokens = 4;
+  // Tokenizer identifier (e.g. "cl100k_base", "o200k_base").
+  string tokenizer = 5;
+  // Tokenizer source (e.g. "openai", "anthropic", "sentencepiece", "provider_specific").
+  string tokenizer_source = 6;
 }

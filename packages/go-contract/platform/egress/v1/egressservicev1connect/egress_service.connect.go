@@ -40,16 +40,28 @@ const (
 	// EgressServiceUpdateEgressPolicyProcedure is the fully-qualified name of the EgressService's
 	// UpdateEgressPolicy RPC.
 	EgressServiceUpdateEgressPolicyProcedure = "/platform.egress.v1.EgressService/UpdateEgressPolicy"
+	// EgressServiceApplyExternalAccessSetProcedure is the fully-qualified name of the EgressService's
+	// ApplyExternalAccessSet RPC.
+	EgressServiceApplyExternalAccessSetProcedure = "/platform.egress.v1.EgressService/ApplyExternalAccessSet"
+	// EgressServiceDeleteExternalAccessSetProcedure is the fully-qualified name of the EgressService's
+	// DeleteExternalAccessSet RPC.
+	EgressServiceDeleteExternalAccessSetProcedure = "/platform.egress.v1.EgressService/DeleteExternalAccessSet"
 	// EgressServiceGetEgressRuntimePolicyProcedure is the fully-qualified name of the EgressService's
 	// GetEgressRuntimePolicy RPC.
 	EgressServiceGetEgressRuntimePolicyProcedure = "/platform.egress.v1.EgressService/GetEgressRuntimePolicy"
+	// EgressServiceApplyRuntimeTelemetryProfileSetProcedure is the fully-qualified name of the
+	// EgressService's ApplyRuntimeTelemetryProfileSet RPC.
+	EgressServiceApplyRuntimeTelemetryProfileSetProcedure = "/platform.egress.v1.EgressService/ApplyRuntimeTelemetryProfileSet"
 )
 
 // EgressServiceClient is a client for the platform.egress.v1.EgressService service.
 type EgressServiceClient interface {
 	ListEgressPolicies(context.Context, *v1.ListEgressPoliciesRequest) (*v1.ListEgressPoliciesResponse, error)
 	UpdateEgressPolicy(context.Context, *v1.UpdateEgressPolicyRequest) (*v1.UpdateEgressPolicyResponse, error)
+	ApplyExternalAccessSet(context.Context, *v11.ApplyExternalAccessSetRequest) (*v11.ApplyExternalAccessSetResponse, error)
+	DeleteExternalAccessSet(context.Context, *v11.DeleteExternalAccessSetRequest) (*v11.DeleteExternalAccessSetResponse, error)
 	GetEgressRuntimePolicy(context.Context, *v11.GetEgressRuntimePolicyRequest) (*v11.GetEgressRuntimePolicyResponse, error)
+	ApplyRuntimeTelemetryProfileSet(context.Context, *v11.ApplyRuntimeTelemetryProfileSetRequest) (*v11.ApplyRuntimeTelemetryProfileSetResponse, error)
 }
 
 // NewEgressServiceClient constructs a client for the platform.egress.v1.EgressService service. By
@@ -75,10 +87,28 @@ func NewEgressServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(egressServiceMethods.ByName("UpdateEgressPolicy")),
 			connect.WithClientOptions(opts...),
 		),
+		applyExternalAccessSet: connect.NewClient[v11.ApplyExternalAccessSetRequest, v11.ApplyExternalAccessSetResponse](
+			httpClient,
+			baseURL+EgressServiceApplyExternalAccessSetProcedure,
+			connect.WithSchema(egressServiceMethods.ByName("ApplyExternalAccessSet")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteExternalAccessSet: connect.NewClient[v11.DeleteExternalAccessSetRequest, v11.DeleteExternalAccessSetResponse](
+			httpClient,
+			baseURL+EgressServiceDeleteExternalAccessSetProcedure,
+			connect.WithSchema(egressServiceMethods.ByName("DeleteExternalAccessSet")),
+			connect.WithClientOptions(opts...),
+		),
 		getEgressRuntimePolicy: connect.NewClient[v11.GetEgressRuntimePolicyRequest, v11.GetEgressRuntimePolicyResponse](
 			httpClient,
 			baseURL+EgressServiceGetEgressRuntimePolicyProcedure,
 			connect.WithSchema(egressServiceMethods.ByName("GetEgressRuntimePolicy")),
+			connect.WithClientOptions(opts...),
+		),
+		applyRuntimeTelemetryProfileSet: connect.NewClient[v11.ApplyRuntimeTelemetryProfileSetRequest, v11.ApplyRuntimeTelemetryProfileSetResponse](
+			httpClient,
+			baseURL+EgressServiceApplyRuntimeTelemetryProfileSetProcedure,
+			connect.WithSchema(egressServiceMethods.ByName("ApplyRuntimeTelemetryProfileSet")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -86,9 +116,12 @@ func NewEgressServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 
 // egressServiceClient implements EgressServiceClient.
 type egressServiceClient struct {
-	listEgressPolicies     *connect.Client[v1.ListEgressPoliciesRequest, v1.ListEgressPoliciesResponse]
-	updateEgressPolicy     *connect.Client[v1.UpdateEgressPolicyRequest, v1.UpdateEgressPolicyResponse]
-	getEgressRuntimePolicy *connect.Client[v11.GetEgressRuntimePolicyRequest, v11.GetEgressRuntimePolicyResponse]
+	listEgressPolicies              *connect.Client[v1.ListEgressPoliciesRequest, v1.ListEgressPoliciesResponse]
+	updateEgressPolicy              *connect.Client[v1.UpdateEgressPolicyRequest, v1.UpdateEgressPolicyResponse]
+	applyExternalAccessSet          *connect.Client[v11.ApplyExternalAccessSetRequest, v11.ApplyExternalAccessSetResponse]
+	deleteExternalAccessSet         *connect.Client[v11.DeleteExternalAccessSetRequest, v11.DeleteExternalAccessSetResponse]
+	getEgressRuntimePolicy          *connect.Client[v11.GetEgressRuntimePolicyRequest, v11.GetEgressRuntimePolicyResponse]
+	applyRuntimeTelemetryProfileSet *connect.Client[v11.ApplyRuntimeTelemetryProfileSetRequest, v11.ApplyRuntimeTelemetryProfileSetResponse]
 }
 
 // ListEgressPolicies calls platform.egress.v1.EgressService.ListEgressPolicies.
@@ -109,9 +142,37 @@ func (c *egressServiceClient) UpdateEgressPolicy(ctx context.Context, req *v1.Up
 	return nil, err
 }
 
+// ApplyExternalAccessSet calls platform.egress.v1.EgressService.ApplyExternalAccessSet.
+func (c *egressServiceClient) ApplyExternalAccessSet(ctx context.Context, req *v11.ApplyExternalAccessSetRequest) (*v11.ApplyExternalAccessSetResponse, error) {
+	response, err := c.applyExternalAccessSet.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
+// DeleteExternalAccessSet calls platform.egress.v1.EgressService.DeleteExternalAccessSet.
+func (c *egressServiceClient) DeleteExternalAccessSet(ctx context.Context, req *v11.DeleteExternalAccessSetRequest) (*v11.DeleteExternalAccessSetResponse, error) {
+	response, err := c.deleteExternalAccessSet.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
 // GetEgressRuntimePolicy calls platform.egress.v1.EgressService.GetEgressRuntimePolicy.
 func (c *egressServiceClient) GetEgressRuntimePolicy(ctx context.Context, req *v11.GetEgressRuntimePolicyRequest) (*v11.GetEgressRuntimePolicyResponse, error) {
 	response, err := c.getEgressRuntimePolicy.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
+// ApplyRuntimeTelemetryProfileSet calls
+// platform.egress.v1.EgressService.ApplyRuntimeTelemetryProfileSet.
+func (c *egressServiceClient) ApplyRuntimeTelemetryProfileSet(ctx context.Context, req *v11.ApplyRuntimeTelemetryProfileSetRequest) (*v11.ApplyRuntimeTelemetryProfileSetResponse, error) {
+	response, err := c.applyRuntimeTelemetryProfileSet.CallUnary(ctx, connect.NewRequest(req))
 	if response != nil {
 		return response.Msg, err
 	}
@@ -122,7 +183,10 @@ func (c *egressServiceClient) GetEgressRuntimePolicy(ctx context.Context, req *v
 type EgressServiceHandler interface {
 	ListEgressPolicies(context.Context, *v1.ListEgressPoliciesRequest) (*v1.ListEgressPoliciesResponse, error)
 	UpdateEgressPolicy(context.Context, *v1.UpdateEgressPolicyRequest) (*v1.UpdateEgressPolicyResponse, error)
+	ApplyExternalAccessSet(context.Context, *v11.ApplyExternalAccessSetRequest) (*v11.ApplyExternalAccessSetResponse, error)
+	DeleteExternalAccessSet(context.Context, *v11.DeleteExternalAccessSetRequest) (*v11.DeleteExternalAccessSetResponse, error)
 	GetEgressRuntimePolicy(context.Context, *v11.GetEgressRuntimePolicyRequest) (*v11.GetEgressRuntimePolicyResponse, error)
+	ApplyRuntimeTelemetryProfileSet(context.Context, *v11.ApplyRuntimeTelemetryProfileSetRequest) (*v11.ApplyRuntimeTelemetryProfileSetResponse, error)
 }
 
 // NewEgressServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -144,10 +208,28 @@ func NewEgressServiceHandler(svc EgressServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(egressServiceMethods.ByName("UpdateEgressPolicy")),
 		connect.WithHandlerOptions(opts...),
 	)
+	egressServiceApplyExternalAccessSetHandler := connect.NewUnaryHandlerSimple(
+		EgressServiceApplyExternalAccessSetProcedure,
+		svc.ApplyExternalAccessSet,
+		connect.WithSchema(egressServiceMethods.ByName("ApplyExternalAccessSet")),
+		connect.WithHandlerOptions(opts...),
+	)
+	egressServiceDeleteExternalAccessSetHandler := connect.NewUnaryHandlerSimple(
+		EgressServiceDeleteExternalAccessSetProcedure,
+		svc.DeleteExternalAccessSet,
+		connect.WithSchema(egressServiceMethods.ByName("DeleteExternalAccessSet")),
+		connect.WithHandlerOptions(opts...),
+	)
 	egressServiceGetEgressRuntimePolicyHandler := connect.NewUnaryHandlerSimple(
 		EgressServiceGetEgressRuntimePolicyProcedure,
 		svc.GetEgressRuntimePolicy,
 		connect.WithSchema(egressServiceMethods.ByName("GetEgressRuntimePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
+	egressServiceApplyRuntimeTelemetryProfileSetHandler := connect.NewUnaryHandlerSimple(
+		EgressServiceApplyRuntimeTelemetryProfileSetProcedure,
+		svc.ApplyRuntimeTelemetryProfileSet,
+		connect.WithSchema(egressServiceMethods.ByName("ApplyRuntimeTelemetryProfileSet")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/platform.egress.v1.EgressService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -156,8 +238,14 @@ func NewEgressServiceHandler(svc EgressServiceHandler, opts ...connect.HandlerOp
 			egressServiceListEgressPoliciesHandler.ServeHTTP(w, r)
 		case EgressServiceUpdateEgressPolicyProcedure:
 			egressServiceUpdateEgressPolicyHandler.ServeHTTP(w, r)
+		case EgressServiceApplyExternalAccessSetProcedure:
+			egressServiceApplyExternalAccessSetHandler.ServeHTTP(w, r)
+		case EgressServiceDeleteExternalAccessSetProcedure:
+			egressServiceDeleteExternalAccessSetHandler.ServeHTTP(w, r)
 		case EgressServiceGetEgressRuntimePolicyProcedure:
 			egressServiceGetEgressRuntimePolicyHandler.ServeHTTP(w, r)
+		case EgressServiceApplyRuntimeTelemetryProfileSetProcedure:
+			egressServiceApplyRuntimeTelemetryProfileSetHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -175,6 +263,18 @@ func (UnimplementedEgressServiceHandler) UpdateEgressPolicy(context.Context, *v1
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.egress.v1.EgressService.UpdateEgressPolicy is not implemented"))
 }
 
+func (UnimplementedEgressServiceHandler) ApplyExternalAccessSet(context.Context, *v11.ApplyExternalAccessSetRequest) (*v11.ApplyExternalAccessSetResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.egress.v1.EgressService.ApplyExternalAccessSet is not implemented"))
+}
+
+func (UnimplementedEgressServiceHandler) DeleteExternalAccessSet(context.Context, *v11.DeleteExternalAccessSetRequest) (*v11.DeleteExternalAccessSetResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.egress.v1.EgressService.DeleteExternalAccessSet is not implemented"))
+}
+
 func (UnimplementedEgressServiceHandler) GetEgressRuntimePolicy(context.Context, *v11.GetEgressRuntimePolicyRequest) (*v11.GetEgressRuntimePolicyResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.egress.v1.EgressService.GetEgressRuntimePolicy is not implemented"))
+}
+
+func (UnimplementedEgressServiceHandler) ApplyRuntimeTelemetryProfileSet(context.Context, *v11.ApplyRuntimeTelemetryProfileSetRequest) (*v11.ApplyRuntimeTelemetryProfileSetResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.egress.v1.EgressService.ApplyRuntimeTelemetryProfileSet is not implemented"))
 }

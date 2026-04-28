@@ -84,7 +84,7 @@ message CatalogEvent {
   oneof definition {
     cli_definition.v1.CLIDefinition cli_definition = 10;
     vendor_definition.v1.Vendor vendor_definition = 11;
-    model.v1.ModelDefinition model_definition = 12;
+    model.v1.ModelVersion model_version = 12;
   }
 }
 

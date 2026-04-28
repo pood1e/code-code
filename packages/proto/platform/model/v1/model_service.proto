@@ -2,89 +2,172 @@ syntax = "proto3";
 
 package platform.model.v1;
 
-import "credential/v1/credential.proto";
-import "api_protocol/v1/protocol.proto";
 import "model/v1/model.proto";
 
 option go_package = "code-code.internal/go-contract/platform/model/v1;modelservicev1";
 
 service ModelService {
-  rpc ListModelDefinitions(ListModelDefinitionsRequest) returns (ListModelDefinitionsResponse);
-  rpc GetOrFetchCatalogModels(GetOrFetchCatalogModelsRequest) returns (GetOrFetchCatalogModelsResponse);
-  rpc FetchCatalogModels(FetchCatalogModelsRequest) returns (FetchCatalogModelsResponse);
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+  rpc ResolveModelRef(ResolveModelRefRequest) returns (ResolveModelRefResponse);
+  rpc GetModelVersion(GetModelVersionRequest) returns (GetModelVersionResponse);
   rpc SyncModelDefinitions(SyncModelDefinitionsRequest) returns (SyncModelDefinitionsResponse);
+  rpc GetModelCard(GetModelCardRequest) returns (GetModelCardResponse);
 }
 
 message ModelRegistryEntry {
-  .model.v1.ModelDefinition definition = 1;
+  // Canonical stable model identity and metadata.
+  .model.v1.ModelVersion definition = 1;
+  // Optional upstream canonical source reference for proxy/derived models.
   .model.v1.ModelRef source_ref = 2;
   repeated string badges = 3;
-  RegistryModelPricing pricing = 4;
+  PricingSummary pricing = 4;
+  // Source-scoped observations (callable ids, source-local pricing/badges).
   repeated RegistryModelSource sources = 5;
 }
 
-message RegistryModelPricing {
+// PricingSummary describes per-unit pricing for one model or offering.
+// Prices are string-encoded decimals per 1M tokens unless otherwise noted.
+message PricingSummary {
   string input = 1;
   string output = 2;
   string cache_read_input = 3;
   string cache_write_input = 4;
+  // Reasoning/thinking token price per 1M tokens.
+  string reasoning = 5;
+  // Image input price per image.
+  string image_input = 6;
+  // Audio input price per 1M tokens.
+  string audio_input = 7;
+  // Audio output price per 1M tokens.
+  string audio_output = 8;
+  // Per-request fixed price.
+  string request = 9;
+  // ISO 4217 currency code (default "USD").
+  string currency = 10;
+  // Price type classification.
+  PriceType price_type = 11;
+}
+
+// PriceType classifies the origin and scope of a price.
+enum PriceType {
+  PRICE_TYPE_UNSPECIFIED = 0;
+  PRICE_TYPE_VENDOR_PUBLIC = 1;
+  PRICE_TYPE_CLOUD_PUBLIC = 2;
+  PRICE_TYPE_AGENT_CONTRACT = 3;
+  PRICE_TYPE_INTERNAL_COST = 4;
+}
+
+enum RegistryModelSourceKind {
+  REGISTRY_MODEL_SOURCE_KIND_UNSPECIFIED = 0;
+  REGISTRY_MODEL_SOURCE_KIND_PRESET = 1;
+  REGISTRY_MODEL_SOURCE_KIND_DISCOVERED = 2;
 }
 
 message RegistryModelSource {
+  // Source family identity (for example "openrouter", "github-models").
   string source_id = 1;
-  string kind = 2;
+  RegistryModelSourceKind kind = 2;
   bool is_direct = 3;
+  // Exact source-native callable slug. This is not canonical model identity.
   string source_model_id = 4;
-  .model.v1.ModelDefinition definition = 5;
+  .model.v1.ModelVersion definition = 5;
   repeated string badges = 6;
-  RegistryModelPricing pricing = 7;
+  PricingSummary pricing = 7;
 }
 
-message ListModelDefinitionsRequest {
+message ListModelsRequest {
   int32 page_size = 1;
   string page_token = 2;
+  // Deprecated: use structured_filter instead.
   string filter = 3;
+  // Structured filter for model list queries.
+  ModelListFilter structured_filter = 4;
 }
 
-message ListModelDefinitionsResponse {
+// ModelListFilter defines structured filter parameters for listing models.
+message ModelListFilter {
+  // Filter by vendor IDs (OR semantics).
+  repeated string vendor_ids = 1;
+  // Exact model ID match.
+  string model_id = 2;
+  // Substring search within model IDs (case-insensitive).
+  string model_id_query = 3;
+  // Filter by source IDs (OR semantics).
+  repeated string source_ids = 4;
+  // Filter by badge.
+  string badge = 5;
+  // Filter by category.
+  string category = 6;
+  // Exclude models with these lifecycle statuses.
+  repeated string lifecycle_status_exclude = 7;
+}
+
+message ListModelsResponse {
   repeated ModelRegistryEntry items = 1;
   string next_page_token = 2;
   int64 total_count = 3;
 }
 
-message GetOrFetchCatalogModelsRequest {
-  string probe_id = 1;
-  ModelCatalogTarget target = 2;
-  credential.v1.CredentialRef auth_ref = 3;
+
+
+message ResolveModelRefRequest {
+  // Canonical model_id or known alias within one vendor scope.
+  string model_id_or_alias = 1;
+  // Optional vendor scope for disambiguation.
+  string vendor_id = 2;
 }
 
-message FetchCatalogModelsRequest {
-  string probe_id = 1;
-  ModelCatalogTarget target = 2;
-  credential.v1.CredentialRef auth_ref = 3;
+message ResolveModelRefResponse {
+  // Canonical resolved model ref only.
+  .model.v1.ModelRef ref = 1;
 }
 
-message ModelCatalogTarget {
-  string target_id = 1;
-  string base_url = 2;
-  api_protocol.v1.Protocol protocol = 3;
+message GetModelVersionRequest {
+  .model.v1.ModelRef ref = 1;
 }
 
-message CatalogModel {
-  string source_model_id = 1;
-  .model.v1.ModelDefinition definition = 2;
-}
-
-message GetOrFetchCatalogModelsResponse {
-  repeated CatalogModel models = 1;
-}
-
-message FetchCatalogModelsResponse {
-  repeated CatalogModel models = 1;
+message GetModelVersionResponse {
+  ModelRegistryEntry item = 1;
 }
 
 message SyncModelDefinitionsRequest {}
 
 message SyncModelDefinitionsResponse {
   string status = 1;
+}
+
+// ModelCard describes structured documentation for a model.
+message ModelCard {
+  string schema_version = 1;
+  // Structured metadata as JSON (capabilities, modalities, context, safety).
+  string metadata_json = 2;
+  // Markdown body with standardized sections.
+  string markdown_body = 3;
+  // Source of the card content.
+  string source_type = 4;
+  // URL to the original source.
+  string source_url = 5;
+  // Review workflow status.
+  string review_status = 6;
+  // Reviewer identifier.
+  string reviewer = 7;
+}
+
+message GetModelCardRequest {
+  .model.v1.ModelRef ref = 1;
+}
+
+message GetModelCardResponse {
+  ModelCard card = 1;
+}
+
+// Organization represents a business entity (model owner, hosting provider,
+// reseller, billing party).
+message Organization {
+  string org_code = 1;
+  string org_name = 2;
+  repeated string org_roles = 3;
+  string country = 4;
+  string website = 5;
+  string status = 6;
 }

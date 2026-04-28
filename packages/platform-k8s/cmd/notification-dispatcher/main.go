@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"code-code.internal/platform-k8s/notificationdispatcher"
+	"code-code.internal/platform-k8s/internal/notificationdispatcher"
 )
 
 func main() {

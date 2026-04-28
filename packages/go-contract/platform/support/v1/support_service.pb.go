@@ -11,10 +11,10 @@ import (
 	v12 "code-code.internal/go-contract/credential/v1"
 	v16 "code-code.internal/go-contract/egress/v1"
 	v17 "code-code.internal/go-contract/model_catalog_discovery/v1"
-	v14 "code-code.internal/go-contract/observability/v1"
+	v13 "code-code.internal/go-contract/observability/v1"
 	v1 "code-code.internal/go-contract/provider/v1"
 	v15 "code-code.internal/go-contract/provider_card/v1"
-	v13 "code-code.internal/go-contract/vendor_definition/v1"
+	v14 "code-code.internal/go-contract/vendor_definition/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -334,7 +334,7 @@ const (
 	CredentialSubjectSummarySource_CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_ID    CredentialSubjectSummarySource = 2
 	CredentialSubjectSummarySource_CREDENTIAL_SUBJECT_SUMMARY_SOURCE_TOKEN_RESPONSE         CredentialSubjectSummarySource = 3
 	CredentialSubjectSummarySource_CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ID_TOKEN_CLAIMS        CredentialSubjectSummarySource = 4
-	CredentialSubjectSummarySource_CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_SECRET      CredentialSubjectSummarySource = 5
+	CredentialSubjectSummarySource_CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_MATERIAL    CredentialSubjectSummarySource = 5
 )
 
 // Enum value maps for CredentialSubjectSummarySource.
@@ -345,7 +345,7 @@ var (
 		2: "CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_ID",
 		3: "CREDENTIAL_SUBJECT_SUMMARY_SOURCE_TOKEN_RESPONSE",
 		4: "CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ID_TOKEN_CLAIMS",
-		5: "CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_SECRET",
+		5: "CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_MATERIAL",
 	}
 	CredentialSubjectSummarySource_value = map[string]int32{
 		"CREDENTIAL_SUBJECT_SUMMARY_SOURCE_UNSPECIFIED":            0,
@@ -353,7 +353,7 @@ var (
 		"CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_ID":    2,
 		"CREDENTIAL_SUBJECT_SUMMARY_SOURCE_TOKEN_RESPONSE":         3,
 		"CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ID_TOKEN_CLAIMS":        4,
-		"CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_SECRET":      5,
+		"CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_MATERIAL":    5,
 	}
 )
 
@@ -1296,14 +1296,14 @@ func (x *RuntimeCapabilitySubject) GetExecutionContext() CapabilityExecutionCont
 }
 
 type ResolveProviderCapabilitiesResponse struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	EgressPolicyId         string                 `protobuf:"bytes,1,opt,name=egress_policy_id,json=egressPolicyId,proto3" json:"egress_policy_id,omitempty"`
-	AuthPolicyId           string                 `protobuf:"bytes,2,opt,name=auth_policy_id,json=authPolicyId,proto3" json:"auth_policy_id,omitempty"`
-	HeaderMetricPolicyId   string                 `protobuf:"bytes,3,opt,name=header_metric_policy_id,json=headerMetricPolicyId,proto3" json:"header_metric_policy_id,omitempty"`
-	ModelCatalogProbeId    string                 `protobuf:"bytes,4,opt,name=model_catalog_probe_id,json=modelCatalogProbeId,proto3" json:"model_catalog_probe_id,omitempty"`
-	QuotaProbeId           string                 `protobuf:"bytes,5,opt,name=quota_probe_id,json=quotaProbeId,proto3" json:"quota_probe_id,omitempty"`
-	AuthMaterializationKey string                 `protobuf:"bytes,6,opt,name=auth_materialization_key,json=authMaterializationKey,proto3" json:"auth_materialization_key,omitempty"`
-	ResourceRef            string                 `protobuf:"bytes,7,opt,name=resource_ref,json=resourceRef,proto3" json:"resource_ref,omitempty"`
+	state                  protoimpl.MessageState       `protogen:"open.v1"`
+	EgressPolicyId         string                       `protobuf:"bytes,1,opt,name=egress_policy_id,json=egressPolicyId,proto3" json:"egress_policy_id,omitempty"`
+	AuthPolicyId           string                       `protobuf:"bytes,2,opt,name=auth_policy_id,json=authPolicyId,proto3" json:"auth_policy_id,omitempty"`
+	Observability          *v13.ObservabilityCapability `protobuf:"bytes,3,opt,name=observability,proto3" json:"observability,omitempty"`
+	ModelCatalogProbeId    string                       `protobuf:"bytes,4,opt,name=model_catalog_probe_id,json=modelCatalogProbeId,proto3" json:"model_catalog_probe_id,omitempty"`
+	QuotaProbeId           string                       `protobuf:"bytes,5,opt,name=quota_probe_id,json=quotaProbeId,proto3" json:"quota_probe_id,omitempty"`
+	AuthMaterializationKey string                       `protobuf:"bytes,6,opt,name=auth_materialization_key,json=authMaterializationKey,proto3" json:"auth_materialization_key,omitempty"`
+	ResourceRef            string                       `protobuf:"bytes,7,opt,name=resource_ref,json=resourceRef,proto3" json:"resource_ref,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1352,11 +1352,11 @@ func (x *ResolveProviderCapabilitiesResponse) GetAuthPolicyId() string {
 	return ""
 }
 
-func (x *ResolveProviderCapabilitiesResponse) GetHeaderMetricPolicyId() string {
+func (x *ResolveProviderCapabilitiesResponse) GetObservability() *v13.ObservabilityCapability {
 	if x != nil {
-		return x.HeaderMetricPolicyId
+		return x.Observability
 	}
-	return ""
+	return nil
 }
 
 func (x *ResolveProviderCapabilitiesResponse) GetModelCatalogProbeId() string {
@@ -1389,7 +1389,7 @@ func (x *ResolveProviderCapabilitiesResponse) GetResourceRef() string {
 
 type Vendor struct {
 	state            protoimpl.MessageState   `protogen:"open.v1"`
-	Vendor           *v13.Vendor              `protobuf:"bytes,1,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	Vendor           *v14.Vendor              `protobuf:"bytes,1,opt,name=vendor,proto3" json:"vendor,omitempty"`
 	ProviderBindings []*VendorProviderBinding `protobuf:"bytes,2,rep,name=provider_bindings,json=providerBindings,proto3" json:"provider_bindings,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -1425,7 +1425,7 @@ func (*Vendor) Descriptor() ([]byte, []int) {
 	return file_platform_support_v1_support_service_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *Vendor) GetVendor() *v13.Vendor {
+func (x *Vendor) GetVendor() *v14.Vendor {
 	if x != nil {
 		return x.Vendor
 	}
@@ -1580,7 +1580,7 @@ type VendorProviderBinding struct {
 	ProviderBinding  *ProviderSurfaceBinding           `protobuf:"bytes,1,opt,name=provider_binding,json=providerBinding,proto3" json:"provider_binding,omitempty"`
 	SurfaceTemplates []*ProviderSurfaceRuntimeTemplate `protobuf:"bytes,2,rep,name=surface_templates,json=surfaceTemplates,proto3" json:"surface_templates,omitempty"`
 	ModelDiscovery   *VendorModelDiscovery             `protobuf:"bytes,3,opt,name=model_discovery,json=modelDiscovery,proto3" json:"model_discovery,omitempty"`
-	Observability    *v14.ObservabilityCapability      `protobuf:"bytes,4,opt,name=observability,proto3" json:"observability,omitempty"`
+	Observability    *v13.ObservabilityCapability      `protobuf:"bytes,4,opt,name=observability,proto3" json:"observability,omitempty"`
 	ProviderCard     *v15.ProviderCardCapability       `protobuf:"bytes,5,opt,name=provider_card,json=providerCard,proto3" json:"provider_card,omitempty"`
 	EgressPolicy     *v16.EgressPolicy                 `protobuf:"bytes,6,opt,name=egress_policy,json=egressPolicy,proto3" json:"egress_policy,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -1638,7 +1638,7 @@ func (x *VendorProviderBinding) GetModelDiscovery() *VendorModelDiscovery {
 	return nil
 }
 
-func (x *VendorProviderBinding) GetObservability() *v14.ObservabilityCapability {
+func (x *VendorProviderBinding) GetObservability() *v13.ObservabilityCapability {
 	if x != nil {
 		return x.Observability
 	}
@@ -2077,7 +2077,7 @@ type OAuthSupport struct {
 	SupportedPurposes             []v12.CredentialPurpose          `protobuf:"varint,4,rep,packed,name=supported_purposes,json=supportedPurposes,proto3,enum=credential.v1.CredentialPurpose" json:"supported_purposes,omitempty"`
 	Recommended                   bool                             `protobuf:"varint,5,opt,name=recommended,proto3" json:"recommended,omitempty"`
 	ModelCatalog                  *OAuthModelCatalog               `protobuf:"bytes,6,opt,name=model_catalog,json=modelCatalog,proto3" json:"model_catalog,omitempty"`
-	Observability                 *v14.ObservabilityCapability     `protobuf:"bytes,7,opt,name=observability,proto3" json:"observability,omitempty"`
+	Observability                 *v13.ObservabilityCapability     `protobuf:"bytes,7,opt,name=observability,proto3" json:"observability,omitempty"`
 	OauthClient                   *OAuthClient                     `protobuf:"bytes,8,opt,name=oauth_client,json=oauthClient,proto3" json:"oauth_client,omitempty"`
 	ArtifactProjection            *OAuthArtifactProjection         `protobuf:"bytes,9,opt,name=artifact_projection,json=artifactProjection,proto3" json:"artifact_projection,omitempty"`
 	CodeFlow                      *OAuthCodeFlow                   `protobuf:"bytes,10,opt,name=code_flow,json=codeFlow,proto3" json:"code_flow,omitempty"`
@@ -2163,7 +2163,7 @@ func (x *OAuthSupport) GetModelCatalog() *OAuthModelCatalog {
 	return nil
 }
 
-func (x *OAuthSupport) GetObservability() *v14.ObservabilityCapability {
+func (x *OAuthSupport) GetObservability() *v13.ObservabilityCapability {
 	if x != nil {
 		return x.Observability
 	}
@@ -3382,7 +3382,7 @@ type CredentialSubjectSummaryField struct {
 	Source        CredentialSubjectSummarySource      `protobuf:"varint,3,opt,name=source,proto3,enum=platform.support.v1.CredentialSubjectSummarySource" json:"source,omitempty"`
 	JsonPointer   string                              `protobuf:"bytes,4,opt,name=json_pointer,json=jsonPointer,proto3" json:"json_pointer,omitempty"`
 	ValueFormat   CredentialSubjectSummaryValueFormat `protobuf:"varint,5,opt,name=value_format,json=valueFormat,proto3,enum=platform.support.v1.CredentialSubjectSummaryValueFormat" json:"value_format,omitempty"`
-	SecretKey     string                              `protobuf:"bytes,6,opt,name=secret_key,json=secretKey,proto3" json:"secret_key,omitempty"`
+	MaterialKey   string                              `protobuf:"bytes,6,opt,name=material_key,json=materialKey,proto3" json:"material_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3452,9 +3452,9 @@ func (x *CredentialSubjectSummaryField) GetValueFormat() CredentialSubjectSummar
 	return CredentialSubjectSummaryValueFormat_CREDENTIAL_SUBJECT_SUMMARY_VALUE_FORMAT_UNSPECIFIED
 }
 
-func (x *CredentialSubjectSummaryField) GetSecretKey() string {
+func (x *CredentialSubjectSummaryField) GetMaterialKey() string {
 	if x != nil {
-		return x.SecretKey
+		return x.MaterialKey
 	}
 	return ""
 }
@@ -3519,11 +3519,11 @@ const file_platform_support_v1_support_service_proto_rawDesc = "" +
 	"\vruntime_url\x18\x06 \x01(\tR\n" +
 	"runtimeUrl\x128\n" +
 	"\x18auth_materialization_key\x18\a \x01(\tR\x16authMaterializationKey\x12\\\n" +
-	"\x11execution_context\x18\b \x01(\x0e2/.platform.support.v1.CapabilityExecutionContextR\x10executionContext\"\xe4\x02\n" +
+	"\x11execution_context\x18\b \x01(\x0e2/.platform.support.v1.CapabilityExecutionContextR\x10executionContext\"\xfe\x02\n" +
 	"#ResolveProviderCapabilitiesResponse\x12(\n" +
 	"\x10egress_policy_id\x18\x01 \x01(\tR\x0eegressPolicyId\x12$\n" +
-	"\x0eauth_policy_id\x18\x02 \x01(\tR\fauthPolicyId\x125\n" +
-	"\x17header_metric_policy_id\x18\x03 \x01(\tR\x14headerMetricPolicyId\x123\n" +
+	"\x0eauth_policy_id\x18\x02 \x01(\tR\fauthPolicyId\x12O\n" +
+	"\robservability\x18\x03 \x01(\v2).observability.v1.ObservabilityCapabilityR\robservability\x123\n" +
 	"\x16model_catalog_probe_id\x18\x04 \x01(\tR\x13modelCatalogProbeId\x12$\n" +
 	"\x0equota_probe_id\x18\x05 \x01(\tR\fquotaProbeId\x128\n" +
 	"\x18auth_materialization_key\x18\x06 \x01(\tR\x16authMaterializationKey\x12!\n" +
@@ -3686,15 +3686,14 @@ const file_platform_support_v1_support_service_proto_rawDesc = "" +
 	"\fpackage_name\x18\x01 \x01(\tR\vpackageName\x12\x19\n" +
 	"\bdist_tag\x18\x02 \x01(\tR\adistTag\"/\n" +
 	"\x19HomebrewCaskVersionSource\x12\x12\n" +
-	"\x04cask\x18\x01 \x01(\tR\x04cask\"\xbc\x02\n" +
+	"\x04cask\x18\x01 \x01(\tR\x04cask\"\xc0\x02\n" +
 	"\x1dCredentialSubjectSummaryField\x12\x19\n" +
 	"\bfield_id\x18\x01 \x01(\tR\afieldId\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12K\n" +
 	"\x06source\x18\x03 \x01(\x0e23.platform.support.v1.CredentialSubjectSummarySourceR\x06source\x12!\n" +
 	"\fjson_pointer\x18\x04 \x01(\tR\vjsonPointer\x12[\n" +
-	"\fvalue_format\x18\x05 \x01(\x0e28.platform.support.v1.CredentialSubjectSummaryValueFormatR\vvalueFormat\x12\x1d\n" +
-	"\n" +
-	"secret_key\x18\x06 \x01(\tR\tsecretKey*\xa6\x01\n" +
+	"\fvalue_format\x18\x05 \x01(\x0e28.platform.support.v1.CredentialSubjectSummaryValueFormatR\vvalueFormat\x12!\n" +
+	"\fmaterial_key\x18\x06 \x01(\tR\vmaterialKey*\xa6\x01\n" +
 	"\x1aCapabilityExecutionContext\x12,\n" +
 	"(CAPABILITY_EXECUTION_CONTEXT_UNSPECIFIED\x10\x00\x12.\n" +
 	"*CAPABILITY_EXECUTION_CONTEXT_CONTROL_PLANE\x10\x01\x12*\n" +
@@ -3719,14 +3718,14 @@ const file_platform_support_v1_support_service_proto_rawDesc = "" +
 	"\x18OAuthArtifactTargetField\x12,\n" +
 	"(O_AUTH_ARTIFACT_TARGET_FIELD_UNSPECIFIED\x10\x00\x12+\n" +
 	"'O_AUTH_ARTIFACT_TARGET_FIELD_ACCOUNT_ID\x10\x01\x12.\n" +
-	"*O_AUTH_ARTIFACT_TARGET_FIELD_ACCOUNT_EMAIL\x10\x02*\xf2\x02\n" +
+	"*O_AUTH_ARTIFACT_TARGET_FIELD_ACCOUNT_EMAIL\x10\x02*\xf4\x02\n" +
 	"\x1eCredentialSubjectSummarySource\x121\n" +
 	"-CREDENTIAL_SUBJECT_SUMMARY_SOURCE_UNSPECIFIED\x10\x00\x12<\n" +
 	"8CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_EMAIL\x10\x01\x129\n" +
 	"5CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ARTIFACT_SUBJECT_ID\x10\x02\x124\n" +
 	"0CREDENTIAL_SUBJECT_SUMMARY_SOURCE_TOKEN_RESPONSE\x10\x03\x125\n" +
-	"1CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ID_TOKEN_CLAIMS\x10\x04\x127\n" +
-	"3CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_SECRET\x10\x05*\xce\x01\n" +
+	"1CREDENTIAL_SUBJECT_SUMMARY_SOURCE_ID_TOKEN_CLAIMS\x10\x04\x129\n" +
+	"5CREDENTIAL_SUBJECT_SUMMARY_SOURCE_CREDENTIAL_MATERIAL\x10\x05*\xce\x01\n" +
 	"#CredentialSubjectSummaryValueFormat\x127\n" +
 	"3CREDENTIAL_SUBJECT_SUMMARY_VALUE_FORMAT_UNSPECIFIED\x10\x00\x126\n" +
 	"2CREDENTIAL_SUBJECT_SUMMARY_VALUE_FORMAT_PLAIN_TEXT\x10\x01\x126\n" +
@@ -3812,10 +3811,10 @@ var file_platform_support_v1_support_service_proto_goTypes = []any{
 	(*v1.ProviderSurface)(nil),                  // 54: provider.v1.ProviderSurface
 	(v11.Protocol)(0),                           // 55: api_protocol.v1.Protocol
 	(v12.CredentialKind)(0),                     // 56: credential.v1.CredentialKind
-	(*v13.Vendor)(nil),                          // 57: vendor_definition.v1.Vendor
-	(*v1.ProviderSurfaceRuntime)(nil),           // 58: provider.v1.ProviderSurfaceRuntime
-	(*v1.ProviderModelCatalog)(nil),             // 59: provider.v1.ProviderModelCatalog
-	(*v14.ObservabilityCapability)(nil),         // 60: observability.v1.ObservabilityCapability
+	(*v13.ObservabilityCapability)(nil),         // 57: observability.v1.ObservabilityCapability
+	(*v14.Vendor)(nil),                          // 58: vendor_definition.v1.Vendor
+	(*v1.ProviderSurfaceRuntime)(nil),           // 59: provider.v1.ProviderSurfaceRuntime
+	(*v1.ProviderModelCatalog)(nil),             // 60: provider.v1.ProviderModelCatalog
 	(*v15.ProviderCardCapability)(nil),          // 61: provider_card.v1.ProviderCardCapability
 	(*v16.EgressPolicy)(nil),                    // 62: egress.v1.EgressPolicy
 	(*v17.ModelCatalogDiscoveryOperation)(nil),  // 63: model_catalog_discovery.v1.ModelCatalogDiscoveryOperation
@@ -3842,80 +3841,81 @@ var file_platform_support_v1_support_service_proto_depIdxs = []int32{
 	55, // 15: platform.support.v1.RuntimeCapabilitySubject.protocol:type_name -> api_protocol.v1.Protocol
 	56, // 16: platform.support.v1.RuntimeCapabilitySubject.credential_kind:type_name -> credential.v1.CredentialKind
 	0,  // 17: platform.support.v1.RuntimeCapabilitySubject.execution_context:type_name -> platform.support.v1.CapabilityExecutionContext
-	57, // 18: platform.support.v1.Vendor.vendor:type_name -> vendor_definition.v1.Vendor
-	28, // 19: platform.support.v1.Vendor.provider_bindings:type_name -> platform.support.v1.VendorProviderBinding
-	58, // 20: platform.support.v1.ProviderSurfaceRuntimeTemplate.runtime:type_name -> provider.v1.ProviderSurfaceRuntime
-	59, // 21: platform.support.v1.ProviderSurfaceRuntimeTemplate.bootstrap_catalog:type_name -> provider.v1.ProviderModelCatalog
-	26, // 22: platform.support.v1.VendorProviderBinding.provider_binding:type_name -> platform.support.v1.ProviderSurfaceBinding
-	27, // 23: platform.support.v1.VendorProviderBinding.surface_templates:type_name -> platform.support.v1.ProviderSurfaceRuntimeTemplate
-	29, // 24: platform.support.v1.VendorProviderBinding.model_discovery:type_name -> platform.support.v1.VendorModelDiscovery
-	60, // 25: platform.support.v1.VendorProviderBinding.observability:type_name -> observability.v1.ObservabilityCapability
-	61, // 26: platform.support.v1.VendorProviderBinding.provider_card:type_name -> provider_card.v1.ProviderCardCapability
-	62, // 27: platform.support.v1.VendorProviderBinding.egress_policy:type_name -> egress.v1.EgressPolicy
-	30, // 28: platform.support.v1.VendorModelDiscovery.active_discovery:type_name -> platform.support.v1.ActiveModelDiscovery
-	63, // 29: platform.support.v1.ActiveModelDiscovery.operation:type_name -> model_catalog_discovery.v1.ModelCatalogDiscoveryOperation
-	34, // 30: platform.support.v1.CLI.oauth:type_name -> platform.support.v1.OAuthSupport
-	35, // 31: platform.support.v1.CLI.api_key_protocols:type_name -> platform.support.v1.APIKeyProtocolSupport
-	36, // 32: platform.support.v1.CLI.runtime_capabilities:type_name -> platform.support.v1.RuntimeCapability
-	62, // 33: platform.support.v1.CLI.egress_policy:type_name -> egress.v1.EgressPolicy
-	50, // 34: platform.support.v1.CLI.official_version_source:type_name -> platform.support.v1.OfficialVersionSource
-	32, // 35: platform.support.v1.CLI.container_images:type_name -> platform.support.v1.CLIContainerImage
-	33, // 36: platform.support.v1.CLI.capability:type_name -> platform.support.v1.CLICapability
-	55, // 37: platform.support.v1.CLICapability.supported_protocols:type_name -> api_protocol.v1.Protocol
-	64, // 38: platform.support.v1.OAuthSupport.flow:type_name -> credential.v1.OAuthAuthorizationFlow
-	65, // 39: platform.support.v1.OAuthSupport.supported_purposes:type_name -> credential.v1.CredentialPurpose
-	45, // 40: platform.support.v1.OAuthSupport.model_catalog:type_name -> platform.support.v1.OAuthModelCatalog
-	60, // 41: platform.support.v1.OAuthSupport.observability:type_name -> observability.v1.ObservabilityCapability
-	37, // 42: platform.support.v1.OAuthSupport.oauth_client:type_name -> platform.support.v1.OAuthClient
-	43, // 43: platform.support.v1.OAuthSupport.artifact_projection:type_name -> platform.support.v1.OAuthArtifactProjection
-	39, // 44: platform.support.v1.OAuthSupport.code_flow:type_name -> platform.support.v1.OAuthCodeFlow
-	41, // 45: platform.support.v1.OAuthSupport.device_flow:type_name -> platform.support.v1.OAuthDeviceFlow
-	47, // 46: platform.support.v1.OAuthSupport.auth_materialization:type_name -> platform.support.v1.CLIAuthMaterialization
-	53, // 47: platform.support.v1.OAuthSupport.subject_summary_fields:type_name -> platform.support.v1.CredentialSubjectSummaryField
-	61, // 48: platform.support.v1.OAuthSupport.provider_card:type_name -> provider_card.v1.ProviderCardCapability
-	49, // 49: platform.support.v1.OAuthSupport.client_identity:type_name -> platform.support.v1.OAuthClientIdentity
-	26, // 50: platform.support.v1.OAuthSupport.provider_binding:type_name -> platform.support.v1.ProviderSurfaceBinding
-	55, // 51: platform.support.v1.APIKeyProtocolSupport.protocol:type_name -> api_protocol.v1.Protocol
-	47, // 52: platform.support.v1.APIKeyProtocolSupport.auth_materialization:type_name -> platform.support.v1.CLIAuthMaterialization
-	3,  // 53: platform.support.v1.RuntimeCapability.kind:type_name -> platform.support.v1.RuntimeCapabilityKind
-	38, // 54: platform.support.v1.OAuthClient.pkce:type_name -> platform.support.v1.OAuthPKCE
-	2,  // 55: platform.support.v1.OAuthPKCE.challenge_method:type_name -> platform.support.v1.OAuthCodeChallengeMethod
-	42, // 56: platform.support.v1.OAuthCodeFlow.authorization_parameters:type_name -> platform.support.v1.OAuthRequestParameter
-	40, // 57: platform.support.v1.OAuthCodeFlow.callback_delivery:type_name -> platform.support.v1.OAuthCallbackDelivery
-	66, // 58: platform.support.v1.OAuthCallbackDelivery.mode:type_name -> credential.v1.OAuthCallbackMode
-	42, // 59: platform.support.v1.OAuthDeviceFlow.device_authorization_parameters:type_name -> platform.support.v1.OAuthRequestParameter
-	44, // 60: platform.support.v1.OAuthArtifactProjection.field_mappings:type_name -> platform.support.v1.OAuthArtifactFieldMapping
-	5,  // 61: platform.support.v1.OAuthArtifactFieldMapping.target:type_name -> platform.support.v1.OAuthArtifactTargetField
-	4,  // 62: platform.support.v1.OAuthArtifactFieldMapping.source:type_name -> platform.support.v1.OAuthArtifactSource
-	59, // 63: platform.support.v1.OAuthModelCatalog.default_catalog:type_name -> provider.v1.ProviderModelCatalog
-	46, // 64: platform.support.v1.OAuthModelCatalog.authenticated_discovery:type_name -> platform.support.v1.OAuthModelCatalogDiscovery
-	63, // 65: platform.support.v1.OAuthModelCatalogDiscovery.operation:type_name -> model_catalog_discovery.v1.ModelCatalogDiscoveryOperation
-	1,  // 66: platform.support.v1.CLIAuthMaterialization.required_runtime_projections:type_name -> platform.support.v1.RuntimeProjectionKind
-	1,  // 67: platform.support.v1.CLIAuthMaterialization.runtime_url_projection_kind:type_name -> platform.support.v1.RuntimeProjectionKind
-	48, // 68: platform.support.v1.CLIAuthMaterialization.request_auth_injection:type_name -> platform.support.v1.RequestAuthInjection
-	51, // 69: platform.support.v1.OfficialVersionSource.npm_dist_tag:type_name -> platform.support.v1.NPMRegistryVersionSource
-	52, // 70: platform.support.v1.OfficialVersionSource.homebrew_cask:type_name -> platform.support.v1.HomebrewCaskVersionSource
-	6,  // 71: platform.support.v1.CredentialSubjectSummaryField.source:type_name -> platform.support.v1.CredentialSubjectSummarySource
-	7,  // 72: platform.support.v1.CredentialSubjectSummaryField.value_format:type_name -> platform.support.v1.CredentialSubjectSummaryValueFormat
-	8,  // 73: platform.support.v1.SupportService.ListVendors:input_type -> platform.support.v1.ListVendorsRequest
-	10, // 74: platform.support.v1.SupportService.GetVendor:input_type -> platform.support.v1.GetVendorRequest
-	12, // 75: platform.support.v1.SupportService.ListProviderSurfaces:input_type -> platform.support.v1.ListProviderSurfacesRequest
-	14, // 76: platform.support.v1.SupportService.GetProviderSurface:input_type -> platform.support.v1.GetProviderSurfaceRequest
-	16, // 77: platform.support.v1.SupportService.ListCLIs:input_type -> platform.support.v1.ListCLIsRequest
-	18, // 78: platform.support.v1.SupportService.GetCLI:input_type -> platform.support.v1.GetCLIRequest
-	20, // 79: platform.support.v1.SupportService.ResolveProviderCapabilities:input_type -> platform.support.v1.ResolveProviderCapabilitiesRequest
-	9,  // 80: platform.support.v1.SupportService.ListVendors:output_type -> platform.support.v1.ListVendorsResponse
-	11, // 81: platform.support.v1.SupportService.GetVendor:output_type -> platform.support.v1.GetVendorResponse
-	13, // 82: platform.support.v1.SupportService.ListProviderSurfaces:output_type -> platform.support.v1.ListProviderSurfacesResponse
-	15, // 83: platform.support.v1.SupportService.GetProviderSurface:output_type -> platform.support.v1.GetProviderSurfaceResponse
-	17, // 84: platform.support.v1.SupportService.ListCLIs:output_type -> platform.support.v1.ListCLIsResponse
-	19, // 85: platform.support.v1.SupportService.GetCLI:output_type -> platform.support.v1.GetCLIResponse
-	24, // 86: platform.support.v1.SupportService.ResolveProviderCapabilities:output_type -> platform.support.v1.ResolveProviderCapabilitiesResponse
-	80, // [80:87] is the sub-list for method output_type
-	73, // [73:80] is the sub-list for method input_type
-	73, // [73:73] is the sub-list for extension type_name
-	73, // [73:73] is the sub-list for extension extendee
-	0,  // [0:73] is the sub-list for field type_name
+	57, // 18: platform.support.v1.ResolveProviderCapabilitiesResponse.observability:type_name -> observability.v1.ObservabilityCapability
+	58, // 19: platform.support.v1.Vendor.vendor:type_name -> vendor_definition.v1.Vendor
+	28, // 20: platform.support.v1.Vendor.provider_bindings:type_name -> platform.support.v1.VendorProviderBinding
+	59, // 21: platform.support.v1.ProviderSurfaceRuntimeTemplate.runtime:type_name -> provider.v1.ProviderSurfaceRuntime
+	60, // 22: platform.support.v1.ProviderSurfaceRuntimeTemplate.bootstrap_catalog:type_name -> provider.v1.ProviderModelCatalog
+	26, // 23: platform.support.v1.VendorProviderBinding.provider_binding:type_name -> platform.support.v1.ProviderSurfaceBinding
+	27, // 24: platform.support.v1.VendorProviderBinding.surface_templates:type_name -> platform.support.v1.ProviderSurfaceRuntimeTemplate
+	29, // 25: platform.support.v1.VendorProviderBinding.model_discovery:type_name -> platform.support.v1.VendorModelDiscovery
+	57, // 26: platform.support.v1.VendorProviderBinding.observability:type_name -> observability.v1.ObservabilityCapability
+	61, // 27: platform.support.v1.VendorProviderBinding.provider_card:type_name -> provider_card.v1.ProviderCardCapability
+	62, // 28: platform.support.v1.VendorProviderBinding.egress_policy:type_name -> egress.v1.EgressPolicy
+	30, // 29: platform.support.v1.VendorModelDiscovery.active_discovery:type_name -> platform.support.v1.ActiveModelDiscovery
+	63, // 30: platform.support.v1.ActiveModelDiscovery.operation:type_name -> model_catalog_discovery.v1.ModelCatalogDiscoveryOperation
+	34, // 31: platform.support.v1.CLI.oauth:type_name -> platform.support.v1.OAuthSupport
+	35, // 32: platform.support.v1.CLI.api_key_protocols:type_name -> platform.support.v1.APIKeyProtocolSupport
+	36, // 33: platform.support.v1.CLI.runtime_capabilities:type_name -> platform.support.v1.RuntimeCapability
+	62, // 34: platform.support.v1.CLI.egress_policy:type_name -> egress.v1.EgressPolicy
+	50, // 35: platform.support.v1.CLI.official_version_source:type_name -> platform.support.v1.OfficialVersionSource
+	32, // 36: platform.support.v1.CLI.container_images:type_name -> platform.support.v1.CLIContainerImage
+	33, // 37: platform.support.v1.CLI.capability:type_name -> platform.support.v1.CLICapability
+	55, // 38: platform.support.v1.CLICapability.supported_protocols:type_name -> api_protocol.v1.Protocol
+	64, // 39: platform.support.v1.OAuthSupport.flow:type_name -> credential.v1.OAuthAuthorizationFlow
+	65, // 40: platform.support.v1.OAuthSupport.supported_purposes:type_name -> credential.v1.CredentialPurpose
+	45, // 41: platform.support.v1.OAuthSupport.model_catalog:type_name -> platform.support.v1.OAuthModelCatalog
+	57, // 42: platform.support.v1.OAuthSupport.observability:type_name -> observability.v1.ObservabilityCapability
+	37, // 43: platform.support.v1.OAuthSupport.oauth_client:type_name -> platform.support.v1.OAuthClient
+	43, // 44: platform.support.v1.OAuthSupport.artifact_projection:type_name -> platform.support.v1.OAuthArtifactProjection
+	39, // 45: platform.support.v1.OAuthSupport.code_flow:type_name -> platform.support.v1.OAuthCodeFlow
+	41, // 46: platform.support.v1.OAuthSupport.device_flow:type_name -> platform.support.v1.OAuthDeviceFlow
+	47, // 47: platform.support.v1.OAuthSupport.auth_materialization:type_name -> platform.support.v1.CLIAuthMaterialization
+	53, // 48: platform.support.v1.OAuthSupport.subject_summary_fields:type_name -> platform.support.v1.CredentialSubjectSummaryField
+	61, // 49: platform.support.v1.OAuthSupport.provider_card:type_name -> provider_card.v1.ProviderCardCapability
+	49, // 50: platform.support.v1.OAuthSupport.client_identity:type_name -> platform.support.v1.OAuthClientIdentity
+	26, // 51: platform.support.v1.OAuthSupport.provider_binding:type_name -> platform.support.v1.ProviderSurfaceBinding
+	55, // 52: platform.support.v1.APIKeyProtocolSupport.protocol:type_name -> api_protocol.v1.Protocol
+	47, // 53: platform.support.v1.APIKeyProtocolSupport.auth_materialization:type_name -> platform.support.v1.CLIAuthMaterialization
+	3,  // 54: platform.support.v1.RuntimeCapability.kind:type_name -> platform.support.v1.RuntimeCapabilityKind
+	38, // 55: platform.support.v1.OAuthClient.pkce:type_name -> platform.support.v1.OAuthPKCE
+	2,  // 56: platform.support.v1.OAuthPKCE.challenge_method:type_name -> platform.support.v1.OAuthCodeChallengeMethod
+	42, // 57: platform.support.v1.OAuthCodeFlow.authorization_parameters:type_name -> platform.support.v1.OAuthRequestParameter
+	40, // 58: platform.support.v1.OAuthCodeFlow.callback_delivery:type_name -> platform.support.v1.OAuthCallbackDelivery
+	66, // 59: platform.support.v1.OAuthCallbackDelivery.mode:type_name -> credential.v1.OAuthCallbackMode
+	42, // 60: platform.support.v1.OAuthDeviceFlow.device_authorization_parameters:type_name -> platform.support.v1.OAuthRequestParameter
+	44, // 61: platform.support.v1.OAuthArtifactProjection.field_mappings:type_name -> platform.support.v1.OAuthArtifactFieldMapping
+	5,  // 62: platform.support.v1.OAuthArtifactFieldMapping.target:type_name -> platform.support.v1.OAuthArtifactTargetField
+	4,  // 63: platform.support.v1.OAuthArtifactFieldMapping.source:type_name -> platform.support.v1.OAuthArtifactSource
+	60, // 64: platform.support.v1.OAuthModelCatalog.default_catalog:type_name -> provider.v1.ProviderModelCatalog
+	46, // 65: platform.support.v1.OAuthModelCatalog.authenticated_discovery:type_name -> platform.support.v1.OAuthModelCatalogDiscovery
+	63, // 66: platform.support.v1.OAuthModelCatalogDiscovery.operation:type_name -> model_catalog_discovery.v1.ModelCatalogDiscoveryOperation
+	1,  // 67: platform.support.v1.CLIAuthMaterialization.required_runtime_projections:type_name -> platform.support.v1.RuntimeProjectionKind
+	1,  // 68: platform.support.v1.CLIAuthMaterialization.runtime_url_projection_kind:type_name -> platform.support.v1.RuntimeProjectionKind
+	48, // 69: platform.support.v1.CLIAuthMaterialization.request_auth_injection:type_name -> platform.support.v1.RequestAuthInjection
+	51, // 70: platform.support.v1.OfficialVersionSource.npm_dist_tag:type_name -> platform.support.v1.NPMRegistryVersionSource
+	52, // 71: platform.support.v1.OfficialVersionSource.homebrew_cask:type_name -> platform.support.v1.HomebrewCaskVersionSource
+	6,  // 72: platform.support.v1.CredentialSubjectSummaryField.source:type_name -> platform.support.v1.CredentialSubjectSummarySource
+	7,  // 73: platform.support.v1.CredentialSubjectSummaryField.value_format:type_name -> platform.support.v1.CredentialSubjectSummaryValueFormat
+	8,  // 74: platform.support.v1.SupportService.ListVendors:input_type -> platform.support.v1.ListVendorsRequest
+	10, // 75: platform.support.v1.SupportService.GetVendor:input_type -> platform.support.v1.GetVendorRequest
+	12, // 76: platform.support.v1.SupportService.ListProviderSurfaces:input_type -> platform.support.v1.ListProviderSurfacesRequest
+	14, // 77: platform.support.v1.SupportService.GetProviderSurface:input_type -> platform.support.v1.GetProviderSurfaceRequest
+	16, // 78: platform.support.v1.SupportService.ListCLIs:input_type -> platform.support.v1.ListCLIsRequest
+	18, // 79: platform.support.v1.SupportService.GetCLI:input_type -> platform.support.v1.GetCLIRequest
+	20, // 80: platform.support.v1.SupportService.ResolveProviderCapabilities:input_type -> platform.support.v1.ResolveProviderCapabilitiesRequest
+	9,  // 81: platform.support.v1.SupportService.ListVendors:output_type -> platform.support.v1.ListVendorsResponse
+	11, // 82: platform.support.v1.SupportService.GetVendor:output_type -> platform.support.v1.GetVendorResponse
+	13, // 83: platform.support.v1.SupportService.ListProviderSurfaces:output_type -> platform.support.v1.ListProviderSurfacesResponse
+	15, // 84: platform.support.v1.SupportService.GetProviderSurface:output_type -> platform.support.v1.GetProviderSurfaceResponse
+	17, // 85: platform.support.v1.SupportService.ListCLIs:output_type -> platform.support.v1.ListCLIsResponse
+	19, // 86: platform.support.v1.SupportService.GetCLI:output_type -> platform.support.v1.GetCLIResponse
+	24, // 87: platform.support.v1.SupportService.ResolveProviderCapabilities:output_type -> platform.support.v1.ResolveProviderCapabilitiesResponse
+	81, // [81:88] is the sub-list for method output_type
+	74, // [74:81] is the sub-list for method input_type
+	74, // [74:74] is the sub-list for extension type_name
+	74, // [74:74] is the sub-list for extension extendee
+	0,  // [0:74] is the sub-list for field type_name
 }
 
 func init() { file_platform_support_v1_support_service_proto_init() }

@@ -24,6 +24,8 @@ const (
 	AuthService_UpdateAPIKeyCredential_FullMethodName         = "/platform.auth.v1.AuthService/UpdateAPIKeyCredential"
 	AuthService_CreateSessionCredential_FullMethodName        = "/platform.auth.v1.AuthService/CreateSessionCredential"
 	AuthService_UpdateSessionCredential_FullMethodName        = "/platform.auth.v1.AuthService/UpdateSessionCredential"
+	AuthService_MergeCredentialMaterialValues_FullMethodName  = "/platform.auth.v1.AuthService/MergeCredentialMaterialValues"
+	AuthService_ReadCredentialMaterialFields_FullMethodName   = "/platform.auth.v1.AuthService/ReadCredentialMaterialFields"
 	AuthService_CreateOAuthCredential_FullMethodName          = "/platform.auth.v1.AuthService/CreateOAuthCredential"
 	AuthService_UpdateOAuthCredential_FullMethodName          = "/platform.auth.v1.AuthService/UpdateOAuthCredential"
 	AuthService_RenameCredential_FullMethodName               = "/platform.auth.v1.AuthService/RenameCredential"
@@ -48,6 +50,8 @@ type AuthServiceClient interface {
 	UpdateAPIKeyCredential(ctx context.Context, in *UpdateAPIKeyCredentialRequest, opts ...grpc.CallOption) (*UpdateAPIKeyCredentialResponse, error)
 	CreateSessionCredential(ctx context.Context, in *CreateSessionCredentialRequest, opts ...grpc.CallOption) (*CreateSessionCredentialResponse, error)
 	UpdateSessionCredential(ctx context.Context, in *UpdateSessionCredentialRequest, opts ...grpc.CallOption) (*UpdateSessionCredentialResponse, error)
+	MergeCredentialMaterialValues(ctx context.Context, in *MergeCredentialMaterialValuesRequest, opts ...grpc.CallOption) (*MergeCredentialMaterialValuesResponse, error)
+	ReadCredentialMaterialFields(ctx context.Context, in *ReadCredentialMaterialFieldsRequest, opts ...grpc.CallOption) (*ReadCredentialMaterialFieldsResponse, error)
 	CreateOAuthCredential(ctx context.Context, in *CreateOAuthCredentialRequest, opts ...grpc.CallOption) (*CreateOAuthCredentialResponse, error)
 	UpdateOAuthCredential(ctx context.Context, in *UpdateOAuthCredentialRequest, opts ...grpc.CallOption) (*UpdateOAuthCredentialResponse, error)
 	RenameCredential(ctx context.Context, in *RenameCredentialRequest, opts ...grpc.CallOption) (*RenameCredentialResponse, error)
@@ -115,6 +119,26 @@ func (c *authServiceClient) UpdateSessionCredential(ctx context.Context, in *Upd
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateSessionCredentialResponse)
 	err := c.cc.Invoke(ctx, AuthService_UpdateSessionCredential_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) MergeCredentialMaterialValues(ctx context.Context, in *MergeCredentialMaterialValuesRequest, opts ...grpc.CallOption) (*MergeCredentialMaterialValuesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MergeCredentialMaterialValuesResponse)
+	err := c.cc.Invoke(ctx, AuthService_MergeCredentialMaterialValues_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ReadCredentialMaterialFields(ctx context.Context, in *ReadCredentialMaterialFieldsRequest, opts ...grpc.CallOption) (*ReadCredentialMaterialFieldsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReadCredentialMaterialFieldsResponse)
+	err := c.cc.Invoke(ctx, AuthService_ReadCredentialMaterialFields_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -260,6 +284,8 @@ type AuthServiceServer interface {
 	UpdateAPIKeyCredential(context.Context, *UpdateAPIKeyCredentialRequest) (*UpdateAPIKeyCredentialResponse, error)
 	CreateSessionCredential(context.Context, *CreateSessionCredentialRequest) (*CreateSessionCredentialResponse, error)
 	UpdateSessionCredential(context.Context, *UpdateSessionCredentialRequest) (*UpdateSessionCredentialResponse, error)
+	MergeCredentialMaterialValues(context.Context, *MergeCredentialMaterialValuesRequest) (*MergeCredentialMaterialValuesResponse, error)
+	ReadCredentialMaterialFields(context.Context, *ReadCredentialMaterialFieldsRequest) (*ReadCredentialMaterialFieldsResponse, error)
 	CreateOAuthCredential(context.Context, *CreateOAuthCredentialRequest) (*CreateOAuthCredentialResponse, error)
 	UpdateOAuthCredential(context.Context, *UpdateOAuthCredentialRequest) (*UpdateOAuthCredentialResponse, error)
 	RenameCredential(context.Context, *RenameCredentialRequest) (*RenameCredentialResponse, error)
@@ -297,6 +323,12 @@ func (UnimplementedAuthServiceServer) CreateSessionCredential(context.Context, *
 }
 func (UnimplementedAuthServiceServer) UpdateSessionCredential(context.Context, *UpdateSessionCredentialRequest) (*UpdateSessionCredentialResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSessionCredential not implemented")
+}
+func (UnimplementedAuthServiceServer) MergeCredentialMaterialValues(context.Context, *MergeCredentialMaterialValuesRequest) (*MergeCredentialMaterialValuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MergeCredentialMaterialValues not implemented")
+}
+func (UnimplementedAuthServiceServer) ReadCredentialMaterialFields(context.Context, *ReadCredentialMaterialFieldsRequest) (*ReadCredentialMaterialFieldsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadCredentialMaterialFields not implemented")
 }
 func (UnimplementedAuthServiceServer) CreateOAuthCredential(context.Context, *CreateOAuthCredentialRequest) (*CreateOAuthCredentialResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOAuthCredential not implemented")
@@ -444,6 +476,42 @@ func _AuthService_UpdateSessionCredential_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).UpdateSessionCredential(ctx, req.(*UpdateSessionCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_MergeCredentialMaterialValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MergeCredentialMaterialValuesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).MergeCredentialMaterialValues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_MergeCredentialMaterialValues_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).MergeCredentialMaterialValues(ctx, req.(*MergeCredentialMaterialValuesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ReadCredentialMaterialFields_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadCredentialMaterialFieldsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ReadCredentialMaterialFields(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ReadCredentialMaterialFields_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ReadCredentialMaterialFields(ctx, req.(*ReadCredentialMaterialFieldsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -708,6 +776,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSessionCredential",
 			Handler:    _AuthService_UpdateSessionCredential_Handler,
+		},
+		{
+			MethodName: "MergeCredentialMaterialValues",
+			Handler:    _AuthService_MergeCredentialMaterialValues_Handler,
+		},
+		{
+			MethodName: "ReadCredentialMaterialFields",
+			Handler:    _AuthService_ReadCredentialMaterialFields_Handler,
 		},
 		{
 			MethodName: "CreateOAuthCredential",

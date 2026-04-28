@@ -1,15 +1,17 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.26-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS build
 
-ARG HTTP_PROXY
-ARG HTTPS_PROXY
-ARG NO_PROXY
 ARG GOPROXY
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
 ENV CGO_ENABLED=0 \
-    GOOS=linux \
+    GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH} \
     GOPROXY=${GOPROXY}
+
+RUN test -n "${TARGETOS}" && test -n "${TARGETARCH}"
 
 WORKDIR /workspace/deploy/agents/sidecars/cli-output
 
@@ -28,12 +30,13 @@ COPY packages/platform-k8s/go.mod /workspace/packages/platform-k8s/go.mod
 COPY packages/platform-k8s/go.sum /workspace/packages/platform-k8s/go.sum
 COPY packages/session/go.mod /workspace/packages/session/go.mod
 COPY packages/session/go.sum /workspace/packages/session/go.sum
+COPY packages/showcase-api/go.mod /workspace/packages/showcase-api/go.mod
+COPY packages/showcase-api/go.sum /workspace/packages/showcase-api/go.sum
 
 RUN cd /workspace && go work use ./deploy/agents/sidecars/cli-output
 
 RUN --mount=type=cache,target=/go/pkg/mod,id=code-code-cli-output-go-mod-cache,sharing=locked \
     --mount=type=cache,target=/root/.cache/go-build,id=code-code-cli-output-go-build-cache,sharing=locked \
-    HTTP_PROXY="${HTTP_PROXY}" HTTPS_PROXY="${HTTPS_PROXY}" NO_PROXY="${NO_PROXY}" \
     go mod download
 
 COPY deploy/agents/sidecars/cli-output /workspace/deploy/agents/sidecars/cli-output

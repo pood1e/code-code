@@ -1,0 +1,21 @@
+apiVersion: v2
+name: istio-platform
+description: Helm chart for code-code Istio ambient custom resources
+type: application
+version: 0.1.0
+appVersion: "1.29.2"
+kubeVersion: ">=1.31.0-0 <1.36.0-0"
+home: https://github.com/pood1e/code-code
+icon: https://raw.githubusercontent.com/pood1e/code-code/main/docs/assets/code-code-chart-icon.svg
+sources:
+  - https://github.com/pood1e/code-code
+keywords:
+  - kubernetes
+  - istio
+  - ambient
+maintainers:
+  - name: code-code platform team
+annotations:
+  artifacthub.io/changes: |
+    - Aligned the chart with Istio 1.29.2 and Gateway API v1.4.0 Experimental channel.
+  artifacthub.io/containsSecurityUpdates: "false"

@@ -7,7 +7,7 @@
 
 ## external surface
 
-- `packages/platform-k8s/outboundhttp`
+- `packages/platform-k8s/internal/platform/outboundhttp`
 - `outboundhttp.DefaultProviderUserAgent`
 - `outboundhttp.SetDefaultProviderUserAgent`
 

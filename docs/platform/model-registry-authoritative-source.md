@@ -19,7 +19,9 @@
   - `source_ref`
   - `badges`
   - `pricing`
-- `sourceRef` 只表示 parent model：
-  - direct model 为空
-  - proxy model 指向上游 direct model
+  - `sources`
+- `sourceRef` 只表示 canonical parent model：
+  - direct canonical model 为空
+  - 衍生 canonical model 指向上游 direct canonical model
+- 聚合代理商第三方 callable variants 只通过 `sources[].source_model_id` 暴露，不新增第三方 canonical proxy row
 - collector source、authority priority 只存在于 sync 内部，不进入 registry contract。

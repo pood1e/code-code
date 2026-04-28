@@ -37,7 +37,7 @@ describe("OverviewPage", () => {
         displayName: "Primary Key",
         status: {
           materialReady: false,
-          reason: "backing secret missing",
+          reason: "credential material missing",
         },
       }],
       isLoading: false,

@@ -1,0 +1,98 @@
+global:
+  partOf: code-code
+  platformNamespace: code-code
+  # -- Namespace for operator-facing console workloads.
+  consoleNamespace: code-code-console
+  # -- Namespace for public showcase workloads.
+  showcaseNamespace: code-code-showcase
+  infraNamespace: code-code-infra
+  observabilityNamespace: code-code-observability
+  observabilityAmbientPodOptOut: false
+  networkNamespace: code-code-net
+  runNamespace: code-code-runs
+  # -- Secret name with POSTGRES_DB, POSTGRES_USER, and POSTGRES_PASSWORD.
+  postgresSecretName: postgres-auth
+  # -- Secret name with Alertmanager receiver credentials.
+  alertmanagerReceiversSecretName: alertmanager-receivers
+
+postgres:
+  # -- Enable or disable PostgreSQL.
+  enabled: true
+  image: postgres:18.3
+  # -- PVC size for PostgreSQL data storage.
+  storageSize: 10Gi
+
+nats:
+  # -- Enable or disable NATS JetStream.
+  enabled: true
+  image: nats:2.12.6-alpine
+  # -- PVC size for NATS data storage.
+  storageSize: 5Gi
+
+otelCollector:
+  # -- Enable or disable the OpenTelemetry Collector.
+  enabled: true
+  # -- OpenTelemetry Collector Contrib image.
+  image: otel/opentelemetry-collector-contrib:0.150.1
+  # -- Send traces to Tempo when infrastructure-addons also enables Tempo.
+  tempoEnabled: false
+  # -- Explicit Tempo OTLP endpoint override; empty uses the in-cluster default.
+  tempoEndpoint: ""
+
+prometheus:
+  # -- Enable or disable Prometheus.
+  enabled: true
+  image: prom/prometheus:v3.11.2
+  # -- PVC size for Prometheus data storage.
+  storageSize: 10Gi
+
+blackbox:
+  # -- Enable or disable the Blackbox Exporter.
+  enabled: true
+  image: prom/blackbox-exporter:v0.27.0
+  # -- Blackbox probe module used for generated health checks.
+  module: http_2xx
+
+providerHostTelemetry:
+  # -- Enable or disable provider host latency telemetry.
+  enabled: true
+  # -- Blackbox probe module used for provider host latency telemetry.
+  module: provider_http_reachable
+  # -- Prometheus scrape interval for provider host latency telemetry.
+  scrapeInterval: 30s
+  # -- Prometheus scrape timeout for provider host latency telemetry. Keep this above moduleTimeout so timeout samples can be returned.
+  scrapeTimeout: 12s
+  # -- Prometheus HTTP service discovery refresh interval for provider host targets.
+  refreshInterval: 30s
+  # -- Blackbox module timeout for provider host latency telemetry.
+  moduleTimeout: 10s
+  # -- Optional override for the provider host target discovery URL.
+  discoveryUrl: ""
+  # -- Resource budget for the provider host Blackbox Exporter.
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+      ephemeral-storage: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+      ephemeral-storage: 256Mi
+
+healthChecks:
+  # -- Enable or disable generated platform health probes.
+  enabled: true
+  # -- Additional Blackbox probe targets appended to the default platform set.
+  additionalTargets: []
+
+alertmanager:
+  # -- Enable or disable Alertmanager.
+  enabled: true
+  image: prom/alertmanager:v0.32.0
+  # -- PVC size for Alertmanager data storage.
+  storageSize: 1Gi
+  wechat:
+    # -- WeCom receiver identity placeholders required by the Alertmanager config.
+    corpId: <REPLACE_WITH_WECHAT_CORP_ID>
+    agentId: <REPLACE_WITH_WECHAT_AGENT_ID>
+    partyId: <REPLACE_WITH_WECHAT_PARTY_ID>

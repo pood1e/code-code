@@ -1,0 +1,17 @@
+global:
+  consoleNamespace: code-code-console
+  showcaseNamespace: code-code-showcase
+
+components:
+  ingressGateway:
+    enabled: true
+    serviceType: NodePort
+    httpNodePort: 30599
+  egressCertificates:
+    enabled: true
+  waypoints:
+    enabled: true
+  telemetry:
+    enabled: true
+  controlPlaneEgress:
+    enabled: true

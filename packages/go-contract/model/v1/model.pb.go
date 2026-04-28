@@ -87,16 +87,36 @@ const (
 	ModelCapability_MODEL_CAPABILITY_STRUCTURED_OUTPUT ModelCapability = 2
 	ModelCapability_MODEL_CAPABILITY_IMAGE_INPUT       ModelCapability = 3
 	ModelCapability_MODEL_CAPABILITY_STREAMING         ModelCapability = 4
+	ModelCapability_MODEL_CAPABILITY_REASONING         ModelCapability = 5
+	ModelCapability_MODEL_CAPABILITY_BATCH             ModelCapability = 6
+	ModelCapability_MODEL_CAPABILITY_FINE_TUNE         ModelCapability = 7
+	ModelCapability_MODEL_CAPABILITY_EMBEDDING         ModelCapability = 8
+	ModelCapability_MODEL_CAPABILITY_RERANK            ModelCapability = 9
+	ModelCapability_MODEL_CAPABILITY_JSON_MODE         ModelCapability = 10
+	ModelCapability_MODEL_CAPABILITY_JSON_SCHEMA       ModelCapability = 11
+	ModelCapability_MODEL_CAPABILITY_AUDIO_INPUT       ModelCapability = 12
+	ModelCapability_MODEL_CAPABILITY_AUDIO_OUTPUT      ModelCapability = 13
+	ModelCapability_MODEL_CAPABILITY_VIDEO_INPUT       ModelCapability = 14
 )
 
 // Enum value maps for ModelCapability.
 var (
 	ModelCapability_name = map[int32]string{
-		0: "MODEL_CAPABILITY_UNSPECIFIED",
-		1: "MODEL_CAPABILITY_TOOL_CALLING",
-		2: "MODEL_CAPABILITY_STRUCTURED_OUTPUT",
-		3: "MODEL_CAPABILITY_IMAGE_INPUT",
-		4: "MODEL_CAPABILITY_STREAMING",
+		0:  "MODEL_CAPABILITY_UNSPECIFIED",
+		1:  "MODEL_CAPABILITY_TOOL_CALLING",
+		2:  "MODEL_CAPABILITY_STRUCTURED_OUTPUT",
+		3:  "MODEL_CAPABILITY_IMAGE_INPUT",
+		4:  "MODEL_CAPABILITY_STREAMING",
+		5:  "MODEL_CAPABILITY_REASONING",
+		6:  "MODEL_CAPABILITY_BATCH",
+		7:  "MODEL_CAPABILITY_FINE_TUNE",
+		8:  "MODEL_CAPABILITY_EMBEDDING",
+		9:  "MODEL_CAPABILITY_RERANK",
+		10: "MODEL_CAPABILITY_JSON_MODE",
+		11: "MODEL_CAPABILITY_JSON_SCHEMA",
+		12: "MODEL_CAPABILITY_AUDIO_INPUT",
+		13: "MODEL_CAPABILITY_AUDIO_OUTPUT",
+		14: "MODEL_CAPABILITY_VIDEO_INPUT",
 	}
 	ModelCapability_value = map[string]int32{
 		"MODEL_CAPABILITY_UNSPECIFIED":       0,
@@ -104,6 +124,16 @@ var (
 		"MODEL_CAPABILITY_STRUCTURED_OUTPUT": 2,
 		"MODEL_CAPABILITY_IMAGE_INPUT":       3,
 		"MODEL_CAPABILITY_STREAMING":         4,
+		"MODEL_CAPABILITY_REASONING":         5,
+		"MODEL_CAPABILITY_BATCH":             6,
+		"MODEL_CAPABILITY_FINE_TUNE":         7,
+		"MODEL_CAPABILITY_EMBEDDING":         8,
+		"MODEL_CAPABILITY_RERANK":            9,
+		"MODEL_CAPABILITY_JSON_MODE":         10,
+		"MODEL_CAPABILITY_JSON_SCHEMA":       11,
+		"MODEL_CAPABILITY_AUDIO_INPUT":       12,
+		"MODEL_CAPABILITY_AUDIO_OUTPUT":      13,
+		"MODEL_CAPABILITY_VIDEO_INPUT":       14,
 	}
 )
 
@@ -243,7 +273,131 @@ func (Modality) EnumDescriptor() ([]byte, []int) {
 	return file_model_v1_model_proto_rawDescGZIP(), []int{3}
 }
 
-// ModelRef references one default model definition by stable identity.
+// ModelCategory identifies the primary function category of a model.
+type ModelCategory int32
+
+const (
+	ModelCategory_MODEL_CATEGORY_UNSPECIFIED ModelCategory = 0
+	ModelCategory_MODEL_CATEGORY_CHAT        ModelCategory = 1
+	ModelCategory_MODEL_CATEGORY_EMBEDDING   ModelCategory = 2
+	ModelCategory_MODEL_CATEGORY_RERANK      ModelCategory = 3
+	ModelCategory_MODEL_CATEGORY_IMAGE_GEN   ModelCategory = 4
+	ModelCategory_MODEL_CATEGORY_AUDIO       ModelCategory = 5
+	ModelCategory_MODEL_CATEGORY_VIDEO       ModelCategory = 6
+	ModelCategory_MODEL_CATEGORY_MODERATION  ModelCategory = 7
+)
+
+// Enum value maps for ModelCategory.
+var (
+	ModelCategory_name = map[int32]string{
+		0: "MODEL_CATEGORY_UNSPECIFIED",
+		1: "MODEL_CATEGORY_CHAT",
+		2: "MODEL_CATEGORY_EMBEDDING",
+		3: "MODEL_CATEGORY_RERANK",
+		4: "MODEL_CATEGORY_IMAGE_GEN",
+		5: "MODEL_CATEGORY_AUDIO",
+		6: "MODEL_CATEGORY_VIDEO",
+		7: "MODEL_CATEGORY_MODERATION",
+	}
+	ModelCategory_value = map[string]int32{
+		"MODEL_CATEGORY_UNSPECIFIED": 0,
+		"MODEL_CATEGORY_CHAT":        1,
+		"MODEL_CATEGORY_EMBEDDING":   2,
+		"MODEL_CATEGORY_RERANK":      3,
+		"MODEL_CATEGORY_IMAGE_GEN":   4,
+		"MODEL_CATEGORY_AUDIO":       5,
+		"MODEL_CATEGORY_VIDEO":       6,
+		"MODEL_CATEGORY_MODERATION":  7,
+	}
+)
+
+func (x ModelCategory) Enum() *ModelCategory {
+	p := new(ModelCategory)
+	*p = x
+	return p
+}
+
+func (x ModelCategory) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ModelCategory) Descriptor() protoreflect.EnumDescriptor {
+	return file_model_v1_model_proto_enumTypes[4].Descriptor()
+}
+
+func (ModelCategory) Type() protoreflect.EnumType {
+	return &file_model_v1_model_proto_enumTypes[4]
+}
+
+func (x ModelCategory) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ModelCategory.Descriptor instead.
+func (ModelCategory) EnumDescriptor() ([]byte, []int) {
+	return file_model_v1_model_proto_rawDescGZIP(), []int{4}
+}
+
+// ModelLifecycleStatus represents the lifecycle stage of a model version.
+type ModelLifecycleStatus int32
+
+const (
+	ModelLifecycleStatus_MODEL_LIFECYCLE_STATUS_UNSPECIFIED ModelLifecycleStatus = 0
+	ModelLifecycleStatus_MODEL_LIFECYCLE_STATUS_ACTIVE      ModelLifecycleStatus = 1
+	ModelLifecycleStatus_MODEL_LIFECYCLE_STATUS_LEGACY      ModelLifecycleStatus = 2
+	ModelLifecycleStatus_MODEL_LIFECYCLE_STATUS_DEPRECATED  ModelLifecycleStatus = 3
+	ModelLifecycleStatus_MODEL_LIFECYCLE_STATUS_EOL         ModelLifecycleStatus = 4
+	ModelLifecycleStatus_MODEL_LIFECYCLE_STATUS_BLOCKED     ModelLifecycleStatus = 5
+)
+
+// Enum value maps for ModelLifecycleStatus.
+var (
+	ModelLifecycleStatus_name = map[int32]string{
+		0: "MODEL_LIFECYCLE_STATUS_UNSPECIFIED",
+		1: "MODEL_LIFECYCLE_STATUS_ACTIVE",
+		2: "MODEL_LIFECYCLE_STATUS_LEGACY",
+		3: "MODEL_LIFECYCLE_STATUS_DEPRECATED",
+		4: "MODEL_LIFECYCLE_STATUS_EOL",
+		5: "MODEL_LIFECYCLE_STATUS_BLOCKED",
+	}
+	ModelLifecycleStatus_value = map[string]int32{
+		"MODEL_LIFECYCLE_STATUS_UNSPECIFIED": 0,
+		"MODEL_LIFECYCLE_STATUS_ACTIVE":      1,
+		"MODEL_LIFECYCLE_STATUS_LEGACY":      2,
+		"MODEL_LIFECYCLE_STATUS_DEPRECATED":  3,
+		"MODEL_LIFECYCLE_STATUS_EOL":         4,
+		"MODEL_LIFECYCLE_STATUS_BLOCKED":     5,
+	}
+)
+
+func (x ModelLifecycleStatus) Enum() *ModelLifecycleStatus {
+	p := new(ModelLifecycleStatus)
+	*p = x
+	return p
+}
+
+func (x ModelLifecycleStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ModelLifecycleStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_model_v1_model_proto_enumTypes[5].Descriptor()
+}
+
+func (ModelLifecycleStatus) Type() protoreflect.EnumType {
+	return &file_model_v1_model_proto_enumTypes[5]
+}
+
+func (x ModelLifecycleStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ModelLifecycleStatus.Descriptor instead.
+func (ModelLifecycleStatus) EnumDescriptor() ([]byte, []int) {
+	return file_model_v1_model_proto_rawDescGZIP(), []int{5}
+}
+
+// ModelRef references one canonical model by stable identity.
 // Canonical identity is vendor_id + model_id.
 type ModelRef struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -297,41 +451,63 @@ func (x *ModelRef) GetVendorId() string {
 	return ""
 }
 
-// ModelDefinition describes one default model definition.
-type ModelDefinition struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	ModelId             string                 `protobuf:"bytes,1,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
-	DisplayName         string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Aliases             []*ModelAlias          `protobuf:"bytes,3,rep,name=aliases,proto3" json:"aliases,omitempty"`
-	ContextWindowTokens int64                  `protobuf:"varint,4,opt,name=context_window_tokens,json=contextWindowTokens,proto3" json:"context_window_tokens,omitempty"`
-	MaxOutputTokens     int64                  `protobuf:"varint,5,opt,name=max_output_tokens,json=maxOutputTokens,proto3" json:"max_output_tokens,omitempty"`
-	Capabilities        []ModelCapability      `protobuf:"varint,6,rep,packed,name=capabilities,proto3,enum=model.v1.ModelCapability" json:"capabilities,omitempty"`
-	PrimaryShape        ModelShape             `protobuf:"varint,7,opt,name=primary_shape,json=primaryShape,proto3,enum=model.v1.ModelShape" json:"primary_shape,omitempty"`
-	SupportedShapes     []ModelShape           `protobuf:"varint,8,rep,packed,name=supported_shapes,json=supportedShapes,proto3,enum=model.v1.ModelShape" json:"supported_shapes,omitempty"`
-	InputModalities     []Modality             `protobuf:"varint,9,rep,packed,name=input_modalities,json=inputModalities,proto3,enum=model.v1.Modality" json:"input_modalities,omitempty"`
-	OutputModalities    []Modality             `protobuf:"varint,10,rep,packed,name=output_modalities,json=outputModalities,proto3,enum=model.v1.Modality" json:"output_modalities,omitempty"`
-	// Model vendor stable identifier aligned with industry APIs
-	// (OpenAI owned_by, Gemini publisher prefix).
-	// Examples: "openai", "anthropic", "google", "meta", "deepseek".
-	VendorId      string `protobuf:"bytes,15,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
+// ModelVersion describes one canonical model version.
+// Replaces the former ModelDefinition with richer metadata.
+type ModelVersion struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ModelId          string                 `protobuf:"bytes,1,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
+	DisplayName      string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Aliases          []*ModelAlias          `protobuf:"bytes,3,rep,name=aliases,proto3" json:"aliases,omitempty"`
+	Capabilities     []ModelCapability      `protobuf:"varint,6,rep,packed,name=capabilities,proto3,enum=model.v1.ModelCapability" json:"capabilities,omitempty"`
+	PrimaryShape     ModelShape             `protobuf:"varint,7,opt,name=primary_shape,json=primaryShape,proto3,enum=model.v1.ModelShape" json:"primary_shape,omitempty"`
+	SupportedShapes  []ModelShape           `protobuf:"varint,8,rep,packed,name=supported_shapes,json=supportedShapes,proto3,enum=model.v1.ModelShape" json:"supported_shapes,omitempty"`
+	InputModalities  []Modality             `protobuf:"varint,9,rep,packed,name=input_modalities,json=inputModalities,proto3,enum=model.v1.Modality" json:"input_modalities,omitempty"`
+	OutputModalities []Modality             `protobuf:"varint,10,rep,packed,name=output_modalities,json=outputModalities,proto3,enum=model.v1.Modality" json:"output_modalities,omitempty"`
+	// Model vendor stable identifier aligned with industry APIs.
+	VendorId string `protobuf:"bytes,15,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
+	// Model family slug without version suffix.
+	// Example: "claude-sonnet", "gpt-4o", "gemini-pro".
+	FamilySlug string `protobuf:"bytes,17,opt,name=family_slug,json=familySlug,proto3" json:"family_slug,omitempty"`
+	// Model category.
+	Category ModelCategory `protobuf:"varint,19,opt,name=category,proto3,enum=model.v1.ModelCategory" json:"category,omitempty"`
+	// Explicit version string from the model owner.
+	// Example: "2024-10-22", "001", "4o-2024-08-06".
+	Version string `protobuf:"bytes,20,opt,name=version,proto3" json:"version,omitempty"`
+	// Fully qualified canonical model identifier.
+	// Format: "{vendor_id}/{family_slug}@{version}".
+	CanonicalModelId string `protobuf:"bytes,21,opt,name=canonical_model_id,json=canonicalModelId,proto3" json:"canonical_model_id,omitempty"`
+	// Lifecycle status of this model version.
+	LifecycleStatus ModelLifecycleStatus `protobuf:"varint,22,opt,name=lifecycle_status,json=lifecycleStatus,proto3,enum=model.v1.ModelLifecycleStatus" json:"lifecycle_status,omitempty"`
+	// Context and token limit specification.
+	ContextSpec *ContextSpec `protobuf:"bytes,23,opt,name=context_spec,json=contextSpec,proto3" json:"context_spec,omitempty"`
+	// Release date in ISO 8601 format (YYYY-MM-DD).
+	ReleaseDate string `protobuf:"bytes,24,opt,name=release_date,json=releaseDate,proto3" json:"release_date,omitempty"`
+	// Training data cutoff date in ISO 8601 format (YYYY-MM-DD).
+	TrainingCutoff string `protobuf:"bytes,25,opt,name=training_cutoff,json=trainingCutoff,proto3" json:"training_cutoff,omitempty"`
+	// License type identifier.
+	LicenseType string `protobuf:"bytes,26,opt,name=license_type,json=licenseType,proto3" json:"license_type,omitempty"`
+	// Whether model weights are publicly available.
+	IsOpenWeights bool `protobuf:"varint,27,opt,name=is_open_weights,json=isOpenWeights,proto3" json:"is_open_weights,omitempty"`
+	// Human-readable description of the model.
+	Description   string `protobuf:"bytes,28,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ModelDefinition) Reset() {
-	*x = ModelDefinition{}
+func (x *ModelVersion) Reset() {
+	*x = ModelVersion{}
 	mi := &file_model_v1_model_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ModelDefinition) String() string {
+func (x *ModelVersion) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ModelDefinition) ProtoMessage() {}
+func (*ModelVersion) ProtoMessage() {}
 
-func (x *ModelDefinition) ProtoReflect() protoreflect.Message {
+func (x *ModelVersion) ProtoReflect() protoreflect.Message {
 	mi := &file_model_v1_model_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -343,103 +519,166 @@ func (x *ModelDefinition) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ModelDefinition.ProtoReflect.Descriptor instead.
-func (*ModelDefinition) Descriptor() ([]byte, []int) {
+// Deprecated: Use ModelVersion.ProtoReflect.Descriptor instead.
+func (*ModelVersion) Descriptor() ([]byte, []int) {
 	return file_model_v1_model_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ModelDefinition) GetModelId() string {
+func (x *ModelVersion) GetModelId() string {
 	if x != nil {
 		return x.ModelId
 	}
 	return ""
 }
 
-func (x *ModelDefinition) GetDisplayName() string {
+func (x *ModelVersion) GetDisplayName() string {
 	if x != nil {
 		return x.DisplayName
 	}
 	return ""
 }
 
-func (x *ModelDefinition) GetAliases() []*ModelAlias {
+func (x *ModelVersion) GetAliases() []*ModelAlias {
 	if x != nil {
 		return x.Aliases
 	}
 	return nil
 }
 
-func (x *ModelDefinition) GetContextWindowTokens() int64 {
-	if x != nil {
-		return x.ContextWindowTokens
-	}
-	return 0
-}
-
-func (x *ModelDefinition) GetMaxOutputTokens() int64 {
-	if x != nil {
-		return x.MaxOutputTokens
-	}
-	return 0
-}
-
-func (x *ModelDefinition) GetCapabilities() []ModelCapability {
+func (x *ModelVersion) GetCapabilities() []ModelCapability {
 	if x != nil {
 		return x.Capabilities
 	}
 	return nil
 }
 
-func (x *ModelDefinition) GetPrimaryShape() ModelShape {
+func (x *ModelVersion) GetPrimaryShape() ModelShape {
 	if x != nil {
 		return x.PrimaryShape
 	}
 	return ModelShape_MODEL_SHAPE_UNSPECIFIED
 }
 
-func (x *ModelDefinition) GetSupportedShapes() []ModelShape {
+func (x *ModelVersion) GetSupportedShapes() []ModelShape {
 	if x != nil {
 		return x.SupportedShapes
 	}
 	return nil
 }
 
-func (x *ModelDefinition) GetInputModalities() []Modality {
+func (x *ModelVersion) GetInputModalities() []Modality {
 	if x != nil {
 		return x.InputModalities
 	}
 	return nil
 }
 
-func (x *ModelDefinition) GetOutputModalities() []Modality {
+func (x *ModelVersion) GetOutputModalities() []Modality {
 	if x != nil {
 		return x.OutputModalities
 	}
 	return nil
 }
 
-func (x *ModelDefinition) GetVendorId() string {
+func (x *ModelVersion) GetVendorId() string {
 	if x != nil {
 		return x.VendorId
 	}
 	return ""
 }
 
-// ModelOverride describes provider-supplied overrides for one default model
-// definition.
+func (x *ModelVersion) GetFamilySlug() string {
+	if x != nil {
+		return x.FamilySlug
+	}
+	return ""
+}
+
+func (x *ModelVersion) GetCategory() ModelCategory {
+	if x != nil {
+		return x.Category
+	}
+	return ModelCategory_MODEL_CATEGORY_UNSPECIFIED
+}
+
+func (x *ModelVersion) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *ModelVersion) GetCanonicalModelId() string {
+	if x != nil {
+		return x.CanonicalModelId
+	}
+	return ""
+}
+
+func (x *ModelVersion) GetLifecycleStatus() ModelLifecycleStatus {
+	if x != nil {
+		return x.LifecycleStatus
+	}
+	return ModelLifecycleStatus_MODEL_LIFECYCLE_STATUS_UNSPECIFIED
+}
+
+func (x *ModelVersion) GetContextSpec() *ContextSpec {
+	if x != nil {
+		return x.ContextSpec
+	}
+	return nil
+}
+
+func (x *ModelVersion) GetReleaseDate() string {
+	if x != nil {
+		return x.ReleaseDate
+	}
+	return ""
+}
+
+func (x *ModelVersion) GetTrainingCutoff() string {
+	if x != nil {
+		return x.TrainingCutoff
+	}
+	return ""
+}
+
+func (x *ModelVersion) GetLicenseType() string {
+	if x != nil {
+		return x.LicenseType
+	}
+	return ""
+}
+
+func (x *ModelVersion) GetIsOpenWeights() bool {
+	if x != nil {
+		return x.IsOpenWeights
+	}
+	return false
+}
+
+func (x *ModelVersion) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+// ModelOverride describes provider-supplied overrides for one canonical model
+// version.
 type ModelOverride struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	FieldMask           *fieldmaskpb.FieldMask `protobuf:"bytes,1,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
-	DisplayName         *string                `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty"`
-	ContextWindowTokens *int64                 `protobuf:"varint,4,opt,name=context_window_tokens,json=contextWindowTokens,proto3,oneof" json:"context_window_tokens,omitempty"`
-	MaxOutputTokens     *int64                 `protobuf:"varint,5,opt,name=max_output_tokens,json=maxOutputTokens,proto3,oneof" json:"max_output_tokens,omitempty"`
-	Capabilities        []ModelCapability      `protobuf:"varint,6,rep,packed,name=capabilities,proto3,enum=model.v1.ModelCapability" json:"capabilities,omitempty"`
-	PrimaryShape        *ModelShape            `protobuf:"varint,7,opt,name=primary_shape,json=primaryShape,proto3,enum=model.v1.ModelShape,oneof" json:"primary_shape,omitempty"`
-	SupportedShapes     []ModelShape           `protobuf:"varint,8,rep,packed,name=supported_shapes,json=supportedShapes,proto3,enum=model.v1.ModelShape" json:"supported_shapes,omitempty"`
-	InputModalities     []Modality             `protobuf:"varint,9,rep,packed,name=input_modalities,json=inputModalities,proto3,enum=model.v1.Modality" json:"input_modalities,omitempty"`
-	OutputModalities    []Modality             `protobuf:"varint,10,rep,packed,name=output_modalities,json=outputModalities,proto3,enum=model.v1.Modality" json:"output_modalities,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	FieldMask        *fieldmaskpb.FieldMask `protobuf:"bytes,1,opt,name=field_mask,json=fieldMask,proto3" json:"field_mask,omitempty"`
+	DisplayName      *string                `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty"`
+	Capabilities     []ModelCapability      `protobuf:"varint,6,rep,packed,name=capabilities,proto3,enum=model.v1.ModelCapability" json:"capabilities,omitempty"`
+	PrimaryShape     *ModelShape            `protobuf:"varint,7,opt,name=primary_shape,json=primaryShape,proto3,enum=model.v1.ModelShape,oneof" json:"primary_shape,omitempty"`
+	SupportedShapes  []ModelShape           `protobuf:"varint,8,rep,packed,name=supported_shapes,json=supportedShapes,proto3,enum=model.v1.ModelShape" json:"supported_shapes,omitempty"`
+	InputModalities  []Modality             `protobuf:"varint,9,rep,packed,name=input_modalities,json=inputModalities,proto3,enum=model.v1.Modality" json:"input_modalities,omitempty"`
+	OutputModalities []Modality             `protobuf:"varint,10,rep,packed,name=output_modalities,json=outputModalities,proto3,enum=model.v1.Modality" json:"output_modalities,omitempty"`
+	// Override context specification.
+	ContextSpec   *ContextSpec `protobuf:"bytes,19,opt,name=context_spec,json=contextSpec,proto3,oneof" json:"context_spec,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ModelOverride) Reset() {
@@ -486,20 +725,6 @@ func (x *ModelOverride) GetDisplayName() string {
 	return ""
 }
 
-func (x *ModelOverride) GetContextWindowTokens() int64 {
-	if x != nil && x.ContextWindowTokens != nil {
-		return *x.ContextWindowTokens
-	}
-	return 0
-}
-
-func (x *ModelOverride) GetMaxOutputTokens() int64 {
-	if x != nil && x.MaxOutputTokens != nil {
-		return *x.MaxOutputTokens
-	}
-	return 0
-}
-
 func (x *ModelOverride) GetCapabilities() []ModelCapability {
 	if x != nil {
 		return x.Capabilities
@@ -535,12 +760,19 @@ func (x *ModelOverride) GetOutputModalities() []Modality {
 	return nil
 }
 
+func (x *ModelOverride) GetContextSpec() *ContextSpec {
+	if x != nil {
+		return x.ContextSpec
+	}
+	return nil
+}
+
 // ResolvedModel describes the effective model after merging the default
-// definition with an optional override.
+// version with an optional override.
 type ResolvedModel struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	ModelId             string                 `protobuf:"bytes,1,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
-	EffectiveDefinition *ModelDefinition       `protobuf:"bytes,2,opt,name=effective_definition,json=effectiveDefinition,proto3" json:"effective_definition,omitempty"`
+	EffectiveDefinition *ModelVersion          `protobuf:"bytes,2,opt,name=effective_definition,json=effectiveDefinition,proto3" json:"effective_definition,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -582,7 +814,7 @@ func (x *ResolvedModel) GetModelId() string {
 	return ""
 }
 
-func (x *ResolvedModel) GetEffectiveDefinition() *ModelDefinition {
+func (x *ResolvedModel) GetEffectiveDefinition() *ModelVersion {
 	if x != nil {
 		return x.EffectiveDefinition
 	}
@@ -642,6 +874,97 @@ func (x *ModelAlias) GetValue() string {
 	return ""
 }
 
+// ContextSpec describes token limits and tokenizer information for a model.
+type ContextSpec struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Maximum number of input tokens the model accepts.
+	MaxInputTokens int64 `protobuf:"varint,1,opt,name=max_input_tokens,json=maxInputTokens,proto3" json:"max_input_tokens,omitempty"`
+	// Maximum number of output tokens the model can generate.
+	MaxOutputTokens int64 `protobuf:"varint,2,opt,name=max_output_tokens,json=maxOutputTokens,proto3" json:"max_output_tokens,omitempty"`
+	// Maximum total context window (input + output).
+	MaxContextTokens int64 `protobuf:"varint,3,opt,name=max_context_tokens,json=maxContextTokens,proto3" json:"max_context_tokens,omitempty"`
+	// Maximum reasoning/thinking tokens, if applicable.
+	MaxReasoningTokens int64 `protobuf:"varint,4,opt,name=max_reasoning_tokens,json=maxReasoningTokens,proto3" json:"max_reasoning_tokens,omitempty"`
+	// Tokenizer identifier (e.g. "cl100k_base", "o200k_base").
+	Tokenizer string `protobuf:"bytes,5,opt,name=tokenizer,proto3" json:"tokenizer,omitempty"`
+	// Tokenizer source (e.g. "openai", "anthropic", "sentencepiece", "provider_specific").
+	TokenizerSource string `protobuf:"bytes,6,opt,name=tokenizer_source,json=tokenizerSource,proto3" json:"tokenizer_source,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ContextSpec) Reset() {
+	*x = ContextSpec{}
+	mi := &file_model_v1_model_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ContextSpec) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ContextSpec) ProtoMessage() {}
+
+func (x *ContextSpec) ProtoReflect() protoreflect.Message {
+	mi := &file_model_v1_model_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ContextSpec.ProtoReflect.Descriptor instead.
+func (*ContextSpec) Descriptor() ([]byte, []int) {
+	return file_model_v1_model_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ContextSpec) GetMaxInputTokens() int64 {
+	if x != nil {
+		return x.MaxInputTokens
+	}
+	return 0
+}
+
+func (x *ContextSpec) GetMaxOutputTokens() int64 {
+	if x != nil {
+		return x.MaxOutputTokens
+	}
+	return 0
+}
+
+func (x *ContextSpec) GetMaxContextTokens() int64 {
+	if x != nil {
+		return x.MaxContextTokens
+	}
+	return 0
+}
+
+func (x *ContextSpec) GetMaxReasoningTokens() int64 {
+	if x != nil {
+		return x.MaxReasoningTokens
+	}
+	return 0
+}
+
+func (x *ContextSpec) GetTokenizer() string {
+	if x != nil {
+		return x.Tokenizer
+	}
+	return ""
+}
+
+func (x *ContextSpec) GetTokenizerSource() string {
+	if x != nil {
+		return x.TokenizerSource
+	}
+	return ""
+}
+
 var File_model_v1_model_proto protoreflect.FileDescriptor
 
 const file_model_v1_model_proto_rawDesc = "" +
@@ -649,55 +972,82 @@ const file_model_v1_model_proto_rawDesc = "" +
 	"\x14model/v1/model.proto\x12\bmodel.v1\x1a google/protobuf/field_mask.proto\"B\n" +
 	"\bModelRef\x12\x19\n" +
 	"\bmodel_id\x18\x01 \x01(\tR\amodelId\x12\x1b\n" +
-	"\tvendor_id\x18\x02 \x01(\tR\bvendorId\"\xb8\x05\n" +
-	"\x0fModelDefinition\x12\x19\n" +
+	"\tvendor_id\x18\x02 \x01(\tR\bvendorId\"\xae\b\n" +
+	"\fModelVersion\x12\x19\n" +
 	"\bmodel_id\x18\x01 \x01(\tR\amodelId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12.\n" +
-	"\aaliases\x18\x03 \x03(\v2\x14.model.v1.ModelAliasR\aaliases\x122\n" +
-	"\x15context_window_tokens\x18\x04 \x01(\x03R\x13contextWindowTokens\x12*\n" +
-	"\x11max_output_tokens\x18\x05 \x01(\x03R\x0fmaxOutputTokens\x12=\n" +
+	"\aaliases\x18\x03 \x03(\v2\x14.model.v1.ModelAliasR\aaliases\x12=\n" +
 	"\fcapabilities\x18\x06 \x03(\x0e2\x19.model.v1.ModelCapabilityR\fcapabilities\x129\n" +
 	"\rprimary_shape\x18\a \x01(\x0e2\x14.model.v1.ModelShapeR\fprimaryShape\x12?\n" +
 	"\x10supported_shapes\x18\b \x03(\x0e2\x14.model.v1.ModelShapeR\x0fsupportedShapes\x12=\n" +
 	"\x10input_modalities\x18\t \x03(\x0e2\x12.model.v1.ModalityR\x0finputModalities\x12?\n" +
 	"\x11output_modalities\x18\n" +
 	" \x03(\x0e2\x12.model.v1.ModalityR\x10outputModalities\x12\x1b\n" +
-	"\tvendor_id\x18\x0f \x01(\tR\bvendorIdJ\x04\b\v\x10\fJ\x04\b\f\x10\rJ\x04\b\r\x10\x0eJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x12\x10\x13R\x10knowledge_cutoffR\x0ftraining_cutoffR\apricingR\tlifecycleR\tfamily_idR\vdescriptionR\x06labels\"\x90\x06\n" +
+	"\tvendor_id\x18\x0f \x01(\tR\bvendorId\x12\x1f\n" +
+	"\vfamily_slug\x18\x11 \x01(\tR\n" +
+	"familySlug\x123\n" +
+	"\bcategory\x18\x13 \x01(\x0e2\x17.model.v1.ModelCategoryR\bcategory\x12\x18\n" +
+	"\aversion\x18\x14 \x01(\tR\aversion\x12,\n" +
+	"\x12canonical_model_id\x18\x15 \x01(\tR\x10canonicalModelId\x12I\n" +
+	"\x10lifecycle_status\x18\x16 \x01(\x0e2\x1e.model.v1.ModelLifecycleStatusR\x0flifecycleStatus\x128\n" +
+	"\fcontext_spec\x18\x17 \x01(\v2\x15.model.v1.ContextSpecR\vcontextSpec\x12!\n" +
+	"\frelease_date\x18\x18 \x01(\tR\vreleaseDate\x12'\n" +
+	"\x0ftraining_cutoff\x18\x19 \x01(\tR\x0etrainingCutoff\x12!\n" +
+	"\flicense_type\x18\x1a \x01(\tR\vlicenseType\x12&\n" +
+	"\x0fis_open_weights\x18\x1b \x01(\bR\risOpenWeights\x12 \n" +
+	"\vdescription\x18\x1c \x01(\tR\vdescriptionJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\v\x10\fJ\x04\b\f\x10\rJ\x04\b\r\x10\x0eJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x11J\x04\b\x12\x10\x13R\x10knowledge_cutoffR\x13training_cutoff_oldR\apricingR\tlifecycleR\tfamily_idR\x06labels\"\xea\x05\n" +
 	"\rModelOverride\x129\n" +
 	"\n" +
 	"field_mask\x18\x01 \x01(\v2\x1a.google.protobuf.FieldMaskR\tfieldMask\x12&\n" +
-	"\fdisplay_name\x18\x02 \x01(\tH\x00R\vdisplayName\x88\x01\x01\x127\n" +
-	"\x15context_window_tokens\x18\x04 \x01(\x03H\x01R\x13contextWindowTokens\x88\x01\x01\x12/\n" +
-	"\x11max_output_tokens\x18\x05 \x01(\x03H\x02R\x0fmaxOutputTokens\x88\x01\x01\x12=\n" +
+	"\fdisplay_name\x18\x02 \x01(\tH\x00R\vdisplayName\x88\x01\x01\x12=\n" +
 	"\fcapabilities\x18\x06 \x03(\x0e2\x19.model.v1.ModelCapabilityR\fcapabilities\x12>\n" +
-	"\rprimary_shape\x18\a \x01(\x0e2\x14.model.v1.ModelShapeH\x03R\fprimaryShape\x88\x01\x01\x12?\n" +
+	"\rprimary_shape\x18\a \x01(\x0e2\x14.model.v1.ModelShapeH\x01R\fprimaryShape\x88\x01\x01\x12?\n" +
 	"\x10supported_shapes\x18\b \x03(\x0e2\x14.model.v1.ModelShapeR\x0fsupportedShapes\x12=\n" +
 	"\x10input_modalities\x18\t \x03(\x0e2\x12.model.v1.ModalityR\x0finputModalities\x12?\n" +
 	"\x11output_modalities\x18\n" +
-	" \x03(\x0e2\x12.model.v1.ModalityR\x10outputModalitiesB\x0f\n" +
-	"\r_display_nameB\x18\n" +
-	"\x16_context_window_tokensB\x14\n" +
-	"\x12_max_output_tokensB\x10\n" +
-	"\x0e_primary_shapeJ\x04\b\x03\x10\x04J\x04\b\v\x10\fJ\x04\b\f\x10\rJ\x04\b\r\x10\x0eJ\x04\b\x0e\x10\x0fJ\x04\b\x0f\x10\x10J\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x12\x10\x13R\aaliasesR\x10knowledge_cutoffR\x0ftraining_cutoffR\apricingR\tlifecycleR\tvendor_idR\tfamily_idR\vdescriptionR\x06labels\"x\n" +
+	" \x03(\x0e2\x12.model.v1.ModalityR\x10outputModalities\x12=\n" +
+	"\fcontext_spec\x18\x13 \x01(\v2\x15.model.v1.ContextSpecH\x02R\vcontextSpec\x88\x01\x01B\x0f\n" +
+	"\r_display_nameB\x10\n" +
+	"\x0e_primary_shapeB\x0f\n" +
+	"\r_context_specJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\v\x10\fJ\x04\b\f\x10\rJ\x04\b\r\x10\x0eJ\x04\b\x0e\x10\x0fJ\x04\b\x0f\x10\x10J\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x12\x10\x13R\aaliasesR\x10knowledge_cutoffR\x13training_cutoff_oldR\vpricing_oldR\rlifecycle_oldR\tvendor_idR\rfamily_id_oldR\x0fdescription_oldR\n" +
+	"labels_old\"u\n" +
 	"\rResolvedModel\x12\x19\n" +
-	"\bmodel_id\x18\x01 \x01(\tR\amodelId\x12L\n" +
-	"\x14effective_definition\x18\x02 \x01(\v2\x19.model.v1.ModelDefinitionR\x13effectiveDefinition\"K\n" +
+	"\bmodel_id\x18\x01 \x01(\tR\amodelId\x12I\n" +
+	"\x14effective_definition\x18\x02 \x01(\v2\x16.model.v1.ModelVersionR\x13effectiveDefinition\"K\n" +
 	"\n" +
 	"ModelAlias\x12'\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x13.model.v1.AliasKindR\x04kind\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value*\x86\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\x8c\x02\n" +
+	"\vContextSpec\x12(\n" +
+	"\x10max_input_tokens\x18\x01 \x01(\x03R\x0emaxInputTokens\x12*\n" +
+	"\x11max_output_tokens\x18\x02 \x01(\x03R\x0fmaxOutputTokens\x12,\n" +
+	"\x12max_context_tokens\x18\x03 \x01(\x03R\x10maxContextTokens\x120\n" +
+	"\x14max_reasoning_tokens\x18\x04 \x01(\x03R\x12maxReasoningTokens\x12\x1c\n" +
+	"\ttokenizer\x18\x05 \x01(\tR\ttokenizer\x12)\n" +
+	"\x10tokenizer_source\x18\x06 \x01(\tR\x0ftokenizerSource*\x86\x01\n" +
 	"\tAliasKind\x12\x1a\n" +
 	"\x16ALIAS_KIND_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11ALIAS_KIND_STABLE\x10\x01\x12\x17\n" +
 	"\x13ALIAS_KIND_SNAPSHOT\x10\x02\x12\x16\n" +
 	"\x12ALIAS_KIND_BEDROCK\x10\x03\x12\x15\n" +
-	"\x11ALIAS_KIND_VERTEX\x10\x04*\xc0\x01\n" +
+	"\x11ALIAS_KIND_VERTEX\x10\x04*\x82\x04\n" +
 	"\x0fModelCapability\x12 \n" +
 	"\x1cMODEL_CAPABILITY_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dMODEL_CAPABILITY_TOOL_CALLING\x10\x01\x12&\n" +
 	"\"MODEL_CAPABILITY_STRUCTURED_OUTPUT\x10\x02\x12 \n" +
 	"\x1cMODEL_CAPABILITY_IMAGE_INPUT\x10\x03\x12\x1e\n" +
-	"\x1aMODEL_CAPABILITY_STREAMING\x10\x04*\x8a\x01\n" +
+	"\x1aMODEL_CAPABILITY_STREAMING\x10\x04\x12\x1e\n" +
+	"\x1aMODEL_CAPABILITY_REASONING\x10\x05\x12\x1a\n" +
+	"\x16MODEL_CAPABILITY_BATCH\x10\x06\x12\x1e\n" +
+	"\x1aMODEL_CAPABILITY_FINE_TUNE\x10\a\x12\x1e\n" +
+	"\x1aMODEL_CAPABILITY_EMBEDDING\x10\b\x12\x1b\n" +
+	"\x17MODEL_CAPABILITY_RERANK\x10\t\x12\x1e\n" +
+	"\x1aMODEL_CAPABILITY_JSON_MODE\x10\n" +
+	"\x12 \n" +
+	"\x1cMODEL_CAPABILITY_JSON_SCHEMA\x10\v\x12 \n" +
+	"\x1cMODEL_CAPABILITY_AUDIO_INPUT\x10\f\x12!\n" +
+	"\x1dMODEL_CAPABILITY_AUDIO_OUTPUT\x10\r\x12 \n" +
+	"\x1cMODEL_CAPABILITY_VIDEO_INPUT\x10\x0e*\x8a\x01\n" +
 	"\n" +
 	"ModelShape\x12\x1b\n" +
 	"\x17MODEL_SHAPE_UNSPECIFIED\x10\x00\x12\x19\n" +
@@ -709,7 +1059,23 @@ const file_model_v1_model_proto_rawDesc = "" +
 	"\rMODALITY_TEXT\x10\x01\x12\x12\n" +
 	"\x0eMODALITY_IMAGE\x10\x02\x12\x12\n" +
 	"\x0eMODALITY_AUDIO\x10\x03\x12\x12\n" +
-	"\x0eMODALITY_VIDEO\x10\x04B1Z/code-code.internal/go-contract/model/v1;modelv1b\x06proto3"
+	"\x0eMODALITY_VIDEO\x10\x04*\xf2\x01\n" +
+	"\rModelCategory\x12\x1e\n" +
+	"\x1aMODEL_CATEGORY_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13MODEL_CATEGORY_CHAT\x10\x01\x12\x1c\n" +
+	"\x18MODEL_CATEGORY_EMBEDDING\x10\x02\x12\x19\n" +
+	"\x15MODEL_CATEGORY_RERANK\x10\x03\x12\x1c\n" +
+	"\x18MODEL_CATEGORY_IMAGE_GEN\x10\x04\x12\x18\n" +
+	"\x14MODEL_CATEGORY_AUDIO\x10\x05\x12\x18\n" +
+	"\x14MODEL_CATEGORY_VIDEO\x10\x06\x12\x1d\n" +
+	"\x19MODEL_CATEGORY_MODERATION\x10\a*\xef\x01\n" +
+	"\x14ModelLifecycleStatus\x12&\n" +
+	"\"MODEL_LIFECYCLE_STATUS_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dMODEL_LIFECYCLE_STATUS_ACTIVE\x10\x01\x12!\n" +
+	"\x1dMODEL_LIFECYCLE_STATUS_LEGACY\x10\x02\x12%\n" +
+	"!MODEL_LIFECYCLE_STATUS_DEPRECATED\x10\x03\x12\x1e\n" +
+	"\x1aMODEL_LIFECYCLE_STATUS_EOL\x10\x04\x12\"\n" +
+	"\x1eMODEL_LIFECYCLE_STATUS_BLOCKED\x10\x05B1Z/code-code.internal/go-contract/model/v1;modelv1b\x06proto3"
 
 var (
 	file_model_v1_model_proto_rawDescOnce sync.Once
@@ -723,40 +1089,47 @@ func file_model_v1_model_proto_rawDescGZIP() []byte {
 	return file_model_v1_model_proto_rawDescData
 }
 
-var file_model_v1_model_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_model_v1_model_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_model_v1_model_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_model_v1_model_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_model_v1_model_proto_goTypes = []any{
 	(AliasKind)(0),                // 0: model.v1.AliasKind
 	(ModelCapability)(0),          // 1: model.v1.ModelCapability
 	(ModelShape)(0),               // 2: model.v1.ModelShape
 	(Modality)(0),                 // 3: model.v1.Modality
-	(*ModelRef)(nil),              // 4: model.v1.ModelRef
-	(*ModelDefinition)(nil),       // 5: model.v1.ModelDefinition
-	(*ModelOverride)(nil),         // 6: model.v1.ModelOverride
-	(*ResolvedModel)(nil),         // 7: model.v1.ResolvedModel
-	(*ModelAlias)(nil),            // 8: model.v1.ModelAlias
-	(*fieldmaskpb.FieldMask)(nil), // 9: google.protobuf.FieldMask
+	(ModelCategory)(0),            // 4: model.v1.ModelCategory
+	(ModelLifecycleStatus)(0),     // 5: model.v1.ModelLifecycleStatus
+	(*ModelRef)(nil),              // 6: model.v1.ModelRef
+	(*ModelVersion)(nil),          // 7: model.v1.ModelVersion
+	(*ModelOverride)(nil),         // 8: model.v1.ModelOverride
+	(*ResolvedModel)(nil),         // 9: model.v1.ResolvedModel
+	(*ModelAlias)(nil),            // 10: model.v1.ModelAlias
+	(*ContextSpec)(nil),           // 11: model.v1.ContextSpec
+	(*fieldmaskpb.FieldMask)(nil), // 12: google.protobuf.FieldMask
 }
 var file_model_v1_model_proto_depIdxs = []int32{
-	8,  // 0: model.v1.ModelDefinition.aliases:type_name -> model.v1.ModelAlias
-	1,  // 1: model.v1.ModelDefinition.capabilities:type_name -> model.v1.ModelCapability
-	2,  // 2: model.v1.ModelDefinition.primary_shape:type_name -> model.v1.ModelShape
-	2,  // 3: model.v1.ModelDefinition.supported_shapes:type_name -> model.v1.ModelShape
-	3,  // 4: model.v1.ModelDefinition.input_modalities:type_name -> model.v1.Modality
-	3,  // 5: model.v1.ModelDefinition.output_modalities:type_name -> model.v1.Modality
-	9,  // 6: model.v1.ModelOverride.field_mask:type_name -> google.protobuf.FieldMask
-	1,  // 7: model.v1.ModelOverride.capabilities:type_name -> model.v1.ModelCapability
-	2,  // 8: model.v1.ModelOverride.primary_shape:type_name -> model.v1.ModelShape
-	2,  // 9: model.v1.ModelOverride.supported_shapes:type_name -> model.v1.ModelShape
-	3,  // 10: model.v1.ModelOverride.input_modalities:type_name -> model.v1.Modality
-	3,  // 11: model.v1.ModelOverride.output_modalities:type_name -> model.v1.Modality
-	5,  // 12: model.v1.ResolvedModel.effective_definition:type_name -> model.v1.ModelDefinition
-	0,  // 13: model.v1.ModelAlias.kind:type_name -> model.v1.AliasKind
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	10, // 0: model.v1.ModelVersion.aliases:type_name -> model.v1.ModelAlias
+	1,  // 1: model.v1.ModelVersion.capabilities:type_name -> model.v1.ModelCapability
+	2,  // 2: model.v1.ModelVersion.primary_shape:type_name -> model.v1.ModelShape
+	2,  // 3: model.v1.ModelVersion.supported_shapes:type_name -> model.v1.ModelShape
+	3,  // 4: model.v1.ModelVersion.input_modalities:type_name -> model.v1.Modality
+	3,  // 5: model.v1.ModelVersion.output_modalities:type_name -> model.v1.Modality
+	4,  // 6: model.v1.ModelVersion.category:type_name -> model.v1.ModelCategory
+	5,  // 7: model.v1.ModelVersion.lifecycle_status:type_name -> model.v1.ModelLifecycleStatus
+	11, // 8: model.v1.ModelVersion.context_spec:type_name -> model.v1.ContextSpec
+	12, // 9: model.v1.ModelOverride.field_mask:type_name -> google.protobuf.FieldMask
+	1,  // 10: model.v1.ModelOverride.capabilities:type_name -> model.v1.ModelCapability
+	2,  // 11: model.v1.ModelOverride.primary_shape:type_name -> model.v1.ModelShape
+	2,  // 12: model.v1.ModelOverride.supported_shapes:type_name -> model.v1.ModelShape
+	3,  // 13: model.v1.ModelOverride.input_modalities:type_name -> model.v1.Modality
+	3,  // 14: model.v1.ModelOverride.output_modalities:type_name -> model.v1.Modality
+	11, // 15: model.v1.ModelOverride.context_spec:type_name -> model.v1.ContextSpec
+	7,  // 16: model.v1.ResolvedModel.effective_definition:type_name -> model.v1.ModelVersion
+	0,  // 17: model.v1.ModelAlias.kind:type_name -> model.v1.AliasKind
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_model_v1_model_proto_init() }
@@ -770,8 +1143,8 @@ func file_model_v1_model_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_model_v1_model_proto_rawDesc), len(file_model_v1_model_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   5,
+			NumEnums:      6,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -1,0 +1,86 @@
+{{- if .Values.authorizationPolicies.enabled }}
+{{- $platformSources := list .Release.Namespace .Values.global.consoleNamespace .Values.global.showcaseNamespace .Values.global.networkNamespace .Values.global.runNamespace .Values.global.observabilityNamespace | uniq }}
+{{- $edgeSources := list .Values.global.networkNamespace .Values.global.observabilityNamespace | uniq }}
+{{- $consoleSources := append $edgeSources .Values.global.consoleNamespace | uniq }}
+{{- $showcaseSources := append $edgeSources .Values.global.showcaseNamespace | uniq }}
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: platform-core-workloads
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" "platform-core-workloads" "componentLabel" "authz") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces:
+{{- range $namespace := $platformSources }}
+              - {{ $namespace | quote }}
+{{- end }}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: platform-egress-service
+  namespace: {{ .Values.global.networkNamespace }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" "platform-egress-service" "componentLabel" "authz") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ .Values.components.egress.name }}
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces:
+{{- range $namespace := $platformSources }}
+              - {{ $namespace | quote }}
+{{- end }}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: console-ingress-workloads
+  namespace: {{ .Values.global.consoleNamespace }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" "console-ingress-workloads" "componentLabel" "authz") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces:
+{{- range $namespace := $consoleSources }}
+              - {{ $namespace | quote }}
+{{- end }}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: showcase-ingress-workloads
+  namespace: {{ .Values.global.showcaseNamespace }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" "showcase-ingress-workloads" "componentLabel" "authz") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces:
+{{- range $namespace := $showcaseSources }}
+              - {{ $namespace | quote }}
+{{- end }}
+{{- end }}

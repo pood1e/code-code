@@ -38,13 +38,17 @@ func TestValidateCapabilityAcceptsPrometheusCompatibleMetrics(t *testing.T) {
 					}},
 				},
 			},
-			Collection: &ObservabilityProfile_ResponseHeaders{
-				ResponseHeaders: &ResponseHeaderCollection{
-					HeaderMetricMappings: []*HeaderMetricMapping{{
+			Collection: &ObservabilityProfile_PassiveHttp{
+				PassiveHttp: &PassiveHttpTelemetryCollection{
+					CapturePoint:  TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_EGRESS,
+					EmitAccessLog: true,
+					Transforms: []*HttpHeaderTelemetryTransform{{
+						Source:     HttpHeaderSource_HTTP_HEADER_SOURCE_RESPONSE,
 						HeaderName: "retry-after",
 						MetricName: "gen_ai.provider.runtime.last_seen.timestamp.seconds",
 						ValueType:  HeaderValueType_HEADER_VALUE_TYPE_DURATION_SECONDS,
 					}},
+					Redaction: &HeaderRedactionPolicy{DropRawHeaders: true},
 				},
 			},
 			MetricQueries: []*MetricQuery{{
@@ -96,17 +100,21 @@ func TestValidateCapabilityAcceptsResponseHeaderLabels(t *testing.T) {
 					{Name: "resource", Description: "Resource.", RequirementLevel: ObservabilityAttributeRequirementLevel_OBSERVABILITY_ATTRIBUTE_REQUIREMENT_LEVEL_REQUIRED},
 				},
 			}},
-			Collection: &ObservabilityProfile_ResponseHeaders{
-				ResponseHeaders: &ResponseHeaderCollection{
-					HeaderMetricMappings: []*HeaderMetricMapping{{
+			Collection: &ObservabilityProfile_PassiveHttp{
+				PassiveHttp: &PassiveHttpTelemetryCollection{
+					CapturePoint:  TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_EGRESS,
+					EmitAccessLog: true,
+					Transforms: []*HttpHeaderTelemetryTransform{{
+						Source:     HttpHeaderSource_HTTP_HEADER_SOURCE_RESPONSE,
 						HeaderName: "x-ratelimit-remaining-requests",
 						MetricName: "gen_ai.provider.runtime.rate_limit.remaining",
 						ValueType:  HeaderValueType_HEADER_VALUE_TYPE_INT64,
-						Labels: []*HeaderMetricLabel{{
+						Labels: []*TelemetryMetricLabel{{
 							Name:  "resource",
 							Value: "requests",
 						}},
 					}},
+					Redaction: &HeaderRedactionPolicy{DropRawHeaders: true},
 				},
 			},
 		}},
@@ -154,9 +162,11 @@ func TestValidateCapabilityRejectsUnknownMetricReference(t *testing.T) {
 				Kind:        ObservabilityMetricKind_OBSERVABILITY_METRIC_KIND_COUNTER,
 				Category:    ObservabilityMetricCategory_OBSERVABILITY_METRIC_CATEGORY_USAGE,
 			}},
-			Collection: &ObservabilityProfile_ResponseHeaders{
-				ResponseHeaders: &ResponseHeaderCollection{
-					HeaderMetricMappings: []*HeaderMetricMapping{{
+			Collection: &ObservabilityProfile_PassiveHttp{
+				PassiveHttp: &PassiveHttpTelemetryCollection{
+					CapturePoint: TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_EGRESS,
+					Transforms: []*HttpHeaderTelemetryTransform{{
+						Source:     HttpHeaderSource_HTTP_HEADER_SOURCE_RESPONSE,
 						HeaderName: "retry-after",
 						MetricName: "gen_ai.provider.runtime.retry_after.seconds",
 						ValueType:  HeaderValueType_HEADER_VALUE_TYPE_DURATION_SECONDS,
@@ -168,6 +178,70 @@ func TestValidateCapabilityRejectsUnknownMetricReference(t *testing.T) {
 
 	if err := ValidateCapability(capability); err == nil {
 		t.Fatal("ValidateCapability() error = nil, want unknown metric reference")
+	}
+}
+
+func TestValidateCapabilityRejectsSensitivePassiveHTTPTransform(t *testing.T) {
+	capability := &ObservabilityCapability{
+		Profiles: []*ObservabilityProfile{{
+			ProfileId:   "broken",
+			DisplayName: "Broken",
+			Metrics: []*ObservabilityMetric{{
+				Name:        "gen_ai.provider.runtime.rate_limit.remaining",
+				Description: "Remaining rate limit.",
+				Unit:        "{count}",
+				Kind:        ObservabilityMetricKind_OBSERVABILITY_METRIC_KIND_GAUGE,
+				Category:    ObservabilityMetricCategory_OBSERVABILITY_METRIC_CATEGORY_RATE_LIMIT,
+			}},
+			Collection: &ObservabilityProfile_PassiveHttp{
+				PassiveHttp: &PassiveHttpTelemetryCollection{
+					CapturePoint: TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_EGRESS,
+					Transforms: []*HttpHeaderTelemetryTransform{{
+						Source:     HttpHeaderSource_HTTP_HEADER_SOURCE_REQUEST,
+						HeaderName: "authorization",
+						MetricName: "gen_ai.provider.runtime.rate_limit.remaining",
+						ValueType:  HeaderValueType_HEADER_VALUE_TYPE_INT64,
+					}},
+					Redaction: &HeaderRedactionPolicy{DropRawHeaders: true},
+				},
+			},
+		}},
+	}
+
+	if err := ValidateCapability(capability); err == nil {
+		t.Fatal("ValidateCapability() error = nil, want sensitive header rejection")
+	}
+}
+
+func TestValidateCapabilityRejectsPassiveHTTPWithoutRawHeaderDrop(t *testing.T) {
+	capability := &ObservabilityCapability{
+		Profiles: []*ObservabilityProfile{{
+			ProfileId:   "broken",
+			DisplayName: "Broken",
+			Metrics: []*ObservabilityMetric{{
+				Name:        "gen_ai.provider.runtime.rate_limit.remaining",
+				Description: "Remaining rate limit.",
+				Unit:        "{count}",
+				Kind:        ObservabilityMetricKind_OBSERVABILITY_METRIC_KIND_GAUGE,
+				Category:    ObservabilityMetricCategory_OBSERVABILITY_METRIC_CATEGORY_RATE_LIMIT,
+			}},
+			Collection: &ObservabilityProfile_PassiveHttp{
+				PassiveHttp: &PassiveHttpTelemetryCollection{
+					CapturePoint: TelemetryCapturePoint_TELEMETRY_CAPTURE_POINT_EGRESS,
+					Transforms: []*HttpHeaderTelemetryTransform{{
+						Source:     HttpHeaderSource_HTTP_HEADER_SOURCE_RESPONSE,
+						HeaderName: "x-ratelimit-remaining-requests",
+						MetricName: "gen_ai.provider.runtime.rate_limit.remaining",
+						ValueType:  HeaderValueType_HEADER_VALUE_TYPE_INT64,
+					}},
+					Redaction: &HeaderRedactionPolicy{DropRawHeaders: false},
+				},
+			},
+		}},
+	}
+
+	if err := ValidateCapability(capability); err == nil {
+		t.Fatal("ValidateCapability() error = nil, want raw header drop requirement")
 	}
 }
 
@@ -194,6 +268,163 @@ func TestValidateCapabilityAcceptsActiveQueryCollectorID(t *testing.T) {
 
 	if err := ValidateCapability(capability); err != nil {
 		t.Fatalf("ValidateCapability() error = %v", err)
+	}
+}
+
+func TestValidateCapabilityAcceptsActiveQueryCredentialBackfills(t *testing.T) {
+	capability := &ObservabilityCapability{
+		Profiles: []*ObservabilityProfile{{
+			ProfileId:   "oauth_management_state",
+			DisplayName: "OAuth Management State",
+			Metrics: []*ObservabilityMetric{{
+				Name:        "gen_ai.provider.cli.oauth.credential.generation",
+				Description: "Credential generation.",
+				Unit:        "{generation}",
+				Kind:        ObservabilityMetricKind_OBSERVABILITY_METRIC_KIND_GAUGE,
+				Category:    ObservabilityMetricCategory_OBSERVABILITY_METRIC_CATEGORY_USAGE,
+			}},
+			Collection: &ObservabilityProfile_ActiveQuery{
+				ActiveQuery: &ActiveQueryCollection{
+					MinimumPollInterval: durationpb.New(30 * time.Second),
+					CollectorId:         "gemini-cli",
+					CredentialBackfills: []*CredentialBackfillRule{{
+						RuleId:            "project-id",
+						Source:            CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT,
+						SourceName:        "project_id",
+						TargetMaterialKey: "project_id",
+					}},
+				},
+			},
+		}},
+	}
+
+	if err := ValidateCapability(capability); err != nil {
+		t.Fatalf("ValidateCapability() error = %v", err)
+	}
+}
+
+func TestValidateCapabilityAcceptsActiveQueryInputForm(t *testing.T) {
+	capability := &ObservabilityCapability{
+		Profiles: []*ObservabilityProfile{{
+			ProfileId:   "vendor_management_state",
+			DisplayName: "Vendor Management State",
+			Metrics: []*ObservabilityMetric{{
+				Name:        "gen_ai.provider.quota.remaining",
+				Description: "Remaining quota.",
+				Unit:        "1",
+				Kind:        ObservabilityMetricKind_OBSERVABILITY_METRIC_KIND_GAUGE,
+				Category:    ObservabilityMetricCategory_OBSERVABILITY_METRIC_CATEGORY_QUOTA,
+			}},
+			Collection: &ObservabilityProfile_ActiveQuery{
+				ActiveQuery: &ActiveQueryCollection{
+					MinimumPollInterval: durationpb.New(30 * time.Second),
+					InputForm: &ActiveQueryInputForm{
+						SchemaId:    "google-ai-studio-session",
+						Title:       "Update AI Studio Session",
+						ActionLabel: "Update AI Studio Session",
+						Fields: []*ActiveQueryInputField{
+							{
+								FieldId:     "cookie",
+								Label:       "Request Cookie",
+								Required:    true,
+								Sensitive:   true,
+								Control:     ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA,
+								Persistence: ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL,
+							},
+							{
+								FieldId:       "response_set_cookie",
+								Label:         "Response Set-Cookie",
+								Control:       ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA,
+								Persistence:   ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT,
+								TargetFieldId: "cookie",
+								Transform:     ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE,
+							},
+						},
+					},
+				},
+			},
+		}},
+	}
+
+	if err := ValidateCapability(capability); err != nil {
+		t.Fatalf("ValidateCapability() error = %v", err)
+	}
+}
+
+func TestValidateCapabilityRejectsActiveQueryInputFormTransientWithoutStoredTarget(t *testing.T) {
+	capability := &ObservabilityCapability{
+		Profiles: []*ObservabilityProfile{{
+			ProfileId:   "vendor_management_state",
+			DisplayName: "Vendor Management State",
+			Metrics: []*ObservabilityMetric{{
+				Name:        "gen_ai.provider.quota.remaining",
+				Description: "Remaining quota.",
+				Unit:        "1",
+				Kind:        ObservabilityMetricKind_OBSERVABILITY_METRIC_KIND_GAUGE,
+				Category:    ObservabilityMetricCategory_OBSERVABILITY_METRIC_CATEGORY_QUOTA,
+			}},
+			Collection: &ObservabilityProfile_ActiveQuery{
+				ActiveQuery: &ActiveQueryCollection{
+					MinimumPollInterval: durationpb.New(30 * time.Second),
+					InputForm: &ActiveQueryInputForm{
+						SchemaId:    "google-ai-studio-session",
+						Title:       "Update AI Studio Session",
+						ActionLabel: "Update AI Studio Session",
+						Fields: []*ActiveQueryInputField{{
+							FieldId:       "response_set_cookie",
+							Label:         "Response Set-Cookie",
+							Control:       ActiveQueryInputControl_ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA,
+							Persistence:   ActiveQueryInputPersistence_ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT,
+							TargetFieldId: "cookie",
+							Transform:     ActiveQueryInputValueTransform_ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE,
+						}},
+					},
+				},
+			},
+		}},
+	}
+
+	if err := ValidateCapability(capability); err == nil {
+		t.Fatal("ValidateCapability() error = nil, want transient target validation")
+	}
+}
+
+func TestValidateCapabilityRejectsDuplicateCredentialBackfillTargets(t *testing.T) {
+	capability := &ObservabilityCapability{
+		Profiles: []*ObservabilityProfile{{
+			ProfileId:   "oauth_management_state",
+			DisplayName: "OAuth Management State",
+			Metrics: []*ObservabilityMetric{{
+				Name:        "gen_ai.provider.cli.oauth.credential.generation",
+				Description: "Credential generation.",
+				Unit:        "{generation}",
+				Kind:        ObservabilityMetricKind_OBSERVABILITY_METRIC_KIND_GAUGE,
+				Category:    ObservabilityMetricCategory_OBSERVABILITY_METRIC_CATEGORY_USAGE,
+			}},
+			Collection: &ObservabilityProfile_ActiveQuery{
+				ActiveQuery: &ActiveQueryCollection{
+					MinimumPollInterval: durationpb.New(30 * time.Second),
+					CredentialBackfills: []*CredentialBackfillRule{
+						{
+							RuleId:            "project-id",
+							Source:            CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT,
+							SourceName:        "project_id",
+							TargetMaterialKey: "project_id",
+						},
+						{
+							RuleId:            "project-id-alt",
+							Source:            CredentialBackfillSource_CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT,
+							SourceName:        "project",
+							TargetMaterialKey: "project_id",
+						},
+					},
+				},
+			},
+		}},
+	}
+
+	if err := ValidateCapability(capability); err == nil {
+		t.Fatal("ValidateCapability() error = nil, want duplicate credential backfill target")
 	}
 }
 

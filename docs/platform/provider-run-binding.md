@@ -21,7 +21,9 @@
 ## implementation notes
 
 Agent execution writes the binding into `AgentRunAuthRequirement`. Prepare jobs
-and the runtime auth projection read only the frozen binding.
+and runtime auth projection metadata read only the frozen binding and
+service-owned policy lookups; they do not create Kubernetes credential
+projection Secrets.
 
 Runtime resolution treats the callable target as:
 

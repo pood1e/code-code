@@ -1,0 +1,40 @@
+{{- if .Values.components.telemetry.enabled }}
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: {{ .Values.global.istioNamespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" . "name" "mesh-default" "componentLabel" "telemetry") | nindent 4 }}
+spec:
+  metrics:
+    - providers:
+        - name: prometheus
+{{- if .Values.components.telemetry.tracing.enabled }}
+{{- $waypointTracingTargets := list
+  (dict "name" "platform-waypoint-tracing" "namespace" .Values.global.platformNamespace "gateway" "waypoint")
+  (dict "name" "console-waypoint-tracing" "namespace" .Values.global.consoleNamespace "gateway" "waypoint")
+  (dict "name" "showcase-waypoint-tracing" "namespace" .Values.global.showcaseNamespace "gateway" "waypoint")
+  (dict "name" "runs-waypoint-tracing" "namespace" .Values.global.runNamespace "gateway" "waypoint")
+}}
+{{- range $target := $waypointTracingTargets }}
+---
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: {{ $target.name }}
+  namespace: {{ $target.namespace }}
+  labels:
+{{ include "istio-platform.labels" (dict "root" $ "name" $target.name "componentLabel" "telemetry") | nindent 4 }}
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: {{ $target.gateway }}
+  tracing:
+    - providers:
+        - name: {{ $.Values.components.telemetry.tracing.provider }}
+      randomSamplingPercentage: {{ $.Values.components.telemetry.tracing.randomSamplingPercentage }}
+{{- end }}
+{{- end }}
+{{- end }}

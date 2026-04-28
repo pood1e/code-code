@@ -2,8 +2,8 @@
 // @generated from file platform/auth/v1/auth.proto (package platform.auth.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { CredentialDefinition, CredentialKind } from "../../../credential/v1/credential_pb";
 import { file_credential_v1_credential } from "../../../credential/v1/credential_pb";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
@@ -22,7 +22,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file platform/auth/v1/auth.proto.
  */
 export const file_platform_auth_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChtwbGF0Zm9ybS9hdXRoL3YxL2F1dGgucHJvdG8SEHBsYXRmb3JtLmF1dGgudjEiGAoWTGlzdENyZWRlbnRpYWxzUmVxdWVzdCJQChdMaXN0Q3JlZGVudGlhbHNSZXNwb25zZRI1CgVpdGVtcxgBIAMoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcigQEKHUNyZWF0ZUFQSUtleUNyZWRlbnRpYWxSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEg8KB3B1cnBvc2UYAyABKAkSEQoJdmVuZG9yX2lkGAQgASgJEg8KB2FwaV9rZXkYBSABKAkibAoeQ3JlYXRlQVBJS2V5Q3JlZGVudGlhbFJlc3BvbnNlEjoKCmNyZWRlbnRpYWwYASABKAsyJi5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkNyZWRlbnRpYWxWaWV3Eg4KBnN0YXR1cxgCIAEoCSKBAQodVXBkYXRlQVBJS2V5Q3JlZGVudGlhbFJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDwoHcHVycG9zZRgDIAEoCRIRCgl2ZW5kb3JfaWQYBCABKAkSDwoHYXBpX2tleRgFIAEoCSJsCh5VcGRhdGVBUElLZXlDcmVkZW50aWFsUmVzcG9uc2USOgoKY3JlZGVudGlhbBgBIAEoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcSDgoGc3RhdHVzGAIgASgJIq4CCh5DcmVhdGVTZXNzaW9uQ3JlZGVudGlhbFJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDwoHcHVycG9zZRgDIAEoCRIRCgl2ZW5kb3JfaWQYBCABKAkSEQoJc2NoZW1hX2lkGAUgASgJEhUKDXJlcXVpcmVkX2tleXMYBiADKAkSTAoGdmFsdWVzGAcgAygLMjwucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVTZXNzaW9uQ3JlZGVudGlhbFJlcXVlc3QuVmFsdWVzRW50cnkSFAoMbWVyZ2VfdmFsdWVzGAggASgIGi0KC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEibQofQ3JlYXRlU2Vzc2lvbkNyZWRlbnRpYWxSZXNwb25zZRI6CgpjcmVkZW50aWFsGAEgASgLMiYucGxhdGZvcm0ubWFuYWdlbWVudC52MS5DcmVkZW50aWFsVmlldxIOCgZzdGF0dXMYAiABKAkirgIKHlVwZGF0ZVNlc3Npb25DcmVkZW50aWFsUmVxdWVzdBIVCg1jcmVkZW50aWFsX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIPCgdwdXJwb3NlGAMgASgJEhEKCXZlbmRvcl9pZBgEIAEoCRIRCglzY2hlbWFfaWQYBSABKAkSFQoNcmVxdWlyZWRfa2V5cxgGIAMoCRJMCgZ2YWx1ZXMYByADKAsyPC5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZVNlc3Npb25DcmVkZW50aWFsUmVxdWVzdC5WYWx1ZXNFbnRyeRIUCgxtZXJnZV92YWx1ZXMYCCABKAgaLQoLVmFsdWVzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJtCh9VcGRhdGVTZXNzaW9uQ3JlZGVudGlhbFJlc3BvbnNlEjoKCmNyZWRlbnRpYWwYASABKAsyJi5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkNyZWRlbnRpYWxWaWV3Eg4KBnN0YXR1cxgCIAEoCSKmAgocQ3JlYXRlT0F1dGhDcmVkZW50aWFsUmVxdWVzdBIVCg1jcmVkZW50aWFsX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIPCgdwdXJwb3NlGAMgASgJEhEKCXZlbmRvcl9pZBgEIAEoCRIOCgZjbGlfaWQYBSABKAkSFAoMYWNjZXNzX3Rva2VuGAYgASgJEhUKDXJlZnJlc2hfdG9rZW4YByABKAkSEAoIaWRfdG9rZW4YCCABKAkSEgoKdG9rZW5fdHlwZRgJIAEoCRISCgphY2NvdW50X2lkGAogASgJEg4KBnNjb3BlcxgLIAMoCRIuCgpleHBpcmVzX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJrCh1DcmVhdGVPQXV0aENyZWRlbnRpYWxSZXNwb25zZRI6CgpjcmVkZW50aWFsGAEgASgLMiYucGxhdGZvcm0ubWFuYWdlbWVudC52MS5DcmVkZW50aWFsVmlldxIOCgZzdGF0dXMYAiABKAkipgIKHFVwZGF0ZU9BdXRoQ3JlZGVudGlhbFJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDwoHcHVycG9zZRgDIAEoCRIRCgl2ZW5kb3JfaWQYBCABKAkSDgoGY2xpX2lkGAUgASgJEhQKDGFjY2Vzc190b2tlbhgGIAEoCRIVCg1yZWZyZXNoX3Rva2VuGAcgASgJEhAKCGlkX3Rva2VuGAggASgJEhIKCnRva2VuX3R5cGUYCSABKAkSEgoKYWNjb3VudF9pZBgKIAEoCRIOCgZzY29wZXMYCyADKAkSLgoKZXhwaXJlc19hdBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiawodVXBkYXRlT0F1dGhDcmVkZW50aWFsUmVzcG9uc2USOgoKY3JlZGVudGlhbBgBIAEoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcSDgoGc3RhdHVzGAIgASgJIkYKF1JlbmFtZUNyZWRlbnRpYWxSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJImYKGFJlbmFtZUNyZWRlbnRpYWxSZXNwb25zZRI6CgpjcmVkZW50aWFsGAEgASgLMiYucGxhdGZvcm0ubWFuYWdlbWVudC52MS5DcmVkZW50aWFsVmlldxIOCgZzdGF0dXMYAiABKAkiMAoXRGVsZXRlQ3JlZGVudGlhbFJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCSJmChhEZWxldGVDcmVkZW50aWFsUmVzcG9uc2USOgoKY3JlZGVudGlhbBgBIAEoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcSDgoGc3RhdHVzGAIgASgJIuoBCg1PQXV0aEFydGlmYWN0EhQKDGFjY2Vzc190b2tlbhgBIAEoCRIVCg1yZWZyZXNoX3Rva2VuGAIgASgJEhAKCGlkX3Rva2VuGAMgASgJEhsKE3Rva2VuX3Jlc3BvbnNlX2pzb24YBCABKAkSEgoKdG9rZW5fdHlwZRgFIAEoCRISCgphY2NvdW50X2lkGAYgASgJEhUKDWFjY291bnRfZW1haWwYByABKAkSDgoGc2NvcGVzGAggAygJEi4KCmV4cGlyZXNfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIqcBChxJbXBvcnRPQXV0aENyZWRlbnRpYWxSZXF1ZXN0Eg4KBmNsaV9pZBgBIAEoCRIVCg1jcmVkZW50aWFsX2lkGAIgASgJEhQKDGRpc3BsYXlfbmFtZRgDIAEoCRIxCghhcnRpZmFjdBgFIAEoCzIfLnBsYXRmb3JtLmF1dGgudjEuT0F1dGhBcnRpZmFjdEoECAQQBVIRbmV0d29ya19wb2xpY3lfaWQiWAodSW1wb3J0T0F1dGhDcmVkZW50aWFsUmVzcG9uc2USNwoKZGVmaW5pdGlvbhgBIAEoCzIjLmNyZWRlbnRpYWwudjEuQ3JlZGVudGlhbERlZmluaXRpb24iWwoSRW5zdXJlRnJlc2hSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkSFwoPbWluX3R0bF9zZWNvbmRzGAIgASgDEhUKDWZvcmNlX3JlZnJlc2gYAyABKAgi2AEKE0Vuc3VyZUZyZXNoUmVzcG9uc2USDwoHb3V0Y29tZRgBIAEoCRIRCglyZWZyZXNoZWQYAiABKAgSLgoKZXhwaXJlc19hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNgoSbmV4dF9yZWZyZXNoX2FmdGVyGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI1ChFsYXN0X3JlZnJlc2hlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiGAoWUmVmcmVzaE9BdXRoRHVlUmVxdWVzdCIaChhTY2FuT0F1dGhTZXNzaW9uc1JlcXVlc3QiKQoXUmVmcmVzaE9BdXRoRHVlUmVzcG9uc2USDgoGc3RhdHVzGAEgASgJIisKGVNjYW5PQXV0aFNlc3Npb25zUmVzcG9uc2USDgoGc3RhdHVzGAEgASgJIjsKIkdldENyZWRlbnRpYWxTdWJqZWN0U3VtbWFyeVJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCSJwCiNHZXRDcmVkZW50aWFsU3ViamVjdFN1bW1hcnlSZXNwb25zZRJJCgZmaWVsZHMYASADKAsyOS5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkNyZWRlbnRpYWxTdWJqZWN0U3VtbWFyeUZpZWxkVmlldyI+CiVHZXRDcmVkZW50aWFsUnVudGltZVByb2plY3Rpb25SZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkipAEKG0NyZWRlbnRpYWxSdW50aW1lUHJvamVjdGlvbhIVCg1jcmVkZW50aWFsX2lkGAEgASgJEjYKD2NyZWRlbnRpYWxfa2luZBgCIAEoDjIdLmNyZWRlbnRpYWwudjEuQ3JlZGVudGlhbEtpbmQSEQoJdmVuZG9yX2lkGAMgASgJEg4KBmNsaV9pZBgEIAEoCRITCgtzZWNyZXRfbmFtZRgFIAEoCSJrCiZHZXRDcmVkZW50aWFsUnVudGltZVByb2plY3Rpb25SZXNwb25zZRJBCgpjcmVkZW50aWFsGAEgASgLMi0ucGxhdGZvcm0uYXV0aC52MS5DcmVkZW50aWFsUnVudGltZVByb2plY3Rpb24isQEKGkdldEVncmVzc0F1dGhQb2xpY3lSZXF1ZXN0EhEKCXBvbGljeV9pZBgBIAEoCRIbChNtYXRlcmlhbGl6YXRpb25fa2V5GAIgASgJEjYKD2NyZWRlbnRpYWxfa2luZBgDIAEoDjIdLmNyZWRlbnRpYWwudjEuQ3JlZGVudGlhbEtpbmQSKwoIcHJvdG9jb2wYBCABKA4yGS5hcGlfcHJvdG9jb2wudjEuUHJvdG9jb2wi4AIKG0dldEVncmVzc0F1dGhQb2xpY3lSZXNwb25zZRIRCglwb2xpY3lfaWQYASABKAkSGwoTbWF0ZXJpYWxpemF0aW9uX2tleRgCIAEoCRISCgphZGFwdGVyX2lkGAMgASgJElAKGXJlcXVlc3RfcmVwbGFjZW1lbnRfcnVsZXMYBCADKAsyLS5wbGF0Zm9ybS5hdXRoLnYxLkVncmVzc1NpbXBsZVJlcGxhY2VtZW50UnVsZRJRChpyZXNwb25zZV9yZXBsYWNlbWVudF9ydWxlcxgFIAMoCzItLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzU2ltcGxlUmVwbGFjZW1lbnRSdWxlEhwKFHJlcXVlc3RfaGVhZGVyX25hbWVzGAYgAygJEh0KFXJlc3BvbnNlX2hlYWRlcl9uYW1lcxgHIAMoCRIbChNoZWFkZXJfdmFsdWVfcHJlZml4GAggASgJMpkRCgtBdXRoU2VydmljZRJmCg9MaXN0Q3JlZGVudGlhbHMSKC5wbGF0Zm9ybS5hdXRoLnYxLkxpc3RDcmVkZW50aWFsc1JlcXVlc3QaKS5wbGF0Zm9ybS5hdXRoLnYxLkxpc3RDcmVkZW50aWFsc1Jlc3BvbnNlEnsKFkNyZWF0ZUFQSUtleUNyZWRlbnRpYWwSLy5wbGF0Zm9ybS5hdXRoLnYxLkNyZWF0ZUFQSUtleUNyZWRlbnRpYWxSZXF1ZXN0GjAucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVBUElLZXlDcmVkZW50aWFsUmVzcG9uc2USewoWVXBkYXRlQVBJS2V5Q3JlZGVudGlhbBIvLnBsYXRmb3JtLmF1dGgudjEuVXBkYXRlQVBJS2V5Q3JlZGVudGlhbFJlcXVlc3QaMC5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZUFQSUtleUNyZWRlbnRpYWxSZXNwb25zZRJ+ChdDcmVhdGVTZXNzaW9uQ3JlZGVudGlhbBIwLnBsYXRmb3JtLmF1dGgudjEuQ3JlYXRlU2Vzc2lvbkNyZWRlbnRpYWxSZXF1ZXN0GjEucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVTZXNzaW9uQ3JlZGVudGlhbFJlc3BvbnNlEn4KF1VwZGF0ZVNlc3Npb25DcmVkZW50aWFsEjAucGxhdGZvcm0uYXV0aC52MS5VcGRhdGVTZXNzaW9uQ3JlZGVudGlhbFJlcXVlc3QaMS5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZVNlc3Npb25DcmVkZW50aWFsUmVzcG9uc2USeAoVQ3JlYXRlT0F1dGhDcmVkZW50aWFsEi4ucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVPQXV0aENyZWRlbnRpYWxSZXF1ZXN0Gi8ucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVPQXV0aENyZWRlbnRpYWxSZXNwb25zZRJ4ChVVcGRhdGVPQXV0aENyZWRlbnRpYWwSLi5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZU9BdXRoQ3JlZGVudGlhbFJlcXVlc3QaLy5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZU9BdXRoQ3JlZGVudGlhbFJlc3BvbnNlEmkKEFJlbmFtZUNyZWRlbnRpYWwSKS5wbGF0Zm9ybS5hdXRoLnYxLlJlbmFtZUNyZWRlbnRpYWxSZXF1ZXN0GioucGxhdGZvcm0uYXV0aC52MS5SZW5hbWVDcmVkZW50aWFsUmVzcG9uc2USaQoQRGVsZXRlQ3JlZGVudGlhbBIpLnBsYXRmb3JtLmF1dGgudjEuRGVsZXRlQ3JlZGVudGlhbFJlcXVlc3QaKi5wbGF0Zm9ybS5hdXRoLnYxLkRlbGV0ZUNyZWRlbnRpYWxSZXNwb25zZRJ4ChVJbXBvcnRPQXV0aENyZWRlbnRpYWwSLi5wbGF0Zm9ybS5hdXRoLnYxLkltcG9ydE9BdXRoQ3JlZGVudGlhbFJlcXVlc3QaLy5wbGF0Zm9ybS5hdXRoLnYxLkltcG9ydE9BdXRoQ3JlZGVudGlhbFJlc3BvbnNlEloKC0Vuc3VyZUZyZXNoEiQucGxhdGZvcm0uYXV0aC52MS5FbnN1cmVGcmVzaFJlcXVlc3QaJS5wbGF0Zm9ybS5hdXRoLnYxLkVuc3VyZUZyZXNoUmVzcG9uc2USZgoPUmVmcmVzaE9BdXRoRHVlEigucGxhdGZvcm0uYXV0aC52MS5SZWZyZXNoT0F1dGhEdWVSZXF1ZXN0GikucGxhdGZvcm0uYXV0aC52MS5SZWZyZXNoT0F1dGhEdWVSZXNwb25zZRJsChFTY2FuT0F1dGhTZXNzaW9ucxIqLnBsYXRmb3JtLmF1dGgudjEuU2Nhbk9BdXRoU2Vzc2lvbnNSZXF1ZXN0GisucGxhdGZvcm0uYXV0aC52MS5TY2FuT0F1dGhTZXNzaW9uc1Jlc3BvbnNlEooBChtHZXRDcmVkZW50aWFsU3ViamVjdFN1bW1hcnkSNC5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxTdWJqZWN0U3VtbWFyeVJlcXVlc3QaNS5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxTdWJqZWN0U3VtbWFyeVJlc3BvbnNlEpMBCh5HZXRDcmVkZW50aWFsUnVudGltZVByb2plY3Rpb24SNy5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxSdW50aW1lUHJvamVjdGlvblJlcXVlc3QaOC5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxSdW50aW1lUHJvamVjdGlvblJlc3BvbnNlEnIKE0dldEVncmVzc0F1dGhQb2xpY3kSLC5wbGF0Zm9ybS5hdXRoLnYxLkdldEVncmVzc0F1dGhQb2xpY3lSZXF1ZXN0Gi0ucGxhdGZvcm0uYXV0aC52MS5HZXRFZ3Jlc3NBdXRoUG9saWN5UmVzcG9uc2USigEKG1Jlc29sdmVFZ3Jlc3NSZXF1ZXN0SGVhZGVycxI0LnBsYXRmb3JtLmF1dGgudjEuUmVzb2x2ZUVncmVzc1JlcXVlc3RIZWFkZXJzUmVxdWVzdBo1LnBsYXRmb3JtLmF1dGgudjEuUmVzb2x2ZUVncmVzc1JlcXVlc3RIZWFkZXJzUmVzcG9uc2USjQEKHFJlc29sdmVFZ3Jlc3NSZXNwb25zZUhlYWRlcnMSNS5wbGF0Zm9ybS5hdXRoLnYxLlJlc29sdmVFZ3Jlc3NSZXNwb25zZUhlYWRlcnNSZXF1ZXN0GjYucGxhdGZvcm0uYXV0aC52MS5SZXNvbHZlRWdyZXNzUmVzcG9uc2VIZWFkZXJzUmVzcG9uc2VCOFo2Y29kZS1jb2RlLmludGVybmFsL2dvLWNvbnRyYWN0L3BsYXRmb3JtL2F1dGgvdjE7YXV0aHYxYgZwcm90bzM", [file_credential_v1_credential, file_google_protobuf_timestamp, file_api_protocol_v1_protocol, file_platform_auth_v1_egress_auth, file_platform_management_v1_management, file_platform_management_v1_credential_subject_summary]);
+  fileDesc("ChtwbGF0Zm9ybS9hdXRoL3YxL2F1dGgucHJvdG8SEHBsYXRmb3JtLmF1dGgudjEiGAoWTGlzdENyZWRlbnRpYWxzUmVxdWVzdCJQChdMaXN0Q3JlZGVudGlhbHNSZXNwb25zZRI1CgVpdGVtcxgBIAMoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcigQEKHUNyZWF0ZUFQSUtleUNyZWRlbnRpYWxSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEg8KB3B1cnBvc2UYAyABKAkSEQoJdmVuZG9yX2lkGAQgASgJEg8KB2FwaV9rZXkYBSABKAkibAoeQ3JlYXRlQVBJS2V5Q3JlZGVudGlhbFJlc3BvbnNlEjoKCmNyZWRlbnRpYWwYASABKAsyJi5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkNyZWRlbnRpYWxWaWV3Eg4KBnN0YXR1cxgCIAEoCSKBAQodVXBkYXRlQVBJS2V5Q3JlZGVudGlhbFJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDwoHcHVycG9zZRgDIAEoCRIRCgl2ZW5kb3JfaWQYBCABKAkSDwoHYXBpX2tleRgFIAEoCSJsCh5VcGRhdGVBUElLZXlDcmVkZW50aWFsUmVzcG9uc2USOgoKY3JlZGVudGlhbBgBIAEoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcSDgoGc3RhdHVzGAIgASgJIq4CCh5DcmVhdGVTZXNzaW9uQ3JlZGVudGlhbFJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDwoHcHVycG9zZRgDIAEoCRIRCgl2ZW5kb3JfaWQYBCABKAkSEQoJc2NoZW1hX2lkGAUgASgJEhUKDXJlcXVpcmVkX2tleXMYBiADKAkSTAoGdmFsdWVzGAcgAygLMjwucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVTZXNzaW9uQ3JlZGVudGlhbFJlcXVlc3QuVmFsdWVzRW50cnkSFAoMbWVyZ2VfdmFsdWVzGAggASgIGi0KC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEibQofQ3JlYXRlU2Vzc2lvbkNyZWRlbnRpYWxSZXNwb25zZRI6CgpjcmVkZW50aWFsGAEgASgLMiYucGxhdGZvcm0ubWFuYWdlbWVudC52MS5DcmVkZW50aWFsVmlldxIOCgZzdGF0dXMYAiABKAkirgIKHlVwZGF0ZVNlc3Npb25DcmVkZW50aWFsUmVxdWVzdBIVCg1jcmVkZW50aWFsX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIPCgdwdXJwb3NlGAMgASgJEhEKCXZlbmRvcl9pZBgEIAEoCRIRCglzY2hlbWFfaWQYBSABKAkSFQoNcmVxdWlyZWRfa2V5cxgGIAMoCRJMCgZ2YWx1ZXMYByADKAsyPC5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZVNlc3Npb25DcmVkZW50aWFsUmVxdWVzdC5WYWx1ZXNFbnRyeRIUCgxtZXJnZV92YWx1ZXMYCCABKAgaLQoLVmFsdWVzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJtCh9VcGRhdGVTZXNzaW9uQ3JlZGVudGlhbFJlc3BvbnNlEjoKCmNyZWRlbnRpYWwYASABKAsyJi5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkNyZWRlbnRpYWxWaWV3Eg4KBnN0YXR1cxgCIAEoCSLAAQokTWVyZ2VDcmVkZW50aWFsTWF0ZXJpYWxWYWx1ZXNSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkSUgoGdmFsdWVzGAIgAygLMkIucGxhdGZvcm0uYXV0aC52MS5NZXJnZUNyZWRlbnRpYWxNYXRlcmlhbFZhbHVlc1JlcXVlc3QuVmFsdWVzRW50cnkaLQoLVmFsdWVzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI3CiVNZXJnZUNyZWRlbnRpYWxNYXRlcmlhbFZhbHVlc1Jlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCSKWAQojUmVhZENyZWRlbnRpYWxNYXRlcmlhbEZpZWxkc1JlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCRIRCglmaWVsZF9pZHMYAiADKAkSRQoKcG9saWN5X3JlZhgDIAEoCzIxLnBsYXRmb3JtLmF1dGgudjEuQ3JlZGVudGlhbE1hdGVyaWFsUmVhZFBvbGljeVJlZiKpAQokUmVhZENyZWRlbnRpYWxNYXRlcmlhbEZpZWxkc1Jlc3BvbnNlElIKBnZhbHVlcxgBIAMoCzJCLnBsYXRmb3JtLmF1dGgudjEuUmVhZENyZWRlbnRpYWxNYXRlcmlhbEZpZWxkc1Jlc3BvbnNlLlZhbHVlc0VudHJ5Gi0KC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEinwEKH0NyZWRlbnRpYWxNYXRlcmlhbFJlYWRQb2xpY3lSZWYSQAoEa2luZBgBIAEoDjIyLnBsYXRmb3JtLmF1dGgudjEuQ3JlZGVudGlhbE1hdGVyaWFsUmVhZFBvbGljeUtpbmQSEAoIb3duZXJfaWQYAiABKAkSEgoKc3VyZmFjZV9pZBgDIAEoCRIUCgxjb2xsZWN0b3JfaWQYBCABKAkipgIKHENyZWF0ZU9BdXRoQ3JlZGVudGlhbFJlcXVlc3QSFQoNY3JlZGVudGlhbF9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDwoHcHVycG9zZRgDIAEoCRIRCgl2ZW5kb3JfaWQYBCABKAkSDgoGY2xpX2lkGAUgASgJEhQKDGFjY2Vzc190b2tlbhgGIAEoCRIVCg1yZWZyZXNoX3Rva2VuGAcgASgJEhAKCGlkX3Rva2VuGAggASgJEhIKCnRva2VuX3R5cGUYCSABKAkSEgoKYWNjb3VudF9pZBgKIAEoCRIOCgZzY29wZXMYCyADKAkSLgoKZXhwaXJlc19hdBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiawodQ3JlYXRlT0F1dGhDcmVkZW50aWFsUmVzcG9uc2USOgoKY3JlZGVudGlhbBgBIAEoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcSDgoGc3RhdHVzGAIgASgJIqYCChxVcGRhdGVPQXV0aENyZWRlbnRpYWxSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEg8KB3B1cnBvc2UYAyABKAkSEQoJdmVuZG9yX2lkGAQgASgJEg4KBmNsaV9pZBgFIAEoCRIUCgxhY2Nlc3NfdG9rZW4YBiABKAkSFQoNcmVmcmVzaF90b2tlbhgHIAEoCRIQCghpZF90b2tlbhgIIAEoCRISCgp0b2tlbl90eXBlGAkgASgJEhIKCmFjY291bnRfaWQYCiABKAkSDgoGc2NvcGVzGAsgAygJEi4KCmV4cGlyZXNfYXQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImsKHVVwZGF0ZU9BdXRoQ3JlZGVudGlhbFJlc3BvbnNlEjoKCmNyZWRlbnRpYWwYASABKAsyJi5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkNyZWRlbnRpYWxWaWV3Eg4KBnN0YXR1cxgCIAEoCSJGChdSZW5hbWVDcmVkZW50aWFsUmVxdWVzdBIVCg1jcmVkZW50aWFsX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCSJmChhSZW5hbWVDcmVkZW50aWFsUmVzcG9uc2USOgoKY3JlZGVudGlhbBgBIAEoCzImLnBsYXRmb3JtLm1hbmFnZW1lbnQudjEuQ3JlZGVudGlhbFZpZXcSDgoGc3RhdHVzGAIgASgJIjAKF0RlbGV0ZUNyZWRlbnRpYWxSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkiZgoYRGVsZXRlQ3JlZGVudGlhbFJlc3BvbnNlEjoKCmNyZWRlbnRpYWwYASABKAsyJi5wbGF0Zm9ybS5tYW5hZ2VtZW50LnYxLkNyZWRlbnRpYWxWaWV3Eg4KBnN0YXR1cxgCIAEoCSLqAQoNT0F1dGhBcnRpZmFjdBIUCgxhY2Nlc3NfdG9rZW4YASABKAkSFQoNcmVmcmVzaF90b2tlbhgCIAEoCRIQCghpZF90b2tlbhgDIAEoCRIbChN0b2tlbl9yZXNwb25zZV9qc29uGAQgASgJEhIKCnRva2VuX3R5cGUYBSABKAkSEgoKYWNjb3VudF9pZBgGIAEoCRIVCg1hY2NvdW50X2VtYWlsGAcgASgJEg4KBnNjb3BlcxgIIAMoCRIuCgpleHBpcmVzX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKnAQocSW1wb3J0T0F1dGhDcmVkZW50aWFsUmVxdWVzdBIOCgZjbGlfaWQYASABKAkSFQoNY3JlZGVudGlhbF9pZBgCIAEoCRIUCgxkaXNwbGF5X25hbWUYAyABKAkSMQoIYXJ0aWZhY3QYBSABKAsyHy5wbGF0Zm9ybS5hdXRoLnYxLk9BdXRoQXJ0aWZhY3RKBAgEEAVSEW5ldHdvcmtfcG9saWN5X2lkIlgKHUltcG9ydE9BdXRoQ3JlZGVudGlhbFJlc3BvbnNlEjcKCmRlZmluaXRpb24YASABKAsyIy5jcmVkZW50aWFsLnYxLkNyZWRlbnRpYWxEZWZpbml0aW9uIlsKEkVuc3VyZUZyZXNoUmVxdWVzdBIVCg1jcmVkZW50aWFsX2lkGAEgASgJEhcKD21pbl90dGxfc2Vjb25kcxgCIAEoAxIVCg1mb3JjZV9yZWZyZXNoGAMgASgIItgBChNFbnN1cmVGcmVzaFJlc3BvbnNlEg8KB291dGNvbWUYASABKAkSEQoJcmVmcmVzaGVkGAIgASgIEi4KCmV4cGlyZXNfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjYKEm5leHRfcmVmcmVzaF9hZnRlchgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNQoRbGFzdF9yZWZyZXNoZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhgKFlJlZnJlc2hPQXV0aER1ZVJlcXVlc3QiGgoYU2Nhbk9BdXRoU2Vzc2lvbnNSZXF1ZXN0IikKF1JlZnJlc2hPQXV0aER1ZVJlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCSIrChlTY2FuT0F1dGhTZXNzaW9uc1Jlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCSI7CiJHZXRDcmVkZW50aWFsU3ViamVjdFN1bW1hcnlSZXF1ZXN0EhUKDWNyZWRlbnRpYWxfaWQYASABKAkicAojR2V0Q3JlZGVudGlhbFN1YmplY3RTdW1tYXJ5UmVzcG9uc2USSQoGZmllbGRzGAEgAygLMjkucGxhdGZvcm0ubWFuYWdlbWVudC52MS5DcmVkZW50aWFsU3ViamVjdFN1bW1hcnlGaWVsZFZpZXciPgolR2V0Q3JlZGVudGlhbFJ1bnRpbWVQcm9qZWN0aW9uUmVxdWVzdBIVCg1jcmVkZW50aWFsX2lkGAEgASgJIo8BChtDcmVkZW50aWFsUnVudGltZVByb2plY3Rpb24SFQoNY3JlZGVudGlhbF9pZBgBIAEoCRI2Cg9jcmVkZW50aWFsX2tpbmQYAiABKA4yHS5jcmVkZW50aWFsLnYxLkNyZWRlbnRpYWxLaW5kEhEKCXZlbmRvcl9pZBgDIAEoCRIOCgZjbGlfaWQYBCABKAkiawomR2V0Q3JlZGVudGlhbFJ1bnRpbWVQcm9qZWN0aW9uUmVzcG9uc2USQQoKY3JlZGVudGlhbBgBIAEoCzItLnBsYXRmb3JtLmF1dGgudjEuQ3JlZGVudGlhbFJ1bnRpbWVQcm9qZWN0aW9uIrEBChpHZXRFZ3Jlc3NBdXRoUG9saWN5UmVxdWVzdBIRCglwb2xpY3lfaWQYASABKAkSGwoTbWF0ZXJpYWxpemF0aW9uX2tleRgCIAEoCRI2Cg9jcmVkZW50aWFsX2tpbmQYAyABKA4yHS5jcmVkZW50aWFsLnYxLkNyZWRlbnRpYWxLaW5kEisKCHByb3RvY29sGAQgASgOMhkuYXBpX3Byb3RvY29sLnYxLlByb3RvY29sIvYDChtHZXRFZ3Jlc3NBdXRoUG9saWN5UmVzcG9uc2USEQoJcG9saWN5X2lkGAEgASgJEhsKE21hdGVyaWFsaXphdGlvbl9rZXkYAiABKAkSEgoKYWRhcHRlcl9pZBgDIAEoCRJQChlyZXF1ZXN0X3JlcGxhY2VtZW50X3J1bGVzGAQgAygLMi0ucGxhdGZvcm0uYXV0aC52MS5FZ3Jlc3NTaW1wbGVSZXBsYWNlbWVudFJ1bGUSUQoacmVzcG9uc2VfcmVwbGFjZW1lbnRfcnVsZXMYBSADKAsyLS5wbGF0Zm9ybS5hdXRoLnYxLkVncmVzc1NpbXBsZVJlcGxhY2VtZW50UnVsZRIcChRyZXF1ZXN0X2hlYWRlcl9uYW1lcxgGIAMoCRIdChVyZXNwb25zZV9oZWFkZXJfbmFtZXMYByADKAkSGwoTaGVhZGVyX3ZhbHVlX3ByZWZpeBgIIAEoCRIfChdleHRlbnNpb25fcHJvdmlkZXJfbmFtZRgJIAEoCRIkChxoZWFkZXJzX3RvX3Vwc3RyZWFtX29uX2FsbG93GAogAygJEiYKHmhlYWRlcnNfdG9fZG93bnN0cmVhbV9vbl9hbGxvdxgLIAMoCRIlCh1oZWFkZXJzX3RvX2Rvd25zdHJlYW1fb25fZGVueRgMIAMoCSrXAQogQ3JlZGVudGlhbE1hdGVyaWFsUmVhZFBvbGljeUtpbmQSNAowQ1JFREVOVElBTF9NQVRFUklBTF9SRUFEX1BPTElDWV9LSU5EX1VOU1BFQ0lGSUVEEAASPwo7Q1JFREVOVElBTF9NQVRFUklBTF9SRUFEX1BPTElDWV9LSU5EX0NMSV9PQVVUSF9BQ1RJVkVfUVVFUlkQARI8CjhDUkVERU5USUFMX01BVEVSSUFMX1JFQURfUE9MSUNZX0tJTkRfVkVORE9SX0FDVElWRV9RVUVSWRACMrwTCgtBdXRoU2VydmljZRJmCg9MaXN0Q3JlZGVudGlhbHMSKC5wbGF0Zm9ybS5hdXRoLnYxLkxpc3RDcmVkZW50aWFsc1JlcXVlc3QaKS5wbGF0Zm9ybS5hdXRoLnYxLkxpc3RDcmVkZW50aWFsc1Jlc3BvbnNlEnsKFkNyZWF0ZUFQSUtleUNyZWRlbnRpYWwSLy5wbGF0Zm9ybS5hdXRoLnYxLkNyZWF0ZUFQSUtleUNyZWRlbnRpYWxSZXF1ZXN0GjAucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVBUElLZXlDcmVkZW50aWFsUmVzcG9uc2USewoWVXBkYXRlQVBJS2V5Q3JlZGVudGlhbBIvLnBsYXRmb3JtLmF1dGgudjEuVXBkYXRlQVBJS2V5Q3JlZGVudGlhbFJlcXVlc3QaMC5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZUFQSUtleUNyZWRlbnRpYWxSZXNwb25zZRJ+ChdDcmVhdGVTZXNzaW9uQ3JlZGVudGlhbBIwLnBsYXRmb3JtLmF1dGgudjEuQ3JlYXRlU2Vzc2lvbkNyZWRlbnRpYWxSZXF1ZXN0GjEucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVTZXNzaW9uQ3JlZGVudGlhbFJlc3BvbnNlEn4KF1VwZGF0ZVNlc3Npb25DcmVkZW50aWFsEjAucGxhdGZvcm0uYXV0aC52MS5VcGRhdGVTZXNzaW9uQ3JlZGVudGlhbFJlcXVlc3QaMS5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZVNlc3Npb25DcmVkZW50aWFsUmVzcG9uc2USkAEKHU1lcmdlQ3JlZGVudGlhbE1hdGVyaWFsVmFsdWVzEjYucGxhdGZvcm0uYXV0aC52MS5NZXJnZUNyZWRlbnRpYWxNYXRlcmlhbFZhbHVlc1JlcXVlc3QaNy5wbGF0Zm9ybS5hdXRoLnYxLk1lcmdlQ3JlZGVudGlhbE1hdGVyaWFsVmFsdWVzUmVzcG9uc2USjQEKHFJlYWRDcmVkZW50aWFsTWF0ZXJpYWxGaWVsZHMSNS5wbGF0Zm9ybS5hdXRoLnYxLlJlYWRDcmVkZW50aWFsTWF0ZXJpYWxGaWVsZHNSZXF1ZXN0GjYucGxhdGZvcm0uYXV0aC52MS5SZWFkQ3JlZGVudGlhbE1hdGVyaWFsRmllbGRzUmVzcG9uc2USeAoVQ3JlYXRlT0F1dGhDcmVkZW50aWFsEi4ucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVPQXV0aENyZWRlbnRpYWxSZXF1ZXN0Gi8ucGxhdGZvcm0uYXV0aC52MS5DcmVhdGVPQXV0aENyZWRlbnRpYWxSZXNwb25zZRJ4ChVVcGRhdGVPQXV0aENyZWRlbnRpYWwSLi5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZU9BdXRoQ3JlZGVudGlhbFJlcXVlc3QaLy5wbGF0Zm9ybS5hdXRoLnYxLlVwZGF0ZU9BdXRoQ3JlZGVudGlhbFJlc3BvbnNlEmkKEFJlbmFtZUNyZWRlbnRpYWwSKS5wbGF0Zm9ybS5hdXRoLnYxLlJlbmFtZUNyZWRlbnRpYWxSZXF1ZXN0GioucGxhdGZvcm0uYXV0aC52MS5SZW5hbWVDcmVkZW50aWFsUmVzcG9uc2USaQoQRGVsZXRlQ3JlZGVudGlhbBIpLnBsYXRmb3JtLmF1dGgudjEuRGVsZXRlQ3JlZGVudGlhbFJlcXVlc3QaKi5wbGF0Zm9ybS5hdXRoLnYxLkRlbGV0ZUNyZWRlbnRpYWxSZXNwb25zZRJ4ChVJbXBvcnRPQXV0aENyZWRlbnRpYWwSLi5wbGF0Zm9ybS5hdXRoLnYxLkltcG9ydE9BdXRoQ3JlZGVudGlhbFJlcXVlc3QaLy5wbGF0Zm9ybS5hdXRoLnYxLkltcG9ydE9BdXRoQ3JlZGVudGlhbFJlc3BvbnNlEloKC0Vuc3VyZUZyZXNoEiQucGxhdGZvcm0uYXV0aC52MS5FbnN1cmVGcmVzaFJlcXVlc3QaJS5wbGF0Zm9ybS5hdXRoLnYxLkVuc3VyZUZyZXNoUmVzcG9uc2USZgoPUmVmcmVzaE9BdXRoRHVlEigucGxhdGZvcm0uYXV0aC52MS5SZWZyZXNoT0F1dGhEdWVSZXF1ZXN0GikucGxhdGZvcm0uYXV0aC52MS5SZWZyZXNoT0F1dGhEdWVSZXNwb25zZRJsChFTY2FuT0F1dGhTZXNzaW9ucxIqLnBsYXRmb3JtLmF1dGgudjEuU2Nhbk9BdXRoU2Vzc2lvbnNSZXF1ZXN0GisucGxhdGZvcm0uYXV0aC52MS5TY2FuT0F1dGhTZXNzaW9uc1Jlc3BvbnNlEooBChtHZXRDcmVkZW50aWFsU3ViamVjdFN1bW1hcnkSNC5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxTdWJqZWN0U3VtbWFyeVJlcXVlc3QaNS5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxTdWJqZWN0U3VtbWFyeVJlc3BvbnNlEpMBCh5HZXRDcmVkZW50aWFsUnVudGltZVByb2plY3Rpb24SNy5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxSdW50aW1lUHJvamVjdGlvblJlcXVlc3QaOC5wbGF0Zm9ybS5hdXRoLnYxLkdldENyZWRlbnRpYWxSdW50aW1lUHJvamVjdGlvblJlc3BvbnNlEnIKE0dldEVncmVzc0F1dGhQb2xpY3kSLC5wbGF0Zm9ybS5hdXRoLnYxLkdldEVncmVzc0F1dGhQb2xpY3lSZXF1ZXN0Gi0ucGxhdGZvcm0uYXV0aC52MS5HZXRFZ3Jlc3NBdXRoUG9saWN5UmVzcG9uc2USigEKG1Jlc29sdmVFZ3Jlc3NSZXF1ZXN0SGVhZGVycxI0LnBsYXRmb3JtLmF1dGgudjEuUmVzb2x2ZUVncmVzc1JlcXVlc3RIZWFkZXJzUmVxdWVzdBo1LnBsYXRmb3JtLmF1dGgudjEuUmVzb2x2ZUVncmVzc1JlcXVlc3RIZWFkZXJzUmVzcG9uc2USjQEKHFJlc29sdmVFZ3Jlc3NSZXNwb25zZUhlYWRlcnMSNS5wbGF0Zm9ybS5hdXRoLnYxLlJlc29sdmVFZ3Jlc3NSZXNwb25zZUhlYWRlcnNSZXF1ZXN0GjYucGxhdGZvcm0uYXV0aC52MS5SZXNvbHZlRWdyZXNzUmVzcG9uc2VIZWFkZXJzUmVzcG9uc2VCOFo2Y29kZS1jb2RlLmludGVybmFsL2dvLWNvbnRyYWN0L3BsYXRmb3JtL2F1dGgvdjE7YXV0aHYxYgZwcm90bzM", [file_credential_v1_credential, file_google_protobuf_timestamp, file_api_protocol_v1_protocol, file_platform_auth_v1_egress_auth, file_platform_management_v1_management, file_platform_management_v1_credential_subject_summary]);
 
 /**
  * @generated from message platform.auth.v1.ListCredentialsRequest
@@ -321,6 +321,131 @@ export const UpdateSessionCredentialResponseSchema: GenMessage<UpdateSessionCred
   messageDesc(file_platform_auth_v1_auth, 9);
 
 /**
+ * @generated from message platform.auth.v1.MergeCredentialMaterialValuesRequest
+ */
+export type MergeCredentialMaterialValuesRequest = Message<"platform.auth.v1.MergeCredentialMaterialValuesRequest"> & {
+  /**
+   * @generated from field: string credential_id = 1;
+   */
+  credentialId: string;
+
+  /**
+   * @generated from field: map<string, string> values = 2;
+   */
+  values: { [key: string]: string };
+};
+
+/**
+ * Describes the message platform.auth.v1.MergeCredentialMaterialValuesRequest.
+ * Use `create(MergeCredentialMaterialValuesRequestSchema)` to create a new message.
+ */
+export const MergeCredentialMaterialValuesRequestSchema: GenMessage<MergeCredentialMaterialValuesRequest> = /*@__PURE__*/
+  messageDesc(file_platform_auth_v1_auth, 10);
+
+/**
+ * @generated from message platform.auth.v1.MergeCredentialMaterialValuesResponse
+ */
+export type MergeCredentialMaterialValuesResponse = Message<"platform.auth.v1.MergeCredentialMaterialValuesResponse"> & {
+  /**
+   * @generated from field: string status = 1;
+   */
+  status: string;
+};
+
+/**
+ * Describes the message platform.auth.v1.MergeCredentialMaterialValuesResponse.
+ * Use `create(MergeCredentialMaterialValuesResponseSchema)` to create a new message.
+ */
+export const MergeCredentialMaterialValuesResponseSchema: GenMessage<MergeCredentialMaterialValuesResponse> = /*@__PURE__*/
+  messageDesc(file_platform_auth_v1_auth, 11);
+
+/**
+ * @generated from message platform.auth.v1.ReadCredentialMaterialFieldsRequest
+ */
+export type ReadCredentialMaterialFieldsRequest = Message<"platform.auth.v1.ReadCredentialMaterialFieldsRequest"> & {
+  /**
+   * @generated from field: string credential_id = 1;
+   */
+  credentialId: string;
+
+  /**
+   * @generated from field: repeated string field_ids = 2;
+   */
+  fieldIds: string[];
+
+  /**
+   * @generated from field: platform.auth.v1.CredentialMaterialReadPolicyRef policy_ref = 3;
+   */
+  policyRef?: CredentialMaterialReadPolicyRef;
+};
+
+/**
+ * Describes the message platform.auth.v1.ReadCredentialMaterialFieldsRequest.
+ * Use `create(ReadCredentialMaterialFieldsRequestSchema)` to create a new message.
+ */
+export const ReadCredentialMaterialFieldsRequestSchema: GenMessage<ReadCredentialMaterialFieldsRequest> = /*@__PURE__*/
+  messageDesc(file_platform_auth_v1_auth, 12);
+
+/**
+ * @generated from message platform.auth.v1.ReadCredentialMaterialFieldsResponse
+ */
+export type ReadCredentialMaterialFieldsResponse = Message<"platform.auth.v1.ReadCredentialMaterialFieldsResponse"> & {
+  /**
+   * @generated from field: map<string, string> values = 1;
+   */
+  values: { [key: string]: string };
+};
+
+/**
+ * Describes the message platform.auth.v1.ReadCredentialMaterialFieldsResponse.
+ * Use `create(ReadCredentialMaterialFieldsResponseSchema)` to create a new message.
+ */
+export const ReadCredentialMaterialFieldsResponseSchema: GenMessage<ReadCredentialMaterialFieldsResponse> = /*@__PURE__*/
+  messageDesc(file_platform_auth_v1_auth, 13);
+
+/**
+ * @generated from message platform.auth.v1.CredentialMaterialReadPolicyRef
+ */
+export type CredentialMaterialReadPolicyRef = Message<"platform.auth.v1.CredentialMaterialReadPolicyRef"> & {
+  /**
+   * @generated from field: platform.auth.v1.CredentialMaterialReadPolicyKind kind = 1;
+   */
+  kind: CredentialMaterialReadPolicyKind;
+
+  /**
+   * owner_id is the support-owned policy subject. For CLI active queries this is
+   * cli_id; for vendor active queries this is vendor_id.
+   *
+   * @generated from field: string owner_id = 2;
+   */
+  ownerId: string;
+
+  /**
+   * surface_id narrows vendor active query policy to one provider surface
+   * binding. CLI active queries may leave this empty.
+   *
+   * @generated from field: string surface_id = 3;
+   */
+  surfaceId: string;
+
+  /**
+   * collector_id is the active query collector implementation that is requesting
+   * material readback. When set, authservice verifies it matches the support
+   * policy before releasing material values.
+   *
+   * @generated from field: string collector_id = 4;
+   */
+  collectorId: string;
+};
+
+/**
+ * Describes the message platform.auth.v1.CredentialMaterialReadPolicyRef.
+ * Use `create(CredentialMaterialReadPolicyRefSchema)` to create a new message.
+ */
+export const CredentialMaterialReadPolicyRefSchema: GenMessage<CredentialMaterialReadPolicyRef> = /*@__PURE__*/
+  messageDesc(file_platform_auth_v1_auth, 14);
+
+/**
  * @generated from message platform.auth.v1.CreateOAuthCredentialRequest
  */
 export type CreateOAuthCredentialRequest = Message<"platform.auth.v1.CreateOAuthCredentialRequest"> & {
@@ -390,7 +515,7 @@ export type CreateOAuthCredentialRequest = Message<"platform.auth.v1.CreateOAuth
  * Use `create(CreateOAuthCredentialRequestSchema)` to create a new message.
  */
 export const CreateOAuthCredentialRequestSchema: GenMessage<CreateOAuthCredentialRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 10);
+  messageDesc(file_platform_auth_v1_auth, 15);
 
 /**
  * @generated from message platform.auth.v1.CreateOAuthCredentialResponse
@@ -412,7 +537,7 @@ export type CreateOAuthCredentialResponse = Message<"platform.auth.v1.CreateOAut
  * Use `create(CreateOAuthCredentialResponseSchema)` to create a new message.
  */
 export const CreateOAuthCredentialResponseSchema: GenMessage<CreateOAuthCredentialResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 11);
+  messageDesc(file_platform_auth_v1_auth, 16);
 
 /**
  * @generated from message platform.auth.v1.UpdateOAuthCredentialRequest
@@ -484,7 +609,7 @@ export type UpdateOAuthCredentialRequest = Message<"platform.auth.v1.UpdateOAuth
  * Use `create(UpdateOAuthCredentialRequestSchema)` to create a new message.
  */
 export const UpdateOAuthCredentialRequestSchema: GenMessage<UpdateOAuthCredentialRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 12);
+  messageDesc(file_platform_auth_v1_auth, 17);
 
 /**
  * @generated from message platform.auth.v1.UpdateOAuthCredentialResponse
@@ -506,7 +631,7 @@ export type UpdateOAuthCredentialResponse = Message<"platform.auth.v1.UpdateOAut
  * Use `create(UpdateOAuthCredentialResponseSchema)` to create a new message.
  */
 export const UpdateOAuthCredentialResponseSchema: GenMessage<UpdateOAuthCredentialResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 13);
+  messageDesc(file_platform_auth_v1_auth, 18);
 
 /**
  * @generated from message platform.auth.v1.RenameCredentialRequest
@@ -528,7 +653,7 @@ export type RenameCredentialRequest = Message<"platform.auth.v1.RenameCredential
  * Use `create(RenameCredentialRequestSchema)` to create a new message.
  */
 export const RenameCredentialRequestSchema: GenMessage<RenameCredentialRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 14);
+  messageDesc(file_platform_auth_v1_auth, 19);
 
 /**
  * @generated from message platform.auth.v1.RenameCredentialResponse
@@ -550,7 +675,7 @@ export type RenameCredentialResponse = Message<"platform.auth.v1.RenameCredentia
  * Use `create(RenameCredentialResponseSchema)` to create a new message.
  */
 export const RenameCredentialResponseSchema: GenMessage<RenameCredentialResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 15);
+  messageDesc(file_platform_auth_v1_auth, 20);
 
 /**
  * @generated from message platform.auth.v1.DeleteCredentialRequest
@@ -567,7 +692,7 @@ export type DeleteCredentialRequest = Message<"platform.auth.v1.DeleteCredential
  * Use `create(DeleteCredentialRequestSchema)` to create a new message.
  */
 export const DeleteCredentialRequestSchema: GenMessage<DeleteCredentialRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 16);
+  messageDesc(file_platform_auth_v1_auth, 21);
 
 /**
  * @generated from message platform.auth.v1.DeleteCredentialResponse
@@ -589,7 +714,7 @@ export type DeleteCredentialResponse = Message<"platform.auth.v1.DeleteCredentia
  * Use `create(DeleteCredentialResponseSchema)` to create a new message.
  */
 export const DeleteCredentialResponseSchema: GenMessage<DeleteCredentialResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 17);
+  messageDesc(file_platform_auth_v1_auth, 22);
 
 /**
  * @generated from message platform.auth.v1.OAuthArtifact
@@ -646,7 +771,7 @@ export type OAuthArtifact = Message<"platform.auth.v1.OAuthArtifact"> & {
  * Use `create(OAuthArtifactSchema)` to create a new message.
  */
 export const OAuthArtifactSchema: GenMessage<OAuthArtifact> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 18);
+  messageDesc(file_platform_auth_v1_auth, 23);
 
 /**
  * @generated from message platform.auth.v1.ImportOAuthCredentialRequest
@@ -678,7 +803,7 @@ export type ImportOAuthCredentialRequest = Message<"platform.auth.v1.ImportOAuth
  * Use `create(ImportOAuthCredentialRequestSchema)` to create a new message.
  */
 export const ImportOAuthCredentialRequestSchema: GenMessage<ImportOAuthCredentialRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 19);
+  messageDesc(file_platform_auth_v1_auth, 24);
 
 /**
  * @generated from message platform.auth.v1.ImportOAuthCredentialResponse
@@ -695,7 +820,7 @@ export type ImportOAuthCredentialResponse = Message<"platform.auth.v1.ImportOAut
  * Use `create(ImportOAuthCredentialResponseSchema)` to create a new message.
  */
 export const ImportOAuthCredentialResponseSchema: GenMessage<ImportOAuthCredentialResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 20);
+  messageDesc(file_platform_auth_v1_auth, 25);
 
 /**
  * @generated from message platform.auth.v1.EnsureFreshRequest
@@ -722,7 +847,7 @@ export type EnsureFreshRequest = Message<"platform.auth.v1.EnsureFreshRequest"> 
  * Use `create(EnsureFreshRequestSchema)` to create a new message.
  */
 export const EnsureFreshRequestSchema: GenMessage<EnsureFreshRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 21);
+  messageDesc(file_platform_auth_v1_auth, 26);
 
 /**
  * @generated from message platform.auth.v1.EnsureFreshResponse
@@ -759,7 +884,7 @@ export type EnsureFreshResponse = Message<"platform.auth.v1.EnsureFreshResponse"
  * Use `create(EnsureFreshResponseSchema)` to create a new message.
  */
 export const EnsureFreshResponseSchema: GenMessage<EnsureFreshResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 22);
+  messageDesc(file_platform_auth_v1_auth, 27);
 
 /**
  * @generated from message platform.auth.v1.RefreshOAuthDueRequest
@@ -772,7 +897,7 @@ export type RefreshOAuthDueRequest = Message<"platform.auth.v1.RefreshOAuthDueRe
  * Use `create(RefreshOAuthDueRequestSchema)` to create a new message.
  */
 export const RefreshOAuthDueRequestSchema: GenMessage<RefreshOAuthDueRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 23);
+  messageDesc(file_platform_auth_v1_auth, 28);
 
 /**
  * @generated from message platform.auth.v1.ScanOAuthSessionsRequest
@@ -785,7 +910,7 @@ export type ScanOAuthSessionsRequest = Message<"platform.auth.v1.ScanOAuthSessio
  * Use `create(ScanOAuthSessionsRequestSchema)` to create a new message.
  */
 export const ScanOAuthSessionsRequestSchema: GenMessage<ScanOAuthSessionsRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 24);
+  messageDesc(file_platform_auth_v1_auth, 29);
 
 /**
  * @generated from message platform.auth.v1.RefreshOAuthDueResponse
@@ -802,7 +927,7 @@ export type RefreshOAuthDueResponse = Message<"platform.auth.v1.RefreshOAuthDueR
  * Use `create(RefreshOAuthDueResponseSchema)` to create a new message.
  */
 export const RefreshOAuthDueResponseSchema: GenMessage<RefreshOAuthDueResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 25);
+  messageDesc(file_platform_auth_v1_auth, 30);
 
 /**
  * @generated from message platform.auth.v1.ScanOAuthSessionsResponse
@@ -819,7 +944,7 @@ export type ScanOAuthSessionsResponse = Message<"platform.auth.v1.ScanOAuthSessi
  * Use `create(ScanOAuthSessionsResponseSchema)` to create a new message.
  */
 export const ScanOAuthSessionsResponseSchema: GenMessage<ScanOAuthSessionsResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 26);
+  messageDesc(file_platform_auth_v1_auth, 31);
 
 /**
  * @generated from message platform.auth.v1.GetCredentialSubjectSummaryRequest
@@ -836,7 +961,7 @@ export type GetCredentialSubjectSummaryRequest = Message<"platform.auth.v1.GetCr
  * Use `create(GetCredentialSubjectSummaryRequestSchema)` to create a new message.
  */
 export const GetCredentialSubjectSummaryRequestSchema: GenMessage<GetCredentialSubjectSummaryRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 27);
+  messageDesc(file_platform_auth_v1_auth, 32);
 
 /**
  * @generated from message platform.auth.v1.GetCredentialSubjectSummaryResponse
@@ -853,7 +978,7 @@ export type GetCredentialSubjectSummaryResponse = Message<"platform.auth.v1.GetC
  * Use `create(GetCredentialSubjectSummaryResponseSchema)` to create a new message.
  */
 export const GetCredentialSubjectSummaryResponseSchema: GenMessage<GetCredentialSubjectSummaryResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 28);
+  messageDesc(file_platform_auth_v1_auth, 33);
 
 /**
  * @generated from message platform.auth.v1.GetCredentialRuntimeProjectionRequest
@@ -870,7 +995,7 @@ export type GetCredentialRuntimeProjectionRequest = Message<"platform.auth.v1.Ge
  * Use `create(GetCredentialRuntimeProjectionRequestSchema)` to create a new message.
  */
 export const GetCredentialRuntimeProjectionRequestSchema: GenMessage<GetCredentialRuntimeProjectionRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 29);
+  messageDesc(file_platform_auth_v1_auth, 34);
 
 /**
  * @generated from message platform.auth.v1.CredentialRuntimeProjection
@@ -895,11 +1020,6 @@ export type CredentialRuntimeProjection = Message<"platform.auth.v1.CredentialRu
    * @generated from field: string cli_id = 4;
    */
   cliId: string;
-
-  /**
-   * @generated from field: string secret_name = 5;
-   */
-  secretName: string;
 };
 
 /**
@@ -907,7 +1027,7 @@ export type CredentialRuntimeProjection = Message<"platform.auth.v1.CredentialRu
  * Use `create(CredentialRuntimeProjectionSchema)` to create a new message.
  */
 export const CredentialRuntimeProjectionSchema: GenMessage<CredentialRuntimeProjection> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 30);
+  messageDesc(file_platform_auth_v1_auth, 35);
 
 /**
  * @generated from message platform.auth.v1.GetCredentialRuntimeProjectionResponse
@@ -924,7 +1044,7 @@ export type GetCredentialRuntimeProjectionResponse = Message<"platform.auth.v1.G
  * Use `create(GetCredentialRuntimeProjectionResponseSchema)` to create a new message.
  */
 export const GetCredentialRuntimeProjectionResponseSchema: GenMessage<GetCredentialRuntimeProjectionResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 31);
+  messageDesc(file_platform_auth_v1_auth, 36);
 
 /**
  * @generated from message platform.auth.v1.GetEgressAuthPolicyRequest
@@ -956,7 +1076,7 @@ export type GetEgressAuthPolicyRequest = Message<"platform.auth.v1.GetEgressAuth
  * Use `create(GetEgressAuthPolicyRequestSchema)` to create a new message.
  */
 export const GetEgressAuthPolicyRequestSchema: GenMessage<GetEgressAuthPolicyRequest> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 32);
+  messageDesc(file_platform_auth_v1_auth, 37);
 
 /**
  * @generated from message platform.auth.v1.GetEgressAuthPolicyResponse
@@ -1001,6 +1121,26 @@ export type GetEgressAuthPolicyResponse = Message<"platform.auth.v1.GetEgressAut
    * @generated from field: string header_value_prefix = 8;
    */
   headerValuePrefix: string;
+
+  /**
+   * @generated from field: string extension_provider_name = 9;
+   */
+  extensionProviderName: string;
+
+  /**
+   * @generated from field: repeated string headers_to_upstream_on_allow = 10;
+   */
+  headersToUpstreamOnAllow: string[];
+
+  /**
+   * @generated from field: repeated string headers_to_downstream_on_allow = 11;
+   */
+  headersToDownstreamOnAllow: string[];
+
+  /**
+   * @generated from field: repeated string headers_to_downstream_on_deny = 12;
+   */
+  headersToDownstreamOnDeny: string[];
 };
 
 /**
@@ -1008,7 +1148,33 @@ export type GetEgressAuthPolicyResponse = Message<"platform.auth.v1.GetEgressAut
  * Use `create(GetEgressAuthPolicyResponseSchema)` to create a new message.
  */
 export const GetEgressAuthPolicyResponseSchema: GenMessage<GetEgressAuthPolicyResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_auth, 33);
+  messageDesc(file_platform_auth_v1_auth, 38);
+
+/**
+ * @generated from enum platform.auth.v1.CredentialMaterialReadPolicyKind
+ */
+export enum CredentialMaterialReadPolicyKind {
+  /**
+   * @generated from enum value: CREDENTIAL_MATERIAL_READ_POLICY_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CREDENTIAL_MATERIAL_READ_POLICY_KIND_CLI_OAUTH_ACTIVE_QUERY = 1;
+   */
+  CLI_OAUTH_ACTIVE_QUERY = 1,
+
+  /**
+   * @generated from enum value: CREDENTIAL_MATERIAL_READ_POLICY_KIND_VENDOR_ACTIVE_QUERY = 2;
+   */
+  VENDOR_ACTIVE_QUERY = 2,
+}
+
+/**
+ * Describes the enum platform.auth.v1.CredentialMaterialReadPolicyKind.
+ */
+export const CredentialMaterialReadPolicyKindSchema: GenEnum<CredentialMaterialReadPolicyKind> = /*@__PURE__*/
+  enumDesc(file_platform_auth_v1_auth, 0);
 
 /**
  * @generated from service platform.auth.v1.AuthService
@@ -1053,6 +1219,22 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof UpdateSessionCredentialRequestSchema;
     output: typeof UpdateSessionCredentialResponseSchema;
+  },
+  /**
+   * @generated from rpc platform.auth.v1.AuthService.MergeCredentialMaterialValues
+   */
+  mergeCredentialMaterialValues: {
+    methodKind: "unary";
+    input: typeof MergeCredentialMaterialValuesRequestSchema;
+    output: typeof MergeCredentialMaterialValuesResponseSchema;
+  },
+  /**
+   * @generated from rpc platform.auth.v1.AuthService.ReadCredentialMaterialFields
+   */
+  readCredentialMaterialFields: {
+    methodKind: "unary";
+    input: typeof ReadCredentialMaterialFieldsRequestSchema;
+    output: typeof ReadCredentialMaterialFieldsResponseSchema;
   },
   /**
    * @generated from rpc platform.auth.v1.AuthService.CreateOAuthCredential

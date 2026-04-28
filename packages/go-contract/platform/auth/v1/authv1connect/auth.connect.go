@@ -48,6 +48,12 @@ const (
 	// AuthServiceUpdateSessionCredentialProcedure is the fully-qualified name of the AuthService's
 	// UpdateSessionCredential RPC.
 	AuthServiceUpdateSessionCredentialProcedure = "/platform.auth.v1.AuthService/UpdateSessionCredential"
+	// AuthServiceMergeCredentialMaterialValuesProcedure is the fully-qualified name of the
+	// AuthService's MergeCredentialMaterialValues RPC.
+	AuthServiceMergeCredentialMaterialValuesProcedure = "/platform.auth.v1.AuthService/MergeCredentialMaterialValues"
+	// AuthServiceReadCredentialMaterialFieldsProcedure is the fully-qualified name of the AuthService's
+	// ReadCredentialMaterialFields RPC.
+	AuthServiceReadCredentialMaterialFieldsProcedure = "/platform.auth.v1.AuthService/ReadCredentialMaterialFields"
 	// AuthServiceCreateOAuthCredentialProcedure is the fully-qualified name of the AuthService's
 	// CreateOAuthCredential RPC.
 	AuthServiceCreateOAuthCredentialProcedure = "/platform.auth.v1.AuthService/CreateOAuthCredential"
@@ -95,6 +101,8 @@ type AuthServiceClient interface {
 	UpdateAPIKeyCredential(context.Context, *v1.UpdateAPIKeyCredentialRequest) (*v1.UpdateAPIKeyCredentialResponse, error)
 	CreateSessionCredential(context.Context, *v1.CreateSessionCredentialRequest) (*v1.CreateSessionCredentialResponse, error)
 	UpdateSessionCredential(context.Context, *v1.UpdateSessionCredentialRequest) (*v1.UpdateSessionCredentialResponse, error)
+	MergeCredentialMaterialValues(context.Context, *v1.MergeCredentialMaterialValuesRequest) (*v1.MergeCredentialMaterialValuesResponse, error)
+	ReadCredentialMaterialFields(context.Context, *v1.ReadCredentialMaterialFieldsRequest) (*v1.ReadCredentialMaterialFieldsResponse, error)
 	CreateOAuthCredential(context.Context, *v1.CreateOAuthCredentialRequest) (*v1.CreateOAuthCredentialResponse, error)
 	UpdateOAuthCredential(context.Context, *v1.UpdateOAuthCredentialRequest) (*v1.UpdateOAuthCredentialResponse, error)
 	RenameCredential(context.Context, *v1.RenameCredentialRequest) (*v1.RenameCredentialResponse, error)
@@ -149,6 +157,18 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			httpClient,
 			baseURL+AuthServiceUpdateSessionCredentialProcedure,
 			connect.WithSchema(authServiceMethods.ByName("UpdateSessionCredential")),
+			connect.WithClientOptions(opts...),
+		),
+		mergeCredentialMaterialValues: connect.NewClient[v1.MergeCredentialMaterialValuesRequest, v1.MergeCredentialMaterialValuesResponse](
+			httpClient,
+			baseURL+AuthServiceMergeCredentialMaterialValuesProcedure,
+			connect.WithSchema(authServiceMethods.ByName("MergeCredentialMaterialValues")),
+			connect.WithClientOptions(opts...),
+		),
+		readCredentialMaterialFields: connect.NewClient[v1.ReadCredentialMaterialFieldsRequest, v1.ReadCredentialMaterialFieldsResponse](
+			httpClient,
+			baseURL+AuthServiceReadCredentialMaterialFieldsProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ReadCredentialMaterialFields")),
 			connect.WithClientOptions(opts...),
 		),
 		createOAuthCredential: connect.NewClient[v1.CreateOAuthCredentialRequest, v1.CreateOAuthCredentialResponse](
@@ -239,6 +259,8 @@ type authServiceClient struct {
 	updateAPIKeyCredential         *connect.Client[v1.UpdateAPIKeyCredentialRequest, v1.UpdateAPIKeyCredentialResponse]
 	createSessionCredential        *connect.Client[v1.CreateSessionCredentialRequest, v1.CreateSessionCredentialResponse]
 	updateSessionCredential        *connect.Client[v1.UpdateSessionCredentialRequest, v1.UpdateSessionCredentialResponse]
+	mergeCredentialMaterialValues  *connect.Client[v1.MergeCredentialMaterialValuesRequest, v1.MergeCredentialMaterialValuesResponse]
+	readCredentialMaterialFields   *connect.Client[v1.ReadCredentialMaterialFieldsRequest, v1.ReadCredentialMaterialFieldsResponse]
 	createOAuthCredential          *connect.Client[v1.CreateOAuthCredentialRequest, v1.CreateOAuthCredentialResponse]
 	updateOAuthCredential          *connect.Client[v1.UpdateOAuthCredentialRequest, v1.UpdateOAuthCredentialResponse]
 	renameCredential               *connect.Client[v1.RenameCredentialRequest, v1.RenameCredentialResponse]
@@ -293,6 +315,24 @@ func (c *authServiceClient) CreateSessionCredential(ctx context.Context, req *v1
 // UpdateSessionCredential calls platform.auth.v1.AuthService.UpdateSessionCredential.
 func (c *authServiceClient) UpdateSessionCredential(ctx context.Context, req *v1.UpdateSessionCredentialRequest) (*v1.UpdateSessionCredentialResponse, error) {
 	response, err := c.updateSessionCredential.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
+// MergeCredentialMaterialValues calls platform.auth.v1.AuthService.MergeCredentialMaterialValues.
+func (c *authServiceClient) MergeCredentialMaterialValues(ctx context.Context, req *v1.MergeCredentialMaterialValuesRequest) (*v1.MergeCredentialMaterialValuesResponse, error) {
+	response, err := c.mergeCredentialMaterialValues.CallUnary(ctx, connect.NewRequest(req))
+	if response != nil {
+		return response.Msg, err
+	}
+	return nil, err
+}
+
+// ReadCredentialMaterialFields calls platform.auth.v1.AuthService.ReadCredentialMaterialFields.
+func (c *authServiceClient) ReadCredentialMaterialFields(ctx context.Context, req *v1.ReadCredentialMaterialFieldsRequest) (*v1.ReadCredentialMaterialFieldsResponse, error) {
+	response, err := c.readCredentialMaterialFields.CallUnary(ctx, connect.NewRequest(req))
 	if response != nil {
 		return response.Msg, err
 	}
@@ -423,6 +463,8 @@ type AuthServiceHandler interface {
 	UpdateAPIKeyCredential(context.Context, *v1.UpdateAPIKeyCredentialRequest) (*v1.UpdateAPIKeyCredentialResponse, error)
 	CreateSessionCredential(context.Context, *v1.CreateSessionCredentialRequest) (*v1.CreateSessionCredentialResponse, error)
 	UpdateSessionCredential(context.Context, *v1.UpdateSessionCredentialRequest) (*v1.UpdateSessionCredentialResponse, error)
+	MergeCredentialMaterialValues(context.Context, *v1.MergeCredentialMaterialValuesRequest) (*v1.MergeCredentialMaterialValuesResponse, error)
+	ReadCredentialMaterialFields(context.Context, *v1.ReadCredentialMaterialFieldsRequest) (*v1.ReadCredentialMaterialFieldsResponse, error)
 	CreateOAuthCredential(context.Context, *v1.CreateOAuthCredentialRequest) (*v1.CreateOAuthCredentialResponse, error)
 	UpdateOAuthCredential(context.Context, *v1.UpdateOAuthCredentialRequest) (*v1.UpdateOAuthCredentialResponse, error)
 	RenameCredential(context.Context, *v1.RenameCredentialRequest) (*v1.RenameCredentialResponse, error)
@@ -473,6 +515,18 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		AuthServiceUpdateSessionCredentialProcedure,
 		svc.UpdateSessionCredential,
 		connect.WithSchema(authServiceMethods.ByName("UpdateSessionCredential")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceMergeCredentialMaterialValuesHandler := connect.NewUnaryHandlerSimple(
+		AuthServiceMergeCredentialMaterialValuesProcedure,
+		svc.MergeCredentialMaterialValues,
+		connect.WithSchema(authServiceMethods.ByName("MergeCredentialMaterialValues")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceReadCredentialMaterialFieldsHandler := connect.NewUnaryHandlerSimple(
+		AuthServiceReadCredentialMaterialFieldsProcedure,
+		svc.ReadCredentialMaterialFields,
+		connect.WithSchema(authServiceMethods.ByName("ReadCredentialMaterialFields")),
 		connect.WithHandlerOptions(opts...),
 	)
 	authServiceCreateOAuthCredentialHandler := connect.NewUnaryHandlerSimple(
@@ -565,6 +619,10 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceCreateSessionCredentialHandler.ServeHTTP(w, r)
 		case AuthServiceUpdateSessionCredentialProcedure:
 			authServiceUpdateSessionCredentialHandler.ServeHTTP(w, r)
+		case AuthServiceMergeCredentialMaterialValuesProcedure:
+			authServiceMergeCredentialMaterialValuesHandler.ServeHTTP(w, r)
+		case AuthServiceReadCredentialMaterialFieldsProcedure:
+			authServiceReadCredentialMaterialFieldsHandler.ServeHTTP(w, r)
 		case AuthServiceCreateOAuthCredentialProcedure:
 			authServiceCreateOAuthCredentialHandler.ServeHTTP(w, r)
 		case AuthServiceUpdateOAuthCredentialProcedure:
@@ -618,6 +676,14 @@ func (UnimplementedAuthServiceHandler) CreateSessionCredential(context.Context, 
 
 func (UnimplementedAuthServiceHandler) UpdateSessionCredential(context.Context, *v1.UpdateSessionCredentialRequest) (*v1.UpdateSessionCredentialResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.auth.v1.AuthService.UpdateSessionCredential is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) MergeCredentialMaterialValues(context.Context, *v1.MergeCredentialMaterialValuesRequest) (*v1.MergeCredentialMaterialValuesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.auth.v1.AuthService.MergeCredentialMaterialValues is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ReadCredentialMaterialFields(context.Context, *v1.ReadCredentialMaterialFieldsRequest) (*v1.ReadCredentialMaterialFieldsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.auth.v1.AuthService.ReadCredentialMaterialFields is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) CreateOAuthCredential(context.Context, *v1.CreateOAuthCredentialRequest) (*v1.CreateOAuthCredentialResponse, error) {

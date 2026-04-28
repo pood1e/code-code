@@ -1,0 +1,29 @@
+# Patterns to ignore when packaging the chart with `helm package`.
+# Mirrors the Helm-default helmignore plus repo-specific paths.
+
+.DS_Store
+.git/
+.gitignore
+.bzr/
+.hg/
+.hgignore
+.svn/
+
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+
+.project
+.idea/
+.vscode/
+*.tmproj
+*.iml
+
+OWNERS
+README.md.gotmpl
+.helmignore
+*.tgz
+charts/*.tgz
+tmp/

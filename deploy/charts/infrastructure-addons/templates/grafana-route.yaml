@@ -1,0 +1,3 @@
+{{- if and .Values.grafana.enabled .Values.grafana.route.enabled }}
+{{ include "infrastructure.renderHttpRoute" (dict "root" . "name" "grafana" "route" .Values.grafana.route "serviceName" "grafana" "servicePort" 3000) }}
+{{- end }}

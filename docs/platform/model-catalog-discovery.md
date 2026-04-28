@@ -7,7 +7,8 @@
 ## flow
 
 - Provider service selects one provider-level endpoint target.
-- Provider service calls `platform-model-service.GetOrFetchCatalogModels` for the normal path, or `FetchCatalogModels` when the caller explicitly wants a forced refresh.
+- Provider service calls `platform-model-service.GetCatalogModels`.
+- The caller sets `fetch_policy` to `CACHE_PREFERRED` (normal path) or `FORCE_REFRESH` (explicit refresh).
 - The request carries opaque `probe_id`, target metadata, and optional `auth_ref`.
 - Model service resolves the registered source by `probe_id` and returns catalog rows with `source_model_id` plus unified `ModelDefinition`.
 - Provider service converts the returned rows into its own catalog shape and persists the provider aggregate.

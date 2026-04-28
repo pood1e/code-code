@@ -1,0 +1,51 @@
+{
+  "name": "@code-code/showcase-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "echo 'Typecheck runs via app package'",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.11.0",
+    "@code-code/agent-contract": "workspace:*",
+    "@code-code/console-web-agentprofile": "workspace:*",
+    "@code-code/console-web-chat": "workspace:*",
+    "@code-code/console-web-credential": "workspace:*",
+    "@code-code/console-web-overview": "workspace:*",
+    "@code-code/console-web-provider": "workspace:*",
+    "@code-code/console-web-ui": "workspace:*",
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/context-zone": "2.7.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.215.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.215.0",
+    "@opentelemetry/instrumentation": "0.215.0",
+    "@opentelemetry/instrumentation-document-load": "0.60.0",
+    "@opentelemetry/instrumentation-fetch": "0.215.0",
+    "@opentelemetry/instrumentation-xml-http-request": "0.215.0",
+    "@opentelemetry/resources": "2.7.0",
+    "@opentelemetry/sdk-metrics": "2.7.0",
+    "@opentelemetry/sdk-trace-base": "2.7.0",
+    "@opentelemetry/sdk-trace-web": "2.7.0",
+    "@opentelemetry/semantic-conventions": "1.40.0",
+    "@radix-ui/themes": "3.3.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-error-boundary": "^4.0.11",
+    "react-hook-form": "^7.72.1",
+    "react-router-dom": "^6.22.3",
+    "swr": "^2.4.1",
+    "web-vitals": "5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.1",
+    "typescript": "6.0.2",
+    "vite": "8.0.8"
+  }
+}

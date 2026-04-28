@@ -17,7 +17,7 @@ func TestValidateRefRejectsEmptyID(t *testing.T) {
 func TestValidateDefinitionAcceptsMinimalDefinition(t *testing.T) {
 	t.Parallel()
 
-	definition := &ModelDefinition{
+	definition := &ModelVersion{
 		ModelId:      "gpt-5",
 		VendorId:     "openai",
 		PrimaryShape: ModelShape_MODEL_SHAPE_RESPONSES,
@@ -31,7 +31,7 @@ func TestValidateDefinitionAcceptsMinimalDefinition(t *testing.T) {
 func TestValidateDefinitionRejectsSupportedShapesWithoutPrimary(t *testing.T) {
 	t.Parallel()
 
-	definition := &ModelDefinition{
+	definition := &ModelVersion{
 		ModelId:         "gpt-5",
 		VendorId:        "openai",
 		PrimaryShape:    ModelShape_MODEL_SHAPE_RESPONSES,
@@ -63,7 +63,7 @@ func TestValidateResolvedModelRejectsMismatchedModelID(t *testing.T) {
 
 	resolved := &ResolvedModel{
 		ModelId: "gpt-5",
-		EffectiveDefinition: &ModelDefinition{
+		EffectiveDefinition: &ModelVersion{
 			ModelId:      "gpt-4o",
 			VendorId:     "openai",
 			PrimaryShape: ModelShape_MODEL_SHAPE_RESPONSES,
@@ -80,7 +80,7 @@ func TestValidateResolvedModelAcceptsValidResolvedModel(t *testing.T) {
 
 	resolved := &ResolvedModel{
 		ModelId: "gpt-5",
-		EffectiveDefinition: &ModelDefinition{
+		EffectiveDefinition: &ModelVersion{
 			ModelId:         "gpt-5",
 			VendorId:        "openai",
 			PrimaryShape:    ModelShape_MODEL_SHAPE_RESPONSES,
@@ -96,7 +96,7 @@ func TestValidateResolvedModelAcceptsValidResolvedModel(t *testing.T) {
 func TestValidateDefinitionRejectsEmptyVendorID(t *testing.T) {
 	t.Parallel()
 
-	definition := &ModelDefinition{
+	definition := &ModelVersion{
 		ModelId:      "gpt-5",
 		PrimaryShape: ModelShape_MODEL_SHAPE_RESPONSES,
 	}
@@ -133,7 +133,7 @@ func TestValidateOverrideNormalizesCamelCaseFieldMaskPath(t *testing.T) {
 
 	override := &ModelOverride{
 		FieldMask: &fieldmaskpb.FieldMask{
-			Paths: []string{"displayName", "contextWindowTokens"},
+			Paths: []string{"displayName", "contextSpec"},
 		},
 	}
 
@@ -143,7 +143,7 @@ func TestValidateOverrideNormalizesCamelCaseFieldMaskPath(t *testing.T) {
 	if got, want := override.FieldMask.Paths[0], "display_name"; got != want {
 		t.Fatalf("normalized path[0] = %q, want %q", got, want)
 	}
-	if got, want := override.FieldMask.Paths[1], "context_window_tokens"; got != want {
+	if got, want := override.FieldMask.Paths[1], "context_spec"; got != want {
 		t.Fatalf("normalized path[1] = %q, want %q", got, want)
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"code-code.internal/platform-k8s/wecomcallback"
+	"code-code.internal/platform-k8s/internal/wecomcallback"
 )
 
 func main() {

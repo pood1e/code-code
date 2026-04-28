@@ -1,0 +1,1138 @@
+# global is the shared deployment configuration for platform services.
+global:
+  # global.partOf is the shared app.kubernetes.io/part-of label value.
+  partOf: code-code
+  # -- global.imageRegistry is the optional registry prefix used for platform images.
+  imageRegistry: ""
+  # -- global.imageTag is the shared image tag for platform images.
+  imageTag: "0.0.0"
+  # -- global.runNamespace is the namespace used by runtime jobs and per-run RBAC.
+  runNamespace: code-code-runs
+  # -- global.consoleNamespace is the namespace used by console web/API workloads and routes.
+  consoleNamespace: code-code-console
+  # -- global.showcaseNamespace is the namespace used by showcase web/API workloads and routes.
+  showcaseNamespace: code-code-showcase
+  # -- global.infraNamespace is the namespace used by infrastructure services.
+  infraNamespace: code-code-infra
+  # -- global.observabilityNamespace is the namespace used by observability services.
+  observabilityNamespace: code-code-observability
+  # -- global.networkNamespace is the namespace used by network egress components.
+  networkNamespace: code-code-net
+  # -- global.natsUrl is the NATS address used by Temporal-enabled services.
+  natsUrl: nats://nats.code-code-infra.svc.cluster.local:4222
+  # global.otlpGrpcEndpoint is the shared OTLP endpoint for backend services.
+  otlpGrpcEndpoint: http://otel-collector.code-code-observability.svc.cluster.local:4317
+  # global.otlpProtocol is the OTLP transport protocol used by backend services.
+  otlpProtocol: grpc
+  # global.tracesEnabled controls whether backend services export traces.
+  tracesEnabled: false
+  # global.otlpHttpEndpoint is the shared OTLP HTTP endpoint.
+  otlpHttpEndpoint: http://otel-collector.code-code-observability.svc.cluster.local:4318
+  # -- global.temporalAddress is the Temporal frontend address.
+  temporalAddress: temporal-frontend.code-code-infra.svc.cluster.local:7233
+  # -- global.temporalNamespace is the Temporal namespace used by platform workflows.
+  temporalNamespace: temporal-system
+  # -- global.databaseSecretName is the Secret name containing DATABASE_URL.
+  databaseSecretName: postgres-auth
+  # global.databaseSecretKey is the Secret key containing DATABASE_URL.
+  databaseSecretKey: DATABASE_URL
+  # -- global.credentialEncryptionSecretName is the Secret name containing the base64 credential material encryption key.
+  credentialEncryptionSecretName: platform-credential-encryption
+  # -- global.credentialEncryptionSecretKey is the Secret key containing the base64 credential material encryption key.
+  credentialEncryptionSecretKey: key
+  # -- global.credentialEncryptionKeyId is the active key identifier stored with encrypted credential material.
+  credentialEncryptionKeyId: local-v1
+  # -- global.registryAuthSecretName is the optional registry auth Secret used by build services.
+  registryAuthSecretName: cli-runtime-image-build-registry-auth
+  # -- global.trustBundleConfigMapName is the ConfigMap name for the egress trust bundle.
+  trustBundleConfigMapName: code-code-egress-trust-bundle
+  # -- global.consoleBaseUrl is the OAuth callback base URL for auth flows. Override per-environment.
+  consoleBaseUrl: http://console.placeholder.invalid
+  # -- global.showcaseBaseUrl is the public showcase base URL printed after deploy. Override per-environment.
+  showcaseBaseUrl: http://showcase.placeholder.invalid
+  # -- global.cliOutputSidecarImageName is the image name used by agent-runtime for the CLI sidecar.
+  cliOutputSidecarImageName: cli-output-sidecar
+
+# defaults is the shared deployment baseline for platform workloads.
+defaults:
+  # defaults.deployment describes the default Deployment spec knobs.
+  deployment:
+    replicas: 1
+    revisionHistoryLimit: 2
+    progressDeadlineSeconds: 600
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
+    terminationGracePeriodSeconds: 30
+  # defaults.lifecycle is the shared container lifecycle block.
+  lifecycle:
+    preStop:
+      sleep:
+        seconds: 5
+  # defaults.containerSecurityContext is the shared restricted container context.
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  # defaults.resources is the shared resource request and limit set.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  # defaults.service is the baseline Service shape for components that expose ports.
+  service:
+    # -- defaults.service.type is the baseline Service type for components that expose ports.
+    type: ClusterIP
+  # defaults.hpa is the baseline HorizontalPodAutoscaler shape, disabled by default.
+  hpa:
+    # -- defaults.hpa.enabled toggles autoscaling by default for components.
+    enabled: false
+    # -- defaults.hpa.minReplicas is the default HPA minimum replica count.
+    minReplicas: 1
+    # -- defaults.hpa.maxReplicas is the default HPA maximum replica count.
+    maxReplicas: 3
+    # -- defaults.hpa.targetCPUUtilizationPercentage is the default CPU target for HPAs.
+    targetCPUUtilizationPercentage: 70
+  # defaults.pdb is the baseline PodDisruptionBudget shape, disabled by default.
+  pdb:
+    # -- defaults.pdb.enabled toggles disruption budgets by default for components.
+    enabled: false
+    # -- defaults.pdb.minAvailable is the default PodDisruptionBudget minimum available count.
+    minAvailable: 1
+
+# cliImageBuildConfig is the shared ConfigMap consumed by support and cli-runtime services.
+cliImageBuildConfig:
+  # cliImageBuildConfig.enabled toggles the cli-runtime-image-build-config ConfigMap.
+  enabled: true
+  # -- cliImageBuildConfig.imageRegistryPrefix is the published registry prefix for built runtime images.
+  imageRegistryPrefix: ""
+  # -- cliImageBuildConfig.imageRegistryLookupPrefix is the lookup registry prefix used by the services.
+  imageRegistryLookupPrefix: ""
+  # -- cliImageBuildConfig.imageRegistryLookupInsecure controls whether registry lookup skips TLS verification.
+  imageRegistryLookupInsecure: "false"
+  # -- cliImageBuildConfig.sourceContext is the source repository context recorded in image build metadata.
+  sourceContext: ""
+  # -- cliImageBuildConfig.sourceRevision is the source revision recorded in image build metadata.
+  sourceRevision: main
+
+# consoleRoute controls the operator-facing console HTTPRoute.
+consoleRoute:
+  # -- consoleRoute.enabled toggles the shared console HTTPRoute.
+  enabled: true
+  # -- consoleRoute.host is the hostname published by the console HTTPRoute.
+  host: console.placeholder.invalid
+  # -- consoleRoute.extraHosts is the additional hostname list published by the same console HTTPRoute.
+  extraHosts: []
+  # consoleRoute.parentRef points to the shared Istio Gateway listener.
+  parentRef:
+    # -- consoleRoute.parentRef.name is the shared Gateway name.
+    name: platform-ingress
+    # -- consoleRoute.parentRef.namespace is the shared Gateway namespace.
+    namespace: code-code-net
+    # -- consoleRoute.parentRef.sectionName is the Gateway listener section name.
+    sectionName: http
+
+# showcaseRoute controls the public showcase HTTPRoute.
+showcaseRoute:
+  # -- showcaseRoute.enabled toggles the shared showcase HTTPRoute.
+  enabled: true
+  # -- showcaseRoute.host is the hostname published by the showcase HTTPRoute.
+  host: showcase.placeholder.invalid
+  # -- showcaseRoute.extraHosts is the additional hostname list published by the same showcase HTTPRoute.
+  extraHosts: []
+  # showcaseRoute.parentRef points to the shared Istio Gateway listener.
+  parentRef:
+    # -- showcaseRoute.parentRef.name is the shared Gateway name.
+    name: platform-ingress
+    # -- showcaseRoute.parentRef.namespace is the shared Gateway namespace.
+    namespace: code-code-net
+    # -- showcaseRoute.parentRef.sectionName is the Gateway listener section name.
+    sectionName: http
+
+# runtimeServiceAccounts controls auxiliary ServiceAccounts created outside the main components map.
+runtimeServiceAccounts:
+  # runtimeServiceAccounts.cliImageBuild is consumed by CLI runtime build jobs in the run namespace.
+  cliImageBuild:
+    # -- runtimeServiceAccounts.cliImageBuild.enabled toggles the auxiliary ServiceAccount for CLI image builds.
+    enabled: true
+    # -- runtimeServiceAccounts.cliImageBuild.name is the ServiceAccount name used by CLI image build jobs.
+    name: cli-runtime-image-build
+
+# authorizationPolicies controls first-party mesh inbound authorization.
+authorizationPolicies:
+  # -- authorizationPolicies.enabled renders L4 AuthorizationPolicy baselines for platform-owned workloads.
+  enabled: true
+
+# components is the component map keyed by logical service name.
+components:
+  # components.auth controls the auth gRPC/HTTP service.
+  auth:
+    # -- Toggle deployment of the auth service.
+    enabled: true
+    name: platform-auth-service
+    componentLabel: auth
+    imageName: platform-auth-service
+    serviceAccount:
+      create: true
+      automountServiceAccountToken: true
+    portPreset: grpc-http
+    databaseUrl: true
+    credentialEncryptionKey: true
+    internalActionToken: true
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-auth-service
+      PLATFORM_AUTH_SERVICE_AGENT_RUNTIME_GRPC_ADDR:
+        value: platform-agent-runtime-service:8081
+      PLATFORM_AUTH_SERVICE_DOMAIN_EVENTS_NATS_URL:
+        valueTpl: '{{ .Values.global.natsUrl }}'
+      PLATFORM_AUTH_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_AUTH_SERVICE_HTTP_ADDR:
+        value: :8080
+      PLATFORM_AUTH_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      PLATFORM_AUTH_SERVICE_RUNTIME_NAMESPACE:
+        valueTpl: '{{ .Values.global.runNamespace }}'
+      PLATFORM_AUTH_SERVICE_OAUTH_CALLBACK_BASE_URL:
+        valueTpl: '{{ .Values.global.consoleBaseUrl }}'
+      TEMPORAL_ADDRESS:
+        valueTpl: '{{ .Values.global.temporalAddress }}'
+      TEMPORAL_NAMESPACE:
+        valueTpl: '{{ .Values.global.temporalNamespace }}'
+      USER:
+        value: nonroot
+    egressTrustBundle: true
+    probePreset: grpc-8081
+    rbac:
+      enabled: true
+      clusterWide: false
+      name: platform-auth-service
+      rules:
+        - apiGroups:
+            - ""
+          resources:
+            - secrets
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+
+  # components.model controls the model gRPC/HTTP service.
+  model:
+    # -- Toggle deployment of the model service.
+    enabled: true
+    name: platform-model-service
+    componentLabel: model
+    imageName: platform-model-service
+    serviceAccount:
+      create: true
+      automountServiceAccountToken: true
+    portPreset: grpc-http
+    databaseUrl: true
+    internalActionToken: true
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-model-service
+      PLATFORM_MODEL_SERVICE_DOMAIN_EVENTS_NATS_URL:
+        valueTpl: '{{ .Values.global.natsUrl }}'
+      PLATFORM_MODEL_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_MODEL_SERVICE_HTTP_ADDR:
+        value: :8080
+      PLATFORM_MODEL_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      USER:
+        value: nonroot
+    egressTrustBundle: true
+    probePreset: grpc-8081-http-readyz
+    rbac:
+      enabled: true
+      clusterWide: false
+      name: platform-model-service
+      rules:
+        - apiGroups:
+            - coordination.k8s.io
+          resources:
+            - leases
+          verbs:
+            - get
+            - create
+            - update
+            - patch
+            - delete
+    # cronJob controls the periodic model definition sync CronJob.
+    cronJob:
+      # -- cronJob.enabled toggles the model sync CronJob.
+      enabled: true
+      # -- cronJob.schedule is the cron expression controlling sync frequency.
+      schedule: "0 * * * *"
+
+  # components.provider controls the provider gRPC/HTTP service.
+  provider:
+    # -- Toggle deployment of the provider service.
+    enabled: true
+    name: platform-provider-service
+    componentLabel: provider
+    imageName: platform-provider-service
+    serviceAccount:
+      create: true
+    portPreset: grpc-http
+    databaseUrl: true
+    internalActionToken: true
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-provider-service
+      PLATFORM_PROVIDER_SERVICE_AUTH_GRPC_ADDR:
+        value: platform-auth-service:8081
+      PLATFORM_PROVIDER_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_PROVIDER_SERVICE_HTTP_ADDR:
+        value: :8080
+      PLATFORM_PROVIDER_SERVICE_MODEL_GRPC_ADDR:
+        value: platform-model-service:8081
+      PLATFORM_PROVIDER_SERVICE_HOST_TELEMETRY_MAX_TARGETS:
+        value: "200"
+      PLATFORM_PROVIDER_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      PLATFORM_PROVIDER_SERVICE_WORKFLOW_PROVIDER_HTTP_BASE_URL:
+        valueTpl: 'http://platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8080/internal/actions'
+      TEMPORAL_ADDRESS:
+        valueTpl: '{{ .Values.global.temporalAddress }}'
+      TEMPORAL_NAMESPACE:
+        valueTpl: '{{ .Values.global.temporalNamespace }}'
+      USER:
+        value: nonroot
+    egressTrustBundle: true
+    probePreset: grpc-8081
+    rbac:
+      enabled: true
+      clusterWide: false
+      name: platform-provider-service
+      rules:
+        - apiGroups:
+            - ""
+          resources:
+            - configmaps
+          verbs:
+            - get
+            - create
+            - update
+            - patch
+        - apiGroups:
+            - ""
+          resources:
+            - secrets
+          verbs:
+            - get
+            - update
+            - patch
+
+  # components.egress controls the egress policy and runtime telemetry gRPC service.
+  egress:
+    # -- Toggle deployment of the egress service.
+    enabled: true
+    name: platform-egress-service
+    namespaceTpl: '{{ .Values.global.networkNamespace }}'
+    componentLabel: egress
+    imageName: platform-egress-service
+    serviceAccount:
+      create: true
+    portPreset: grpc
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-egress-service
+      PLATFORM_EGRESS_SERVICE_COLLECTOR_CONFIG_KEY:
+        value: runtime-telemetry.yaml
+      PLATFORM_EGRESS_SERVICE_COLLECTOR_CONFIGMAP_NAME:
+        value: otel-collector-runtime-config
+      PLATFORM_EGRESS_SERVICE_COLLECTOR_DEPLOYMENT_NAME:
+        value: otel-collector
+      PLATFORM_EGRESS_SERVICE_EGRESS_NAMESPACE:
+        valueTpl: '{{ .Values.global.networkNamespace }}'
+      PLATFORM_EGRESS_SERVICE_ENABLE_LLM_HEADER_LOGS:
+        valueTpl: '{{ ternary "true" "false" (default false .Values.components.egress.llmHeaderLogs.enabled) }}'
+      PLATFORM_EGRESS_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_EGRESS_SERVICE_ISTIO_NAMESPACE:
+        value: istio-system
+      PLATFORM_EGRESS_SERVICE_LOKI_ENDPOINT:
+        valueTpl: 'http://loki.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:3100/otlp'
+      PLATFORM_EGRESS_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      PLATFORM_EGRESS_SERVICE_OBSERVABILITY_NAMESPACE:
+        valueTpl: '{{ .Values.global.observabilityNamespace }}'
+      PLATFORM_EGRESS_SERVICE_PROVIDER_NAME:
+        value: code-code-egress-otel-logs
+      PLATFORM_EGRESS_SERVICE_PROFILE_STORE_KEY:
+        value: profiles.json
+      PLATFORM_EGRESS_SERVICE_PROFILE_STORE_NAME:
+        value: otel-collector-runtime-profiles
+      PLATFORM_EGRESS_SERVICE_TELEMETRY_NAME:
+        value: code-code-egress-llm-access-logs
+      PLATFORM_EGRESS_SERVICE_TELEMETRY_SYNC_INTERVAL:
+        value: 30s
+      USER:
+        value: nonroot
+    llmHeaderLogs:
+      enabled: false
+    probePreset: grpc-8081
+    rbac:
+      enabled: true
+      clusterWide: true
+      name: platform-egress-service
+      rules:
+        - apiGroups:
+            - ""
+          resources:
+            - configmaps
+            - services
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - apps
+          resources:
+            - deployments
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - networking.istio.io
+          resources:
+            - gateways
+            - serviceentries
+            - virtualservices
+            - destinationrules
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - security.istio.io
+          resources:
+            - authorizationpolicies
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - gateway.networking.k8s.io
+          resources:
+            - gateways
+            - httproutes
+            - tlsroutes
+            - tcproutes
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - telemetry.istio.io
+          resources:
+            - telemetries
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - cert-manager.io
+          resources:
+            - certificates
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+
+  # components.profile controls the profile gRPC service.
+  profile:
+    # -- Toggle deployment of the profile service.
+    enabled: true
+    name: platform-profile-service
+    componentLabel: profile
+    imageName: platform-profile-service
+    serviceAccount:
+      create: true
+    portPreset: grpc
+    databaseUrl: true
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-profile-service
+      PLATFORM_PROFILE_SERVICE_CLI_RUNTIME_GRPC_ADDR:
+        value: platform-cli-runtime-service:8081
+      PLATFORM_PROFILE_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_PROFILE_SERVICE_PROVIDER_GRPC_ADDR:
+        value: platform-provider-service:8081
+      PLATFORM_PROFILE_SERVICE_SUPPORT_GRPC_ADDR:
+        value: platform-support-service:8081
+      USER:
+        value: nonroot
+    probePreset: grpc-8081
+
+  # components.support controls the support gRPC/HTTP service.
+  support:
+    # -- Toggle deployment of the support service.
+    enabled: true
+    name: platform-support-service
+    componentLabel: support
+    imageName: platform-support-service
+    serviceAccount:
+      create: true
+    portPreset: grpc-http
+    databaseUrl: true
+    service:
+      enabled: true
+    env:
+      DOCKER_CONFIG:
+        value: /registry-auth
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-support-service
+      PLATFORM_SUPPORT_SERVICE_DOMAIN_EVENTS_NATS_URL:
+        valueTpl: '{{ .Values.global.natsUrl }}'
+      PLATFORM_SUPPORT_SERVICE_EGRESS_GRPC_ADDR:
+        valueTpl: '{{ include "platform.egressServiceAddress" . }}'
+      PLATFORM_SUPPORT_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_SUPPORT_SERVICE_HTTP_ADDR:
+        value: :8080
+      PLATFORM_SUPPORT_SERVICE_IMAGE_BUILD_SOURCE_CONTEXT:
+        valueFrom:
+          configMapKeyRef:
+            key: SOURCE_CONTEXT
+            name: cli-runtime-image-build-config
+      PLATFORM_SUPPORT_SERVICE_IMAGE_BUILD_SOURCE_REVISION:
+        valueFrom:
+          configMapKeyRef:
+            key: SOURCE_REVISION
+            name: cli-runtime-image-build-config
+      PLATFORM_SUPPORT_SERVICE_IMAGE_REGISTRY:
+        valueFrom:
+          configMapKeyRef:
+            key: IMAGE_REGISTRY_PREFIX
+            name: cli-runtime-image-build-config
+      PLATFORM_SUPPORT_SERVICE_IMAGE_REGISTRY_LOOKUP_INSECURE:
+        valueFrom:
+          configMapKeyRef:
+            key: IMAGE_REGISTRY_LOOKUP_INSECURE
+            name: cli-runtime-image-build-config
+      PLATFORM_SUPPORT_SERVICE_IMAGE_REGISTRY_LOOKUP_PREFIX:
+        valueFrom:
+          configMapKeyRef:
+            key: IMAGE_REGISTRY_LOOKUP_PREFIX
+            name: cli-runtime-image-build-config
+      PLATFORM_SUPPORT_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      PLATFORM_SUPPORT_SERVICE_REGISTRY_LIST_CONCURRENCY:
+        value: "4"
+      PLATFORM_SUPPORT_SERVICE_REGISTRY_LIST_TIMEOUT:
+        value: 10s
+      PLATFORM_SUPPORT_SERVICE_RUN_NAMESPACE:
+        valueTpl: '{{ .Values.global.runNamespace }}'
+      TEMPORAL_ADDRESS:
+        valueTpl: '{{ .Values.global.temporalAddress }}'
+      TEMPORAL_NAMESPACE:
+        valueTpl: '{{ .Values.global.temporalNamespace }}'
+      USER:
+        value: nonroot
+    egressTrustBundle: true
+    volumes:
+      registryAuth:
+        name: registry-auth
+        secret:
+          secretName: cli-runtime-image-build-registry-auth
+          optional: true
+    volumeMounts:
+      registryAuth:
+        name: registry-auth
+        mountPath: /registry-auth
+        readOnly: true
+    probePreset: http-readyz
+    runtimeRbac:
+      enabled: true
+      name: platform-support-service-runtime
+      rules:
+        - apiGroups:
+            - batch
+          resources:
+            - jobs
+          verbs:
+            - get
+            - list
+            - create
+            - delete
+
+  # components.cliRuntime controls the cli-runtime gRPC/HTTP service.
+  cliRuntime:
+    # -- Toggle deployment of the CLI runtime service.
+    enabled: true
+    name: platform-cli-runtime-service
+    componentLabel: cli-runtime
+    imageName: platform-cli-runtime-service
+    serviceAccount:
+      create: true
+    portPreset: grpc-http
+    databaseUrl: true
+    internalActionToken: true
+    service:
+      enabled: true
+    env:
+      DOCKER_CONFIG:
+        value: /docker-config
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-cli-runtime-service
+      PLATFORM_CLI_RUNTIME_SERVICE_DOMAIN_EVENTS_NATS_URL:
+        valueTpl: '{{ .Values.global.natsUrl }}'
+      PLATFORM_CLI_RUNTIME_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_CLI_RUNTIME_SERVICE_HTTP_ADDR:
+        value: :8080
+      PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_BUILD_SOURCE_CONTEXT:
+        valueFrom:
+          configMapKeyRef:
+            key: SOURCE_CONTEXT
+            name: cli-runtime-image-build-config
+      PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_BUILD_SOURCE_REVISION:
+        valueFrom:
+          configMapKeyRef:
+            key: SOURCE_REVISION
+            name: cli-runtime-image-build-config
+      PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_REGISTRY:
+        valueFrom:
+          configMapKeyRef:
+            key: IMAGE_REGISTRY_PREFIX
+            name: cli-runtime-image-build-config
+      PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_REGISTRY_LOOKUP_INSECURE:
+        valueFrom:
+          configMapKeyRef:
+            key: IMAGE_REGISTRY_LOOKUP_INSECURE
+            name: cli-runtime-image-build-config
+      PLATFORM_CLI_RUNTIME_SERVICE_IMAGE_REGISTRY_LOOKUP_PREFIX:
+        valueFrom:
+          configMapKeyRef:
+            key: IMAGE_REGISTRY_LOOKUP_PREFIX
+            name: cli-runtime-image-build-config
+      PLATFORM_CLI_RUNTIME_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      PLATFORM_CLI_RUNTIME_SERVICE_REGISTRY_LIST_CONCURRENCY:
+        value: "4"
+      PLATFORM_CLI_RUNTIME_SERVICE_REGISTRY_LIST_TIMEOUT:
+        value: 10s
+      PLATFORM_CLI_RUNTIME_SERVICE_RUN_NAMESPACE:
+        valueTpl: '{{ .Values.global.runNamespace }}'
+      USER:
+        value: nonroot
+    egressTrustBundle: true
+    volumes:
+      dockerConfig:
+        name: docker-config
+        secret:
+          secretName: cli-runtime-image-build-registry-auth
+          optional: true
+    volumeMounts:
+      dockerConfig:
+        name: docker-config
+        mountPath: /docker-config
+        readOnly: true
+    probePreset: http-readyz
+
+  # components.agentRuntime controls the agent-runtime gRPC/HTTP service.
+  agentRuntime:
+    # -- Toggle deployment of the agent runtime service.
+    enabled: true
+    name: platform-agent-runtime-service
+    componentLabel: agent-runtime
+    imageName: platform-agent-runtime-service
+    serviceAccount:
+      create: true
+    portPreset: grpc-http
+    databaseUrl: true
+    internalActionToken: true
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-agent-runtime-service
+      PLATFORM_AGENT_RUNTIME_SERVICE_AUTH_GRPC_ADDR:
+        value: platform-auth-service:8081
+      PLATFORM_AGENT_RUNTIME_SERVICE_CLI_OUTPUT_SIDECAR_IMAGE:
+        valueTpl: '{{ include "platform.image" (dict "root" . "imageName" .Values.global.cliOutputSidecarImageName) }}'
+      PLATFORM_AGENT_RUNTIME_SERVICE_CLI_RUNTIME_GRPC_ADDR:
+        value: platform-cli-runtime-service:8081
+      PLATFORM_AGENT_RUNTIME_SERVICE_EGRESS_GRPC_ADDR:
+        valueTpl: '{{ include "platform.egressServiceAddress" . }}'
+      PLATFORM_AGENT_RUNTIME_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_AGENT_RUNTIME_SERVICE_HTTP_ADDR:
+        value: :8080
+      PLATFORM_AGENT_RUNTIME_SERVICE_MODEL_GRPC_ADDR:
+        value: platform-model-service:8081
+      PLATFORM_AGENT_RUNTIME_SERVICE_NAMESPACE:
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.namespace
+      PLATFORM_AGENT_RUNTIME_SERVICE_PROFILE_GRPC_ADDR:
+        value: platform-profile-service:8081
+      PLATFORM_AGENT_RUNTIME_SERVICE_PROVIDER_GRPC_ADDR:
+        value: platform-provider-service:8081
+      PLATFORM_AGENT_RUNTIME_SERVICE_RUNTIME_NAMESPACE:
+        valueTpl: '{{ .Values.global.runNamespace }}'
+      PLATFORM_AGENT_RUNTIME_SERVICE_SUPPORT_GRPC_ADDR:
+        value: platform-support-service:8081
+      TEMPORAL_ADDRESS:
+        valueTpl: '{{ .Values.global.temporalAddress }}'
+      TEMPORAL_NAMESPACE:
+        valueTpl: '{{ .Values.global.temporalNamespace }}'
+      USER:
+        value: nonroot
+    egressTrustBundle: true
+    probePreset: grpc-8081
+    rbac:
+      enabled: true
+      clusterWide: true
+      name: platform-agent-runtime-service
+      rules:
+        - apiGroups:
+            - platform.code-code.internal
+          resources:
+            - agentrunresources
+            - agentrunresources/status
+          verbs:
+            - get
+            - list
+            - watch
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - coordination.k8s.io
+          resources:
+            - leases
+          verbs:
+            - get
+            - list
+            - watch
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - ""
+          resources:
+            - configmaps
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+        - apiGroups:
+            - ""
+          resources:
+            - events
+          verbs:
+            - create
+            - patch
+            - update
+    runtimeRbac:
+      enabled: true
+      name: platform-agent-runtime-service-runtime
+      rules:
+        - apiGroups:
+            - ""
+          resources:
+            - persistentvolumeclaims
+          verbs:
+            - get
+            - list
+        - apiGroups:
+            - ""
+          resources:
+            - persistentvolumeclaims
+          verbs:
+            - create
+            - update
+            - patch
+            - delete
+        - apiGroups:
+            - batch
+          resources:
+            - jobs
+          verbs:
+            - get
+            - list
+            - watch
+            - create
+            - delete
+        - apiGroups:
+            - ""
+          resources:
+            - pods
+          verbs:
+            - get
+            - list
+        - apiGroups:
+            - ""
+          resources:
+            - secrets
+          verbs:
+            - get
+            - list
+            - create
+            - update
+            - patch
+            - delete
+      networkPolicies:
+        agentRunDefaultDeny:
+          name: agent-run-default-deny
+          spec:
+            podSelector:
+              matchLabels:
+                code-code.internal/runtime: agent-run
+            policyTypes:
+              - Ingress
+              - Egress
+        agentRunEgress:
+          name: agent-run-egress
+          spec:
+            podSelector:
+              matchLabels:
+                code-code.internal/runtime: agent-run
+            policyTypes:
+              - Egress
+            egress:
+              - ports:
+                  - protocol: UDP
+                    port: 53
+                  - protocol: TCP
+                    port: 53
+              - to:
+                  - ipBlock:
+                      # Placeholder; override via chart values.
+                      cidr: 192.0.2.1/32
+                ports:
+                  - protocol: TCP
+                    port: 443
+              - to:
+                  - ipBlock:
+                      # Placeholder; override via chart values.
+                      cidr: 192.0.2.2/32
+                ports:
+                  - protocol: TCP
+                    port: 6443
+              - to:
+                  - namespaceSelector:
+                      matchLabels:
+                        kubernetes.io/metadata.name: code-code-net
+                ports:
+                  - protocol: TCP
+                    port: 15008
+                  - protocol: TCP
+                    port: 443
+              - to:
+                  - namespaceSelector:
+                      matchLabels:
+                        kubernetes.io/metadata.name: code-code
+                    podSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: platform-agent-runtime-service
+                ports:
+                  - protocol: TCP
+                    port: 8080
+                  - protocol: TCP
+                    port: 8081
+              - to:
+                  - namespaceSelector:
+                      matchLabels:
+                        kubernetes.io/metadata.name: code-code-infra
+                    podSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: nats
+                ports:
+                  - protocol: TCP
+                    port: 4222
+              - to:
+                  - namespaceSelector:
+                      matchLabels:
+                        kubernetes.io/metadata.name: code-code-infra
+                    podSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: otel-collector
+                ports:
+                  - protocol: TCP
+                    port: 4318
+
+  # components.chat controls the chat gRPC service.
+  chat:
+    # -- Toggle deployment of the chat service.
+    enabled: true
+    name: platform-chat-service
+    componentLabel: chat
+    imageName: platform-chat-service
+    serviceAccount:
+      create: true
+      automountServiceAccountToken: false
+    podAutomountServiceAccountToken: false
+    portPreset: grpc
+    databaseUrl: true
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: platform-chat-service
+      PLATFORM_CHAT_SERVICE_AGENT_RUNTIME_GRPC_ADDR:
+        value: platform-agent-runtime-service:8081
+      PLATFORM_CHAT_SERVICE_CLI_RUNTIME_GRPC_ADDR:
+        value: platform-cli-runtime-service:8081
+      PLATFORM_CHAT_SERVICE_GRPC_ADDR:
+        value: :8081
+      PLATFORM_CHAT_SERVICE_PROVIDER_GRPC_ADDR:
+        value: platform-provider-service:8081
+      PLATFORM_CHAT_SERVICE_SUPPORT_GRPC_ADDR:
+        value: platform-support-service:8081
+      USER:
+        value: nonroot
+    probePreset: grpc-8081
+
+  # components.consoleApi controls the operator-facing HTTP API.
+  consoleApi:
+    # -- Toggle deployment of the console API service.
+    enabled: true
+    name: console-api
+    namespaceTpl: '{{ .Values.global.consoleNamespace }}'
+    componentLabel: api
+    imageName: console-api
+    serviceAccount:
+      create: true
+    podAutomountServiceAccountToken: false
+    portPreset: http
+    service:
+      enabled: true
+    env:
+      CONSOLE_API_ADDR:
+        value: :8080
+      CONSOLE_API_AUTH_GRPC_ADDR:
+        valueTpl: 'platform-auth-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      CONSOLE_API_CHAT_GRPC_ADDR:
+        valueTpl: 'platform-chat-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      CONSOLE_API_EGRESS_GRPC_ADDR:
+        valueTpl: '{{ include "platform.egressServiceAddress" . }}'
+      CONSOLE_API_MODEL_CONNECT_BASE_URL:
+        valueTpl: 'http://platform-model-service.{{ .Release.Namespace }}.svc.cluster.local:8080'
+      CONSOLE_API_PROFILE_GRPC_ADDR:
+        valueTpl: 'platform-profile-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      CONSOLE_API_PROVIDER_CONNECT_BASE_URL:
+        valueTpl: 'http://platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8080'
+      CONSOLE_API_PROVIDER_GRPC_ADDR:
+        valueTpl: 'platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      CONSOLE_API_SUPPORT_GRPC_ADDR:
+        valueTpl: 'platform-support-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: console-api
+      USER:
+        value: nonroot
+    probePreset: http-api-readyz
+
+  # components.consoleWeb controls the operator-facing web frontend.
+  consoleWeb:
+    # -- Toggle deployment of the console web service.
+    enabled: true
+    name: console-web
+    namespaceTpl: '{{ .Values.global.consoleNamespace }}'
+    componentLabel: web
+    imageName: console-web
+    podAutomountServiceAccountToken: false
+    portPreset: http
+    service:
+      enabled: true
+    env:
+      OTEL_COLLECTOR_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpHttpEndpoint }}'
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 101
+      runAsGroup: 101
+      seccompProfile:
+        type: RuntimeDefault
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    volumes:
+      tmp:
+        name: tmp
+        emptyDir:
+          sizeLimit: 128Mi
+    volumeMounts:
+      tmp:
+        name: tmp
+        mountPath: /tmp
+    probePreset: http-healthz-fast
+
+  # components.showcaseApi controls the public showcase HTTP API.
+  showcaseApi:
+    # -- Toggle deployment of the showcase API service.
+    enabled: true
+    name: showcase-api
+    namespaceTpl: '{{ .Values.global.showcaseNamespace }}'
+    componentLabel: showcase-api
+    imageName: showcase-api
+    podAutomountServiceAccountToken: false
+    portPreset: http
+    service:
+      enabled: true
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT:
+        valueTpl: '{{ .Values.global.otlpGrpcEndpoint }}'
+      OTEL_SERVICE_NAME:
+        value: showcase-api
+      SHOWCASE_API_ADDR:
+        value: :8080
+      SHOWCASE_MODEL_CONNECT_BASE_URL:
+        valueTpl: 'http://platform-model-service.{{ .Release.Namespace }}.svc.cluster.local:8080'
+      SHOWCASE_PROMETHEUS_BASE_URL:
+        valueTpl: 'http://prometheus.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:9090'
+      SHOWCASE_PROVIDER_GRPC_ADDR:
+        valueTpl: 'platform-provider-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      SHOWCASE_SUPPORT_GRPC_ADDR:
+        valueTpl: 'platform-support-service.{{ .Release.Namespace }}.svc.cluster.local:8081'
+      USER:
+        value: nonroot
+    probePreset: http-api-readyz-fast
+
+  # components.showcaseWeb controls the public showcase web frontend.
+  showcaseWeb:
+    # -- Toggle deployment of the showcase web service.
+    enabled: true
+    name: showcase-web
+    namespaceTpl: '{{ .Values.global.showcaseNamespace }}'
+    componentLabel: showcase-web
+    imageName: showcase-web
+    podAutomountServiceAccountToken: false
+    portPreset: http
+    service:
+      enabled: true
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 101
+      runAsGroup: 101
+      seccompProfile:
+        type: RuntimeDefault
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    volumes:
+      tmp:
+        name: tmp
+        emptyDir:
+          sizeLimit: 128Mi
+    volumeMounts:
+      tmp:
+        name: tmp
+        mountPath: /tmp
+    probePreset: http-healthz-fast

@@ -5,7 +5,7 @@ import { EgressRulesPanel } from "./network-egress-rules-panel";
 import { EgressSummaryPanel } from "./network-egress-summary-panel";
 
 export function NetworkPage() {
-  const { catalog, isLoading, isError, mutate } = useEgressPolicyCatalog();
+  const { catalog, isLoading, isError } = useEgressPolicyCatalog();
 
   return (
     <Container size="4" style={{ maxWidth: 1280 }}>
@@ -13,7 +13,7 @@ export function NetworkPage() {
         <Flex direction="column" gap="2">
           <Heading size="6" weight="medium">Network</Heading>
           <Text size="2" color="gray">
-            Configure custom rules, proxy routing, and one external AutoProxy rule set. Changes apply immediately.
+            Review external destinations, service authorization, and generated Istio resources.
           </Text>
         </Flex>
 
@@ -30,7 +30,7 @@ export function NetworkPage() {
             </Tabs.Content>
 
             <Tabs.Content value="rules">
-              <EgressRulesPanel catalog={catalog} isLoading={isLoading} isError={isError} onChanged={mutate} />
+              <EgressRulesPanel catalog={catalog} isLoading={isLoading} isError={isError} />
             </Tabs.Content>
 
             <Tabs.Content value="policies">

@@ -34,7 +34,7 @@
 - `oauth` 和每个 `api_key_protocol` 都需要自己的 `CLIAuthMaterialization`
 - execution adapter 只做：
   - resolve active auth path
-  - 挂 Envoy auth processor 可读取的 credential projection
+  - 提供 Envoy auth processor 可定位 credential material 的非敏感 projection metadata
   - 提供非敏感 runtime projection
   - 按 `materialization_key` 调用 CLI-specific bundle
 - OAuth freshness 由 `oauth-maintenance` Temporal Schedule 与 auth-owned activities 维护

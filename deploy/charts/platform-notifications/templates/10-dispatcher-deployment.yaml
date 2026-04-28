@@ -1,0 +1,53 @@
+{{- if .Values.notificationDispatcher.enabled }}
+{{- $dispatcher := .Values.notificationDispatcher.dispatcher }}
+{{- $apprise := .Values.notificationDispatcher.appriseApi }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $dispatcher.name }}
+  labels:
+{{ include "platform.labels" (dict "root" . "name" $dispatcher.name "componentLabel" "notification-dispatch") | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 300
+  selector:
+    matchLabels:
+{{ include "platform.selectorLabels" (dict "root" . "name" $dispatcher.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "platform.labels" (dict "root" . "name" $dispatcher.name "componentLabel" "notification-dispatch") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: dispatcher
+          image: {{ include "platform.image" (dict "root" . "imageName" $dispatcher.imageName) }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          lifecycle:
+{{ include "platform.lifecyclePreStop" . | indent 12 }}
+          env:
+            - name: NOTIFICATION_DISPATCHER_HTTP_ADDR
+              value: :8080
+            - name: NOTIFICATION_DISPATCHER_NATS_URL
+              value: {{ .Values.notificationDispatcher.natsUrl | quote }}
+            - name: NOTIFICATION_DISPATCHER_SUBJECT
+              value: {{ .Values.notificationDispatcher.subject | quote }}
+            - name: NOTIFICATION_DISPATCHER_APPRISE_URL
+              value: {{ printf "http://%s.%s.svc.cluster.local:8000/notify/" $apprise.name .Release.Namespace | quote }}
+{{ include "platform.httpProbes" (dict "path" "/healthz" "startupFailureThreshold" 12 "readinessFailureThreshold" 3 "livenessFailureThreshold" 6) | indent 10 }}
+          securityContext:
+{{ include "platform.restrictedContainerSecurityContext" (dict "seccomp" false) | indent 12 }}
+          resources:
+{{ include "platform.resources" (dict "cpuRequest" "10m" "memoryRequest" "32Mi" "ephemeralStorageRequest" "32Mi" "cpuLimit" "100m" "memoryLimit" "128Mi" "ephemeralStorageLimit" "128Mi") | indent 12 }}
+{{- end }}

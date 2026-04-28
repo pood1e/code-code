@@ -24,7 +24,7 @@
 ## Implementation Notes
 
 - OAuth authorization session 与 OAuth callback 由 `platform-auth-service` 承接。
-- gRPC session 运行面实现集中在 `packages/platform-k8s/sessionapi`。
+- gRPC session 运行面实现集中在 `packages/platform-k8s/internal/agentruntime/sessionapi`。
 - `platform-agent-runtime-service` 直接组合 `agentsessions` controller、`agentsessionactions`、`agentruns` service。
 - session setup/status 数据落点是 `packages/session` repo；agent-session management API 不创建或更新 session setup。
 - controller `Requeue/RequeueAfter` 通过 `sessionapi.ReconcileScheduler` 调用 runtime HTTP trigger；requeue 按 owner/action coalesce。

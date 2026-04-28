@@ -2,15 +2,15 @@
 // @generated from file platform/auth/v1/egress_auth.proto (package platform.auth.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file platform/auth/v1/egress_auth.proto.
  */
 export const file_platform_auth_v1_egress_auth: GenFile = /*@__PURE__*/
-  fileDesc("CiJwbGF0Zm9ybS9hdXRoL3YxL2VncmVzc19hdXRoLnByb3RvEhBwbGF0Zm9ybS5hdXRoLnYxIsEECiJSZXNvbHZlRWdyZXNzUmVxdWVzdEhlYWRlcnNSZXF1ZXN0EhEKCXBvbGljeV9pZBgBIAEoCRIVCg1jcmVkZW50aWFsX2lkGAIgASgJEhIKCmFkYXB0ZXJfaWQYAyABKAkSEwoLdGFyZ2V0X2hvc3QYBCABKAkSGwoTaGVhZGVyX3ZhbHVlX3ByZWZpeBgFIAEoCRIOCgZvcmlnaW4YBiABKAkSYQoPcmVxdWVzdF9oZWFkZXJzGAcgAygLMkgucGxhdGZvcm0uYXV0aC52MS5SZXNvbHZlRWdyZXNzUmVxdWVzdEhlYWRlcnNSZXF1ZXN0LlJlcXVlc3RIZWFkZXJzRW50cnkSTwoYc2ltcGxlX3JlcGxhY2VtZW50X3J1bGVzGAggAygLMi0ucGxhdGZvcm0uYXV0aC52MS5FZ3Jlc3NTaW1wbGVSZXBsYWNlbWVudFJ1bGUSPgoHaGVhZGVycxgJIAMoCzItLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzSGVhZGVyUmVwbGFjZW1lbnRJdGVtEhwKFGFsbG93ZWRfaGVhZGVyX25hbWVzGAogAygJEj0KDnJ1bnRpbWVfc291cmNlGAsgASgLMiUucGxhdGZvcm0uYXV0aC52MS5FZ3Jlc3NSZXF1ZXN0U291cmNlEhMKC3RhcmdldF9wYXRoGAwgASgJGjUKE1JlcXVlc3RIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASL2BQojUmVzb2x2ZUVncmVzc1Jlc3BvbnNlSGVhZGVyc1JlcXVlc3QSEQoJcG9saWN5X2lkGAEgASgJEhUKDWNyZWRlbnRpYWxfaWQYAiABKAkSEgoKYWRhcHRlcl9pZBgDIAEoCRITCgt0YXJnZXRfaG9zdBgEIAEoCRIOCgZvcmlnaW4YBSABKAkSYgoPcmVxdWVzdF9oZWFkZXJzGAYgAygLMkkucGxhdGZvcm0uYXV0aC52MS5SZXNvbHZlRWdyZXNzUmVzcG9uc2VIZWFkZXJzUmVxdWVzdC5SZXF1ZXN0SGVhZGVyc0VudHJ5EmQKEHJlc3BvbnNlX2hlYWRlcnMYByADKAsySi5wbGF0Zm9ybS5hdXRoLnYxLlJlc29sdmVFZ3Jlc3NSZXNwb25zZUhlYWRlcnNSZXF1ZXN0LlJlc3BvbnNlSGVhZGVyc0VudHJ5Ek8KGHNpbXBsZV9yZXBsYWNlbWVudF9ydWxlcxgIIAMoCzItLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzU2ltcGxlUmVwbGFjZW1lbnRSdWxlEj4KB2hlYWRlcnMYCSADKAsyLS5wbGF0Zm9ybS5hdXRoLnYxLkVncmVzc0hlYWRlclJlcGxhY2VtZW50SXRlbRIcChRhbGxvd2VkX2hlYWRlcl9uYW1lcxgKIAMoCRI9Cg5ydW50aW1lX3NvdXJjZRgLIAEoCzIlLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzUmVxdWVzdFNvdXJjZRITCgt0YXJnZXRfcGF0aBgMIAEoCRITCgtzdGF0dXNfY29kZRgNIAEoDRIbChNoZWFkZXJfdmFsdWVfcHJlZml4GA4gASgJGjUKE1JlcXVlc3RIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARo2ChRSZXNwb25zZUhlYWRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIkIKG0VncmVzc0hlYWRlclJlcGxhY2VtZW50SXRlbRIMCgRuYW1lGAEgASgJEhUKDWN1cnJlbnRfdmFsdWUYAiABKAkihQEKG0VncmVzc1NpbXBsZVJlcGxhY2VtZW50UnVsZRIMCgRtb2RlGAEgASgJEhMKC2hlYWRlcl9uYW1lGAIgASgJEhQKDG1hdGVyaWFsX2tleRgDIAEoCRIbChNoZWFkZXJfdmFsdWVfcHJlZml4GAQgASgJEhAKCHRlbXBsYXRlGAUgASgJIuIBCiNSZXNvbHZlRWdyZXNzUmVxdWVzdEhlYWRlcnNSZXNwb25zZRJTCgdoZWFkZXJzGAEgAygLMkIucGxhdGZvcm0uYXV0aC52MS5SZXNvbHZlRWdyZXNzUmVxdWVzdEhlYWRlcnNSZXNwb25zZS5IZWFkZXJzRW50cnkSFgoOcmVtb3ZlX2hlYWRlcnMYAiADKAkSDQoFZXJyb3IYAyABKAkSDwoHc2tpcHBlZBgEIAEoCBouCgxIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASLkAQokUmVzb2x2ZUVncmVzc1Jlc3BvbnNlSGVhZGVyc1Jlc3BvbnNlElQKB2hlYWRlcnMYASADKAsyQy5wbGF0Zm9ybS5hdXRoLnYxLlJlc29sdmVFZ3Jlc3NSZXNwb25zZUhlYWRlcnNSZXNwb25zZS5IZWFkZXJzRW50cnkSFgoOcmVtb3ZlX2hlYWRlcnMYAiADKAkSDQoFZXJyb3IYAyABKAkSDwoHc2tpcHBlZBgEIAEoCBouCgxIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJ6ChNFZ3Jlc3NSZXF1ZXN0U291cmNlEjAKA3BvZBgBIAEoCzIhLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzUG9kU291cmNlSAASEAoGcnVuX2lkGAIgASgJSAASFQoLd29ya2xvYWRfaWQYAyABKAlIAEIICgZzb3VyY2UiSwoPRWdyZXNzUG9kU291cmNlEhEKCW5hbWVzcGFjZRgBIAEoCRIMCgRuYW1lGAIgASgJEgsKA3VpZBgDIAEoCRIKCgJpcBgEIAEoCUI4WjZjb2RlLWNvZGUuaW50ZXJuYWwvZ28tY29udHJhY3QvcGxhdGZvcm0vYXV0aC92MTthdXRodjFiBnByb3RvMw");
+  fileDesc("CiJwbGF0Zm9ybS9hdXRoL3YxL2VncmVzc19hdXRoLnByb3RvEhBwbGF0Zm9ybS5hdXRoLnYxIrIFCiJSZXNvbHZlRWdyZXNzUmVxdWVzdEhlYWRlcnNSZXF1ZXN0EhEKCXBvbGljeV9pZBgBIAEoCRIVCg1jcmVkZW50aWFsX2lkGAIgASgJEhIKCmFkYXB0ZXJfaWQYAyABKAkSEwoLdGFyZ2V0X2hvc3QYBCABKAkSGwoTaGVhZGVyX3ZhbHVlX3ByZWZpeBgFIAEoCRIOCgZvcmlnaW4YBiABKAkSYQoPcmVxdWVzdF9oZWFkZXJzGAcgAygLMkgucGxhdGZvcm0uYXV0aC52MS5SZXNvbHZlRWdyZXNzUmVxdWVzdEhlYWRlcnNSZXF1ZXN0LlJlcXVlc3RIZWFkZXJzRW50cnkSTwoYc2ltcGxlX3JlcGxhY2VtZW50X3J1bGVzGAggAygLMi0ucGxhdGZvcm0uYXV0aC52MS5FZ3Jlc3NTaW1wbGVSZXBsYWNlbWVudFJ1bGUSPgoHaGVhZGVycxgJIAMoCzItLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzSGVhZGVyUmVwbGFjZW1lbnRJdGVtEhwKFGFsbG93ZWRfaGVhZGVyX25hbWVzGAogAygJEj0KDnJ1bnRpbWVfc291cmNlGAsgASgLMiUucGxhdGZvcm0uYXV0aC52MS5FZ3Jlc3NSZXF1ZXN0U291cmNlEhMKC3RhcmdldF9wYXRoGAwgASgJEhgKEHNvdXJjZV9wcmluY2lwYWwYDSABKAkSIwobcHJvdmlkZXJfc3VyZmFjZV9iaW5kaW5nX2lkGA4gASgJEhgKEGVncmVzc19wb2xpY3lfaWQYDyABKAkSFgoOYXV0aF9wb2xpY3lfaWQYECABKAkaNQoTUmVxdWVzdEhlYWRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIucGCiNSZXNvbHZlRWdyZXNzUmVzcG9uc2VIZWFkZXJzUmVxdWVzdBIRCglwb2xpY3lfaWQYASABKAkSFQoNY3JlZGVudGlhbF9pZBgCIAEoCRISCgphZGFwdGVyX2lkGAMgASgJEhMKC3RhcmdldF9ob3N0GAQgASgJEg4KBm9yaWdpbhgFIAEoCRJiCg9yZXF1ZXN0X2hlYWRlcnMYBiADKAsySS5wbGF0Zm9ybS5hdXRoLnYxLlJlc29sdmVFZ3Jlc3NSZXNwb25zZUhlYWRlcnNSZXF1ZXN0LlJlcXVlc3RIZWFkZXJzRW50cnkSZAoQcmVzcG9uc2VfaGVhZGVycxgHIAMoCzJKLnBsYXRmb3JtLmF1dGgudjEuUmVzb2x2ZUVncmVzc1Jlc3BvbnNlSGVhZGVyc1JlcXVlc3QuUmVzcG9uc2VIZWFkZXJzRW50cnkSTwoYc2ltcGxlX3JlcGxhY2VtZW50X3J1bGVzGAggAygLMi0ucGxhdGZvcm0uYXV0aC52MS5FZ3Jlc3NTaW1wbGVSZXBsYWNlbWVudFJ1bGUSPgoHaGVhZGVycxgJIAMoCzItLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzSGVhZGVyUmVwbGFjZW1lbnRJdGVtEhwKFGFsbG93ZWRfaGVhZGVyX25hbWVzGAogAygJEj0KDnJ1bnRpbWVfc291cmNlGAsgASgLMiUucGxhdGZvcm0uYXV0aC52MS5FZ3Jlc3NSZXF1ZXN0U291cmNlEhMKC3RhcmdldF9wYXRoGAwgASgJEhMKC3N0YXR1c19jb2RlGA0gASgNEhsKE2hlYWRlcl92YWx1ZV9wcmVmaXgYDiABKAkSGAoQc291cmNlX3ByaW5jaXBhbBgPIAEoCRIjChtwcm92aWRlcl9zdXJmYWNlX2JpbmRpbmdfaWQYECABKAkSGAoQZWdyZXNzX3BvbGljeV9pZBgRIAEoCRIWCg5hdXRoX3BvbGljeV9pZBgSIAEoCRo1ChNSZXF1ZXN0SGVhZGVyc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEaNgoUUmVzcG9uc2VIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJCChtFZ3Jlc3NIZWFkZXJSZXBsYWNlbWVudEl0ZW0SDAoEbmFtZRgBIAEoCRIVCg1jdXJyZW50X3ZhbHVlGAIgASgJIoUBChtFZ3Jlc3NTaW1wbGVSZXBsYWNlbWVudFJ1bGUSDAoEbW9kZRgBIAEoCRITCgtoZWFkZXJfbmFtZRgCIAEoCRIUCgxtYXRlcmlhbF9rZXkYAyABKAkSGwoTaGVhZGVyX3ZhbHVlX3ByZWZpeBgEIAEoCRIQCgh0ZW1wbGF0ZRgFIAEoCSJ2ChRFZ3Jlc3NIZWFkZXJNdXRhdGlvbhIMCgRuYW1lGAEgASgJEg0KBXZhbHVlGAIgASgJEkEKDWFwcGVuZF9hY3Rpb24YAyABKA4yKi5wbGF0Zm9ybS5hdXRoLnYxLkVncmVzc0hlYWRlckFwcGVuZEFjdGlvbiKWAQojUmVzb2x2ZUVncmVzc1JlcXVlc3RIZWFkZXJzUmVzcG9uc2USNwoHaGVhZGVycxgBIAMoCzImLnBsYXRmb3JtLmF1dGgudjEuRWdyZXNzSGVhZGVyTXV0YXRpb24SFgoOcmVtb3ZlX2hlYWRlcnMYAiADKAkSDQoFZXJyb3IYAyABKAkSDwoHc2tpcHBlZBgEIAEoCCKXAQokUmVzb2x2ZUVncmVzc1Jlc3BvbnNlSGVhZGVyc1Jlc3BvbnNlEjcKB2hlYWRlcnMYASADKAsyJi5wbGF0Zm9ybS5hdXRoLnYxLkVncmVzc0hlYWRlck11dGF0aW9uEhYKDnJlbW92ZV9oZWFkZXJzGAIgAygJEg0KBWVycm9yGAMgASgJEg8KB3NraXBwZWQYBCABKAgiegoTRWdyZXNzUmVxdWVzdFNvdXJjZRIwCgNwb2QYASABKAsyIS5wbGF0Zm9ybS5hdXRoLnYxLkVncmVzc1BvZFNvdXJjZUgAEhAKBnJ1bl9pZBgCIAEoCUgAEhUKC3dvcmtsb2FkX2lkGAMgASgJSABCCAoGc291cmNlIksKD0VncmVzc1BvZFNvdXJjZRIRCgluYW1lc3BhY2UYASABKAkSDAoEbmFtZRgCIAEoCRILCgN1aWQYAyABKAkSCgoCaXAYBCABKAkq6wEKGEVncmVzc0hlYWRlckFwcGVuZEFjdGlvbhIrCidFR1JFU1NfSEVBREVSX0FQUEVORF9BQ1RJT05fVU5TUEVDSUZJRUQQABI6CjZFR1JFU1NfSEVBREVSX0FQUEVORF9BQ1RJT05fT1ZFUldSSVRFX0lGX0VYSVNUU19PUl9BREQQARI3CjNFR1JFU1NfSEVBREVSX0FQUEVORF9BQ1RJT05fQVBQRU5EX0lGX0VYSVNUU19PUl9BREQQAhItCilFR1JFU1NfSEVBREVSX0FQUEVORF9BQ1RJT05fQUREX0lGX0FCU0VOVBADQjhaNmNvZGUtY29kZS5pbnRlcm5hbC9nby1jb250cmFjdC9wbGF0Zm9ybS9hdXRoL3YxO2F1dGh2MWIGcHJvdG8z");
 
 /**
  * @generated from message platform.auth.v1.ResolveEgressRequestHeadersRequest
@@ -75,6 +75,26 @@ export type ResolveEgressRequestHeadersRequest = Message<"platform.auth.v1.Resol
    * @generated from field: string target_path = 12;
    */
   targetPath: string;
+
+  /**
+   * @generated from field: string source_principal = 13;
+   */
+  sourcePrincipal: string;
+
+  /**
+   * @generated from field: string provider_surface_binding_id = 14;
+   */
+  providerSurfaceBindingId: string;
+
+  /**
+   * @generated from field: string egress_policy_id = 15;
+   */
+  egressPolicyId: string;
+
+  /**
+   * @generated from field: string auth_policy_id = 16;
+   */
+  authPolicyId: string;
 };
 
 /**
@@ -157,6 +177,26 @@ export type ResolveEgressResponseHeadersRequest = Message<"platform.auth.v1.Reso
    * @generated from field: string header_value_prefix = 14;
    */
   headerValuePrefix: string;
+
+  /**
+   * @generated from field: string source_principal = 15;
+   */
+  sourcePrincipal: string;
+
+  /**
+   * @generated from field: string provider_surface_binding_id = 16;
+   */
+  providerSurfaceBindingId: string;
+
+  /**
+   * @generated from field: string egress_policy_id = 17;
+   */
+  egressPolicyId: string;
+
+  /**
+   * @generated from field: string auth_policy_id = 18;
+   */
+  authPolicyId: string;
 };
 
 /**
@@ -226,13 +266,40 @@ export const EgressSimpleReplacementRuleSchema: GenMessage<EgressSimpleReplaceme
   messageDesc(file_platform_auth_v1_egress_auth, 3);
 
 /**
+ * @generated from message platform.auth.v1.EgressHeaderMutation
+ */
+export type EgressHeaderMutation = Message<"platform.auth.v1.EgressHeaderMutation"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string value = 2;
+   */
+  value: string;
+
+  /**
+   * @generated from field: platform.auth.v1.EgressHeaderAppendAction append_action = 3;
+   */
+  appendAction: EgressHeaderAppendAction;
+};
+
+/**
+ * Describes the message platform.auth.v1.EgressHeaderMutation.
+ * Use `create(EgressHeaderMutationSchema)` to create a new message.
+ */
+export const EgressHeaderMutationSchema: GenMessage<EgressHeaderMutation> = /*@__PURE__*/
+  messageDesc(file_platform_auth_v1_egress_auth, 4);
+
+/**
  * @generated from message platform.auth.v1.ResolveEgressRequestHeadersResponse
  */
 export type ResolveEgressRequestHeadersResponse = Message<"platform.auth.v1.ResolveEgressRequestHeadersResponse"> & {
   /**
-   * @generated from field: map<string, string> headers = 1;
+   * @generated from field: repeated platform.auth.v1.EgressHeaderMutation headers = 1;
    */
-  headers: { [key: string]: string };
+  headers: EgressHeaderMutation[];
 
   /**
    * @generated from field: repeated string remove_headers = 2;
@@ -255,16 +322,16 @@ export type ResolveEgressRequestHeadersResponse = Message<"platform.auth.v1.Reso
  * Use `create(ResolveEgressRequestHeadersResponseSchema)` to create a new message.
  */
 export const ResolveEgressRequestHeadersResponseSchema: GenMessage<ResolveEgressRequestHeadersResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_egress_auth, 4);
+  messageDesc(file_platform_auth_v1_egress_auth, 5);
 
 /**
  * @generated from message platform.auth.v1.ResolveEgressResponseHeadersResponse
  */
 export type ResolveEgressResponseHeadersResponse = Message<"platform.auth.v1.ResolveEgressResponseHeadersResponse"> & {
   /**
-   * @generated from field: map<string, string> headers = 1;
+   * @generated from field: repeated platform.auth.v1.EgressHeaderMutation headers = 1;
    */
-  headers: { [key: string]: string };
+  headers: EgressHeaderMutation[];
 
   /**
    * @generated from field: repeated string remove_headers = 2;
@@ -287,7 +354,7 @@ export type ResolveEgressResponseHeadersResponse = Message<"platform.auth.v1.Res
  * Use `create(ResolveEgressResponseHeadersResponseSchema)` to create a new message.
  */
 export const ResolveEgressResponseHeadersResponseSchema: GenMessage<ResolveEgressResponseHeadersResponse> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_egress_auth, 5);
+  messageDesc(file_platform_auth_v1_egress_auth, 6);
 
 /**
  * @generated from message platform.auth.v1.EgressRequestSource
@@ -322,7 +389,7 @@ export type EgressRequestSource = Message<"platform.auth.v1.EgressRequestSource"
  * Use `create(EgressRequestSourceSchema)` to create a new message.
  */
 export const EgressRequestSourceSchema: GenMessage<EgressRequestSource> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_egress_auth, 6);
+  messageDesc(file_platform_auth_v1_egress_auth, 7);
 
 /**
  * @generated from message platform.auth.v1.EgressPodSource
@@ -354,5 +421,36 @@ export type EgressPodSource = Message<"platform.auth.v1.EgressPodSource"> & {
  * Use `create(EgressPodSourceSchema)` to create a new message.
  */
 export const EgressPodSourceSchema: GenMessage<EgressPodSource> = /*@__PURE__*/
-  messageDesc(file_platform_auth_v1_egress_auth, 7);
+  messageDesc(file_platform_auth_v1_egress_auth, 8);
+
+/**
+ * @generated from enum platform.auth.v1.EgressHeaderAppendAction
+ */
+export enum EgressHeaderAppendAction {
+  /**
+   * @generated from enum value: EGRESS_HEADER_APPEND_ACTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EGRESS_HEADER_APPEND_ACTION_OVERWRITE_IF_EXISTS_OR_ADD = 1;
+   */
+  OVERWRITE_IF_EXISTS_OR_ADD = 1,
+
+  /**
+   * @generated from enum value: EGRESS_HEADER_APPEND_ACTION_APPEND_IF_EXISTS_OR_ADD = 2;
+   */
+  APPEND_IF_EXISTS_OR_ADD = 2,
+
+  /**
+   * @generated from enum value: EGRESS_HEADER_APPEND_ACTION_ADD_IF_ABSENT = 3;
+   */
+  ADD_IF_ABSENT = 3,
+}
+
+/**
+ * Describes the enum platform.auth.v1.EgressHeaderAppendAction.
+ */
+export const EgressHeaderAppendActionSchema: GenEnum<EgressHeaderAppendAction> = /*@__PURE__*/
+  enumDesc(file_platform_auth_v1_egress_auth, 0);
 

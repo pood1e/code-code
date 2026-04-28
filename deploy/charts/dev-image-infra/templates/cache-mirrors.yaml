@@ -1,0 +1,10 @@
+{{- if .Values.cache.enabled }}
+{{- $root := . }}
+{{- range $key := keys .Values.cache.mirrors | sortAlpha }}
+{{- $mirror := index $root.Values.cache.mirrors $key }}
+{{- if $mirror.enabled }}
+{{ include "devImageInfra.renderRegistry" (dict "root" $root "name" $mirror.name "componentLabel" "cache" "containerName" "registry-cache" "image" $root.Values.cache.image "replicaCount" $root.Values.cache.replicaCount "port" $root.Values.cache.port "deleteEnabled" $root.Values.cache.deleteEnabled "resources" $root.Values.cache.resources "persistentVolumeClaim" $mirror.persistentVolumeClaim "serviceType" $root.Values.cache.service.type "nodePort" $mirror.nodePort "remoteUrl" $mirror.remoteUrl) }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

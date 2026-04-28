@@ -17,6 +17,8 @@ service AuthService {
   rpc UpdateAPIKeyCredential(UpdateAPIKeyCredentialRequest) returns (UpdateAPIKeyCredentialResponse);
   rpc CreateSessionCredential(CreateSessionCredentialRequest) returns (CreateSessionCredentialResponse);
   rpc UpdateSessionCredential(UpdateSessionCredentialRequest) returns (UpdateSessionCredentialResponse);
+  rpc MergeCredentialMaterialValues(MergeCredentialMaterialValuesRequest) returns (MergeCredentialMaterialValuesResponse);
+  rpc ReadCredentialMaterialFields(ReadCredentialMaterialFieldsRequest) returns (ReadCredentialMaterialFieldsResponse);
   rpc CreateOAuthCredential(CreateOAuthCredentialRequest) returns (CreateOAuthCredentialResponse);
   rpc UpdateOAuthCredential(UpdateOAuthCredentialRequest) returns (UpdateOAuthCredentialResponse);
   rpc RenameCredential(RenameCredentialRequest) returns (RenameCredentialResponse);
@@ -94,6 +96,45 @@ message UpdateSessionCredentialRequest {
 message UpdateSessionCredentialResponse {
   platform.management.v1.CredentialView credential = 1;
   string status = 2;
+}
+
+message MergeCredentialMaterialValuesRequest {
+  string credential_id = 1;
+  map<string, string> values = 2;
+}
+
+message MergeCredentialMaterialValuesResponse {
+  string status = 1;
+}
+
+message ReadCredentialMaterialFieldsRequest {
+  string credential_id = 1;
+  repeated string field_ids = 2;
+  CredentialMaterialReadPolicyRef policy_ref = 3;
+}
+
+message ReadCredentialMaterialFieldsResponse {
+  map<string, string> values = 1;
+}
+
+message CredentialMaterialReadPolicyRef {
+  CredentialMaterialReadPolicyKind kind = 1;
+  // owner_id is the support-owned policy subject. For CLI active queries this is
+  // cli_id; for vendor active queries this is vendor_id.
+  string owner_id = 2;
+  // surface_id narrows vendor active query policy to one provider surface
+  // binding. CLI active queries may leave this empty.
+  string surface_id = 3;
+  // collector_id is the active query collector implementation that is requesting
+  // material readback. When set, authservice verifies it matches the support
+  // policy before releasing material values.
+  string collector_id = 4;
+}
+
+enum CredentialMaterialReadPolicyKind {
+  CREDENTIAL_MATERIAL_READ_POLICY_KIND_UNSPECIFIED = 0;
+  CREDENTIAL_MATERIAL_READ_POLICY_KIND_CLI_OAUTH_ACTIVE_QUERY = 1;
+  CREDENTIAL_MATERIAL_READ_POLICY_KIND_VENDOR_ACTIVE_QUERY = 2;
 }
 
 message CreateOAuthCredentialRequest {
@@ -223,7 +264,6 @@ message CredentialRuntimeProjection {
   credential.v1.CredentialKind credential_kind = 2;
   string vendor_id = 3;
   string cli_id = 4;
-  string secret_name = 5;
 }
 
 message GetCredentialRuntimeProjectionResponse {
@@ -246,4 +286,8 @@ message GetEgressAuthPolicyResponse {
   repeated string request_header_names = 6;
   repeated string response_header_names = 7;
   string header_value_prefix = 8;
+  string extension_provider_name = 9;
+  repeated string headers_to_upstream_on_allow = 10;
+  repeated string headers_to_downstream_on_allow = 11;
+  repeated string headers_to_downstream_on_deny = 12;
 }

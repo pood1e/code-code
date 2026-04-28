@@ -7,7 +7,9 @@
 package egressservicev1
 
 import (
-	v1 "code-code.internal/go-contract/platform/management/v1"
+	v1 "code-code.internal/go-contract/egress/v1"
+	v12 "code-code.internal/go-contract/observability/v1"
+	v11 "code-code.internal/go-contract/platform/management/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -22,6 +24,246 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ApplyExternalAccessSetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessSet     *v1.ExternalAccessSet  `protobuf:"bytes,1,opt,name=access_set,json=accessSet,proto3" json:"access_set,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyExternalAccessSetRequest) Reset() {
+	*x = ApplyExternalAccessSetRequest{}
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyExternalAccessSetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyExternalAccessSetRequest) ProtoMessage() {}
+
+func (x *ApplyExternalAccessSetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyExternalAccessSetRequest.ProtoReflect.Descriptor instead.
+func (*ApplyExternalAccessSetRequest) Descriptor() ([]byte, []int) {
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ApplyExternalAccessSetRequest) GetAccessSet() *v1.ExternalAccessSet {
+	if x != nil {
+		return x.AccessSet
+	}
+	return nil
+}
+
+type ApplyExternalAccessSetResponse struct {
+	state                      protoimpl.MessageState `protogen:"open.v1"`
+	Item                       *v11.EgressPolicyView  `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	AddedExternalRuleCount     int32                  `protobuf:"varint,2,opt,name=added_external_rule_count,json=addedExternalRuleCount,proto3" json:"added_external_rule_count,omitempty"`
+	UpdatedExternalRuleCount   int32                  `protobuf:"varint,3,opt,name=updated_external_rule_count,json=updatedExternalRuleCount,proto3" json:"updated_external_rule_count,omitempty"`
+	RemovedExternalRuleCount   int32                  `protobuf:"varint,4,opt,name=removed_external_rule_count,json=removedExternalRuleCount,proto3" json:"removed_external_rule_count,omitempty"`
+	UnchangedExternalRuleCount int32                  `protobuf:"varint,5,opt,name=unchanged_external_rule_count,json=unchangedExternalRuleCount,proto3" json:"unchanged_external_rule_count,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *ApplyExternalAccessSetResponse) Reset() {
+	*x = ApplyExternalAccessSetResponse{}
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyExternalAccessSetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyExternalAccessSetResponse) ProtoMessage() {}
+
+func (x *ApplyExternalAccessSetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyExternalAccessSetResponse.ProtoReflect.Descriptor instead.
+func (*ApplyExternalAccessSetResponse) Descriptor() ([]byte, []int) {
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ApplyExternalAccessSetResponse) GetItem() *v11.EgressPolicyView {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
+func (x *ApplyExternalAccessSetResponse) GetAddedExternalRuleCount() int32 {
+	if x != nil {
+		return x.AddedExternalRuleCount
+	}
+	return 0
+}
+
+func (x *ApplyExternalAccessSetResponse) GetUpdatedExternalRuleCount() int32 {
+	if x != nil {
+		return x.UpdatedExternalRuleCount
+	}
+	return 0
+}
+
+func (x *ApplyExternalAccessSetResponse) GetRemovedExternalRuleCount() int32 {
+	if x != nil {
+		return x.RemovedExternalRuleCount
+	}
+	return 0
+}
+
+func (x *ApplyExternalAccessSetResponse) GetUnchangedExternalRuleCount() int32 {
+	if x != nil {
+		return x.UnchangedExternalRuleCount
+	}
+	return 0
+}
+
+type DeleteExternalAccessSetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PolicyId      string                 `protobuf:"bytes,1,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
+	AccessSetId   string                 `protobuf:"bytes,2,opt,name=access_set_id,json=accessSetId,proto3" json:"access_set_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteExternalAccessSetRequest) Reset() {
+	*x = DeleteExternalAccessSetRequest{}
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteExternalAccessSetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteExternalAccessSetRequest) ProtoMessage() {}
+
+func (x *DeleteExternalAccessSetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteExternalAccessSetRequest.ProtoReflect.Descriptor instead.
+func (*DeleteExternalAccessSetRequest) Descriptor() ([]byte, []int) {
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *DeleteExternalAccessSetRequest) GetPolicyId() string {
+	if x != nil {
+		return x.PolicyId
+	}
+	return ""
+}
+
+func (x *DeleteExternalAccessSetRequest) GetAccessSetId() string {
+	if x != nil {
+		return x.AccessSetId
+	}
+	return ""
+}
+
+type DeleteExternalAccessSetResponse struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	Item                     *v11.EgressPolicyView  `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	RemovedExternalRuleCount int32                  `protobuf:"varint,2,opt,name=removed_external_rule_count,json=removedExternalRuleCount,proto3" json:"removed_external_rule_count,omitempty"`
+	RemovedServiceRuleCount  int32                  `protobuf:"varint,3,opt,name=removed_service_rule_count,json=removedServiceRuleCount,proto3" json:"removed_service_rule_count,omitempty"`
+	RemovedHttpRouteCount    int32                  `protobuf:"varint,4,opt,name=removed_http_route_count,json=removedHttpRouteCount,proto3" json:"removed_http_route_count,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *DeleteExternalAccessSetResponse) Reset() {
+	*x = DeleteExternalAccessSetResponse{}
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteExternalAccessSetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteExternalAccessSetResponse) ProtoMessage() {}
+
+func (x *DeleteExternalAccessSetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteExternalAccessSetResponse.ProtoReflect.Descriptor instead.
+func (*DeleteExternalAccessSetResponse) Descriptor() ([]byte, []int) {
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *DeleteExternalAccessSetResponse) GetItem() *v11.EgressPolicyView {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
+func (x *DeleteExternalAccessSetResponse) GetRemovedExternalRuleCount() int32 {
+	if x != nil {
+		return x.RemovedExternalRuleCount
+	}
+	return 0
+}
+
+func (x *DeleteExternalAccessSetResponse) GetRemovedServiceRuleCount() int32 {
+	if x != nil {
+		return x.RemovedServiceRuleCount
+	}
+	return 0
+}
+
+func (x *DeleteExternalAccessSetResponse) GetRemovedHttpRouteCount() int32 {
+	if x != nil {
+		return x.RemovedHttpRouteCount
+	}
+	return 0
+}
+
 type GetEgressRuntimePolicyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PolicyId      string                 `protobuf:"bytes,1,opt,name=policy_id,json=policyId,proto3" json:"policy_id,omitempty"`
@@ -32,7 +274,7 @@ type GetEgressRuntimePolicyRequest struct {
 
 func (x *GetEgressRuntimePolicyRequest) Reset() {
 	*x = GetEgressRuntimePolicyRequest{}
-	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[0]
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +286,7 @@ func (x *GetEgressRuntimePolicyRequest) String() string {
 func (*GetEgressRuntimePolicyRequest) ProtoMessage() {}
 
 func (x *GetEgressRuntimePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[0]
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +299,7 @@ func (x *GetEgressRuntimePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEgressRuntimePolicyRequest.ProtoReflect.Descriptor instead.
 func (*GetEgressRuntimePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{0}
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetEgressRuntimePolicyRequest) GetPolicyId() string {
@@ -83,7 +325,7 @@ type GetEgressRuntimePolicyResponse struct {
 
 func (x *GetEgressRuntimePolicyResponse) Reset() {
 	*x = GetEgressRuntimePolicyResponse{}
-	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[1]
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +337,7 @@ func (x *GetEgressRuntimePolicyResponse) String() string {
 func (*GetEgressRuntimePolicyResponse) ProtoMessage() {}
 
 func (x *GetEgressRuntimePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[1]
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +350,7 @@ func (x *GetEgressRuntimePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEgressRuntimePolicyResponse.ProtoReflect.Descriptor instead.
 func (*GetEgressRuntimePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{1}
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetEgressRuntimePolicyResponse) GetPolicy() *EgressRuntimePolicy {
@@ -129,7 +371,7 @@ type EgressRuntimePolicy struct {
 
 func (x *EgressRuntimePolicy) Reset() {
 	*x = EgressRuntimePolicy{}
-	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[2]
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -141,7 +383,7 @@ func (x *EgressRuntimePolicy) String() string {
 func (*EgressRuntimePolicy) ProtoMessage() {}
 
 func (x *EgressRuntimePolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[2]
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -154,7 +396,7 @@ func (x *EgressRuntimePolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EgressRuntimePolicy.ProtoReflect.Descriptor instead.
 func (*EgressRuntimePolicy) Descriptor() ([]byte, []int) {
-	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{2}
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *EgressRuntimePolicy) GetPolicyId() string {
@@ -178,11 +420,132 @@ func (x *EgressRuntimePolicy) GetTargetPathPrefixes() []string {
 	return nil
 }
 
+type ApplyRuntimeTelemetryProfileSetRequest struct {
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	ProfileSetId  string                       `protobuf:"bytes,1,opt,name=profile_set_id,json=profileSetId,proto3" json:"profile_set_id,omitempty"`
+	Capability    *v12.ObservabilityCapability `protobuf:"bytes,2,opt,name=capability,proto3" json:"capability,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetRequest) Reset() {
+	*x = ApplyRuntimeTelemetryProfileSetRequest{}
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyRuntimeTelemetryProfileSetRequest) ProtoMessage() {}
+
+func (x *ApplyRuntimeTelemetryProfileSetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyRuntimeTelemetryProfileSetRequest.ProtoReflect.Descriptor instead.
+func (*ApplyRuntimeTelemetryProfileSetRequest) Descriptor() ([]byte, []int) {
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetRequest) GetProfileSetId() string {
+	if x != nil {
+		return x.ProfileSetId
+	}
+	return ""
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetRequest) GetCapability() *v12.ObservabilityCapability {
+	if x != nil {
+		return x.Capability
+	}
+	return nil
+}
+
+type ApplyRuntimeTelemetryProfileSetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Applied       bool                   `protobuf:"varint,1,opt,name=applied,proto3" json:"applied,omitempty"`
+	ProfileCount  uint32                 `protobuf:"varint,2,opt,name=profile_count,json=profileCount,proto3" json:"profile_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetResponse) Reset() {
+	*x = ApplyRuntimeTelemetryProfileSetResponse{}
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyRuntimeTelemetryProfileSetResponse) ProtoMessage() {}
+
+func (x *ApplyRuntimeTelemetryProfileSetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_egress_v1_egress_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyRuntimeTelemetryProfileSetResponse.ProtoReflect.Descriptor instead.
+func (*ApplyRuntimeTelemetryProfileSetResponse) Descriptor() ([]byte, []int) {
+	return file_platform_egress_v1_egress_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetResponse) GetApplied() bool {
+	if x != nil {
+		return x.Applied
+	}
+	return false
+}
+
+func (x *ApplyRuntimeTelemetryProfileSetResponse) GetProfileCount() uint32 {
+	if x != nil {
+		return x.ProfileCount
+	}
+	return 0
+}
+
 var File_platform_egress_v1_egress_service_proto protoreflect.FileDescriptor
 
 const file_platform_egress_v1_egress_service_proto_rawDesc = "" +
 	"\n" +
-	"'platform/egress/v1/egress_service.proto\x12\x12platform.egress.v1\x1a'platform/management/v1/management.proto\"]\n" +
+	"'platform/egress/v1/egress_service.proto\x12\x12platform.egress.v1\x1a\x16egress/v1/policy.proto\x1a$observability/v1/observability.proto\x1a'platform/management/v1/management.proto\"\\\n" +
+	"\x1dApplyExternalAccessSetRequest\x12;\n" +
+	"\n" +
+	"access_set\x18\x01 \x01(\v2\x1c.egress.v1.ExternalAccessSetR\taccessSet\"\xda\x02\n" +
+	"\x1eApplyExternalAccessSetResponse\x12<\n" +
+	"\x04item\x18\x01 \x01(\v2(.platform.management.v1.EgressPolicyViewR\x04item\x129\n" +
+	"\x19added_external_rule_count\x18\x02 \x01(\x05R\x16addedExternalRuleCount\x12=\n" +
+	"\x1bupdated_external_rule_count\x18\x03 \x01(\x05R\x18updatedExternalRuleCount\x12=\n" +
+	"\x1bremoved_external_rule_count\x18\x04 \x01(\x05R\x18removedExternalRuleCount\x12A\n" +
+	"\x1dunchanged_external_rule_count\x18\x05 \x01(\x05R\x1aunchangedExternalRuleCount\"a\n" +
+	"\x1eDeleteExternalAccessSetRequest\x12\x1b\n" +
+	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12\"\n" +
+	"\raccess_set_id\x18\x02 \x01(\tR\vaccessSetId\"\x94\x02\n" +
+	"\x1fDeleteExternalAccessSetResponse\x12<\n" +
+	"\x04item\x18\x01 \x01(\v2(.platform.management.v1.EgressPolicyViewR\x04item\x12=\n" +
+	"\x1bremoved_external_rule_count\x18\x02 \x01(\x05R\x18removedExternalRuleCount\x12;\n" +
+	"\x1aremoved_service_rule_count\x18\x03 \x01(\x05R\x17removedServiceRuleCount\x127\n" +
+	"\x18removed_http_route_count\x18\x04 \x01(\x05R\x15removedHttpRouteCount\"]\n" +
 	"\x1dGetEgressRuntimePolicyRequest\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12\x1f\n" +
 	"\vruntime_url\x18\x02 \x01(\tR\n" +
@@ -192,11 +555,22 @@ const file_platform_egress_v1_egress_service_proto_rawDesc = "" +
 	"\x13EgressRuntimePolicy\x12\x1b\n" +
 	"\tpolicy_id\x18\x01 \x01(\tR\bpolicyId\x12!\n" +
 	"\ftarget_hosts\x18\x02 \x03(\tR\vtargetHosts\x120\n" +
-	"\x14target_path_prefixes\x18\x03 \x03(\tR\x12targetPathPrefixes2\x8a\x03\n" +
+	"\x14target_path_prefixes\x18\x03 \x03(\tR\x12targetPathPrefixes\"\x99\x01\n" +
+	"&ApplyRuntimeTelemetryProfileSetRequest\x12$\n" +
+	"\x0eprofile_set_id\x18\x01 \x01(\tR\fprofileSetId\x12I\n" +
+	"\n" +
+	"capability\x18\x02 \x01(\v2).observability.v1.ObservabilityCapabilityR\n" +
+	"capability\"h\n" +
+	"'ApplyRuntimeTelemetryProfileSetResponse\x12\x18\n" +
+	"\aapplied\x18\x01 \x01(\bR\aapplied\x12#\n" +
+	"\rprofile_count\x18\x02 \x01(\rR\fprofileCount2\xad\x06\n" +
 	"\rEgressService\x12{\n" +
 	"\x12ListEgressPolicies\x121.platform.management.v1.ListEgressPoliciesRequest\x1a2.platform.management.v1.ListEgressPoliciesResponse\x12{\n" +
 	"\x12UpdateEgressPolicy\x121.platform.management.v1.UpdateEgressPolicyRequest\x1a2.platform.management.v1.UpdateEgressPolicyResponse\x12\x7f\n" +
-	"\x16GetEgressRuntimePolicy\x121.platform.egress.v1.GetEgressRuntimePolicyRequest\x1a2.platform.egress.v1.GetEgressRuntimePolicyResponseBCZAcode-code.internal/go-contract/platform/egress/v1;egressservicev1b\x06proto3"
+	"\x16ApplyExternalAccessSet\x121.platform.egress.v1.ApplyExternalAccessSetRequest\x1a2.platform.egress.v1.ApplyExternalAccessSetResponse\x12\x82\x01\n" +
+	"\x17DeleteExternalAccessSet\x122.platform.egress.v1.DeleteExternalAccessSetRequest\x1a3.platform.egress.v1.DeleteExternalAccessSetResponse\x12\x7f\n" +
+	"\x16GetEgressRuntimePolicy\x121.platform.egress.v1.GetEgressRuntimePolicyRequest\x1a2.platform.egress.v1.GetEgressRuntimePolicyResponse\x12\x9a\x01\n" +
+	"\x1fApplyRuntimeTelemetryProfileSet\x12:.platform.egress.v1.ApplyRuntimeTelemetryProfileSetRequest\x1a;.platform.egress.v1.ApplyRuntimeTelemetryProfileSetResponseBCZAcode-code.internal/go-contract/platform/egress/v1;egressservicev1b\x06proto3"
 
 var (
 	file_platform_egress_v1_egress_service_proto_rawDescOnce sync.Once
@@ -210,29 +584,48 @@ func file_platform_egress_v1_egress_service_proto_rawDescGZIP() []byte {
 	return file_platform_egress_v1_egress_service_proto_rawDescData
 }
 
-var file_platform_egress_v1_egress_service_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_platform_egress_v1_egress_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_platform_egress_v1_egress_service_proto_goTypes = []any{
-	(*GetEgressRuntimePolicyRequest)(nil),  // 0: platform.egress.v1.GetEgressRuntimePolicyRequest
-	(*GetEgressRuntimePolicyResponse)(nil), // 1: platform.egress.v1.GetEgressRuntimePolicyResponse
-	(*EgressRuntimePolicy)(nil),            // 2: platform.egress.v1.EgressRuntimePolicy
-	(*v1.ListEgressPoliciesRequest)(nil),   // 3: platform.management.v1.ListEgressPoliciesRequest
-	(*v1.UpdateEgressPolicyRequest)(nil),   // 4: platform.management.v1.UpdateEgressPolicyRequest
-	(*v1.ListEgressPoliciesResponse)(nil),  // 5: platform.management.v1.ListEgressPoliciesResponse
-	(*v1.UpdateEgressPolicyResponse)(nil),  // 6: platform.management.v1.UpdateEgressPolicyResponse
+	(*ApplyExternalAccessSetRequest)(nil),           // 0: platform.egress.v1.ApplyExternalAccessSetRequest
+	(*ApplyExternalAccessSetResponse)(nil),          // 1: platform.egress.v1.ApplyExternalAccessSetResponse
+	(*DeleteExternalAccessSetRequest)(nil),          // 2: platform.egress.v1.DeleteExternalAccessSetRequest
+	(*DeleteExternalAccessSetResponse)(nil),         // 3: platform.egress.v1.DeleteExternalAccessSetResponse
+	(*GetEgressRuntimePolicyRequest)(nil),           // 4: platform.egress.v1.GetEgressRuntimePolicyRequest
+	(*GetEgressRuntimePolicyResponse)(nil),          // 5: platform.egress.v1.GetEgressRuntimePolicyResponse
+	(*EgressRuntimePolicy)(nil),                     // 6: platform.egress.v1.EgressRuntimePolicy
+	(*ApplyRuntimeTelemetryProfileSetRequest)(nil),  // 7: platform.egress.v1.ApplyRuntimeTelemetryProfileSetRequest
+	(*ApplyRuntimeTelemetryProfileSetResponse)(nil), // 8: platform.egress.v1.ApplyRuntimeTelemetryProfileSetResponse
+	(*v1.ExternalAccessSet)(nil),                    // 9: egress.v1.ExternalAccessSet
+	(*v11.EgressPolicyView)(nil),                    // 10: platform.management.v1.EgressPolicyView
+	(*v12.ObservabilityCapability)(nil),             // 11: observability.v1.ObservabilityCapability
+	(*v11.ListEgressPoliciesRequest)(nil),           // 12: platform.management.v1.ListEgressPoliciesRequest
+	(*v11.UpdateEgressPolicyRequest)(nil),           // 13: platform.management.v1.UpdateEgressPolicyRequest
+	(*v11.ListEgressPoliciesResponse)(nil),          // 14: platform.management.v1.ListEgressPoliciesResponse
+	(*v11.UpdateEgressPolicyResponse)(nil),          // 15: platform.management.v1.UpdateEgressPolicyResponse
 }
 var file_platform_egress_v1_egress_service_proto_depIdxs = []int32{
-	2, // 0: platform.egress.v1.GetEgressRuntimePolicyResponse.policy:type_name -> platform.egress.v1.EgressRuntimePolicy
-	3, // 1: platform.egress.v1.EgressService.ListEgressPolicies:input_type -> platform.management.v1.ListEgressPoliciesRequest
-	4, // 2: platform.egress.v1.EgressService.UpdateEgressPolicy:input_type -> platform.management.v1.UpdateEgressPolicyRequest
-	0, // 3: platform.egress.v1.EgressService.GetEgressRuntimePolicy:input_type -> platform.egress.v1.GetEgressRuntimePolicyRequest
-	5, // 4: platform.egress.v1.EgressService.ListEgressPolicies:output_type -> platform.management.v1.ListEgressPoliciesResponse
-	6, // 5: platform.egress.v1.EgressService.UpdateEgressPolicy:output_type -> platform.management.v1.UpdateEgressPolicyResponse
-	1, // 6: platform.egress.v1.EgressService.GetEgressRuntimePolicy:output_type -> platform.egress.v1.GetEgressRuntimePolicyResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	9,  // 0: platform.egress.v1.ApplyExternalAccessSetRequest.access_set:type_name -> egress.v1.ExternalAccessSet
+	10, // 1: platform.egress.v1.ApplyExternalAccessSetResponse.item:type_name -> platform.management.v1.EgressPolicyView
+	10, // 2: platform.egress.v1.DeleteExternalAccessSetResponse.item:type_name -> platform.management.v1.EgressPolicyView
+	6,  // 3: platform.egress.v1.GetEgressRuntimePolicyResponse.policy:type_name -> platform.egress.v1.EgressRuntimePolicy
+	11, // 4: platform.egress.v1.ApplyRuntimeTelemetryProfileSetRequest.capability:type_name -> observability.v1.ObservabilityCapability
+	12, // 5: platform.egress.v1.EgressService.ListEgressPolicies:input_type -> platform.management.v1.ListEgressPoliciesRequest
+	13, // 6: platform.egress.v1.EgressService.UpdateEgressPolicy:input_type -> platform.management.v1.UpdateEgressPolicyRequest
+	0,  // 7: platform.egress.v1.EgressService.ApplyExternalAccessSet:input_type -> platform.egress.v1.ApplyExternalAccessSetRequest
+	2,  // 8: platform.egress.v1.EgressService.DeleteExternalAccessSet:input_type -> platform.egress.v1.DeleteExternalAccessSetRequest
+	4,  // 9: platform.egress.v1.EgressService.GetEgressRuntimePolicy:input_type -> platform.egress.v1.GetEgressRuntimePolicyRequest
+	7,  // 10: platform.egress.v1.EgressService.ApplyRuntimeTelemetryProfileSet:input_type -> platform.egress.v1.ApplyRuntimeTelemetryProfileSetRequest
+	14, // 11: platform.egress.v1.EgressService.ListEgressPolicies:output_type -> platform.management.v1.ListEgressPoliciesResponse
+	15, // 12: platform.egress.v1.EgressService.UpdateEgressPolicy:output_type -> platform.management.v1.UpdateEgressPolicyResponse
+	1,  // 13: platform.egress.v1.EgressService.ApplyExternalAccessSet:output_type -> platform.egress.v1.ApplyExternalAccessSetResponse
+	3,  // 14: platform.egress.v1.EgressService.DeleteExternalAccessSet:output_type -> platform.egress.v1.DeleteExternalAccessSetResponse
+	5,  // 15: platform.egress.v1.EgressService.GetEgressRuntimePolicy:output_type -> platform.egress.v1.GetEgressRuntimePolicyResponse
+	8,  // 16: platform.egress.v1.EgressService.ApplyRuntimeTelemetryProfileSet:output_type -> platform.egress.v1.ApplyRuntimeTelemetryProfileSetResponse
+	11, // [11:17] is the sub-list for method output_type
+	5,  // [5:11] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_platform_egress_v1_egress_service_proto_init() }
@@ -246,7 +639,7 @@ func file_platform_egress_v1_egress_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_platform_egress_v1_egress_service_proto_rawDesc), len(file_platform_egress_v1_egress_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package platform.egress.v1;
 
+import "egress/v1/policy.proto";
+import "observability/v1/observability.proto";
 import "platform/management/v1/management.proto";
 
 option go_package = "code-code.internal/go-contract/platform/egress/v1;egressservicev1";
@@ -9,7 +11,34 @@ option go_package = "code-code.internal/go-contract/platform/egress/v1;egressser
 service EgressService {
   rpc ListEgressPolicies(platform.management.v1.ListEgressPoliciesRequest) returns (platform.management.v1.ListEgressPoliciesResponse);
   rpc UpdateEgressPolicy(platform.management.v1.UpdateEgressPolicyRequest) returns (platform.management.v1.UpdateEgressPolicyResponse);
+  rpc ApplyExternalAccessSet(ApplyExternalAccessSetRequest) returns (ApplyExternalAccessSetResponse);
+  rpc DeleteExternalAccessSet(DeleteExternalAccessSetRequest) returns (DeleteExternalAccessSetResponse);
   rpc GetEgressRuntimePolicy(GetEgressRuntimePolicyRequest) returns (GetEgressRuntimePolicyResponse);
+  rpc ApplyRuntimeTelemetryProfileSet(ApplyRuntimeTelemetryProfileSetRequest) returns (ApplyRuntimeTelemetryProfileSetResponse);
+}
+
+message ApplyExternalAccessSetRequest {
+  .egress.v1.ExternalAccessSet access_set = 1;
+}
+
+message ApplyExternalAccessSetResponse {
+  platform.management.v1.EgressPolicyView item = 1;
+  int32 added_external_rule_count = 2;
+  int32 updated_external_rule_count = 3;
+  int32 removed_external_rule_count = 4;
+  int32 unchanged_external_rule_count = 5;
+}
+
+message DeleteExternalAccessSetRequest {
+  string policy_id = 1;
+  string access_set_id = 2;
+}
+
+message DeleteExternalAccessSetResponse {
+  platform.management.v1.EgressPolicyView item = 1;
+  int32 removed_external_rule_count = 2;
+  int32 removed_service_rule_count = 3;
+  int32 removed_http_route_count = 4;
 }
 
 message GetEgressRuntimePolicyRequest {
@@ -25,4 +54,14 @@ message EgressRuntimePolicy {
   string policy_id = 1;
   repeated string target_hosts = 2;
   repeated string target_path_prefixes = 3;
+}
+
+message ApplyRuntimeTelemetryProfileSetRequest {
+  string profile_set_id = 1;
+  .observability.v1.ObservabilityCapability capability = 2;
+}
+
+message ApplyRuntimeTelemetryProfileSetResponse {
+  bool applied = 1;
+  uint32 profile_count = 2;
 }

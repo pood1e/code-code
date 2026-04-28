@@ -4,8 +4,8 @@
 
 ## key fields
 
-- `credential secret.project_id`
-- `credential secret.tier_name`
+- credential material `project_id`
+- credential material `tier_name`
 
 ## notes
 
@@ -13,5 +13,5 @@
 - import 先调用 Cloud Code `loadCodeAssist`
 - 若响应未直接返回 project，则继续调用 `onboardUser`
 - `loadCodeAssist` / `onboardUser` 未返回 project 时，OAuth session 不进入成功态
-- provider summary 从 credential secret 读取 `project_id` 与 `tier_name`
+- provider summary 从 credential material 读取 `project_id` 与 `tier_name`
 - Cloud Code `loadCodeAssist` / `fetchAvailableModels` 使用 native OAuth `User-Agent`

@@ -67,9 +67,6 @@ const (
 	// AgentSessionManagementServiceResolveAgentRunRuntimeContextProcedure is the fully-qualified name
 	// of the AgentSessionManagementService's ResolveAgentRunRuntimeContext RPC.
 	AgentSessionManagementServiceResolveAgentRunRuntimeContextProcedure = "/platform.management.v1.AgentSessionManagementService/ResolveAgentRunRuntimeContext"
-	// AgentSessionManagementServiceRecordAgentRunResponseHeadersProcedure is the fully-qualified name
-	// of the AgentSessionManagementService's RecordAgentRunResponseHeaders RPC.
-	AgentSessionManagementServiceRecordAgentRunResponseHeadersProcedure = "/platform.management.v1.AgentSessionManagementService/RecordAgentRunResponseHeaders"
 )
 
 // AgentSessionManagementServiceClient is a client for the
@@ -86,7 +83,6 @@ type AgentSessionManagementServiceClient interface {
 	GetAgentRun(context.Context, *v1.GetAgentRunRequest) (*v1.GetAgentRunResponse, error)
 	StreamAgentRunOutput(context.Context, *v1.StreamAgentRunOutputRequest) (*connect.ServerStreamForClient[v1.StreamAgentRunOutputResponse], error)
 	ResolveAgentRunRuntimeContext(context.Context, *v1.ResolveAgentRunRuntimeContextRequest) (*v1.ResolveAgentRunRuntimeContextResponse, error)
-	RecordAgentRunResponseHeaders(context.Context, *v1.RecordAgentRunResponseHeadersRequest) (*v1.RecordAgentRunResponseHeadersResponse, error)
 }
 
 // NewAgentSessionManagementServiceClient constructs a client for the
@@ -167,12 +163,6 @@ func NewAgentSessionManagementServiceClient(httpClient connect.HTTPClient, baseU
 			connect.WithSchema(agentSessionManagementServiceMethods.ByName("ResolveAgentRunRuntimeContext")),
 			connect.WithClientOptions(opts...),
 		),
-		recordAgentRunResponseHeaders: connect.NewClient[v1.RecordAgentRunResponseHeadersRequest, v1.RecordAgentRunResponseHeadersResponse](
-			httpClient,
-			baseURL+AgentSessionManagementServiceRecordAgentRunResponseHeadersProcedure,
-			connect.WithSchema(agentSessionManagementServiceMethods.ByName("RecordAgentRunResponseHeaders")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
@@ -189,7 +179,6 @@ type agentSessionManagementServiceClient struct {
 	getAgentRun                   *connect.Client[v1.GetAgentRunRequest, v1.GetAgentRunResponse]
 	streamAgentRunOutput          *connect.Client[v1.StreamAgentRunOutputRequest, v1.StreamAgentRunOutputResponse]
 	resolveAgentRunRuntimeContext *connect.Client[v1.ResolveAgentRunRuntimeContextRequest, v1.ResolveAgentRunRuntimeContextResponse]
-	recordAgentRunResponseHeaders *connect.Client[v1.RecordAgentRunResponseHeadersRequest, v1.RecordAgentRunResponseHeadersResponse]
 }
 
 // GetAgentSession calls platform.management.v1.AgentSessionManagementService.GetAgentSession.
@@ -294,16 +283,6 @@ func (c *agentSessionManagementServiceClient) ResolveAgentRunRuntimeContext(ctx 
 	return nil, err
 }
 
-// RecordAgentRunResponseHeaders calls
-// platform.management.v1.AgentSessionManagementService.RecordAgentRunResponseHeaders.
-func (c *agentSessionManagementServiceClient) RecordAgentRunResponseHeaders(ctx context.Context, req *v1.RecordAgentRunResponseHeadersRequest) (*v1.RecordAgentRunResponseHeadersResponse, error) {
-	response, err := c.recordAgentRunResponseHeaders.CallUnary(ctx, connect.NewRequest(req))
-	if response != nil {
-		return response.Msg, err
-	}
-	return nil, err
-}
-
 // AgentSessionManagementServiceHandler is an implementation of the
 // platform.management.v1.AgentSessionManagementService service.
 type AgentSessionManagementServiceHandler interface {
@@ -318,7 +297,6 @@ type AgentSessionManagementServiceHandler interface {
 	GetAgentRun(context.Context, *v1.GetAgentRunRequest) (*v1.GetAgentRunResponse, error)
 	StreamAgentRunOutput(context.Context, *v1.StreamAgentRunOutputRequest, *connect.ServerStream[v1.StreamAgentRunOutputResponse]) error
 	ResolveAgentRunRuntimeContext(context.Context, *v1.ResolveAgentRunRuntimeContextRequest) (*v1.ResolveAgentRunRuntimeContextResponse, error)
-	RecordAgentRunResponseHeaders(context.Context, *v1.RecordAgentRunResponseHeadersRequest) (*v1.RecordAgentRunResponseHeadersResponse, error)
 }
 
 // NewAgentSessionManagementServiceHandler builds an HTTP handler from the service implementation.
@@ -394,12 +372,6 @@ func NewAgentSessionManagementServiceHandler(svc AgentSessionManagementServiceHa
 		connect.WithSchema(agentSessionManagementServiceMethods.ByName("ResolveAgentRunRuntimeContext")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentSessionManagementServiceRecordAgentRunResponseHeadersHandler := connect.NewUnaryHandlerSimple(
-		AgentSessionManagementServiceRecordAgentRunResponseHeadersProcedure,
-		svc.RecordAgentRunResponseHeaders,
-		connect.WithSchema(agentSessionManagementServiceMethods.ByName("RecordAgentRunResponseHeaders")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/platform.management.v1.AgentSessionManagementService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AgentSessionManagementServiceGetAgentSessionProcedure:
@@ -424,8 +396,6 @@ func NewAgentSessionManagementServiceHandler(svc AgentSessionManagementServiceHa
 			agentSessionManagementServiceStreamAgentRunOutputHandler.ServeHTTP(w, r)
 		case AgentSessionManagementServiceResolveAgentRunRuntimeContextProcedure:
 			agentSessionManagementServiceResolveAgentRunRuntimeContextHandler.ServeHTTP(w, r)
-		case AgentSessionManagementServiceRecordAgentRunResponseHeadersProcedure:
-			agentSessionManagementServiceRecordAgentRunResponseHeadersHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -477,8 +447,4 @@ func (UnimplementedAgentSessionManagementServiceHandler) StreamAgentRunOutput(co
 
 func (UnimplementedAgentSessionManagementServiceHandler) ResolveAgentRunRuntimeContext(context.Context, *v1.ResolveAgentRunRuntimeContextRequest) (*v1.ResolveAgentRunRuntimeContextResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.management.v1.AgentSessionManagementService.ResolveAgentRunRuntimeContext is not implemented"))
-}
-
-func (UnimplementedAgentSessionManagementServiceHandler) RecordAgentRunResponseHeaders(context.Context, *v1.RecordAgentRunResponseHeadersRequest) (*v1.RecordAgentRunResponseHeadersResponse, error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("platform.management.v1.AgentSessionManagementService.RecordAgentRunResponseHeaders is not implemented"))
 }

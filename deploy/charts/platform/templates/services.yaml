@@ -1,0 +1,22 @@
+{{- range $key := keys .Values.components | sortAlpha }}
+{{- $component := index $.Values.components $key }}
+{{- if and $component.enabled $component.service.enabled }}
+{{- $serviceDefaults := $.Values.defaults.service }}
+{{- $serviceType := default $serviceDefaults.type $component.service.type }}
+{{- $componentNamespace := include "platform.componentNamespace" (dict "root" $ "component" $component) | trim }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $component.name }}
+  namespace: {{ $componentNamespace }}
+  labels:
+{{ include "platform.labels" (dict "root" $ "name" $component.name "componentLabel" $component.componentLabel) | nindent 4 }}
+spec:
+  type: {{ $serviceType }}
+  selector:
+{{ include "platform.selectorLabels" (dict "root" $ "name" $component.name) | nindent 4 }}
+  ports:
+{{ include "platform.renderServicePorts" (dict "service" $component.service "portPreset" $component.portPreset) | nindent 4 }}
+---
+{{- end }}
+{{- end }}

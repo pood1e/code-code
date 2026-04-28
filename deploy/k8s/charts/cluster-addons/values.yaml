@@ -1,6 +1,0 @@
-global:
-  partOf: code-code
-
-metricsServer:
-  enabled: true
-  image: registry.k8s.io/metrics-server/metrics-server:v0.8.1

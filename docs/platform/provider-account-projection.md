@@ -23,6 +23,8 @@
 - `UpdateAccountCommand`, `UpdateAPIKeyAuthenticationCommand`, and `UpdateObservabilityAuthenticationCommand` are the only account-owner write inputs from transport
 - `UpdateAPIKeyAuthenticationCommand` owns only the shared data-plane credential update
 - `UpdateObservabilityAuthenticationCommand` only exists for vendors with explicit management-plane auth schema; there is no generic session/token fallback
+- management-plane auth forms are declared by `observability.v1.ActiveQueryInputForm` in support YAML; console renders that proto schema and does not hard-code vendor/session fields
+- providerservice resolves the support-owned input form, rejects undeclared submitted fields, applies declared transient transforms, and derives required keys before calling authservice
 - `providerProjectionRuntime` owns account list/get projection and read-side enrichment orchestration
 - `providerIconRuntime` owns vendor/CLI icon lookup and icon projection
 - `providerOAuthSummaryRuntime` owns CLI OAuth summary resolution from CLI package and credential data

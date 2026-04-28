@@ -22,8 +22,8 @@ func ValidateRef(ref *ModelRef) error {
 	return nil
 }
 
-// ValidateDefinition validates one default model definition.
-func ValidateDefinition(definition *ModelDefinition) error {
+// ValidateDefinition validates one canonical model version.
+func ValidateDefinition(definition *ModelVersion) error {
 	if definition == nil {
 		return fmt.Errorf("modelv1: model definition is nil")
 	}
@@ -96,14 +96,13 @@ func validateOverrideFieldMask(mask *fieldmaskpb.FieldMask) error {
 		return fmt.Errorf("modelv1: model override field_mask is empty")
 	}
 	allowed := map[string]struct{}{
-		"display_name":          {},
-		"context_window_tokens": {},
-		"max_output_tokens":     {},
-		"capabilities":          {},
-		"primary_shape":         {},
-		"supported_shapes":      {},
-		"input_modalities":      {},
-		"output_modalities":     {},
+		"display_name":      {},
+		"context_spec":      {},
+		"capabilities":      {},
+		"primary_shape":     {},
+		"supported_shapes":  {},
+		"input_modalities":  {},
+		"output_modalities": {},
 	}
 	seen := map[string]struct{}{}
 	normalized := make([]string, 0, len(paths))

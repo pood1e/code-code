@@ -6,69 +6,79 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "code-code.internal/go-contract/egress/v1;egressv1";
 
-// EgressPolicy declares one Istio-owned outbound policy intent.
 message EgressPolicy {
   string policy_id = 1;
   string display_name = 2;
-  repeated EgressProxy proxies = 4;
-  repeated EgressRule custom_rules = 5;
-  EgressExternalRuleSet external_rule_set = 6;
+  repeated ExternalAccessSet access_sets = 3;
 }
 
-// EgressProxy declares one selectable HTTP proxy target.
-message EgressProxy {
-  string proxy_id = 1;
+message ExternalAccessSet {
+  string access_set_id = 1;
   string display_name = 2;
-  EgressProxyProtocol protocol = 3;
-  string url = 4;
+  string owner_service = 3;
+  string policy_id = 4;
+  repeated ExternalRule external_rules = 5;
+  repeated ServiceRule service_rules = 6;
+  repeated HttpEgressRoute http_routes = 7;
 }
 
-// EgressRule declares one user-controlled host matching rule.
-message EgressRule {
-  string rule_id = 1;
+message ExternalRule {
+  string external_rule_id = 1;
+  string destination_id = 2;
+  string display_name = 3;
+  HostMatch host_match = 4;
+  int32 port = 5;
+  EgressProtocol protocol = 6;
+  EgressResolution resolution = 7;
+  string address_cidr = 9;
+}
+
+message ServiceRule {
+  string service_rule_id = 1;
+  string destination_id = 2;
+  repeated string source_service_accounts = 3;
+}
+
+message HttpEgressRoute {
+  string route_id = 1;
   string display_name = 2;
-  EgressRuleMatch match = 3;
-  EgressAction action = 4;
-  string proxy_id = 5;
+  string destination_id = 3;
+  repeated HttpRouteMatch matches = 4;
+  HttpHeaderPolicy request_headers = 5;
+  HttpHeaderPolicy response_headers = 6;
+  string auth_policy_id = 7;
+  bool dynamic_header_authz = 8;
 }
 
-// EgressRuleMatch describes how one rule matches an outbound host.
-message EgressRuleMatch {
+message HttpRouteMatch {
+  repeated string path_prefixes = 1;
+  repeated string methods = 2;
+}
+
+message HttpHeaderPolicy {
+  repeated HttpHeaderValue add = 1;
+  repeated HttpHeaderValue set = 2;
+  repeated string remove = 3;
+}
+
+message HttpHeaderValue {
+  string name = 1;
+  string value = 2;
+}
+
+message HostMatch {
   oneof kind {
     string host_exact = 1;
-    // host_suffix matches the suffix domain itself and all subdomains.
-    // For example: host_suffix="example.com" matches example.com and
-    // api.example.com.
-    string host_suffix = 2;
+    string host_wildcard = 2;
   }
 }
 
-// EgressExternalRuleSet declares the single user-configured AutoProxy source.
-message EgressExternalRuleSet {
-  string source_url = 1;
-  bool enabled = 2;
-  EgressAction action = 3;
-  string proxy_id = 4;
-}
-
-// EgressExternalRuleSetStatus stores the latest observed external rule load result.
-message EgressExternalRuleSetStatus {
-  EgressExternalRuleSetLoadPhase phase = 1;
-  string source_url = 2;
-  int32 loaded_host_count = 3;
-  int32 skipped_rule_count = 4;
-  string message = 5;
-  google.protobuf.Timestamp loaded_at = 6;
-}
-
-// EgressResourceRef references one Istio egress resource.
 message EgressResourceRef {
   string kind = 1;
   string namespace = 2;
   string name = 3;
 }
 
-// EgressSyncStatus stores observed Istio egress sync state.
 message EgressSyncStatus {
   EgressSyncPhase phase = 1;
   string reason = 2;
@@ -78,23 +88,19 @@ message EgressSyncStatus {
   google.protobuf.Timestamp last_synced_at = 6;
 }
 
-enum EgressAction {
-  EGRESS_ACTION_UNSPECIFIED = 0;
-  EGRESS_ACTION_DIRECT = 1;
-  EGRESS_ACTION_PROXY = 2;
+enum EgressProtocol {
+  EGRESS_PROTOCOL_UNSPECIFIED = 0;
+  EGRESS_PROTOCOL_HTTP = 1;
+  EGRESS_PROTOCOL_TLS = 2;
+  EGRESS_PROTOCOL_TCP = 3;
+  EGRESS_PROTOCOL_HTTPS = 4;
 }
 
-enum EgressProxyProtocol {
-  EGRESS_PROXY_PROTOCOL_UNSPECIFIED = 0;
-  EGRESS_PROXY_PROTOCOL_HTTP = 1;
-}
-
-enum EgressExternalRuleSetLoadPhase {
-  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_UNSPECIFIED = 0;
-  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_DISABLED = 1;
-  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_LOADED = 2;
-  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_NOT_LOADED = 3;
-  EGRESS_EXTERNAL_RULE_SET_LOAD_PHASE_FAILED = 4;
+enum EgressResolution {
+  EGRESS_RESOLUTION_UNSPECIFIED = 0;
+  EGRESS_RESOLUTION_DNS = 1;
+  EGRESS_RESOLUTION_DYNAMIC_DNS = 2;
+  EGRESS_RESOLUTION_NONE = 3;
 }
 
 enum EgressSyncPhase {

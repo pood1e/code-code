@@ -7,7 +7,7 @@
 
 ## external surface
 
-- `packages/platform-k8s/vendors/capabilitypackages` service registry
+- `packages/platform-k8s/internal/supportservice/vendors/support` service registry
 - `vendorCapabilityPackage.providerSurfaces[].config`
   - `fireworks-ai-openai-compatible`
 - Fireworks OpenAI-compatible endpoint:

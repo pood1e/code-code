@@ -1,82 +1,42 @@
 # Platform K8s Package Model
 
-这份文档定义 `packages/platform-k8s` 的 package 级抽象边界与 ownership。
+这份文档定义 `packages/platform-k8s` 的 Go package 级抽象边界与 ownership。
 
 ## Goal
 
-`platform-k8s` 负责把 platform domain contract 映射到 Kubernetes resources 与 runtime adapters。
+`platform-k8s` 负责把 platform domain contract 映射到 Kubernetes resources、service runtimes 与 platform adapters。
 
-## Package Boundaries
+## Layout
 
-### `sessionapi`
+顶层只保留稳定入口：
 
-- responsibility: expose `platform.management.v1.AgentSessionManagementService` gRPC surfaces for `platform-agent-runtime-service`
-- ownership: session runtime transport boundary
+- `api/v1alpha1`: Kubernetes CRD API types。
+- `cmd/<binary>`: 可部署二进制入口。
+- `internal`: platform-k8s 内部实现包。
+- `scheme.go`: 对外暴露 `AddToScheme`，避免调用方 import 内部实现。
 
-### `agentprofiles`
+`internal` 按服务 ownership 与跨服务机制分组：
 
-- responsibility: Postgres-backed `AgentProfile` CRUD、selection validation、management view projection
-- ownership: agent profile config state
-
-### `providersurfacebindings`
-
-- responsibility: provider endpoint child CRUD、management view projection
-- ownership: provider aggregate endpoint children
-
-### `providerdefinitions`
-
-- responsibility: effective provider definition read path from builtin providers and CLI specialization packages
-- ownership: provider definition registry projection
-
-### `providerconnect`
-
-- responsibility: vendor API key / CLI OAuth onboarding orchestration
-- ownership: provider connect command + connect session finalize
-
-### `authservice/credentials`
-
-- responsibility: credential CRUD、credential material readiness read path、OAuth import、OAuth refresh
-- ownership: credential resource + credential-owned auth material truth
-
-### `providerobservability`
-
-- responsibility: provider active observability dispatch and owner capability abstraction
-- ownership: provider observability execution boundary
-
-### `models`
-
-- responsibility: canonical model registry、vendor-scoped public collection sync
-- ownership: canonical `ModelDefinition` query/read surface、package-managed model definition sync
-
-### `vendors`
-
-- responsibility: vendor identity 与 vendor capability package 的读管理面
-- ownership: vendor-facing reference data projection
-- structure: `vendors/identity` 负责 vendor definition reader，`vendors/capabilitypackages` 负责 vendor capability package reader
-
-### `clidefinitions`
-
-- responsibility: CLI identity 与 CLI specialization package 的读管理面
-- ownership: CLI-facing reference data projection
-- structure: `clidefinitions/identity` 负责 CLI definition reader，`clidefinitions/specializations` 负责 CLI specialization package reader，`clidefinitions/oauth` 负责 CLI-owned OAuth contract/projection/sidecar config，`clidefinitions/codeassist` 负责 Google Code Assist HTTP adapter，`clidefinitions/observability` 负责 CLI-owned OAuth runtime metrics
-
-### `providers`
-
-- responsibility: Postgres-backed Provider aggregate CRUD、builtin provider lookup 与 runtime capability surface
-- ownership: provider aggregate state
+- `internal/authservice`: auth service、credential management、OAuth session、egress auth。
+- `internal/modelservice`: model service、canonical model registry、model source collection。
+- `internal/providerservice`: provider service、provider aggregate、provider connect、provider catalog、provider observability。
+- `internal/agentruntime`: agent runtime service、AgentSession/AgentRun controllers、session action、timeline、runtime workflows。
+- `internal/cliruntimeservice`: CLI runtime service、CLI version discovery and image build runtime。
+- `internal/profileservice`: profile service、agent profile、MCP server、rule、skill stores。
+- `internal/supportservice`: support service、CLI/vendor static reference data、provider surfaces、templates。
+- `internal/egressservice`: egress policy service, network-owned Kubernetes resources, and runtime egress telemetry projection。
+- `internal/notificationdispatcher` / `internal/wecomcallback`: standalone notification adapters。
+- `internal/platform`: shared platform mechanics such as state, telemetry, Temporal client setup, domain events, outbound HTTP, resource helpers, run-event consumers, and test helpers。
 
 ## Ownership Rules
 
-- `agentprofiles` owns `platform_profiles` rows
-- `mcpservers` owns `platform_mcp_servers` rows
-- `skills` owns `platform_skills` rows
-- `rules` owns `platform_rules` rows
-- `providers` owns `platform_providers` rows
-- `authservice/credentials` owns credential `MaterialReady` current-condition-or-fallback projection
-- `providerobservability` owns provider active observability dispatch; vendor API key and CLI OAuth are capabilities
-- `models` owns canonical model registry read/write mainline
-- `models` owns `VendorCapabilityPackage(scope) -> ModelDefinitionSync -> ModelRegistryEntry` mainline
-- `vendors` / `clidefinitions` 只拥有静态 reference data，不拥有 runtime truth
-- `clidefinitions/observability` 只投影 CLI OAuth runtime metrics，不写 domain state
-- `console-api` 必须通过 domain service gRPC 调用 platform；不得直连 `platform-k8s` package internals
-- `internal/*` 只能提供 mechanics，不定义 domain contract
+- `cmd/*` only wires configuration, transports, clients, workers, and service startup.
+- Service root packages own their gRPC/HTTP service implementation and service-local orchestration registration.
+- Domain state stays with the package that owns the behavior:
+  `internal/profileservice/agentprofiles` owns `platform_profiles`,
+  `internal/providerservice/providers` owns `platform_providers`,
+  `internal/modelservice/models` owns canonical model registry state,
+  and `internal/authservice/credentials` owns credential material readiness.
+- Static reference data is owned by `internal/supportservice` subpackages; it is not runtime truth.
+- `internal/platform/*` may provide mechanics only. It must not define product domain contracts or become a generic catch-all for service behavior.
+- Other repo packages must call platform through generated service contracts. They must not import `packages/platform-k8s/internal/*`.

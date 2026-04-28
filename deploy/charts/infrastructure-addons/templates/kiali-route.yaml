@@ -1,0 +1,3 @@
+{{- if and .Values.kiali.enabled .Values.kiali.route.enabled }}
+{{ include "infrastructure.renderHttpRoute" (dict "root" . "name" "kiali" "route" .Values.kiali.route "serviceName" .Values.kiali.name "servicePort" .Values.kiali.service.port) }}
+{{- end }}

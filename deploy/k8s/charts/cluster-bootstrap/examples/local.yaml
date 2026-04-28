@@ -1,9 +1,0 @@
-global:
-  platformNamespace: code-code
-  infraNamespace: code-code-infra
-  observabilityNamespace: code-code-observability
-  networkNamespace: code-code-net
-  runNamespace: code-code-runs
-
-namespaces:
-  enabled: true

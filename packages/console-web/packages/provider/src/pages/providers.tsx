@@ -1,7 +1,8 @@
-import { Box, Button, Flex, Heading } from "@radix-ui/themes";
-import { AsyncState, ErrorCalloutIf, NoDataCallout } from "@code-code/console-web-ui";
+import { useMemo } from "react";
+import { Box, Button, Flex } from "@radix-ui/themes";
+import { ErrorCalloutIf, NoDataCallout } from "@code-code/console-web-ui";
 import { AddProviderDialog } from "../domains/providers/components/add-provider-dialog";
-import { ProviderCard } from "../domains/providers/components/provider-card";
+import { ProviderCardGrid } from "../domains/providers/components/provider-card-grid";
 import { ProviderDetailsDialog as ProviderDetailsDialog } from "../domains/providers/components/provider-details-dialog";
 import { type ProviderConnectOptionKind } from "../domains/providers/provider-connect-options";
 import { useProvidersPageController } from "./use-providers-page-controller";
@@ -35,6 +36,16 @@ function ProviderAddActions({
 
 export function ProvidersPage() {
   const page = useProvidersPageController();
+
+  // Data-driven: if no provider has an ID, the API is returning sanitized data
+  // (e.g. showcase-api strips IDs). Management actions require provider IDs.
+  const hasProviderIds = useMemo(
+    () => page.sortedProviders.some((provider) => Boolean(provider.providerId)),
+    [page.sortedProviders],
+  );
+  const readonly = !page.isLoading && page.sortedProviders.length > 0 && !hasProviderIds;
+  const canManageProviders = !page.isLoading && !page.blockingError && !readonly;
+
   const handleAddDialogOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && page.searchState.connectSessionId) {
       page.dismissedConnectSessionIDRef.current = page.searchState.connectSessionId;
@@ -47,69 +58,58 @@ export function ProvidersPage() {
 
   return (
     <Box>
-      <AddProviderDialog
-        open={page.isAddDialogOpen}
-        connectSessionId={page.searchState.connectSessionId}
-        preferredOptionKind={page.preferredAddKind}
-        onOpenChange={handleAddDialogOpenChange}
-        onConnectSessionChange={page.updateConnectSessionParam}
-        onConnected={page.handleConnected}
-      />
-      <ProviderDetailsDialog
-        provider={page.selectedProvider}
+      {canManageProviders ? (
+        <AddProviderDialog
+          open={page.isAddDialogOpen}
+          connectSessionId={page.searchState.connectSessionId}
+          preferredOptionKind={page.preferredAddKind}
+          onOpenChange={handleAddDialogOpenChange}
+          onConnectSessionChange={page.updateConnectSessionParam}
+          onConnected={page.handleConnected}
+        />
+      ) : null}
+      {hasProviderIds ? (
+        <>
+          <ProviderDetailsDialog
+            provider={page.selectedProvider}
+            clis={page.clis}
+            surfaces={page.surfaces}
+            vendors={page.vendors}
+            onClose={page.closeProvider}
+            onUpdated={page.refreshProviderPageData}
+            onProbeActiveQuery={(provider) => void page.handleProbeProviderActiveQuery(provider)}
+            probingProviderId={page.probingProviderId}
+          />
+        </>
+      ) : null}
+      <ProviderCardGrid
+        providers={page.sortedProviders}
         clis={page.clis}
         surfaces={page.surfaces}
         vendors={page.vendors}
-        onClose={page.closeProvider}
-        onUpdated={page.refreshProviderPageData}
-        onProbeActiveQuery={(provider) => void page.handleProbeProviderActiveQuery(provider)}
-        probingProviderId={page.probingProviderId}
-      />
-      <Flex justify="between" align="start" gap="4" wrap="wrap" mb="4">
-        <Box>
-          <Heading size="5">Providers</Heading>
-        </Box>
-        <ProviderAddActions
-          onAdd={page.handleAdd}
-          onRefreshQuota={() => void page.handleRefreshQuota()}
-          refreshingQuota={page.isRefreshingQuota}
-        />
-      </Flex>
-
-      <ErrorCalloutIf error={page.observabilityProbeError} mb="4" />
-      <ErrorCalloutIf error={page.providerStatusEventsError} mb="4" />
-      {page.observabilityProbeMessage ? <NoDataCallout mb="4">{page.observabilityProbeMessage}</NoDataCallout> : null}
-      <AsyncState
         loading={page.isLoading}
         error={page.blockingError}
-        errorTitle="Failed to load providers."
+        readonly={readonly}
+        workflowStatuses={hasProviderIds ? page.providerWorkflowStatuses : undefined}
+        probingProviderId={hasProviderIds ? page.probingProviderId : undefined}
+        onOpen={hasProviderIds ? page.openProvider : undefined}
+        onProbeActiveQuery={hasProviderIds ? ((provider) => void page.handleProbeProviderActiveQuery(provider)) : undefined}
         onRetry={() => void page.mutateProviders()}
-        isEmpty={page.sortedProviders.length === 0}
-        emptyTitle="No providers."
-      >
-        <Box
-          style={{
-            display: "grid",
-            gap: "var(--space-3)",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          }}
-        >
-          {page.sortedProviders.map((provider) => (
-            <ProviderCard
-              key={provider.providerId}
-              provider={provider}
-              clis={page.clis}
-              onOpen={page.openProvider}
-              surfaces={page.surfaces}
-              vendors={page.vendors}
-              vendorIconUrl={provider.iconUrl}
-              workflowStatus={page.providerWorkflowStatuses[provider.providerId]}
-              isProbingActiveQuery={page.probingProviderId === provider.providerId}
-              onProbeActiveQuery={(nextProvider) => void page.handleProbeProviderActiveQuery(nextProvider)}
-            />
-          ))}
-        </Box>
-      </AsyncState>
+        headerActions={canManageProviders ? (
+          <ProviderAddActions
+            onAdd={page.handleAdd}
+            onRefreshQuota={() => void page.handleRefreshQuota()}
+            refreshingQuota={page.isRefreshingQuota}
+          />
+        ) : undefined}
+        headerCallouts={hasProviderIds ? (
+          <>
+            <ErrorCalloutIf error={page.observabilityProbeError} mb="4" />
+            <ErrorCalloutIf error={page.providerStatusEventsError} mb="4" />
+            {page.observabilityProbeMessage ? <NoDataCallout mb="4">{page.observabilityProbeMessage}</NoDataCallout> : null}
+          </>
+        ) : undefined}
+      />
     </Box>
   );
 }

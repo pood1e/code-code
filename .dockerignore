@@ -8,14 +8,19 @@ only_ref
 docs
 .tmp
 tmp
-output
+/output
 deploy/.release-tmp.*
 deploy/.release-partial.*
+deploy/tmp
+deploy/charts/**/*.tgz
+deploy/charts/**/charts/*.tgz
 tmp-sidecar-go.*
 console-api
 platform-service
+packages/platform-k8s/platform-*
 **/dist
 !packages/console-web/app/dist
+!packages/console-web/showcase/dist
 **/.DS_Store
 **/node_modules
 **/coverage
@@ -23,3 +28,5 @@ platform-service
 **/.turbo
 **/*.tsbuildinfo
 **/.env
+**/.env.*
+!deploy/.env.example

@@ -41,7 +41,7 @@
 - 声明指标类别、单位、类型、attributes
 - 声明指标采集方式
 - 对 active query 声明最短采集间隔
-- 对 response header observe 声明 header 到 metric 的映射
+- 对 passive HTTP telemetry 声明可采集 header 到 metric 的转换
 - 声明用于 availability judgment 的指标查询语句
 - 声明 model availability judgment 规则
 
@@ -59,7 +59,7 @@
 vendor package 中的 `observability` 表达：
 
 - API key management query observability
-- API key response header observability
+- API key passive HTTP telemetry observability
 - API key path 的 model availability judgment
 
 ### CLISpecializationPackage.oauth
@@ -67,7 +67,7 @@ vendor package 中的 `observability` 表达：
 CLI OAuth specialization 中的 `observability` 表达：
 
 - OAuth management / refresh query observability
-- OAuth runtime response header observability
+- OAuth runtime passive HTTP telemetry observability
 - CLI OAuth path 的 model availability judgment
 
 当前主线约定：
@@ -120,19 +120,31 @@ CLI OAuth specialization 中的 `observability` 表达：
 - 显式 `network_policy` 优先于 host surface 自带 `network_policy_ref`
 - 两者都为空时，按 platform default policy 解析；若 default policy 不存在则失败
 
-### Response Header Observe
+### Passive HTTP Telemetry
 
-`RESPONSE_HEADER` 表示平台从 provider / CLI response headers 被动提取指标。
+`PASSIVE_HTTP` 表示平台从 L7 proxy access-log stream 被动提取业务指标。
 
 它至少声明：
 
-- `header_metric_mappings`
+- `capture_point`
+- `transforms`
+- `redaction.drop_raw_headers=true`
 
-每条 mapping 至少包含：
+每条 transform 至少包含：
 
+- `source`
 - `header_name`
 - `metric_name`
 - `value_type`
+
+规则：
+
+- header 采集落点必须是真正处理 HTTP 的 waypoint 或 egress gateway。
+- ztunnel 是 L4，不承载 header 采集或改写。
+- support 只同步 profile；`platform-egress-service` 负责生成 Istio
+  `Telemetry`、MeshConfig access-log provider 和 OTel Collector runtime config。
+- OTel Collector 用 `signal_to_metrics` 从 access log 转成指标。
+- 敏感 header 不能作为 transform；原始 header 日志默认丢弃。
 
 ## Capability Shape
 
@@ -216,7 +228,8 @@ observability capability 需要两类 method family：
    - key: `host owner + profile_id`
    - responsibility:
      - `ACTIVE_QUERY`：执行主动查询
-     - `RESPONSE_HEADER`：把 header 样本映射为 metric sample
+     - `PASSIVE_HTTP`：声明 profile，实际采集由 Istio Telemetry + OTel
+       Collector 执行
    - input:
      - `profile_id`
      - optional `network_policy_ref`
@@ -233,7 +246,8 @@ host package registry 应 fail fast：
 
 - duplicate `profile_id` within one capability
 - `ACTIVE_QUERY` 缺少 `minimum_poll_interval`
-- `RESPONSE_HEADER` 缺少 `header_metric_mappings`
+- `PASSIVE_HTTP` 缺少 `capture_point`、`transforms` 或
+  `redaction.drop_raw_headers=true`
 - `metric_query.metric_names` 指向未声明 metric
 - `availability_judgment.query_ids` 指向未声明 query
 
@@ -241,7 +255,7 @@ host package registry 应 fail fast：
 
 - unknown profile -> `NotFound` / `InvalidArgument`
 - active query 失败 -> 当前采集周期失败，不破坏其他 profile
-- header parse 失败 -> 丢弃该样本并记录错误
+- header parse 失败 -> OTel Collector 丢弃该样本，不记录原始敏感值
 - availability judgment 失败 -> 当前 subject 标记为 unknown / unavailable，并记录错误
 
 ## Boundary

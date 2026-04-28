@@ -11,9 +11,9 @@ import (
 	"time"
 
 	profileservicev1 "code-code.internal/go-contract/platform/profile/v1"
-	"code-code.internal/platform-k8s/profileservice"
-	"code-code.internal/platform-k8s/state"
-	"code-code.internal/platform-k8s/telemetry"
+	"code-code.internal/platform-k8s/internal/platform/state"
+	"code-code.internal/platform-k8s/internal/platform/telemetry"
+	"code-code.internal/platform-k8s/internal/profileservice"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

@@ -7,8 +7,6 @@
 package modelservicev1
 
 import (
-	v12 "code-code.internal/go-contract/api_protocol/v1"
-	v11 "code-code.internal/go-contract/credential/v1"
 	v1 "code-code.internal/go-contract/model/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -24,12 +22,120 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// PriceType classifies the origin and scope of a price.
+type PriceType int32
+
+const (
+	PriceType_PRICE_TYPE_UNSPECIFIED    PriceType = 0
+	PriceType_PRICE_TYPE_VENDOR_PUBLIC  PriceType = 1
+	PriceType_PRICE_TYPE_CLOUD_PUBLIC   PriceType = 2
+	PriceType_PRICE_TYPE_AGENT_CONTRACT PriceType = 3
+	PriceType_PRICE_TYPE_INTERNAL_COST  PriceType = 4
+)
+
+// Enum value maps for PriceType.
+var (
+	PriceType_name = map[int32]string{
+		0: "PRICE_TYPE_UNSPECIFIED",
+		1: "PRICE_TYPE_VENDOR_PUBLIC",
+		2: "PRICE_TYPE_CLOUD_PUBLIC",
+		3: "PRICE_TYPE_AGENT_CONTRACT",
+		4: "PRICE_TYPE_INTERNAL_COST",
+	}
+	PriceType_value = map[string]int32{
+		"PRICE_TYPE_UNSPECIFIED":    0,
+		"PRICE_TYPE_VENDOR_PUBLIC":  1,
+		"PRICE_TYPE_CLOUD_PUBLIC":   2,
+		"PRICE_TYPE_AGENT_CONTRACT": 3,
+		"PRICE_TYPE_INTERNAL_COST":  4,
+	}
+)
+
+func (x PriceType) Enum() *PriceType {
+	p := new(PriceType)
+	*p = x
+	return p
+}
+
+func (x PriceType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PriceType) Descriptor() protoreflect.EnumDescriptor {
+	return file_platform_model_v1_model_service_proto_enumTypes[0].Descriptor()
+}
+
+func (PriceType) Type() protoreflect.EnumType {
+	return &file_platform_model_v1_model_service_proto_enumTypes[0]
+}
+
+func (x PriceType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PriceType.Descriptor instead.
+func (PriceType) EnumDescriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{0}
+}
+
+type RegistryModelSourceKind int32
+
+const (
+	RegistryModelSourceKind_REGISTRY_MODEL_SOURCE_KIND_UNSPECIFIED RegistryModelSourceKind = 0
+	RegistryModelSourceKind_REGISTRY_MODEL_SOURCE_KIND_PRESET      RegistryModelSourceKind = 1
+	RegistryModelSourceKind_REGISTRY_MODEL_SOURCE_KIND_DISCOVERED  RegistryModelSourceKind = 2
+)
+
+// Enum value maps for RegistryModelSourceKind.
+var (
+	RegistryModelSourceKind_name = map[int32]string{
+		0: "REGISTRY_MODEL_SOURCE_KIND_UNSPECIFIED",
+		1: "REGISTRY_MODEL_SOURCE_KIND_PRESET",
+		2: "REGISTRY_MODEL_SOURCE_KIND_DISCOVERED",
+	}
+	RegistryModelSourceKind_value = map[string]int32{
+		"REGISTRY_MODEL_SOURCE_KIND_UNSPECIFIED": 0,
+		"REGISTRY_MODEL_SOURCE_KIND_PRESET":      1,
+		"REGISTRY_MODEL_SOURCE_KIND_DISCOVERED":  2,
+	}
+)
+
+func (x RegistryModelSourceKind) Enum() *RegistryModelSourceKind {
+	p := new(RegistryModelSourceKind)
+	*p = x
+	return p
+}
+
+func (x RegistryModelSourceKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RegistryModelSourceKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_platform_model_v1_model_service_proto_enumTypes[1].Descriptor()
+}
+
+func (RegistryModelSourceKind) Type() protoreflect.EnumType {
+	return &file_platform_model_v1_model_service_proto_enumTypes[1]
+}
+
+func (x RegistryModelSourceKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RegistryModelSourceKind.Descriptor instead.
+func (RegistryModelSourceKind) EnumDescriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{1}
+}
+
 type ModelRegistryEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Definition    *v1.ModelDefinition    `protobuf:"bytes,1,opt,name=definition,proto3" json:"definition,omitempty"`
-	SourceRef     *v1.ModelRef           `protobuf:"bytes,2,opt,name=source_ref,json=sourceRef,proto3" json:"source_ref,omitempty"`
-	Badges        []string               `protobuf:"bytes,3,rep,name=badges,proto3" json:"badges,omitempty"`
-	Pricing       *RegistryModelPricing  `protobuf:"bytes,4,opt,name=pricing,proto3" json:"pricing,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Canonical stable model identity and metadata.
+	Definition *v1.ModelVersion `protobuf:"bytes,1,opt,name=definition,proto3" json:"definition,omitempty"`
+	// Optional upstream canonical source reference for proxy/derived models.
+	SourceRef *v1.ModelRef    `protobuf:"bytes,2,opt,name=source_ref,json=sourceRef,proto3" json:"source_ref,omitempty"`
+	Badges    []string        `protobuf:"bytes,3,rep,name=badges,proto3" json:"badges,omitempty"`
+	Pricing   *PricingSummary `protobuf:"bytes,4,opt,name=pricing,proto3" json:"pricing,omitempty"`
+	// Source-scoped observations (callable ids, source-local pricing/badges).
 	Sources       []*RegistryModelSource `protobuf:"bytes,5,rep,name=sources,proto3" json:"sources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -65,7 +171,7 @@ func (*ModelRegistryEntry) Descriptor() ([]byte, []int) {
 	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ModelRegistryEntry) GetDefinition() *v1.ModelDefinition {
+func (x *ModelRegistryEntry) GetDefinition() *v1.ModelVersion {
 	if x != nil {
 		return x.Definition
 	}
@@ -86,7 +192,7 @@ func (x *ModelRegistryEntry) GetBadges() []string {
 	return nil
 }
 
-func (x *ModelRegistryEntry) GetPricing() *RegistryModelPricing {
+func (x *ModelRegistryEntry) GetPricing() *PricingSummary {
 	if x != nil {
 		return x.Pricing
 	}
@@ -100,30 +206,46 @@ func (x *ModelRegistryEntry) GetSources() []*RegistryModelSource {
 	return nil
 }
 
-type RegistryModelPricing struct {
+// PricingSummary describes per-unit pricing for one model or offering.
+// Prices are string-encoded decimals per 1M tokens unless otherwise noted.
+type PricingSummary struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Input           string                 `protobuf:"bytes,1,opt,name=input,proto3" json:"input,omitempty"`
 	Output          string                 `protobuf:"bytes,2,opt,name=output,proto3" json:"output,omitempty"`
 	CacheReadInput  string                 `protobuf:"bytes,3,opt,name=cache_read_input,json=cacheReadInput,proto3" json:"cache_read_input,omitempty"`
 	CacheWriteInput string                 `protobuf:"bytes,4,opt,name=cache_write_input,json=cacheWriteInput,proto3" json:"cache_write_input,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Reasoning/thinking token price per 1M tokens.
+	Reasoning string `protobuf:"bytes,5,opt,name=reasoning,proto3" json:"reasoning,omitempty"`
+	// Image input price per image.
+	ImageInput string `protobuf:"bytes,6,opt,name=image_input,json=imageInput,proto3" json:"image_input,omitempty"`
+	// Audio input price per 1M tokens.
+	AudioInput string `protobuf:"bytes,7,opt,name=audio_input,json=audioInput,proto3" json:"audio_input,omitempty"`
+	// Audio output price per 1M tokens.
+	AudioOutput string `protobuf:"bytes,8,opt,name=audio_output,json=audioOutput,proto3" json:"audio_output,omitempty"`
+	// Per-request fixed price.
+	Request string `protobuf:"bytes,9,opt,name=request,proto3" json:"request,omitempty"`
+	// ISO 4217 currency code (default "USD").
+	Currency string `protobuf:"bytes,10,opt,name=currency,proto3" json:"currency,omitempty"`
+	// Price type classification.
+	PriceType     PriceType `protobuf:"varint,11,opt,name=price_type,json=priceType,proto3,enum=platform.model.v1.PriceType" json:"price_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RegistryModelPricing) Reset() {
-	*x = RegistryModelPricing{}
+func (x *PricingSummary) Reset() {
+	*x = PricingSummary{}
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegistryModelPricing) String() string {
+func (x *PricingSummary) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegistryModelPricing) ProtoMessage() {}
+func (*PricingSummary) ProtoMessage() {}
 
-func (x *RegistryModelPricing) ProtoReflect() protoreflect.Message {
+func (x *PricingSummary) ProtoReflect() protoreflect.Message {
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -135,48 +257,99 @@ func (x *RegistryModelPricing) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RegistryModelPricing.ProtoReflect.Descriptor instead.
-func (*RegistryModelPricing) Descriptor() ([]byte, []int) {
+// Deprecated: Use PricingSummary.ProtoReflect.Descriptor instead.
+func (*PricingSummary) Descriptor() ([]byte, []int) {
 	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RegistryModelPricing) GetInput() string {
+func (x *PricingSummary) GetInput() string {
 	if x != nil {
 		return x.Input
 	}
 	return ""
 }
 
-func (x *RegistryModelPricing) GetOutput() string {
+func (x *PricingSummary) GetOutput() string {
 	if x != nil {
 		return x.Output
 	}
 	return ""
 }
 
-func (x *RegistryModelPricing) GetCacheReadInput() string {
+func (x *PricingSummary) GetCacheReadInput() string {
 	if x != nil {
 		return x.CacheReadInput
 	}
 	return ""
 }
 
-func (x *RegistryModelPricing) GetCacheWriteInput() string {
+func (x *PricingSummary) GetCacheWriteInput() string {
 	if x != nil {
 		return x.CacheWriteInput
 	}
 	return ""
 }
 
+func (x *PricingSummary) GetReasoning() string {
+	if x != nil {
+		return x.Reasoning
+	}
+	return ""
+}
+
+func (x *PricingSummary) GetImageInput() string {
+	if x != nil {
+		return x.ImageInput
+	}
+	return ""
+}
+
+func (x *PricingSummary) GetAudioInput() string {
+	if x != nil {
+		return x.AudioInput
+	}
+	return ""
+}
+
+func (x *PricingSummary) GetAudioOutput() string {
+	if x != nil {
+		return x.AudioOutput
+	}
+	return ""
+}
+
+func (x *PricingSummary) GetRequest() string {
+	if x != nil {
+		return x.Request
+	}
+	return ""
+}
+
+func (x *PricingSummary) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *PricingSummary) GetPriceType() PriceType {
+	if x != nil {
+		return x.PriceType
+	}
+	return PriceType_PRICE_TYPE_UNSPECIFIED
+}
+
 type RegistryModelSource struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SourceId      string                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
-	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
-	IsDirect      bool                   `protobuf:"varint,3,opt,name=is_direct,json=isDirect,proto3" json:"is_direct,omitempty"`
-	SourceModelId string                 `protobuf:"bytes,4,opt,name=source_model_id,json=sourceModelId,proto3" json:"source_model_id,omitempty"`
-	Definition    *v1.ModelDefinition    `protobuf:"bytes,5,opt,name=definition,proto3" json:"definition,omitempty"`
-	Badges        []string               `protobuf:"bytes,6,rep,name=badges,proto3" json:"badges,omitempty"`
-	Pricing       *RegistryModelPricing  `protobuf:"bytes,7,opt,name=pricing,proto3" json:"pricing,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Source family identity (for example "openrouter", "github-models").
+	SourceId string                  `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	Kind     RegistryModelSourceKind `protobuf:"varint,2,opt,name=kind,proto3,enum=platform.model.v1.RegistryModelSourceKind" json:"kind,omitempty"`
+	IsDirect bool                    `protobuf:"varint,3,opt,name=is_direct,json=isDirect,proto3" json:"is_direct,omitempty"`
+	// Exact source-native callable slug. This is not canonical model identity.
+	SourceModelId string           `protobuf:"bytes,4,opt,name=source_model_id,json=sourceModelId,proto3" json:"source_model_id,omitempty"`
+	Definition    *v1.ModelVersion `protobuf:"bytes,5,opt,name=definition,proto3" json:"definition,omitempty"`
+	Badges        []string         `protobuf:"bytes,6,rep,name=badges,proto3" json:"badges,omitempty"`
+	Pricing       *PricingSummary  `protobuf:"bytes,7,opt,name=pricing,proto3" json:"pricing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -218,11 +391,11 @@ func (x *RegistryModelSource) GetSourceId() string {
 	return ""
 }
 
-func (x *RegistryModelSource) GetKind() string {
+func (x *RegistryModelSource) GetKind() RegistryModelSourceKind {
 	if x != nil {
 		return x.Kind
 	}
-	return ""
+	return RegistryModelSourceKind_REGISTRY_MODEL_SOURCE_KIND_UNSPECIFIED
 }
 
 func (x *RegistryModelSource) GetIsDirect() bool {
@@ -239,7 +412,7 @@ func (x *RegistryModelSource) GetSourceModelId() string {
 	return ""
 }
 
-func (x *RegistryModelSource) GetDefinition() *v1.ModelDefinition {
+func (x *RegistryModelSource) GetDefinition() *v1.ModelVersion {
 	if x != nil {
 		return x.Definition
 	}
@@ -253,36 +426,39 @@ func (x *RegistryModelSource) GetBadges() []string {
 	return nil
 }
 
-func (x *RegistryModelSource) GetPricing() *RegistryModelPricing {
+func (x *RegistryModelSource) GetPricing() *PricingSummary {
 	if x != nil {
 		return x.Pricing
 	}
 	return nil
 }
 
-type ListModelDefinitionsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PageSize      int32                  `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken     string                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	Filter        string                 `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type ListModelsRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	PageSize  int32                  `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken string                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Deprecated: use structured_filter instead.
+	Filter string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
+	// Structured filter for model list queries.
+	StructuredFilter *ModelListFilter `protobuf:"bytes,4,opt,name=structured_filter,json=structuredFilter,proto3" json:"structured_filter,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
-func (x *ListModelDefinitionsRequest) Reset() {
-	*x = ListModelDefinitionsRequest{}
+func (x *ListModelsRequest) Reset() {
+	*x = ListModelsRequest{}
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListModelDefinitionsRequest) String() string {
+func (x *ListModelsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListModelDefinitionsRequest) ProtoMessage() {}
+func (*ListModelsRequest) ProtoMessage() {}
 
-func (x *ListModelDefinitionsRequest) ProtoReflect() protoreflect.Message {
+func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -294,33 +470,140 @@ func (x *ListModelDefinitionsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListModelDefinitionsRequest.ProtoReflect.Descriptor instead.
-func (*ListModelDefinitionsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListModelsRequest.ProtoReflect.Descriptor instead.
+func (*ListModelsRequest) Descriptor() ([]byte, []int) {
 	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ListModelDefinitionsRequest) GetPageSize() int32 {
+func (x *ListModelsRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListModelDefinitionsRequest) GetPageToken() string {
+func (x *ListModelsRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListModelDefinitionsRequest) GetFilter() string {
+func (x *ListModelsRequest) GetFilter() string {
 	if x != nil {
 		return x.Filter
 	}
 	return ""
 }
 
-type ListModelDefinitionsResponse struct {
+func (x *ListModelsRequest) GetStructuredFilter() *ModelListFilter {
+	if x != nil {
+		return x.StructuredFilter
+	}
+	return nil
+}
+
+// ModelListFilter defines structured filter parameters for listing models.
+type ModelListFilter struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Filter by vendor IDs (OR semantics).
+	VendorIds []string `protobuf:"bytes,1,rep,name=vendor_ids,json=vendorIds,proto3" json:"vendor_ids,omitempty"`
+	// Exact model ID match.
+	ModelId string `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`
+	// Substring search within model IDs (case-insensitive).
+	ModelIdQuery string `protobuf:"bytes,3,opt,name=model_id_query,json=modelIdQuery,proto3" json:"model_id_query,omitempty"`
+	// Filter by source IDs (OR semantics).
+	SourceIds []string `protobuf:"bytes,4,rep,name=source_ids,json=sourceIds,proto3" json:"source_ids,omitempty"`
+	// Filter by badge.
+	Badge string `protobuf:"bytes,5,opt,name=badge,proto3" json:"badge,omitempty"`
+	// Filter by category.
+	Category string `protobuf:"bytes,6,opt,name=category,proto3" json:"category,omitempty"`
+	// Exclude models with these lifecycle statuses.
+	LifecycleStatusExclude []string `protobuf:"bytes,7,rep,name=lifecycle_status_exclude,json=lifecycleStatusExclude,proto3" json:"lifecycle_status_exclude,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ModelListFilter) Reset() {
+	*x = ModelListFilter{}
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelListFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelListFilter) ProtoMessage() {}
+
+func (x *ModelListFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelListFilter.ProtoReflect.Descriptor instead.
+func (*ModelListFilter) Descriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ModelListFilter) GetVendorIds() []string {
+	if x != nil {
+		return x.VendorIds
+	}
+	return nil
+}
+
+func (x *ModelListFilter) GetModelId() string {
+	if x != nil {
+		return x.ModelId
+	}
+	return ""
+}
+
+func (x *ModelListFilter) GetModelIdQuery() string {
+	if x != nil {
+		return x.ModelIdQuery
+	}
+	return ""
+}
+
+func (x *ModelListFilter) GetSourceIds() []string {
+	if x != nil {
+		return x.SourceIds
+	}
+	return nil
+}
+
+func (x *ModelListFilter) GetBadge() string {
+	if x != nil {
+		return x.Badge
+	}
+	return ""
+}
+
+func (x *ModelListFilter) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *ModelListFilter) GetLifecycleStatusExclude() []string {
+	if x != nil {
+		return x.LifecycleStatusExclude
+	}
+	return nil
+}
+
+type ListModelsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*ModelRegistryEntry  `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
@@ -329,21 +612,21 @@ type ListModelDefinitionsResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListModelDefinitionsResponse) Reset() {
-	*x = ListModelDefinitionsResponse{}
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[4]
+func (x *ListModelsResponse) Reset() {
+	*x = ListModelsResponse{}
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListModelDefinitionsResponse) String() string {
+func (x *ListModelsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListModelDefinitionsResponse) ProtoMessage() {}
+func (*ListModelsResponse) ProtoMessage() {}
 
-func (x *ListModelDefinitionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[4]
+func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,115 +637,56 @@ func (x *ListModelDefinitionsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListModelDefinitionsResponse.ProtoReflect.Descriptor instead.
-func (*ListModelDefinitionsResponse) Descriptor() ([]byte, []int) {
-	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use ListModelsResponse.ProtoReflect.Descriptor instead.
+func (*ListModelsResponse) Descriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ListModelDefinitionsResponse) GetItems() []*ModelRegistryEntry {
+func (x *ListModelsResponse) GetItems() []*ModelRegistryEntry {
 	if x != nil {
 		return x.Items
 	}
 	return nil
 }
 
-func (x *ListModelDefinitionsResponse) GetNextPageToken() string {
+func (x *ListModelsResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
 	return ""
 }
 
-func (x *ListModelDefinitionsResponse) GetTotalCount() int64 {
+func (x *ListModelsResponse) GetTotalCount() int64 {
 	if x != nil {
 		return x.TotalCount
 	}
 	return 0
 }
 
-type GetOrFetchCatalogModelsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProbeId       string                 `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
-	Target        *ModelCatalogTarget    `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
-	AuthRef       *v11.CredentialRef     `protobuf:"bytes,3,opt,name=auth_ref,json=authRef,proto3" json:"auth_ref,omitempty"`
+type ResolveModelRefRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Canonical model_id or known alias within one vendor scope.
+	ModelIdOrAlias string `protobuf:"bytes,1,opt,name=model_id_or_alias,json=modelIdOrAlias,proto3" json:"model_id_or_alias,omitempty"`
+	// Optional vendor scope for disambiguation.
+	VendorId      string `protobuf:"bytes,2,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetOrFetchCatalogModelsRequest) Reset() {
-	*x = GetOrFetchCatalogModelsRequest{}
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetOrFetchCatalogModelsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetOrFetchCatalogModelsRequest) ProtoMessage() {}
-
-func (x *GetOrFetchCatalogModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetOrFetchCatalogModelsRequest.ProtoReflect.Descriptor instead.
-func (*GetOrFetchCatalogModelsRequest) Descriptor() ([]byte, []int) {
-	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *GetOrFetchCatalogModelsRequest) GetProbeId() string {
-	if x != nil {
-		return x.ProbeId
-	}
-	return ""
-}
-
-func (x *GetOrFetchCatalogModelsRequest) GetTarget() *ModelCatalogTarget {
-	if x != nil {
-		return x.Target
-	}
-	return nil
-}
-
-func (x *GetOrFetchCatalogModelsRequest) GetAuthRef() *v11.CredentialRef {
-	if x != nil {
-		return x.AuthRef
-	}
-	return nil
-}
-
-type FetchCatalogModelsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProbeId       string                 `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
-	Target        *ModelCatalogTarget    `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
-	AuthRef       *v11.CredentialRef     `protobuf:"bytes,3,opt,name=auth_ref,json=authRef,proto3" json:"auth_ref,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *FetchCatalogModelsRequest) Reset() {
-	*x = FetchCatalogModelsRequest{}
+func (x *ResolveModelRefRequest) Reset() {
+	*x = ResolveModelRefRequest{}
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FetchCatalogModelsRequest) String() string {
+func (x *ResolveModelRefRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FetchCatalogModelsRequest) ProtoMessage() {}
+func (*ResolveModelRefRequest) ProtoMessage() {}
 
-func (x *FetchCatalogModelsRequest) ProtoReflect() protoreflect.Message {
+func (x *ResolveModelRefRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -474,55 +698,47 @@ func (x *FetchCatalogModelsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FetchCatalogModelsRequest.ProtoReflect.Descriptor instead.
-func (*FetchCatalogModelsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResolveModelRefRequest.ProtoReflect.Descriptor instead.
+func (*ResolveModelRefRequest) Descriptor() ([]byte, []int) {
 	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *FetchCatalogModelsRequest) GetProbeId() string {
+func (x *ResolveModelRefRequest) GetModelIdOrAlias() string {
 	if x != nil {
-		return x.ProbeId
+		return x.ModelIdOrAlias
 	}
 	return ""
 }
 
-func (x *FetchCatalogModelsRequest) GetTarget() *ModelCatalogTarget {
+func (x *ResolveModelRefRequest) GetVendorId() string {
 	if x != nil {
-		return x.Target
+		return x.VendorId
 	}
-	return nil
+	return ""
 }
 
-func (x *FetchCatalogModelsRequest) GetAuthRef() *v11.CredentialRef {
-	if x != nil {
-		return x.AuthRef
-	}
-	return nil
-}
-
-type ModelCatalogTarget struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TargetId      string                 `protobuf:"bytes,1,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
-	BaseUrl       string                 `protobuf:"bytes,2,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
-	Protocol      v12.Protocol           `protobuf:"varint,3,opt,name=protocol,proto3,enum=api_protocol.v1.Protocol" json:"protocol,omitempty"`
+type ResolveModelRefResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Canonical resolved model ref only.
+	Ref           *v1.ModelRef `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ModelCatalogTarget) Reset() {
-	*x = ModelCatalogTarget{}
+func (x *ResolveModelRefResponse) Reset() {
+	*x = ResolveModelRefResponse{}
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ModelCatalogTarget) String() string {
+func (x *ResolveModelRefResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ModelCatalogTarget) ProtoMessage() {}
+func (*ResolveModelRefResponse) ProtoMessage() {}
 
-func (x *ModelCatalogTarget) ProtoReflect() protoreflect.Message {
+func (x *ResolveModelRefResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -534,54 +750,39 @@ func (x *ModelCatalogTarget) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ModelCatalogTarget.ProtoReflect.Descriptor instead.
-func (*ModelCatalogTarget) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResolveModelRefResponse.ProtoReflect.Descriptor instead.
+func (*ResolveModelRefResponse) Descriptor() ([]byte, []int) {
 	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *ModelCatalogTarget) GetTargetId() string {
+func (x *ResolveModelRefResponse) GetRef() *v1.ModelRef {
 	if x != nil {
-		return x.TargetId
+		return x.Ref
 	}
-	return ""
+	return nil
 }
 
-func (x *ModelCatalogTarget) GetBaseUrl() string {
-	if x != nil {
-		return x.BaseUrl
-	}
-	return ""
-}
-
-func (x *ModelCatalogTarget) GetProtocol() v12.Protocol {
-	if x != nil {
-		return x.Protocol
-	}
-	return v12.Protocol(0)
-}
-
-type CatalogModel struct {
+type GetModelVersionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SourceModelId string                 `protobuf:"bytes,1,opt,name=source_model_id,json=sourceModelId,proto3" json:"source_model_id,omitempty"`
-	Definition    *v1.ModelDefinition    `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
+	Ref           *v1.ModelRef           `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CatalogModel) Reset() {
-	*x = CatalogModel{}
+func (x *GetModelVersionRequest) Reset() {
+	*x = GetModelVersionRequest{}
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CatalogModel) String() string {
+func (x *GetModelVersionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CatalogModel) ProtoMessage() {}
+func (*GetModelVersionRequest) ProtoMessage() {}
 
-func (x *CatalogModel) ProtoReflect() protoreflect.Message {
+func (x *GetModelVersionRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -593,46 +794,39 @@ func (x *CatalogModel) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CatalogModel.ProtoReflect.Descriptor instead.
-func (*CatalogModel) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetModelVersionRequest.ProtoReflect.Descriptor instead.
+func (*GetModelVersionRequest) Descriptor() ([]byte, []int) {
 	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *CatalogModel) GetSourceModelId() string {
+func (x *GetModelVersionRequest) GetRef() *v1.ModelRef {
 	if x != nil {
-		return x.SourceModelId
-	}
-	return ""
-}
-
-func (x *CatalogModel) GetDefinition() *v1.ModelDefinition {
-	if x != nil {
-		return x.Definition
+		return x.Ref
 	}
 	return nil
 }
 
-type GetOrFetchCatalogModelsResponse struct {
+type GetModelVersionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Models        []*CatalogModel        `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"`
+	Item          *ModelRegistryEntry    `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetOrFetchCatalogModelsResponse) Reset() {
-	*x = GetOrFetchCatalogModelsResponse{}
+func (x *GetModelVersionResponse) Reset() {
+	*x = GetModelVersionResponse{}
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetOrFetchCatalogModelsResponse) String() string {
+func (x *GetModelVersionResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetOrFetchCatalogModelsResponse) ProtoMessage() {}
+func (*GetModelVersionResponse) ProtoMessage() {}
 
-func (x *GetOrFetchCatalogModelsResponse) ProtoReflect() protoreflect.Message {
+func (x *GetModelVersionResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_platform_model_v1_model_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -644,58 +838,14 @@ func (x *GetOrFetchCatalogModelsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetOrFetchCatalogModelsResponse.ProtoReflect.Descriptor instead.
-func (*GetOrFetchCatalogModelsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetModelVersionResponse.ProtoReflect.Descriptor instead.
+func (*GetModelVersionResponse) Descriptor() ([]byte, []int) {
 	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *GetOrFetchCatalogModelsResponse) GetModels() []*CatalogModel {
+func (x *GetModelVersionResponse) GetItem() *ModelRegistryEntry {
 	if x != nil {
-		return x.Models
-	}
-	return nil
-}
-
-type FetchCatalogModelsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Models        []*CatalogModel        `protobuf:"bytes,1,rep,name=models,proto3" json:"models,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *FetchCatalogModelsResponse) Reset() {
-	*x = FetchCatalogModelsResponse{}
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *FetchCatalogModelsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FetchCatalogModelsResponse) ProtoMessage() {}
-
-func (x *FetchCatalogModelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use FetchCatalogModelsResponse.ProtoReflect.Descriptor instead.
-func (*FetchCatalogModelsResponse) Descriptor() ([]byte, []int) {
-	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *FetchCatalogModelsResponse) GetModels() []*CatalogModel {
-	if x != nil {
-		return x.Models
+		return x.Item
 	}
 	return nil
 }
@@ -708,7 +858,7 @@ type SyncModelDefinitionsRequest struct {
 
 func (x *SyncModelDefinitionsRequest) Reset() {
 	*x = SyncModelDefinitionsRequest{}
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[11]
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -720,7 +870,7 @@ func (x *SyncModelDefinitionsRequest) String() string {
 func (*SyncModelDefinitionsRequest) ProtoMessage() {}
 
 func (x *SyncModelDefinitionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[11]
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -733,7 +883,7 @@ func (x *SyncModelDefinitionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncModelDefinitionsRequest.ProtoReflect.Descriptor instead.
 func (*SyncModelDefinitionsRequest) Descriptor() ([]byte, []int) {
-	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{11}
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{10}
 }
 
 type SyncModelDefinitionsResponse struct {
@@ -745,7 +895,7 @@ type SyncModelDefinitionsResponse struct {
 
 func (x *SyncModelDefinitionsResponse) Reset() {
 	*x = SyncModelDefinitionsResponse{}
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[12]
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -757,7 +907,7 @@ func (x *SyncModelDefinitionsResponse) String() string {
 func (*SyncModelDefinitionsResponse) ProtoMessage() {}
 
 func (x *SyncModelDefinitionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_platform_model_v1_model_service_proto_msgTypes[12]
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -770,10 +920,283 @@ func (x *SyncModelDefinitionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncModelDefinitionsResponse.ProtoReflect.Descriptor instead.
 func (*SyncModelDefinitionsResponse) Descriptor() ([]byte, []int) {
-	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{12}
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SyncModelDefinitionsResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+// ModelCard describes structured documentation for a model.
+type ModelCard struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	// Structured metadata as JSON (capabilities, modalities, context, safety).
+	MetadataJson string `protobuf:"bytes,2,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	// Markdown body with standardized sections.
+	MarkdownBody string `protobuf:"bytes,3,opt,name=markdown_body,json=markdownBody,proto3" json:"markdown_body,omitempty"`
+	// Source of the card content.
+	SourceType string `protobuf:"bytes,4,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty"`
+	// URL to the original source.
+	SourceUrl string `protobuf:"bytes,5,opt,name=source_url,json=sourceUrl,proto3" json:"source_url,omitempty"`
+	// Review workflow status.
+	ReviewStatus string `protobuf:"bytes,6,opt,name=review_status,json=reviewStatus,proto3" json:"review_status,omitempty"`
+	// Reviewer identifier.
+	Reviewer      string `protobuf:"bytes,7,opt,name=reviewer,proto3" json:"reviewer,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelCard) Reset() {
+	*x = ModelCard{}
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelCard) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelCard) ProtoMessage() {}
+
+func (x *ModelCard) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelCard.ProtoReflect.Descriptor instead.
+func (*ModelCard) Descriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ModelCard) GetSchemaVersion() string {
+	if x != nil {
+		return x.SchemaVersion
+	}
+	return ""
+}
+
+func (x *ModelCard) GetMetadataJson() string {
+	if x != nil {
+		return x.MetadataJson
+	}
+	return ""
+}
+
+func (x *ModelCard) GetMarkdownBody() string {
+	if x != nil {
+		return x.MarkdownBody
+	}
+	return ""
+}
+
+func (x *ModelCard) GetSourceType() string {
+	if x != nil {
+		return x.SourceType
+	}
+	return ""
+}
+
+func (x *ModelCard) GetSourceUrl() string {
+	if x != nil {
+		return x.SourceUrl
+	}
+	return ""
+}
+
+func (x *ModelCard) GetReviewStatus() string {
+	if x != nil {
+		return x.ReviewStatus
+	}
+	return ""
+}
+
+func (x *ModelCard) GetReviewer() string {
+	if x != nil {
+		return x.Reviewer
+	}
+	return ""
+}
+
+type GetModelCardRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ref           *v1.ModelRef           `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetModelCardRequest) Reset() {
+	*x = GetModelCardRequest{}
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetModelCardRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetModelCardRequest) ProtoMessage() {}
+
+func (x *GetModelCardRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetModelCardRequest.ProtoReflect.Descriptor instead.
+func (*GetModelCardRequest) Descriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetModelCardRequest) GetRef() *v1.ModelRef {
+	if x != nil {
+		return x.Ref
+	}
+	return nil
+}
+
+type GetModelCardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Card          *ModelCard             `protobuf:"bytes,1,opt,name=card,proto3" json:"card,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetModelCardResponse) Reset() {
+	*x = GetModelCardResponse{}
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetModelCardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetModelCardResponse) ProtoMessage() {}
+
+func (x *GetModelCardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetModelCardResponse.ProtoReflect.Descriptor instead.
+func (*GetModelCardResponse) Descriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetModelCardResponse) GetCard() *ModelCard {
+	if x != nil {
+		return x.Card
+	}
+	return nil
+}
+
+// Organization represents a business entity (model owner, hosting provider,
+// reseller, billing party).
+type Organization struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgCode       string                 `protobuf:"bytes,1,opt,name=org_code,json=orgCode,proto3" json:"org_code,omitempty"`
+	OrgName       string                 `protobuf:"bytes,2,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
+	OrgRoles      []string               `protobuf:"bytes,3,rep,name=org_roles,json=orgRoles,proto3" json:"org_roles,omitempty"`
+	Country       string                 `protobuf:"bytes,4,opt,name=country,proto3" json:"country,omitempty"`
+	Website       string                 `protobuf:"bytes,5,opt,name=website,proto3" json:"website,omitempty"`
+	Status        string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Organization) Reset() {
+	*x = Organization{}
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Organization) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Organization) ProtoMessage() {}
+
+func (x *Organization) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_model_v1_model_service_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Organization.ProtoReflect.Descriptor instead.
+func (*Organization) Descriptor() ([]byte, []int) {
+	return file_platform_model_v1_model_service_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *Organization) GetOrgCode() string {
+	if x != nil {
+		return x.OrgCode
+	}
+	return ""
+}
+
+func (x *Organization) GetOrgName() string {
+	if x != nil {
+		return x.OrgName
+	}
+	return ""
+}
+
+func (x *Organization) GetOrgRoles() []string {
+	if x != nil {
+		return x.OrgRoles
+	}
+	return nil
+}
+
+func (x *Organization) GetCountry() string {
+	if x != nil {
+		return x.Country
+	}
+	return ""
+}
+
+func (x *Organization) GetWebsite() string {
+	if x != nil {
+		return x.Website
+	}
+	return ""
+}
+
+func (x *Organization) GetStatus() string {
 	if x != nil {
 		return x.Status
 	}
@@ -784,70 +1207,113 @@ var File_platform_model_v1_model_service_proto protoreflect.FileDescriptor
 
 const file_platform_model_v1_model_service_proto_rawDesc = "" +
 	"\n" +
-	"%platform/model/v1/model_service.proto\x12\x11platform.model.v1\x1a\x1ecredential/v1/credential.proto\x1a\x1eapi_protocol/v1/protocol.proto\x1a\x14model/v1/model.proto\"\x9f\x02\n" +
-	"\x12ModelRegistryEntry\x129\n" +
+	"%platform/model/v1/model_service.proto\x12\x11platform.model.v1\x1a\x14model/v1/model.proto\"\x96\x02\n" +
+	"\x12ModelRegistryEntry\x126\n" +
 	"\n" +
-	"definition\x18\x01 \x01(\v2\x19.model.v1.ModelDefinitionR\n" +
+	"definition\x18\x01 \x01(\v2\x16.model.v1.ModelVersionR\n" +
 	"definition\x121\n" +
 	"\n" +
 	"source_ref\x18\x02 \x01(\v2\x12.model.v1.ModelRefR\tsourceRef\x12\x16\n" +
-	"\x06badges\x18\x03 \x03(\tR\x06badges\x12A\n" +
-	"\apricing\x18\x04 \x01(\v2'.platform.model.v1.RegistryModelPricingR\apricing\x12@\n" +
-	"\asources\x18\x05 \x03(\v2&.platform.model.v1.RegistryModelSourceR\asources\"\x9a\x01\n" +
-	"\x14RegistryModelPricing\x12\x14\n" +
+	"\x06badges\x18\x03 \x03(\tR\x06badges\x12;\n" +
+	"\apricing\x18\x04 \x01(\v2!.platform.model.v1.PricingSummaryR\apricing\x12@\n" +
+	"\asources\x18\x05 \x03(\v2&.platform.model.v1.RegistryModelSourceR\asources\"\x8a\x03\n" +
+	"\x0ePricingSummary\x12\x14\n" +
 	"\x05input\x18\x01 \x01(\tR\x05input\x12\x16\n" +
 	"\x06output\x18\x02 \x01(\tR\x06output\x12(\n" +
 	"\x10cache_read_input\x18\x03 \x01(\tR\x0ecacheReadInput\x12*\n" +
-	"\x11cache_write_input\x18\x04 \x01(\tR\x0fcacheWriteInput\"\xa1\x02\n" +
-	"\x13RegistryModelSource\x12\x1b\n" +
-	"\tsource_id\x18\x01 \x01(\tR\bsourceId\x12\x12\n" +
-	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1b\n" +
-	"\tis_direct\x18\x03 \x01(\bR\bisDirect\x12&\n" +
-	"\x0fsource_model_id\x18\x04 \x01(\tR\rsourceModelId\x129\n" +
+	"\x11cache_write_input\x18\x04 \x01(\tR\x0fcacheWriteInput\x12\x1c\n" +
+	"\treasoning\x18\x05 \x01(\tR\treasoning\x12\x1f\n" +
+	"\vimage_input\x18\x06 \x01(\tR\n" +
+	"imageInput\x12\x1f\n" +
+	"\vaudio_input\x18\a \x01(\tR\n" +
+	"audioInput\x12!\n" +
+	"\faudio_output\x18\b \x01(\tR\vaudioOutput\x12\x18\n" +
+	"\arequest\x18\t \x01(\tR\arequest\x12\x1a\n" +
+	"\bcurrency\x18\n" +
+	" \x01(\tR\bcurrency\x12;\n" +
 	"\n" +
-	"definition\x18\x05 \x01(\v2\x19.model.v1.ModelDefinitionR\n" +
+	"price_type\x18\v \x01(\x0e2\x1c.platform.model.v1.PriceTypeR\tpriceType\"\xc4\x02\n" +
+	"\x13RegistryModelSource\x12\x1b\n" +
+	"\tsource_id\x18\x01 \x01(\tR\bsourceId\x12>\n" +
+	"\x04kind\x18\x02 \x01(\x0e2*.platform.model.v1.RegistryModelSourceKindR\x04kind\x12\x1b\n" +
+	"\tis_direct\x18\x03 \x01(\bR\bisDirect\x12&\n" +
+	"\x0fsource_model_id\x18\x04 \x01(\tR\rsourceModelId\x126\n" +
+	"\n" +
+	"definition\x18\x05 \x01(\v2\x16.model.v1.ModelVersionR\n" +
 	"definition\x12\x16\n" +
-	"\x06badges\x18\x06 \x03(\tR\x06badges\x12A\n" +
-	"\apricing\x18\a \x01(\v2'.platform.model.v1.RegistryModelPricingR\apricing\"q\n" +
-	"\x1bListModelDefinitionsRequest\x12\x1b\n" +
+	"\x06badges\x18\x06 \x03(\tR\x06badges\x12;\n" +
+	"\apricing\x18\a \x01(\v2!.platform.model.v1.PricingSummaryR\apricing\"\xb8\x01\n" +
+	"\x11ListModelsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12\x16\n" +
-	"\x06filter\x18\x03 \x01(\tR\x06filter\"\xa4\x01\n" +
-	"\x1cListModelDefinitionsResponse\x12;\n" +
+	"\x06filter\x18\x03 \x01(\tR\x06filter\x12O\n" +
+	"\x11structured_filter\x18\x04 \x01(\v2\".platform.model.v1.ModelListFilterR\x10structuredFilter\"\xfc\x01\n" +
+	"\x0fModelListFilter\x12\x1d\n" +
+	"\n" +
+	"vendor_ids\x18\x01 \x03(\tR\tvendorIds\x12\x19\n" +
+	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12$\n" +
+	"\x0emodel_id_query\x18\x03 \x01(\tR\fmodelIdQuery\x12\x1d\n" +
+	"\n" +
+	"source_ids\x18\x04 \x03(\tR\tsourceIds\x12\x14\n" +
+	"\x05badge\x18\x05 \x01(\tR\x05badge\x12\x1a\n" +
+	"\bcategory\x18\x06 \x01(\tR\bcategory\x128\n" +
+	"\x18lifecycle_status_exclude\x18\a \x03(\tR\x16lifecycleStatusExclude\"\x9a\x01\n" +
+	"\x12ListModelsResponse\x12;\n" +
 	"\x05items\x18\x01 \x03(\v2%.platform.model.v1.ModelRegistryEntryR\x05items\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1f\n" +
 	"\vtotal_count\x18\x03 \x01(\x03R\n" +
-	"totalCount\"\xb3\x01\n" +
-	"\x1eGetOrFetchCatalogModelsRequest\x12\x19\n" +
-	"\bprobe_id\x18\x01 \x01(\tR\aprobeId\x12=\n" +
-	"\x06target\x18\x02 \x01(\v2%.platform.model.v1.ModelCatalogTargetR\x06target\x127\n" +
-	"\bauth_ref\x18\x03 \x01(\v2\x1c.credential.v1.CredentialRefR\aauthRef\"\xae\x01\n" +
-	"\x19FetchCatalogModelsRequest\x12\x19\n" +
-	"\bprobe_id\x18\x01 \x01(\tR\aprobeId\x12=\n" +
-	"\x06target\x18\x02 \x01(\v2%.platform.model.v1.ModelCatalogTargetR\x06target\x127\n" +
-	"\bauth_ref\x18\x03 \x01(\v2\x1c.credential.v1.CredentialRefR\aauthRef\"\x83\x01\n" +
-	"\x12ModelCatalogTarget\x12\x1b\n" +
-	"\ttarget_id\x18\x01 \x01(\tR\btargetId\x12\x19\n" +
-	"\bbase_url\x18\x02 \x01(\tR\abaseUrl\x125\n" +
-	"\bprotocol\x18\x03 \x01(\x0e2\x19.api_protocol.v1.ProtocolR\bprotocol\"q\n" +
-	"\fCatalogModel\x12&\n" +
-	"\x0fsource_model_id\x18\x01 \x01(\tR\rsourceModelId\x129\n" +
-	"\n" +
-	"definition\x18\x02 \x01(\v2\x19.model.v1.ModelDefinitionR\n" +
-	"definition\"Z\n" +
-	"\x1fGetOrFetchCatalogModelsResponse\x127\n" +
-	"\x06models\x18\x01 \x03(\v2\x1f.platform.model.v1.CatalogModelR\x06models\"U\n" +
-	"\x1aFetchCatalogModelsResponse\x127\n" +
-	"\x06models\x18\x01 \x03(\v2\x1f.platform.model.v1.CatalogModelR\x06models\"\x1d\n" +
+	"totalCount\"`\n" +
+	"\x16ResolveModelRefRequest\x12)\n" +
+	"\x11model_id_or_alias\x18\x01 \x01(\tR\x0emodelIdOrAlias\x12\x1b\n" +
+	"\tvendor_id\x18\x02 \x01(\tR\bvendorId\"?\n" +
+	"\x17ResolveModelRefResponse\x12$\n" +
+	"\x03ref\x18\x01 \x01(\v2\x12.model.v1.ModelRefR\x03ref\">\n" +
+	"\x16GetModelVersionRequest\x12$\n" +
+	"\x03ref\x18\x01 \x01(\v2\x12.model.v1.ModelRefR\x03ref\"T\n" +
+	"\x17GetModelVersionResponse\x129\n" +
+	"\x04item\x18\x01 \x01(\v2%.platform.model.v1.ModelRegistryEntryR\x04item\"\x1d\n" +
 	"\x1bSyncModelDefinitionsRequest\"6\n" +
 	"\x1cSyncModelDefinitionsResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status2\xf6\x03\n" +
-	"\fModelService\x12w\n" +
-	"\x14ListModelDefinitions\x12..platform.model.v1.ListModelDefinitionsRequest\x1a/.platform.model.v1.ListModelDefinitionsResponse\x12\x80\x01\n" +
-	"\x17GetOrFetchCatalogModels\x121.platform.model.v1.GetOrFetchCatalogModelsRequest\x1a2.platform.model.v1.GetOrFetchCatalogModelsResponse\x12q\n" +
-	"\x12FetchCatalogModels\x12,.platform.model.v1.FetchCatalogModelsRequest\x1a-.platform.model.v1.FetchCatalogModelsResponse\x12w\n" +
-	"\x14SyncModelDefinitions\x12..platform.model.v1.SyncModelDefinitionsRequest\x1a/.platform.model.v1.SyncModelDefinitionsResponseBAZ?code-code.internal/go-contract/platform/model/v1;modelservicev1b\x06proto3"
+	"\x06status\x18\x01 \x01(\tR\x06status\"\xfd\x01\n" +
+	"\tModelCard\x12%\n" +
+	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12#\n" +
+	"\rmetadata_json\x18\x02 \x01(\tR\fmetadataJson\x12#\n" +
+	"\rmarkdown_body\x18\x03 \x01(\tR\fmarkdownBody\x12\x1f\n" +
+	"\vsource_type\x18\x04 \x01(\tR\n" +
+	"sourceType\x12\x1d\n" +
+	"\n" +
+	"source_url\x18\x05 \x01(\tR\tsourceUrl\x12#\n" +
+	"\rreview_status\x18\x06 \x01(\tR\freviewStatus\x12\x1a\n" +
+	"\breviewer\x18\a \x01(\tR\breviewer\";\n" +
+	"\x13GetModelCardRequest\x12$\n" +
+	"\x03ref\x18\x01 \x01(\v2\x12.model.v1.ModelRefR\x03ref\"H\n" +
+	"\x14GetModelCardResponse\x120\n" +
+	"\x04card\x18\x01 \x01(\v2\x1c.platform.model.v1.ModelCardR\x04card\"\xad\x01\n" +
+	"\fOrganization\x12\x19\n" +
+	"\borg_code\x18\x01 \x01(\tR\aorgCode\x12\x19\n" +
+	"\borg_name\x18\x02 \x01(\tR\aorgName\x12\x1b\n" +
+	"\torg_roles\x18\x03 \x03(\tR\borgRoles\x12\x18\n" +
+	"\acountry\x18\x04 \x01(\tR\acountry\x12\x18\n" +
+	"\awebsite\x18\x05 \x01(\tR\awebsite\x12\x16\n" +
+	"\x06status\x18\x06 \x01(\tR\x06status*\x9f\x01\n" +
+	"\tPriceType\x12\x1a\n" +
+	"\x16PRICE_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18PRICE_TYPE_VENDOR_PUBLIC\x10\x01\x12\x1b\n" +
+	"\x17PRICE_TYPE_CLOUD_PUBLIC\x10\x02\x12\x1d\n" +
+	"\x19PRICE_TYPE_AGENT_CONTRACT\x10\x03\x12\x1c\n" +
+	"\x18PRICE_TYPE_INTERNAL_COST\x10\x04*\x97\x01\n" +
+	"\x17RegistryModelSourceKind\x12*\n" +
+	"&REGISTRY_MODEL_SOURCE_KIND_UNSPECIFIED\x10\x00\x12%\n" +
+	"!REGISTRY_MODEL_SOURCE_KIND_PRESET\x10\x01\x12)\n" +
+	"%REGISTRY_MODEL_SOURCE_KIND_DISCOVERED\x10\x022\x97\x04\n" +
+	"\fModelService\x12Y\n" +
+	"\n" +
+	"ListModels\x12$.platform.model.v1.ListModelsRequest\x1a%.platform.model.v1.ListModelsResponse\x12h\n" +
+	"\x0fResolveModelRef\x12).platform.model.v1.ResolveModelRefRequest\x1a*.platform.model.v1.ResolveModelRefResponse\x12h\n" +
+	"\x0fGetModelVersion\x12).platform.model.v1.GetModelVersionRequest\x1a*.platform.model.v1.GetModelVersionResponse\x12w\n" +
+	"\x14SyncModelDefinitions\x12..platform.model.v1.SyncModelDefinitionsRequest\x1a/.platform.model.v1.SyncModelDefinitionsResponse\x12_\n" +
+	"\fGetModelCard\x12&.platform.model.v1.GetModelCardRequest\x1a'.platform.model.v1.GetModelCardResponseBAZ?code-code.internal/go-contract/platform/model/v1;modelservicev1b\x06proto3"
 
 var (
 	file_platform_model_v1_model_service_proto_rawDescOnce sync.Once
@@ -861,52 +1327,58 @@ func file_platform_model_v1_model_service_proto_rawDescGZIP() []byte {
 	return file_platform_model_v1_model_service_proto_rawDescData
 }
 
-var file_platform_model_v1_model_service_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_platform_model_v1_model_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_platform_model_v1_model_service_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_platform_model_v1_model_service_proto_goTypes = []any{
-	(*ModelRegistryEntry)(nil),              // 0: platform.model.v1.ModelRegistryEntry
-	(*RegistryModelPricing)(nil),            // 1: platform.model.v1.RegistryModelPricing
-	(*RegistryModelSource)(nil),             // 2: platform.model.v1.RegistryModelSource
-	(*ListModelDefinitionsRequest)(nil),     // 3: platform.model.v1.ListModelDefinitionsRequest
-	(*ListModelDefinitionsResponse)(nil),    // 4: platform.model.v1.ListModelDefinitionsResponse
-	(*GetOrFetchCatalogModelsRequest)(nil),  // 5: platform.model.v1.GetOrFetchCatalogModelsRequest
-	(*FetchCatalogModelsRequest)(nil),       // 6: platform.model.v1.FetchCatalogModelsRequest
-	(*ModelCatalogTarget)(nil),              // 7: platform.model.v1.ModelCatalogTarget
-	(*CatalogModel)(nil),                    // 8: platform.model.v1.CatalogModel
-	(*GetOrFetchCatalogModelsResponse)(nil), // 9: platform.model.v1.GetOrFetchCatalogModelsResponse
-	(*FetchCatalogModelsResponse)(nil),      // 10: platform.model.v1.FetchCatalogModelsResponse
-	(*SyncModelDefinitionsRequest)(nil),     // 11: platform.model.v1.SyncModelDefinitionsRequest
-	(*SyncModelDefinitionsResponse)(nil),    // 12: platform.model.v1.SyncModelDefinitionsResponse
-	(*v1.ModelDefinition)(nil),              // 13: model.v1.ModelDefinition
-	(*v1.ModelRef)(nil),                     // 14: model.v1.ModelRef
-	(*v11.CredentialRef)(nil),               // 15: credential.v1.CredentialRef
-	(v12.Protocol)(0),                       // 16: api_protocol.v1.Protocol
+	(PriceType)(0),                       // 0: platform.model.v1.PriceType
+	(RegistryModelSourceKind)(0),         // 1: platform.model.v1.RegistryModelSourceKind
+	(*ModelRegistryEntry)(nil),           // 2: platform.model.v1.ModelRegistryEntry
+	(*PricingSummary)(nil),               // 3: platform.model.v1.PricingSummary
+	(*RegistryModelSource)(nil),          // 4: platform.model.v1.RegistryModelSource
+	(*ListModelsRequest)(nil),            // 5: platform.model.v1.ListModelsRequest
+	(*ModelListFilter)(nil),              // 6: platform.model.v1.ModelListFilter
+	(*ListModelsResponse)(nil),           // 7: platform.model.v1.ListModelsResponse
+	(*ResolveModelRefRequest)(nil),       // 8: platform.model.v1.ResolveModelRefRequest
+	(*ResolveModelRefResponse)(nil),      // 9: platform.model.v1.ResolveModelRefResponse
+	(*GetModelVersionRequest)(nil),       // 10: platform.model.v1.GetModelVersionRequest
+	(*GetModelVersionResponse)(nil),      // 11: platform.model.v1.GetModelVersionResponse
+	(*SyncModelDefinitionsRequest)(nil),  // 12: platform.model.v1.SyncModelDefinitionsRequest
+	(*SyncModelDefinitionsResponse)(nil), // 13: platform.model.v1.SyncModelDefinitionsResponse
+	(*ModelCard)(nil),                    // 14: platform.model.v1.ModelCard
+	(*GetModelCardRequest)(nil),          // 15: platform.model.v1.GetModelCardRequest
+	(*GetModelCardResponse)(nil),         // 16: platform.model.v1.GetModelCardResponse
+	(*Organization)(nil),                 // 17: platform.model.v1.Organization
+	(*v1.ModelVersion)(nil),              // 18: model.v1.ModelVersion
+	(*v1.ModelRef)(nil),                  // 19: model.v1.ModelRef
 }
 var file_platform_model_v1_model_service_proto_depIdxs = []int32{
-	13, // 0: platform.model.v1.ModelRegistryEntry.definition:type_name -> model.v1.ModelDefinition
-	14, // 1: platform.model.v1.ModelRegistryEntry.source_ref:type_name -> model.v1.ModelRef
-	1,  // 2: platform.model.v1.ModelRegistryEntry.pricing:type_name -> platform.model.v1.RegistryModelPricing
-	2,  // 3: platform.model.v1.ModelRegistryEntry.sources:type_name -> platform.model.v1.RegistryModelSource
-	13, // 4: platform.model.v1.RegistryModelSource.definition:type_name -> model.v1.ModelDefinition
-	1,  // 5: platform.model.v1.RegistryModelSource.pricing:type_name -> platform.model.v1.RegistryModelPricing
-	0,  // 6: platform.model.v1.ListModelDefinitionsResponse.items:type_name -> platform.model.v1.ModelRegistryEntry
-	7,  // 7: platform.model.v1.GetOrFetchCatalogModelsRequest.target:type_name -> platform.model.v1.ModelCatalogTarget
-	15, // 8: platform.model.v1.GetOrFetchCatalogModelsRequest.auth_ref:type_name -> credential.v1.CredentialRef
-	7,  // 9: platform.model.v1.FetchCatalogModelsRequest.target:type_name -> platform.model.v1.ModelCatalogTarget
-	15, // 10: platform.model.v1.FetchCatalogModelsRequest.auth_ref:type_name -> credential.v1.CredentialRef
-	16, // 11: platform.model.v1.ModelCatalogTarget.protocol:type_name -> api_protocol.v1.Protocol
-	13, // 12: platform.model.v1.CatalogModel.definition:type_name -> model.v1.ModelDefinition
-	8,  // 13: platform.model.v1.GetOrFetchCatalogModelsResponse.models:type_name -> platform.model.v1.CatalogModel
-	8,  // 14: platform.model.v1.FetchCatalogModelsResponse.models:type_name -> platform.model.v1.CatalogModel
-	3,  // 15: platform.model.v1.ModelService.ListModelDefinitions:input_type -> platform.model.v1.ListModelDefinitionsRequest
-	5,  // 16: platform.model.v1.ModelService.GetOrFetchCatalogModels:input_type -> platform.model.v1.GetOrFetchCatalogModelsRequest
-	6,  // 17: platform.model.v1.ModelService.FetchCatalogModels:input_type -> platform.model.v1.FetchCatalogModelsRequest
-	11, // 18: platform.model.v1.ModelService.SyncModelDefinitions:input_type -> platform.model.v1.SyncModelDefinitionsRequest
-	4,  // 19: platform.model.v1.ModelService.ListModelDefinitions:output_type -> platform.model.v1.ListModelDefinitionsResponse
-	9,  // 20: platform.model.v1.ModelService.GetOrFetchCatalogModels:output_type -> platform.model.v1.GetOrFetchCatalogModelsResponse
-	10, // 21: platform.model.v1.ModelService.FetchCatalogModels:output_type -> platform.model.v1.FetchCatalogModelsResponse
-	12, // 22: platform.model.v1.ModelService.SyncModelDefinitions:output_type -> platform.model.v1.SyncModelDefinitionsResponse
-	19, // [19:23] is the sub-list for method output_type
-	15, // [15:19] is the sub-list for method input_type
+	18, // 0: platform.model.v1.ModelRegistryEntry.definition:type_name -> model.v1.ModelVersion
+	19, // 1: platform.model.v1.ModelRegistryEntry.source_ref:type_name -> model.v1.ModelRef
+	3,  // 2: platform.model.v1.ModelRegistryEntry.pricing:type_name -> platform.model.v1.PricingSummary
+	4,  // 3: platform.model.v1.ModelRegistryEntry.sources:type_name -> platform.model.v1.RegistryModelSource
+	0,  // 4: platform.model.v1.PricingSummary.price_type:type_name -> platform.model.v1.PriceType
+	1,  // 5: platform.model.v1.RegistryModelSource.kind:type_name -> platform.model.v1.RegistryModelSourceKind
+	18, // 6: platform.model.v1.RegistryModelSource.definition:type_name -> model.v1.ModelVersion
+	3,  // 7: platform.model.v1.RegistryModelSource.pricing:type_name -> platform.model.v1.PricingSummary
+	6,  // 8: platform.model.v1.ListModelsRequest.structured_filter:type_name -> platform.model.v1.ModelListFilter
+	2,  // 9: platform.model.v1.ListModelsResponse.items:type_name -> platform.model.v1.ModelRegistryEntry
+	19, // 10: platform.model.v1.ResolveModelRefResponse.ref:type_name -> model.v1.ModelRef
+	19, // 11: platform.model.v1.GetModelVersionRequest.ref:type_name -> model.v1.ModelRef
+	2,  // 12: platform.model.v1.GetModelVersionResponse.item:type_name -> platform.model.v1.ModelRegistryEntry
+	19, // 13: platform.model.v1.GetModelCardRequest.ref:type_name -> model.v1.ModelRef
+	14, // 14: platform.model.v1.GetModelCardResponse.card:type_name -> platform.model.v1.ModelCard
+	5,  // 15: platform.model.v1.ModelService.ListModels:input_type -> platform.model.v1.ListModelsRequest
+	8,  // 16: platform.model.v1.ModelService.ResolveModelRef:input_type -> platform.model.v1.ResolveModelRefRequest
+	10, // 17: platform.model.v1.ModelService.GetModelVersion:input_type -> platform.model.v1.GetModelVersionRequest
+	12, // 18: platform.model.v1.ModelService.SyncModelDefinitions:input_type -> platform.model.v1.SyncModelDefinitionsRequest
+	15, // 19: platform.model.v1.ModelService.GetModelCard:input_type -> platform.model.v1.GetModelCardRequest
+	7,  // 20: platform.model.v1.ModelService.ListModels:output_type -> platform.model.v1.ListModelsResponse
+	9,  // 21: platform.model.v1.ModelService.ResolveModelRef:output_type -> platform.model.v1.ResolveModelRefResponse
+	11, // 22: platform.model.v1.ModelService.GetModelVersion:output_type -> platform.model.v1.GetModelVersionResponse
+	13, // 23: platform.model.v1.ModelService.SyncModelDefinitions:output_type -> platform.model.v1.SyncModelDefinitionsResponse
+	16, // 24: platform.model.v1.ModelService.GetModelCard:output_type -> platform.model.v1.GetModelCardResponse
+	20, // [20:25] is the sub-list for method output_type
+	15, // [15:20] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
 	15, // [15:15] is the sub-list for extension extendee
 	0,  // [0:15] is the sub-list for field type_name
@@ -922,13 +1394,14 @@ func file_platform_model_v1_model_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_platform_model_v1_model_service_proto_rawDesc), len(file_platform_model_v1_model_service_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   13,
+			NumEnums:      2,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_platform_model_v1_model_service_proto_goTypes,
 		DependencyIndexes: file_platform_model_v1_model_service_proto_depIdxs,
+		EnumInfos:         file_platform_model_v1_model_service_proto_enumTypes,
 		MessageInfos:      file_platform_model_v1_model_service_proto_msgTypes,
 	}.Build()
 	File_platform_model_v1_model_service_proto = out.File

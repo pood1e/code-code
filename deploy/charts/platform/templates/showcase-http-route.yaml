@@ -1,0 +1,3 @@
+{{- if .Values.showcaseRoute.enabled }}
+{{ include "platform.renderHttpRoute" (dict "root" . "name" "showcase" "namespace" .Values.global.showcaseNamespace "route" .Values.showcaseRoute "apiComponent" .Values.components.showcaseApi "webComponent" .Values.components.showcaseWeb) }}
+{{- end }}

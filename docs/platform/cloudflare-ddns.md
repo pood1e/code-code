@@ -26,7 +26,7 @@ The Cloudflare API token needs Zone Read and DNS Edit permissions scoped to the 
 
 ## implementation notes
 
-Kubernetes resources live under `deploy/k8s/cloudflare-ddns/base`.
+Kubernetes resources are rendered by the `cloudflare-ddns` component of the `infrastructure-addons` chart (`deploy/charts/infrastructure-addons`).
 
 Runtime:
 

@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file observability/v1/observability.proto.
  */
 export const file_observability_v1_observability: GenFile = /*@__PURE__*/
-  fileDesc("CiRvYnNlcnZhYmlsaXR5L3YxL29ic2VydmFiaWxpdHkucHJvdG8SEG9ic2VydmFiaWxpdHkudjEiUwoXT2JzZXJ2YWJpbGl0eUNhcGFiaWxpdHkSOAoIcHJvZmlsZXMYASADKAsyJi5vYnNlcnZhYmlsaXR5LnYxLk9ic2VydmFiaWxpdHlQcm9maWxlIqADChRPYnNlcnZhYmlsaXR5UHJvZmlsZRISCgpwcm9maWxlX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIRCglzY29wZV9pZHMYAyADKAkSNgoHbWV0cmljcxgEIAMoCzIlLm9ic2VydmFiaWxpdHkudjEuT2JzZXJ2YWJpbGl0eU1ldHJpYxI/CgxhY3RpdmVfcXVlcnkYBSABKAsyJy5vYnNlcnZhYmlsaXR5LnYxLkFjdGl2ZVF1ZXJ5Q29sbGVjdGlvbkgAEkYKEHJlc3BvbnNlX2hlYWRlcnMYBiABKAsyKi5vYnNlcnZhYmlsaXR5LnYxLlJlc3BvbnNlSGVhZGVyQ29sbGVjdGlvbkgAEjUKDm1ldHJpY19xdWVyaWVzGAcgAygLMh0ub2JzZXJ2YWJpbGl0eS52MS5NZXRyaWNRdWVyeRJFChVhdmFpbGFiaWxpdHlfanVkZ21lbnQYCCABKAsyJi5vYnNlcnZhYmlsaXR5LnYxLkF2YWlsYWJpbGl0eUp1ZGdtZW50QgwKCmNvbGxlY3Rpb24ihAIKE09ic2VydmFiaWxpdHlNZXRyaWMSDAoEbmFtZRgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIMCgR1bml0GAMgASgJEjcKBGtpbmQYBCABKA4yKS5vYnNlcnZhYmlsaXR5LnYxLk9ic2VydmFiaWxpdHlNZXRyaWNLaW5kEj8KCGNhdGVnb3J5GAUgASgOMi0ub2JzZXJ2YWJpbGl0eS52MS5PYnNlcnZhYmlsaXR5TWV0cmljQ2F0ZWdvcnkSQgoKYXR0cmlidXRlcxgGIAMoCzIuLm9ic2VydmFiaWxpdHkudjEuT2JzZXJ2YWJpbGl0eU1ldHJpY0F0dHJpYnV0ZSKWAQocT2JzZXJ2YWJpbGl0eU1ldHJpY0F0dHJpYnV0ZRIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJElMKEXJlcXVpcmVtZW50X2xldmVsGAMgASgOMjgub2JzZXJ2YWJpbGl0eS52MS5PYnNlcnZhYmlsaXR5QXR0cmlidXRlUmVxdWlyZW1lbnRMZXZlbCKxAQoVQWN0aXZlUXVlcnlDb2xsZWN0aW9uEjgKFW1pbmltdW1fcG9sbF9pbnRlcnZhbBgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhJIChJkeW5hbWljX3BhcmFtZXRlcnMYAiADKAsyLC5vYnNlcnZhYmlsaXR5LnYxLkR5bmFtaWNQYXJhbWV0ZXJEZWZpbml0aW9uEhQKDGNvbGxlY3Rvcl9pZBgDIAEoCSJ/ChpEeW5hbWljUGFyYW1ldGVyRGVmaW5pdGlvbhIUCgxwYXJhbWV0ZXJfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEhAKCHJlcXVpcmVkGAQgASgIEg4KBnNlY3JldBgFIAEoCCJhChhSZXNwb25zZUhlYWRlckNvbGxlY3Rpb24SRQoWaGVhZGVyX21ldHJpY19tYXBwaW5ncxgBIAMoCzIlLm9ic2VydmFiaWxpdHkudjEuSGVhZGVyTWV0cmljTWFwcGluZyKrAQoTSGVhZGVyTWV0cmljTWFwcGluZxITCgtoZWFkZXJfbmFtZRgBIAEoCRITCgttZXRyaWNfbmFtZRgCIAEoCRI1Cgp2YWx1ZV90eXBlGAMgASgOMiEub2JzZXJ2YWJpbGl0eS52MS5IZWFkZXJWYWx1ZVR5cGUSMwoGbGFiZWxzGAQgAygLMiMub2JzZXJ2YWJpbGl0eS52MS5IZWFkZXJNZXRyaWNMYWJlbCIwChFIZWFkZXJNZXRyaWNMYWJlbBIMCgRuYW1lGAEgASgJEg0KBXZhbHVlGAIgASgJItUBCgtNZXRyaWNRdWVyeRIQCghxdWVyeV9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSNwoIbGFuZ3VhZ2UYAyABKA4yJS5vYnNlcnZhYmlsaXR5LnYxLk1ldHJpY1F1ZXJ5TGFuZ3VhZ2USEQoJc3RhdGVtZW50GAQgASgJEhQKDG1ldHJpY19uYW1lcxgFIAMoCRI8CgtyZXN1bHRfa2luZBgGIAEoDjInLm9ic2VydmFiaWxpdHkudjEuTWV0cmljUXVlcnlSZXN1bHRLaW5kIrgBChRBdmFpbGFiaWxpdHlKdWRnbWVudBI/CgxzdWJqZWN0X2tpbmQYASABKA4yKS5vYnNlcnZhYmlsaXR5LnYxLkF2YWlsYWJpbGl0eVN1YmplY3RLaW5kEhkKEXN1YmplY3RfbGFiZWxfa2V5GAIgASgJEhEKCXF1ZXJ5X2lkcxgDIAMoCRIxCgVydWxlcxgEIAMoCzIiLm9ic2VydmFiaWxpdHkudjEuQXZhaWxhYmlsaXR5UnVsZSKmAQoQQXZhaWxhYmlsaXR5UnVsZRIPCgdydWxlX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRI3CgZhbGxfb2YYAyADKAsyJy5vYnNlcnZhYmlsaXR5LnYxLkF2YWlsYWJpbGl0eVByZWRpY2F0ZRIyCgVzdGF0ZRgEIAEoDjIjLm9ic2VydmFiaWxpdHkudjEuQXZhaWxhYmlsaXR5U3RhdGUidAoVQXZhaWxhYmlsaXR5UHJlZGljYXRlEhAKCHF1ZXJ5X2lkGAEgASgJEjYKCG9wZXJhdG9yGAIgASgOMiQub2JzZXJ2YWJpbGl0eS52MS5Db21wYXJpc29uT3BlcmF0b3ISEQoJdGhyZXNob2xkGAMgASgBKrkBChdPYnNlcnZhYmlsaXR5TWV0cmljS2luZBIpCiVPQlNFUlZBQklMSVRZX01FVFJJQ19LSU5EX1VOU1BFQ0lGSUVEEAASIwofT0JTRVJWQUJJTElUWV9NRVRSSUNfS0lORF9HQVVHRRABEiUKIU9CU0VSVkFCSUxJVFlfTUVUUklDX0tJTkRfQ09VTlRFUhACEicKI09CU0VSVkFCSUxJVFlfTUVUUklDX0tJTkRfSElTVE9HUkFNEAMqzAEKG09ic2VydmFiaWxpdHlNZXRyaWNDYXRlZ29yeRItCilPQlNFUlZBQklMSVRZX01FVFJJQ19DQVRFR09SWV9VTlNQRUNJRklFRBAAEicKI09CU0VSVkFCSUxJVFlfTUVUUklDX0NBVEVHT1JZX1FVT1RBEAESJwojT0JTRVJWQUJJTElUWV9NRVRSSUNfQ0FURUdPUllfVVNBR0UQAhIsCihPQlNFUlZBQklMSVRZX01FVFJJQ19DQVRFR09SWV9SQVRFX0xJTUlUEAMq1gEKJk9ic2VydmFiaWxpdHlBdHRyaWJ1dGVSZXF1aXJlbWVudExldmVsEjkKNU9CU0VSVkFCSUxJVFlfQVRUUklCVVRFX1JFUVVJUkVNRU5UX0xFVkVMX1VOU1BFQ0lGSUVEEAASNgoyT0JTRVJWQUJJTElUWV9BVFRSSUJVVEVfUkVRVUlSRU1FTlRfTEVWRUxfUkVRVUlSRUQQARI5CjVPQlNFUlZBQklMSVRZX0FUVFJJQlVURV9SRVFVSVJFTUVOVF9MRVZFTF9SRUNPTU1FTkRFRBACKl4KE01ldHJpY1F1ZXJ5TGFuZ3VhZ2USJQohTUVUUklDX1FVRVJZX0xBTkdVQUdFX1VOU1BFQ0lGSUVEEAASIAocTUVUUklDX1FVRVJZX0xBTkdVQUdFX1BST01RTBABKrYBChVNZXRyaWNRdWVyeVJlc3VsdEtpbmQSKAokTUVUUklDX1FVRVJZX1JFU1VMVF9LSU5EX1VOU1BFQ0lGSUVEEAASIwofTUVUUklDX1FVRVJZX1JFU1VMVF9LSU5EX1NDQUxBUhABEiMKH01FVFJJQ19RVUVSWV9SRVNVTFRfS0lORF9WRUNUT1IQAhIpCiVNRVRSSUNfUVVFUllfUkVTVUxUX0tJTkRfUkFOR0VfVkVDVE9SEAMqaQoXQXZhaWxhYmlsaXR5U3ViamVjdEtpbmQSKQolQVZBSUxBQklMSVRZX1NVQkpFQ1RfS0lORF9VTlNQRUNJRklFRBAAEiMKH0FWQUlMQUJJTElUWV9TVUJKRUNUX0tJTkRfTU9ERUwQASqeAQoRQXZhaWxhYmlsaXR5U3RhdGUSIgoeQVZBSUxBQklMSVRZX1NUQVRFX1VOU1BFQ0lGSUVEEAASIAocQVZBSUxBQklMSVRZX1NUQVRFX0FWQUlMQUJMRRABEh8KG0FWQUlMQUJJTElUWV9TVEFURV9ERUdSQURFRBACEiIKHkFWQUlMQUJJTElUWV9TVEFURV9VTkFWQUlMQUJMRRADKuQBChJDb21wYXJpc29uT3BlcmF0b3ISIwofQ09NUEFSSVNPTl9PUEVSQVRPUl9VTlNQRUNJRklFRBAAEhoKFkNPTVBBUklTT05fT1BFUkFUT1JfTFQQARIbChdDT01QQVJJU09OX09QRVJBVE9SX0xURRACEhoKFkNPTVBBUklTT05fT1BFUkFUT1JfR1QQAxIbChdDT01QQVJJU09OX09QRVJBVE9SX0dURRAEEhoKFkNPTVBBUklTT05fT1BFUkFUT1JfRVEQBRIbChdDT01QQVJJU09OX09QRVJBVE9SX05FURAGKuQBCg9IZWFkZXJWYWx1ZVR5cGUSIQodSEVBREVSX1ZBTFVFX1RZUEVfVU5TUEVDSUZJRUQQABIbChdIRUFERVJfVkFMVUVfVFlQRV9JTlQ2NBABEhwKGEhFQURFUl9WQUxVRV9UWVBFX0RPVUJMRRACEiYKIkhFQURFUl9WQUxVRV9UWVBFX0RVUkFUSU9OX1NFQ09ORFMQAxIiCh5IRUFERVJfVkFMVUVfVFlQRV9VTklYX1NFQ09ORFMQBBInCiNIRUFERVJfVkFMVUVfVFlQRV9SRkMzMzM5X1RJTUVTVEFNUBAFQkFaP2NvZGUtY29kZS5pbnRlcm5hbC9nby1jb250cmFjdC9vYnNlcnZhYmlsaXR5L3YxO29ic2VydmFiaWxpdHl2MWIGcHJvdG8z", [file_google_protobuf_duration]);
+  fileDesc("CiRvYnNlcnZhYmlsaXR5L3YxL29ic2VydmFiaWxpdHkucHJvdG8SEG9ic2VydmFiaWxpdHkudjEiUwoXT2JzZXJ2YWJpbGl0eUNhcGFiaWxpdHkSOAoIcHJvZmlsZXMYASADKAsyJi5vYnNlcnZhYmlsaXR5LnYxLk9ic2VydmFiaWxpdHlQcm9maWxlIqIDChRPYnNlcnZhYmlsaXR5UHJvZmlsZRISCgpwcm9maWxlX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIRCglzY29wZV9pZHMYAyADKAkSNgoHbWV0cmljcxgEIAMoCzIlLm9ic2VydmFiaWxpdHkudjEuT2JzZXJ2YWJpbGl0eU1ldHJpYxI/CgxhY3RpdmVfcXVlcnkYBSABKAsyJy5vYnNlcnZhYmlsaXR5LnYxLkFjdGl2ZVF1ZXJ5Q29sbGVjdGlvbkgAEkgKDHBhc3NpdmVfaHR0cBgGIAEoCzIwLm9ic2VydmFiaWxpdHkudjEuUGFzc2l2ZUh0dHBUZWxlbWV0cnlDb2xsZWN0aW9uSAASNQoObWV0cmljX3F1ZXJpZXMYByADKAsyHS5vYnNlcnZhYmlsaXR5LnYxLk1ldHJpY1F1ZXJ5EkUKFWF2YWlsYWJpbGl0eV9qdWRnbWVudBgIIAEoCzImLm9ic2VydmFiaWxpdHkudjEuQXZhaWxhYmlsaXR5SnVkZ21lbnRCDAoKY29sbGVjdGlvbiKEAgoTT2JzZXJ2YWJpbGl0eU1ldHJpYxIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEgwKBHVuaXQYAyABKAkSNwoEa2luZBgEIAEoDjIpLm9ic2VydmFiaWxpdHkudjEuT2JzZXJ2YWJpbGl0eU1ldHJpY0tpbmQSPwoIY2F0ZWdvcnkYBSABKA4yLS5vYnNlcnZhYmlsaXR5LnYxLk9ic2VydmFiaWxpdHlNZXRyaWNDYXRlZ29yeRJCCgphdHRyaWJ1dGVzGAYgAygLMi4ub2JzZXJ2YWJpbGl0eS52MS5PYnNlcnZhYmlsaXR5TWV0cmljQXR0cmlidXRlIpYBChxPYnNlcnZhYmlsaXR5TWV0cmljQXR0cmlidXRlEgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSUwoRcmVxdWlyZW1lbnRfbGV2ZWwYAyABKA4yOC5vYnNlcnZhYmlsaXR5LnYxLk9ic2VydmFiaWxpdHlBdHRyaWJ1dGVSZXF1aXJlbWVudExldmVsItMCChVBY3RpdmVRdWVyeUNvbGxlY3Rpb24SOAoVbWluaW11bV9wb2xsX2ludGVydmFsGAEgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uEkgKEmR5bmFtaWNfcGFyYW1ldGVycxgCIAMoCzIsLm9ic2VydmFiaWxpdHkudjEuRHluYW1pY1BhcmFtZXRlckRlZmluaXRpb24SFAoMY29sbGVjdG9yX2lkGAMgASgJEkYKFGNyZWRlbnRpYWxfYmFja2ZpbGxzGAQgAygLMigub2JzZXJ2YWJpbGl0eS52MS5DcmVkZW50aWFsQmFja2ZpbGxSdWxlEjoKCmlucHV0X2Zvcm0YBSABKAsyJi5vYnNlcnZhYmlsaXR5LnYxLkFjdGl2ZVF1ZXJ5SW5wdXRGb3JtEhwKFG1hdGVyaWFsX3JlYWRfZmllbGRzGAYgAygJIn8KGkR5bmFtaWNQYXJhbWV0ZXJEZWZpbml0aW9uEhQKDHBhcmFtZXRlcl9pZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSEAoIcmVxdWlyZWQYBCABKAgSDgoGc2VjcmV0GAUgASgIIpwBChRBY3RpdmVRdWVyeUlucHV0Rm9ybRIRCglzY2hlbWFfaWQYASABKAkSDQoFdGl0bGUYAiABKAkSFAoMYWN0aW9uX2xhYmVsGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEjcKBmZpZWxkcxgFIAMoCzInLm9ic2VydmFiaWxpdHkudjEuQWN0aXZlUXVlcnlJbnB1dEZpZWxkIvwCChVBY3RpdmVRdWVyeUlucHV0RmllbGQSEAoIZmllbGRfaWQYASABKAkSDQoFbGFiZWwYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSEwoLcGxhY2Vob2xkZXIYBCABKAkSEAoIcmVxdWlyZWQYBSABKAgSEQoJc2Vuc2l0aXZlGAYgASgIEjoKB2NvbnRyb2wYByABKA4yKS5vYnNlcnZhYmlsaXR5LnYxLkFjdGl2ZVF1ZXJ5SW5wdXRDb250cm9sEkIKC3BlcnNpc3RlbmNlGAggASgOMi0ub2JzZXJ2YWJpbGl0eS52MS5BY3RpdmVRdWVyeUlucHV0UGVyc2lzdGVuY2USFwoPdGFyZ2V0X2ZpZWxkX2lkGAkgASgJEkMKCXRyYW5zZm9ybRgKIAEoDjIwLm9ic2VydmFiaWxpdHkudjEuQWN0aXZlUXVlcnlJbnB1dFZhbHVlVHJhbnNmb3JtEhUKDWRlZmF1bHRfdmFsdWUYCyABKAkiuwEKFkNyZWRlbnRpYWxCYWNrZmlsbFJ1bGUSDwoHcnVsZV9pZBgBIAEoCRI6CgZzb3VyY2UYAiABKA4yKi5vYnNlcnZhYmlsaXR5LnYxLkNyZWRlbnRpYWxCYWNrZmlsbFNvdXJjZRITCgtzb3VyY2VfbmFtZRgDIAEoCRIbChN0YXJnZXRfbWF0ZXJpYWxfa2V5GAQgASgJEhAKCHJlcXVpcmVkGAUgASgIEhAKCHJlYWRhYmxlGAYgASgIIrUCCh5QYXNzaXZlSHR0cFRlbGVtZXRyeUNvbGxlY3Rpb24SPgoNY2FwdHVyZV9wb2ludBgBIAEoDjInLm9ic2VydmFiaWxpdHkudjEuVGVsZW1ldHJ5Q2FwdHVyZVBvaW50EjoKCXNlbGVjdG9ycxgCIAMoCzInLm9ic2VydmFiaWxpdHkudjEuSHR0cFRlbGVtZXRyeVNlbGVjdG9yEkIKCnRyYW5zZm9ybXMYAyADKAsyLi5vYnNlcnZhYmlsaXR5LnYxLkh0dHBIZWFkZXJUZWxlbWV0cnlUcmFuc2Zvcm0SOgoJcmVkYWN0aW9uGAQgASgLMicub2JzZXJ2YWJpbGl0eS52MS5IZWFkZXJSZWRhY3Rpb25Qb2xpY3kSFwoPZW1pdF9hY2Nlc3NfbG9nGAUgASgIImgKFUh0dHBUZWxlbWV0cnlTZWxlY3RvchIRCglob3N0bmFtZXMYASADKAkSFQoNcGF0aF9wcmVmaXhlcxgCIAMoCRIPCgdtZXRob2RzGAMgAygJEhQKDHN0YXR1c19jb2RlcxgEIAMoDSLrAQocSHR0cEhlYWRlclRlbGVtZXRyeVRyYW5zZm9ybRIyCgZzb3VyY2UYASABKA4yIi5vYnNlcnZhYmlsaXR5LnYxLkh0dHBIZWFkZXJTb3VyY2USEwoLaGVhZGVyX25hbWUYAiABKAkSEwoLbWV0cmljX25hbWUYAyABKAkSNQoKdmFsdWVfdHlwZRgEIAEoDjIhLm9ic2VydmFiaWxpdHkudjEuSGVhZGVyVmFsdWVUeXBlEjYKBmxhYmVscxgFIAMoCzImLm9ic2VydmFiaWxpdHkudjEuVGVsZW1ldHJ5TWV0cmljTGFiZWwiMwoUVGVsZW1ldHJ5TWV0cmljTGFiZWwSDAoEbmFtZRgBIAEoCRINCgV2YWx1ZRgCIAEoCSJfChVIZWFkZXJSZWRhY3Rpb25Qb2xpY3kSGAoQZHJvcF9yYXdfaGVhZGVycxgBIAEoCBIUCgxoYXNoX2hlYWRlcnMYAiADKAkSFgoOcmVkYWN0X2hlYWRlcnMYAyADKAki1QEKC01ldHJpY1F1ZXJ5EhAKCHF1ZXJ5X2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRI3CghsYW5ndWFnZRgDIAEoDjIlLm9ic2VydmFiaWxpdHkudjEuTWV0cmljUXVlcnlMYW5ndWFnZRIRCglzdGF0ZW1lbnQYBCABKAkSFAoMbWV0cmljX25hbWVzGAUgAygJEjwKC3Jlc3VsdF9raW5kGAYgASgOMicub2JzZXJ2YWJpbGl0eS52MS5NZXRyaWNRdWVyeVJlc3VsdEtpbmQiuAEKFEF2YWlsYWJpbGl0eUp1ZGdtZW50Ej8KDHN1YmplY3Rfa2luZBgBIAEoDjIpLm9ic2VydmFiaWxpdHkudjEuQXZhaWxhYmlsaXR5U3ViamVjdEtpbmQSGQoRc3ViamVjdF9sYWJlbF9rZXkYAiABKAkSEQoJcXVlcnlfaWRzGAMgAygJEjEKBXJ1bGVzGAQgAygLMiIub2JzZXJ2YWJpbGl0eS52MS5BdmFpbGFiaWxpdHlSdWxlIqYBChBBdmFpbGFiaWxpdHlSdWxlEg8KB3J1bGVfaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEjcKBmFsbF9vZhgDIAMoCzInLm9ic2VydmFiaWxpdHkudjEuQXZhaWxhYmlsaXR5UHJlZGljYXRlEjIKBXN0YXRlGAQgASgOMiMub2JzZXJ2YWJpbGl0eS52MS5BdmFpbGFiaWxpdHlTdGF0ZSJ0ChVBdmFpbGFiaWxpdHlQcmVkaWNhdGUSEAoIcXVlcnlfaWQYASABKAkSNgoIb3BlcmF0b3IYAiABKA4yJC5vYnNlcnZhYmlsaXR5LnYxLkNvbXBhcmlzb25PcGVyYXRvchIRCgl0aHJlc2hvbGQYAyABKAEquQEKF09ic2VydmFiaWxpdHlNZXRyaWNLaW5kEikKJU9CU0VSVkFCSUxJVFlfTUVUUklDX0tJTkRfVU5TUEVDSUZJRUQQABIjCh9PQlNFUlZBQklMSVRZX01FVFJJQ19LSU5EX0dBVUdFEAESJQohT0JTRVJWQUJJTElUWV9NRVRSSUNfS0lORF9DT1VOVEVSEAISJwojT0JTRVJWQUJJTElUWV9NRVRSSUNfS0lORF9ISVNUT0dSQU0QAyrMAQobT2JzZXJ2YWJpbGl0eU1ldHJpY0NhdGVnb3J5Ei0KKU9CU0VSVkFCSUxJVFlfTUVUUklDX0NBVEVHT1JZX1VOU1BFQ0lGSUVEEAASJwojT0JTRVJWQUJJTElUWV9NRVRSSUNfQ0FURUdPUllfUVVPVEEQARInCiNPQlNFUlZBQklMSVRZX01FVFJJQ19DQVRFR09SWV9VU0FHRRACEiwKKE9CU0VSVkFCSUxJVFlfTUVUUklDX0NBVEVHT1JZX1JBVEVfTElNSVQQAyrWAQomT2JzZXJ2YWJpbGl0eUF0dHJpYnV0ZVJlcXVpcmVtZW50TGV2ZWwSOQo1T0JTRVJWQUJJTElUWV9BVFRSSUJVVEVfUkVRVUlSRU1FTlRfTEVWRUxfVU5TUEVDSUZJRUQQABI2CjJPQlNFUlZBQklMSVRZX0FUVFJJQlVURV9SRVFVSVJFTUVOVF9MRVZFTF9SRVFVSVJFRBABEjkKNU9CU0VSVkFCSUxJVFlfQVRUUklCVVRFX1JFUVVJUkVNRU5UX0xFVkVMX1JFQ09NTUVOREVEEAIqvAEKF0FjdGl2ZVF1ZXJ5SW5wdXRDb250cm9sEioKJkFDVElWRV9RVUVSWV9JTlBVVF9DT05UUk9MX1VOU1BFQ0lGSUVEEAASIwofQUNUSVZFX1FVRVJZX0lOUFVUX0NPTlRST0xfVEVYVBABEicKI0FDVElWRV9RVUVSWV9JTlBVVF9DT05UUk9MX1BBU1NXT1JEEAISJwojQUNUSVZFX1FVRVJZX0lOUFVUX0NPTlRST0xfVEVYVEFSRUEQAyqvAQobQWN0aXZlUXVlcnlJbnB1dFBlcnNpc3RlbmNlEi4KKkFDVElWRV9RVUVSWV9JTlBVVF9QRVJTSVNURU5DRV9VTlNQRUNJRklFRBAAEjIKLkFDVElWRV9RVUVSWV9JTlBVVF9QRVJTSVNURU5DRV9TVE9SRURfTUFURVJJQUwQARIsCihBQ1RJVkVfUVVFUllfSU5QVVRfUEVSU0lTVEVOQ0VfVFJBTlNJRU5UEAIqvgEKHkFjdGl2ZVF1ZXJ5SW5wdXRWYWx1ZVRyYW5zZm9ybRIyCi5BQ1RJVkVfUVVFUllfSU5QVVRfVkFMVUVfVFJBTlNGT1JNX1VOU1BFQ0lGSUVEEAASLworQUNUSVZFX1FVRVJZX0lOUFVUX1ZBTFVFX1RSQU5TRk9STV9JREVOVElUWRABEjcKM0FDVElWRV9RVUVSWV9JTlBVVF9WQUxVRV9UUkFOU0ZPUk1fTUVSR0VfU0VUX0NPT0tJRRACKuEBChhDcmVkZW50aWFsQmFja2ZpbGxTb3VyY2USKgomQ1JFREVOVElBTF9CQUNLRklMTF9TT1VSQ0VfVU5TUEVDSUZJRUQQABIvCitDUkVERU5USUFMX0JBQ0tGSUxMX1NPVVJDRV9DT0xMRUNUT1JfT1VUUFVUEAESMwovQ1JFREVOVElBTF9CQUNLRklMTF9TT1VSQ0VfSFRUUF9SRVNQT05TRV9IRUFERVIQAhIzCi9DUkVERU5USUFMX0JBQ0tGSUxMX1NPVVJDRV9IVFRQX1JFU1BPTlNFX0NPT0tJRRADKpYBChVUZWxlbWV0cnlDYXB0dXJlUG9pbnQSJwojVEVMRU1FVFJZX0NBUFRVUkVfUE9JTlRfVU5TUEVDSUZJRUQQABIiCh5URUxFTUVUUllfQ0FQVFVSRV9QT0lOVF9FR1JFU1MQARIwCixURUxFTUVUUllfQ0FQVFVSRV9QT0lOVF9ERVNUSU5BVElPTl9XQVlQT0lOVBACKncKEEh0dHBIZWFkZXJTb3VyY2USIgoeSFRUUF9IRUFERVJfU09VUkNFX1VOU1BFQ0lGSUVEEAASHgoaSFRUUF9IRUFERVJfU09VUkNFX1JFUVVFU1QQARIfChtIVFRQX0hFQURFUl9TT1VSQ0VfUkVTUE9OU0UQAipeChNNZXRyaWNRdWVyeUxhbmd1YWdlEiUKIU1FVFJJQ19RVUVSWV9MQU5HVUFHRV9VTlNQRUNJRklFRBAAEiAKHE1FVFJJQ19RVUVSWV9MQU5HVUFHRV9QUk9NUUwQASq2AQoVTWV0cmljUXVlcnlSZXN1bHRLaW5kEigKJE1FVFJJQ19RVUVSWV9SRVNVTFRfS0lORF9VTlNQRUNJRklFRBAAEiMKH01FVFJJQ19RVUVSWV9SRVNVTFRfS0lORF9TQ0FMQVIQARIjCh9NRVRSSUNfUVVFUllfUkVTVUxUX0tJTkRfVkVDVE9SEAISKQolTUVUUklDX1FVRVJZX1JFU1VMVF9LSU5EX1JBTkdFX1ZFQ1RPUhADKmkKF0F2YWlsYWJpbGl0eVN1YmplY3RLaW5kEikKJUFWQUlMQUJJTElUWV9TVUJKRUNUX0tJTkRfVU5TUEVDSUZJRUQQABIjCh9BVkFJTEFCSUxJVFlfU1VCSkVDVF9LSU5EX01PREVMEAEqngEKEUF2YWlsYWJpbGl0eVN0YXRlEiIKHkFWQUlMQUJJTElUWV9TVEFURV9VTlNQRUNJRklFRBAAEiAKHEFWQUlMQUJJTElUWV9TVEFURV9BVkFJTEFCTEUQARIfChtBVkFJTEFCSUxJVFlfU1RBVEVfREVHUkFERUQQAhIiCh5BVkFJTEFCSUxJVFlfU1RBVEVfVU5BVkFJTEFCTEUQAyrkAQoSQ29tcGFyaXNvbk9wZXJhdG9yEiMKH0NPTVBBUklTT05fT1BFUkFUT1JfVU5TUEVDSUZJRUQQABIaChZDT01QQVJJU09OX09QRVJBVE9SX0xUEAESGwoXQ09NUEFSSVNPTl9PUEVSQVRPUl9MVEUQAhIaChZDT01QQVJJU09OX09QRVJBVE9SX0dUEAMSGwoXQ09NUEFSSVNPTl9PUEVSQVRPUl9HVEUQBBIaChZDT01QQVJJU09OX09QRVJBVE9SX0VREAUSGwoXQ09NUEFSSVNPTl9PUEVSQVRPUl9ORVEQBirkAQoPSGVhZGVyVmFsdWVUeXBlEiEKHUhFQURFUl9WQUxVRV9UWVBFX1VOU1BFQ0lGSUVEEAASGwoXSEVBREVSX1ZBTFVFX1RZUEVfSU5UNjQQARIcChhIRUFERVJfVkFMVUVfVFlQRV9ET1VCTEUQAhImCiJIRUFERVJfVkFMVUVfVFlQRV9EVVJBVElPTl9TRUNPTkRTEAMSIgoeSEVBREVSX1ZBTFVFX1RZUEVfVU5JWF9TRUNPTkRTEAQSJwojSEVBREVSX1ZBTFVFX1RZUEVfUkZDMzMzOV9USU1FU1RBTVAQBUJBWj9jb2RlLWNvZGUuaW50ZXJuYWwvZ28tY29udHJhY3Qvb2JzZXJ2YWJpbGl0eS92MTtvYnNlcnZhYmlsaXR5djFiBnByb3RvMw", [file_google_protobuf_duration]);
 
 /**
  * ObservabilityCapability describes a reusable observability capability block
@@ -74,10 +74,10 @@ export type ObservabilityProfile = Message<"observability.v1.ObservabilityProfil
     case: "activeQuery";
   } | {
     /**
-     * @generated from field: observability.v1.ResponseHeaderCollection response_headers = 6;
+     * @generated from field: observability.v1.PassiveHttpTelemetryCollection passive_http = 6;
      */
-    value: ResponseHeaderCollection;
-    case: "responseHeaders";
+    value: PassiveHttpTelemetryCollection;
+    case: "passiveHttp";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -201,6 +201,31 @@ export type ActiveQueryCollection = Message<"observability.v1.ActiveQueryCollect
    * @generated from field: string collector_id = 3;
    */
   collectorId: string;
+
+  /**
+   * Explicit credential values that the collector may persist after a
+   * successful query. The collector must ignore all undeclared values.
+   *
+   * @generated from field: repeated observability.v1.CredentialBackfillRule credential_backfills = 4;
+   */
+  credentialBackfills: CredentialBackfillRule[];
+
+  /**
+   * Optional schema-driven form used to collect management-plane credential
+   * inputs required by this active query.
+   *
+   * @generated from field: observability.v1.ActiveQueryInputForm input_form = 5;
+   */
+  inputForm?: ActiveQueryInputForm;
+
+  /**
+   * Explicit non-secret material keys the collector may read back on later
+   * runs. Secret tokens/cookies should stay behind authservice/egress auth and
+   * must not be listed here.
+   *
+   * @generated from field: repeated string material_read_fields = 6;
+   */
+  materialReadFields: string[];
 };
 
 /**
@@ -250,65 +275,284 @@ export const DynamicParameterDefinitionSchema: GenMessage<DynamicParameterDefini
   messageDesc(file_observability_v1_observability, 5);
 
 /**
- * ResponseHeaderCollection declares how response headers map to metrics.
+ * ActiveQueryInputForm describes provider-owned credential inputs needed by one
+ * active query. UI clients render this schema instead of hard-coding per-vendor
+ * fields.
  *
- * @generated from message observability.v1.ResponseHeaderCollection
+ * @generated from message observability.v1.ActiveQueryInputForm
  */
-export type ResponseHeaderCollection = Message<"observability.v1.ResponseHeaderCollection"> & {
+export type ActiveQueryInputForm = Message<"observability.v1.ActiveQueryInputForm"> & {
   /**
-   * @generated from field: repeated observability.v1.HeaderMetricMapping header_metric_mappings = 1;
+   * @generated from field: string schema_id = 1;
    */
-  headerMetricMappings: HeaderMetricMapping[];
+  schemaId: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string action_label = 3;
+   */
+  actionLabel: string;
+
+  /**
+   * @generated from field: string description = 4;
+   */
+  description: string;
+
+  /**
+   * @generated from field: repeated observability.v1.ActiveQueryInputField fields = 5;
+   */
+  fields: ActiveQueryInputField[];
 };
 
 /**
- * Describes the message observability.v1.ResponseHeaderCollection.
- * Use `create(ResponseHeaderCollectionSchema)` to create a new message.
+ * Describes the message observability.v1.ActiveQueryInputForm.
+ * Use `create(ActiveQueryInputFormSchema)` to create a new message.
  */
-export const ResponseHeaderCollectionSchema: GenMessage<ResponseHeaderCollection> = /*@__PURE__*/
+export const ActiveQueryInputFormSchema: GenMessage<ActiveQueryInputForm> = /*@__PURE__*/
   messageDesc(file_observability_v1_observability, 6);
 
 /**
- * HeaderMetricMapping maps one response header to one declared metric.
+ * ActiveQueryInputField describes one operator-supplied input field.
  *
- * @generated from message observability.v1.HeaderMetricMapping
+ * @generated from message observability.v1.ActiveQueryInputField
  */
-export type HeaderMetricMapping = Message<"observability.v1.HeaderMetricMapping"> & {
+export type ActiveQueryInputField = Message<"observability.v1.ActiveQueryInputField"> & {
   /**
-   * @generated from field: string header_name = 1;
+   * @generated from field: string field_id = 1;
+   */
+  fieldId: string;
+
+  /**
+   * @generated from field: string label = 2;
+   */
+  label: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: string placeholder = 4;
+   */
+  placeholder: string;
+
+  /**
+   * @generated from field: bool required = 5;
+   */
+  required: boolean;
+
+  /**
+   * @generated from field: bool sensitive = 6;
+   */
+  sensitive: boolean;
+
+  /**
+   * @generated from field: observability.v1.ActiveQueryInputControl control = 7;
+   */
+  control: ActiveQueryInputControl;
+
+  /**
+   * @generated from field: observability.v1.ActiveQueryInputPersistence persistence = 8;
+   */
+  persistence: ActiveQueryInputPersistence;
+
+  /**
+   * @generated from field: string target_field_id = 9;
+   */
+  targetFieldId: string;
+
+  /**
+   * @generated from field: observability.v1.ActiveQueryInputValueTransform transform = 10;
+   */
+  transform: ActiveQueryInputValueTransform;
+
+  /**
+   * @generated from field: string default_value = 11;
+   */
+  defaultValue: string;
+};
+
+/**
+ * Describes the message observability.v1.ActiveQueryInputField.
+ * Use `create(ActiveQueryInputFieldSchema)` to create a new message.
+ */
+export const ActiveQueryInputFieldSchema: GenMessage<ActiveQueryInputField> = /*@__PURE__*/
+  messageDesc(file_observability_v1_observability, 7);
+
+/**
+ * CredentialBackfillRule declares one credential value that may be persisted
+ * from an active query result.
+ *
+ * @generated from message observability.v1.CredentialBackfillRule
+ */
+export type CredentialBackfillRule = Message<"observability.v1.CredentialBackfillRule"> & {
+  /**
+   * @generated from field: string rule_id = 1;
+   */
+  ruleId: string;
+
+  /**
+   * @generated from field: observability.v1.CredentialBackfillSource source = 2;
+   */
+  source: CredentialBackfillSource;
+
+  /**
+   * @generated from field: string source_name = 3;
+   */
+  sourceName: string;
+
+  /**
+   * @generated from field: string target_material_key = 4;
+   */
+  targetMaterialKey: string;
+
+  /**
+   * @generated from field: bool required = 5;
+   */
+  required: boolean;
+
+  /**
+   * If true, this persisted value may be read back by the same active query
+   * collector on later runs. Leave false for token/cookie/session material that
+   * should remain write-only outside authservice.
+   *
+   * @generated from field: bool readable = 6;
+   */
+  readable: boolean;
+};
+
+/**
+ * Describes the message observability.v1.CredentialBackfillRule.
+ * Use `create(CredentialBackfillRuleSchema)` to create a new message.
+ */
+export const CredentialBackfillRuleSchema: GenMessage<CredentialBackfillRule> = /*@__PURE__*/
+  messageDesc(file_observability_v1_observability, 8);
+
+/**
+ * PassiveHttpTelemetryCollection declares how an official HTTP telemetry stream
+ * is selected, sanitized, and converted into metrics.
+ *
+ * @generated from message observability.v1.PassiveHttpTelemetryCollection
+ */
+export type PassiveHttpTelemetryCollection = Message<"observability.v1.PassiveHttpTelemetryCollection"> & {
+  /**
+   * @generated from field: observability.v1.TelemetryCapturePoint capture_point = 1;
+   */
+  capturePoint: TelemetryCapturePoint;
+
+  /**
+   * @generated from field: repeated observability.v1.HttpTelemetrySelector selectors = 2;
+   */
+  selectors: HttpTelemetrySelector[];
+
+  /**
+   * @generated from field: repeated observability.v1.HttpHeaderTelemetryTransform transforms = 3;
+   */
+  transforms: HttpHeaderTelemetryTransform[];
+
+  /**
+   * @generated from field: observability.v1.HeaderRedactionPolicy redaction = 4;
+   */
+  redaction?: HeaderRedactionPolicy;
+
+  /**
+   * @generated from field: bool emit_access_log = 5;
+   */
+  emitAccessLog: boolean;
+};
+
+/**
+ * Describes the message observability.v1.PassiveHttpTelemetryCollection.
+ * Use `create(PassiveHttpTelemetryCollectionSchema)` to create a new message.
+ */
+export const PassiveHttpTelemetryCollectionSchema: GenMessage<PassiveHttpTelemetryCollection> = /*@__PURE__*/
+  messageDesc(file_observability_v1_observability, 9);
+
+/**
+ * HttpTelemetrySelector narrows the HTTP stream handled by one profile.
+ *
+ * @generated from message observability.v1.HttpTelemetrySelector
+ */
+export type HttpTelemetrySelector = Message<"observability.v1.HttpTelemetrySelector"> & {
+  /**
+   * @generated from field: repeated string hostnames = 1;
+   */
+  hostnames: string[];
+
+  /**
+   * @generated from field: repeated string path_prefixes = 2;
+   */
+  pathPrefixes: string[];
+
+  /**
+   * @generated from field: repeated string methods = 3;
+   */
+  methods: string[];
+
+  /**
+   * @generated from field: repeated uint32 status_codes = 4;
+   */
+  statusCodes: number[];
+};
+
+/**
+ * Describes the message observability.v1.HttpTelemetrySelector.
+ * Use `create(HttpTelemetrySelectorSchema)` to create a new message.
+ */
+export const HttpTelemetrySelectorSchema: GenMessage<HttpTelemetrySelector> = /*@__PURE__*/
+  messageDesc(file_observability_v1_observability, 10);
+
+/**
+ * HttpHeaderTelemetryTransform maps one selected HTTP header to one metric.
+ *
+ * @generated from message observability.v1.HttpHeaderTelemetryTransform
+ */
+export type HttpHeaderTelemetryTransform = Message<"observability.v1.HttpHeaderTelemetryTransform"> & {
+  /**
+   * @generated from field: observability.v1.HttpHeaderSource source = 1;
+   */
+  source: HttpHeaderSource;
+
+  /**
+   * @generated from field: string header_name = 2;
    */
   headerName: string;
 
   /**
-   * @generated from field: string metric_name = 2;
+   * @generated from field: string metric_name = 3;
    */
   metricName: string;
 
   /**
-   * @generated from field: observability.v1.HeaderValueType value_type = 3;
+   * @generated from field: observability.v1.HeaderValueType value_type = 4;
    */
   valueType: HeaderValueType;
 
   /**
-   * @generated from field: repeated observability.v1.HeaderMetricLabel labels = 4;
+   * @generated from field: repeated observability.v1.TelemetryMetricLabel labels = 5;
    */
-  labels: HeaderMetricLabel[];
+  labels: TelemetryMetricLabel[];
 };
 
 /**
- * Describes the message observability.v1.HeaderMetricMapping.
- * Use `create(HeaderMetricMappingSchema)` to create a new message.
+ * Describes the message observability.v1.HttpHeaderTelemetryTransform.
+ * Use `create(HttpHeaderTelemetryTransformSchema)` to create a new message.
  */
-export const HeaderMetricMappingSchema: GenMessage<HeaderMetricMapping> = /*@__PURE__*/
-  messageDesc(file_observability_v1_observability, 7);
+export const HttpHeaderTelemetryTransformSchema: GenMessage<HttpHeaderTelemetryTransform> = /*@__PURE__*/
+  messageDesc(file_observability_v1_observability, 11);
 
 /**
- * HeaderMetricLabel binds one fixed label value to one header-derived metric
- * sample.
+ * TelemetryMetricLabel binds one fixed metric label value to one telemetry
+ * transform.
  *
- * @generated from message observability.v1.HeaderMetricLabel
+ * @generated from message observability.v1.TelemetryMetricLabel
  */
-export type HeaderMetricLabel = Message<"observability.v1.HeaderMetricLabel"> & {
+export type TelemetryMetricLabel = Message<"observability.v1.TelemetryMetricLabel"> & {
   /**
    * @generated from field: string name = 1;
    */
@@ -321,11 +565,41 @@ export type HeaderMetricLabel = Message<"observability.v1.HeaderMetricLabel"> & 
 };
 
 /**
- * Describes the message observability.v1.HeaderMetricLabel.
- * Use `create(HeaderMetricLabelSchema)` to create a new message.
+ * Describes the message observability.v1.TelemetryMetricLabel.
+ * Use `create(TelemetryMetricLabelSchema)` to create a new message.
  */
-export const HeaderMetricLabelSchema: GenMessage<HeaderMetricLabel> = /*@__PURE__*/
-  messageDesc(file_observability_v1_observability, 8);
+export const TelemetryMetricLabelSchema: GenMessage<TelemetryMetricLabel> = /*@__PURE__*/
+  messageDesc(file_observability_v1_observability, 12);
+
+/**
+ * HeaderRedactionPolicy describes how raw header values are protected before
+ * leaving the collector pipeline.
+ *
+ * @generated from message observability.v1.HeaderRedactionPolicy
+ */
+export type HeaderRedactionPolicy = Message<"observability.v1.HeaderRedactionPolicy"> & {
+  /**
+   * @generated from field: bool drop_raw_headers = 1;
+   */
+  dropRawHeaders: boolean;
+
+  /**
+   * @generated from field: repeated string hash_headers = 2;
+   */
+  hashHeaders: string[];
+
+  /**
+   * @generated from field: repeated string redact_headers = 3;
+   */
+  redactHeaders: string[];
+};
+
+/**
+ * Describes the message observability.v1.HeaderRedactionPolicy.
+ * Use `create(HeaderRedactionPolicySchema)` to create a new message.
+ */
+export const HeaderRedactionPolicySchema: GenMessage<HeaderRedactionPolicy> = /*@__PURE__*/
+  messageDesc(file_observability_v1_observability, 13);
 
 /**
  * MetricQuery describes one stable metrics query statement.
@@ -369,7 +643,7 @@ export type MetricQuery = Message<"observability.v1.MetricQuery"> & {
  * Use `create(MetricQuerySchema)` to create a new message.
  */
 export const MetricQuerySchema: GenMessage<MetricQuery> = /*@__PURE__*/
-  messageDesc(file_observability_v1_observability, 9);
+  messageDesc(file_observability_v1_observability, 14);
 
 /**
  * AvailabilityJudgment describes how one subject's availability is derived
@@ -404,7 +678,7 @@ export type AvailabilityJudgment = Message<"observability.v1.AvailabilityJudgmen
  * Use `create(AvailabilityJudgmentSchema)` to create a new message.
  */
 export const AvailabilityJudgmentSchema: GenMessage<AvailabilityJudgment> = /*@__PURE__*/
-  messageDesc(file_observability_v1_observability, 10);
+  messageDesc(file_observability_v1_observability, 15);
 
 /**
  * AvailabilityRule maps one predicate set to one derived availability state.
@@ -438,7 +712,7 @@ export type AvailabilityRule = Message<"observability.v1.AvailabilityRule"> & {
  * Use `create(AvailabilityRuleSchema)` to create a new message.
  */
 export const AvailabilityRuleSchema: GenMessage<AvailabilityRule> = /*@__PURE__*/
-  messageDesc(file_observability_v1_observability, 11);
+  messageDesc(file_observability_v1_observability, 16);
 
 /**
  * AvailabilityPredicate compares one query result against one threshold.
@@ -467,7 +741,7 @@ export type AvailabilityPredicate = Message<"observability.v1.AvailabilityPredic
  * Use `create(AvailabilityPredicateSchema)` to create a new message.
  */
 export const AvailabilityPredicateSchema: GenMessage<AvailabilityPredicate> = /*@__PURE__*/
-  messageDesc(file_observability_v1_observability, 12);
+  messageDesc(file_observability_v1_observability, 17);
 
 /**
  * ObservabilityMetricKind identifies the instrument kind of one metric.
@@ -565,6 +839,187 @@ export const ObservabilityAttributeRequirementLevelSchema: GenEnum<Observability
   enumDesc(file_observability_v1_observability, 2);
 
 /**
+ * ActiveQueryInputControl identifies the preferred UI control for one input.
+ *
+ * @generated from enum observability.v1.ActiveQueryInputControl
+ */
+export enum ActiveQueryInputControl {
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_CONTROL_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_CONTROL_TEXT = 1;
+   */
+  TEXT = 1,
+
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_CONTROL_PASSWORD = 2;
+   */
+  PASSWORD = 2,
+
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_CONTROL_TEXTAREA = 3;
+   */
+  TEXTAREA = 3,
+}
+
+/**
+ * Describes the enum observability.v1.ActiveQueryInputControl.
+ */
+export const ActiveQueryInputControlSchema: GenEnum<ActiveQueryInputControl> = /*@__PURE__*/
+  enumDesc(file_observability_v1_observability, 3);
+
+/**
+ * ActiveQueryInputPersistence describes whether a submitted field is persisted
+ * into provider observability credential material.
+ *
+ * @generated from enum observability.v1.ActiveQueryInputPersistence
+ */
+export enum ActiveQueryInputPersistence {
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_PERSISTENCE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_PERSISTENCE_STORED_MATERIAL = 1;
+   */
+  STORED_MATERIAL = 1,
+
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_PERSISTENCE_TRANSIENT = 2;
+   */
+  TRANSIENT = 2,
+}
+
+/**
+ * Describes the enum observability.v1.ActiveQueryInputPersistence.
+ */
+export const ActiveQueryInputPersistenceSchema: GenEnum<ActiveQueryInputPersistence> = /*@__PURE__*/
+  enumDesc(file_observability_v1_observability, 4);
+
+/**
+ * ActiveQueryInputValueTransform describes a built-in normalization applied to
+ * an input value before it is persisted.
+ *
+ * @generated from enum observability.v1.ActiveQueryInputValueTransform
+ */
+export enum ActiveQueryInputValueTransform {
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_IDENTITY = 1;
+   */
+  IDENTITY = 1,
+
+  /**
+   * @generated from enum value: ACTIVE_QUERY_INPUT_VALUE_TRANSFORM_MERGE_SET_COOKIE = 2;
+   */
+  MERGE_SET_COOKIE = 2,
+}
+
+/**
+ * Describes the enum observability.v1.ActiveQueryInputValueTransform.
+ */
+export const ActiveQueryInputValueTransformSchema: GenEnum<ActiveQueryInputValueTransform> = /*@__PURE__*/
+  enumDesc(file_observability_v1_observability, 5);
+
+/**
+ * CredentialBackfillSource identifies where a credential backfill value comes
+ * from. Collectors remain responsible for parsing provider-specific formats.
+ *
+ * @generated from enum observability.v1.CredentialBackfillSource
+ */
+export enum CredentialBackfillSource {
+  /**
+   * @generated from enum value: CREDENTIAL_BACKFILL_SOURCE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CREDENTIAL_BACKFILL_SOURCE_COLLECTOR_OUTPUT = 1;
+   */
+  COLLECTOR_OUTPUT = 1,
+
+  /**
+   * @generated from enum value: CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_HEADER = 2;
+   */
+  HTTP_RESPONSE_HEADER = 2,
+
+  /**
+   * @generated from enum value: CREDENTIAL_BACKFILL_SOURCE_HTTP_RESPONSE_COOKIE = 3;
+   */
+  HTTP_RESPONSE_COOKIE = 3,
+}
+
+/**
+ * Describes the enum observability.v1.CredentialBackfillSource.
+ */
+export const CredentialBackfillSourceSchema: GenEnum<CredentialBackfillSource> = /*@__PURE__*/
+  enumDesc(file_observability_v1_observability, 6);
+
+/**
+ * TelemetryCapturePoint identifies the L7 proxy point that owns capture.
+ *
+ * @generated from enum observability.v1.TelemetryCapturePoint
+ */
+export enum TelemetryCapturePoint {
+  /**
+   * @generated from enum value: TELEMETRY_CAPTURE_POINT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: TELEMETRY_CAPTURE_POINT_EGRESS = 1;
+   */
+  EGRESS = 1,
+
+  /**
+   * @generated from enum value: TELEMETRY_CAPTURE_POINT_DESTINATION_WAYPOINT = 2;
+   */
+  DESTINATION_WAYPOINT = 2,
+}
+
+/**
+ * Describes the enum observability.v1.TelemetryCapturePoint.
+ */
+export const TelemetryCapturePointSchema: GenEnum<TelemetryCapturePoint> = /*@__PURE__*/
+  enumDesc(file_observability_v1_observability, 7);
+
+/**
+ * HttpHeaderSource identifies the HTTP header bag used by one transform.
+ *
+ * @generated from enum observability.v1.HttpHeaderSource
+ */
+export enum HttpHeaderSource {
+  /**
+   * @generated from enum value: HTTP_HEADER_SOURCE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: HTTP_HEADER_SOURCE_REQUEST = 1;
+   */
+  REQUEST = 1,
+
+  /**
+   * @generated from enum value: HTTP_HEADER_SOURCE_RESPONSE = 2;
+   */
+  RESPONSE = 2,
+}
+
+/**
+ * Describes the enum observability.v1.HttpHeaderSource.
+ */
+export const HttpHeaderSourceSchema: GenEnum<HttpHeaderSource> = /*@__PURE__*/
+  enumDesc(file_observability_v1_observability, 8);
+
+/**
  * MetricQueryLanguage identifies the query language used by one metric query.
  *
  * @generated from enum observability.v1.MetricQueryLanguage
@@ -585,7 +1040,7 @@ export enum MetricQueryLanguage {
  * Describes the enum observability.v1.MetricQueryLanguage.
  */
 export const MetricQueryLanguageSchema: GenEnum<MetricQueryLanguage> = /*@__PURE__*/
-  enumDesc(file_observability_v1_observability, 3);
+  enumDesc(file_observability_v1_observability, 9);
 
 /**
  * MetricQueryResultKind identifies the expected result shape of one query.
@@ -618,7 +1073,7 @@ export enum MetricQueryResultKind {
  * Describes the enum observability.v1.MetricQueryResultKind.
  */
 export const MetricQueryResultKindSchema: GenEnum<MetricQueryResultKind> = /*@__PURE__*/
-  enumDesc(file_observability_v1_observability, 4);
+  enumDesc(file_observability_v1_observability, 10);
 
 /**
  * AvailabilitySubjectKind identifies the entity type judged by one profile.
@@ -641,7 +1096,7 @@ export enum AvailabilitySubjectKind {
  * Describes the enum observability.v1.AvailabilitySubjectKind.
  */
 export const AvailabilitySubjectKindSchema: GenEnum<AvailabilitySubjectKind> = /*@__PURE__*/
-  enumDesc(file_observability_v1_observability, 5);
+  enumDesc(file_observability_v1_observability, 11);
 
 /**
  * AvailabilityState identifies the derived availability state of one subject.
@@ -674,7 +1129,7 @@ export enum AvailabilityState {
  * Describes the enum observability.v1.AvailabilityState.
  */
 export const AvailabilityStateSchema: GenEnum<AvailabilityState> = /*@__PURE__*/
-  enumDesc(file_observability_v1_observability, 6);
+  enumDesc(file_observability_v1_observability, 12);
 
 /**
  * ComparisonOperator identifies how one query result should be compared to a
@@ -723,7 +1178,7 @@ export enum ComparisonOperator {
  * Describes the enum observability.v1.ComparisonOperator.
  */
 export const ComparisonOperatorSchema: GenEnum<ComparisonOperator> = /*@__PURE__*/
-  enumDesc(file_observability_v1_observability, 7);
+  enumDesc(file_observability_v1_observability, 13);
 
 /**
  * HeaderValueType identifies how one header value should be parsed.
@@ -766,5 +1221,5 @@ export enum HeaderValueType {
  * Describes the enum observability.v1.HeaderValueType.
  */
 export const HeaderValueTypeSchema: GenEnum<HeaderValueType> = /*@__PURE__*/
-  enumDesc(file_observability_v1_observability, 8);
+  enumDesc(file_observability_v1_observability, 14);
 

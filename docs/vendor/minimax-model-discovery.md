@@ -6,7 +6,7 @@
 
 ## external surface
 
-- `packages/platform-k8s/vendors/capabilitypackages` service registry
+- `packages/platform-k8s/internal/supportservice/vendors/support` service registry
 - `vendorCapabilityPackage.providerSurfaces[]`
   - `minimax-openai-compatible`
   - `minimax-anthropic`

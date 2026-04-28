@@ -1,40 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { buildDirectFilter, buildFilter, buildRelatedBatchFilter, toggleSelected } from "./model-filter";
+import { buildStructuredFilter, toggleSelected } from "./model-filter";
 
 describe("model filter helpers", () => {
-  it("builds multi-value filters", () => {
-    expect(buildFilter(["openai", "anthropic"], "claude"))
-      .toBe("model_id_query=claude AND vendor_id=openai,anthropic");
+  it("builds structured filters", () => {
+    const filter = buildStructuredFilter(["openai", "anthropic"], "claude");
+    expect(filter.vendorIds).toEqual(["openai", "anthropic"]);
+    expect(filter.modelIdQuery).toBe("claude");
   });
 
-  it("appends source filters", () => {
-    expect(buildFilter(["openai"], "gpt-5", ["nvidia-integrate", "openrouter"]))
-      .toBe("model_id_query=gpt-5 AND vendor_id=openai AND source_id=nvidia-integrate,openrouter");
+  it("includes source and badge in structured filter", () => {
+    const filter = buildStructuredFilter(["openai"], "gpt-5", ["nvidia-integrate"], "free");
+    expect(filter.vendorIds).toEqual(["openai"]);
+    expect(filter.modelIdQuery).toBe("gpt-5");
+    expect(filter.sourceIds).toEqual(["nvidia-integrate"]);
+    expect(filter.badge).toBe("free");
   });
 
-  it("appends badge filters", () => {
-    expect(buildFilter(["openai"], "gpt-5", [], "free"))
-      .toBe("model_id_query=gpt-5 AND vendor_id=openai AND badge=free");
+  it("builds structured filter with lifecycle exclusion", () => {
+    const filter = buildStructuredFilter([], "", [], "", "", true);
+    expect(filter.lifecycleStatusExclude).toEqual(["deprecated", "eol", "blocked"]);
   });
 
-  it("builds direct-model filters", () => {
-    expect(buildDirectFilter(["openai"], "gpt-5", ["nvidia-integrate"]))
-      .toBe("source_ref=null AND model_id_query=gpt-5 AND vendor_id=openai AND source_id=nvidia-integrate");
-    expect(buildDirectFilter(["openai"], "gpt-5", ["nvidia-integrate"], "free"))
-      .toBe("source_ref=null AND model_id_query=gpt-5 AND vendor_id=openai AND source_id=nvidia-integrate AND badge=free");
-  });
-
-  it("builds one batch proxy filter for multiple source refs", () => {
-    expect(buildRelatedBatchFilter([
-      { vendorId: "openai", modelId: "gpt-5" },
-      { vendorId: "anthropic", modelId: "claude-sonnet-4" },
-      { vendorId: "openai", modelId: "gpt-5" },
-    ])).toBe("source_vendor_id=openai,anthropic AND source_model_id=gpt-5,claude-sonnet-4");
-  });
-
-  it("omits optional clauses when filters are empty", () => {
-    expect(buildFilter([], "")).toBe("");
-    expect(buildRelatedBatchFilter([])).toBe("");
+  it("builds empty structured filter when no params", () => {
+    const filter = buildStructuredFilter([], "");
+    expect(filter.vendorIds?.length ?? 0).toBe(0);
+    expect(filter.modelIdQuery).toBeFalsy();
   });
 
   it("toggles selections", () => {

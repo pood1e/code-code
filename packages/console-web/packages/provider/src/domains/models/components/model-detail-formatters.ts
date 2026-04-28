@@ -3,7 +3,9 @@ import {
   ModelCapability,
   ModelShape,
   Modality,
-  type ModelDefinition,
+  ModelCategory,
+  ModelLifecycleStatus,
+  type ModelVersion,
   type ModelAlias
 } from "@code-code/agent-contract/model/v1";
 
@@ -39,6 +41,26 @@ export function formatCapability(capability: ModelCapability) {
       return "Vision";
     case ModelCapability.STREAMING:
       return "Stream";
+    case ModelCapability.REASONING:
+      return "Reasoning";
+    case ModelCapability.BATCH:
+      return "Batch";
+    case ModelCapability.FINE_TUNE:
+      return "Fine-tune";
+    case ModelCapability.EMBEDDING:
+      return "Embedding";
+    case ModelCapability.RERANK:
+      return "Rerank";
+    case ModelCapability.JSON_MODE:
+      return "JSON Mode";
+    case ModelCapability.JSON_SCHEMA:
+      return "JSON Schema";
+    case ModelCapability.AUDIO_INPUT:
+      return "Audio In";
+    case ModelCapability.AUDIO_OUTPUT:
+      return "Audio Out";
+    case ModelCapability.VIDEO_INPUT:
+      return "Video In";
     default:
       return "Unspecified";
   }
@@ -72,7 +94,75 @@ export function formatModality(modality: Modality) {
   }
 }
 
-export function formatModelMetadataSummary(model: ModelDefinition) {
+export function formatCategory(category: ModelCategory) {
+  switch (category) {
+    case ModelCategory.CHAT:
+      return "Chat";
+    case ModelCategory.EMBEDDING:
+      return "Embedding";
+    case ModelCategory.RERANK:
+      return "Rerank";
+    case ModelCategory.IMAGE_GEN:
+      return "Image Gen";
+    case ModelCategory.AUDIO:
+      return "Audio";
+    case ModelCategory.VIDEO:
+      return "Video";
+    case ModelCategory.MODERATION:
+      return "Moderation";
+    default:
+      return "Unspecified";
+  }
+}
+
+// All category values suitable for filter chip bars (excluding UNSPECIFIED).
+export const CATEGORY_OPTIONS: { value: ModelCategory; label: string }[] = [
+  { value: ModelCategory.CHAT, label: "Chat" },
+  { value: ModelCategory.EMBEDDING, label: "Embedding" },
+  { value: ModelCategory.RERANK, label: "Rerank" },
+  { value: ModelCategory.IMAGE_GEN, label: "Image Gen" },
+  { value: ModelCategory.AUDIO, label: "Audio" },
+  { value: ModelCategory.VIDEO, label: "Video" },
+  { value: ModelCategory.MODERATION, label: "Moderation" },
+];
+
+export type RadixColor =
+  | "green" | "yellow" | "orange" | "red" | "gray";
+
+export function formatLifecycleStatus(status: ModelLifecycleStatus) {
+  switch (status) {
+    case ModelLifecycleStatus.ACTIVE:
+      return "Active";
+    case ModelLifecycleStatus.LEGACY:
+      return "Legacy";
+    case ModelLifecycleStatus.DEPRECATED:
+      return "Deprecated";
+    case ModelLifecycleStatus.EOL:
+      return "End of Life";
+    case ModelLifecycleStatus.BLOCKED:
+      return "Blocked";
+    default:
+      return "Unspecified";
+  }
+}
+
+export function lifecycleStatusColor(status: ModelLifecycleStatus): RadixColor {
+  switch (status) {
+    case ModelLifecycleStatus.ACTIVE:
+      return "green";
+    case ModelLifecycleStatus.LEGACY:
+      return "yellow";
+    case ModelLifecycleStatus.DEPRECATED:
+      return "orange";
+    case ModelLifecycleStatus.EOL:
+    case ModelLifecycleStatus.BLOCKED:
+      return "red";
+    default:
+      return "gray";
+  }
+}
+
+export function formatModelMetadataSummary(model: ModelVersion) {
   const vendor = model.vendorId ? `vendor ${model.vendorId}` : "unspecified vendor";
   return `Canonical model metadata for ${vendor}.`;
 }

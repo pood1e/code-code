@@ -1,0 +1,106 @@
+{{- if .Values.kiali.enabled }}
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: {{ .Values.kiali.name }}
+  namespace: {{ .Values.global.observabilityNamespace }}
+spec:
+  auth:
+    strategy: anonymous
+  deployment:
+    cluster_wide_access: true
+    instance_name: {{ .Values.kiali.name }}
+    logger:
+      log_format: text
+      log_level: info
+    namespace: {{ .Values.global.observabilityNamespace }}
+    pod_labels:
+      istio.io/dataplane-mode: none
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    service_type: {{ .Values.kiali.service.type }}
+    view_only_mode: true
+  kiali_feature_flags:
+    validations:
+      ignore:
+        - KIA1316
+  external_services:
+    custom_dashboards:
+      discovery_auto_threshold: 10
+      discovery_enabled: "auto"
+      enabled: true
+      namespace_label: namespace
+    grafana:
+      enabled: {{ .Values.grafana.enabled }}
+      {{- if .Values.grafana.enabled }}
+      {{- if .Values.grafana.publicUrl }}
+      external_url: {{ .Values.grafana.publicUrl | quote }}
+      {{- else if .Values.grafana.route.enabled }}
+      external_url: {{ printf "http://%s%s" .Values.grafana.route.host .Values.grafana.route.path | quote }}
+      {{- else }}
+      external_url: {{ printf "http://grafana.%s.svc.cluster.local:3000%s" .Values.global.observabilityNamespace (trimSuffix "/" .Values.grafana.rootUrl) | quote }}
+      {{- end }}
+      internal_url: {{ printf "http://grafana.%s.svc.cluster.local:3000%s" .Values.global.observabilityNamespace (trimSuffix "/" .Values.grafana.rootUrl) | quote }}
+      health_check_url: {{ printf "http://grafana.%s.svc.cluster.local:3000%s/api/health" .Values.global.observabilityNamespace (trimSuffix "/" .Values.grafana.rootUrl) | quote }}
+      {{- end }}
+    prometheus:
+      url: http://prometheus.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:9090
+    tracing:
+      enabled: {{ .Values.tempo.enabled }}
+      {{- if .Values.tempo.enabled }}
+      health_check_url: http://tempo.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:3200/ready
+      internal_url: http://tempo.{{ .Values.global.observabilityNamespace }}.svc.cluster.local:3200/
+      provider: tempo
+      tempo_config:
+        datasource_uid: tempo
+        org_id: "1"
+        url_format: grafana
+      use_grpc: false
+      {{- end }}
+  custom_dashboards:
+    - name: kubernetes-resources
+      title: Pod Resources
+      runtime: Kubernetes
+      discoverOn: container_cpu_usage_seconds_total
+      items:
+        - chart:
+            name: CPU Usage
+            unit: cores
+            spans: 6
+            metricName: container_cpu_usage_seconds_total
+            dataType: rate
+            aggregator: sum
+            aggregations:
+              - label: pod
+                displayName: Pod
+              - label: container
+                displayName: Container
+        - chart:
+            name: Memory Working Set
+            unit: bytes
+            spans: 6
+            metricName: container_memory_working_set_bytes
+            dataType: raw
+            aggregator: sum
+            aggregations:
+              - label: pod
+                displayName: Pod
+              - label: container
+                displayName: Container
+  server:
+    observability:
+      metrics:
+        enabled: true
+        port: 9090
+    {{- if eq .Values.kiali.service.type "NodePort" }}
+    node_port: {{ .Values.kiali.service.nodePort }}
+    {{- end }}
+    web_root: {{ .Values.kiali.webRoot }}
+    web_schema: http
+{{- end }}

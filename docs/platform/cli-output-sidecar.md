@@ -187,7 +187,7 @@ parser bundle 按 `cli_id` 分派，owner 在 `deploy/agents/sidecars/cli-output
 
 - `deploy/agents/*/entrypoint.sh` 必须切到稳定 structured streaming mode
 - `qwen-cli` parser 优先消费 `thinking_delta`；如果上游 provider 把 thought 内联到 `text_delta` / `result` 的 `<think>...</think>`，parser 仍要归一化成 `reasoning` 与 `assistant`
-- parser bundle 参考 `only_ref` 的 small-state parser，不恢复大 wrapper
+- parser bundle 保持 small-state parser 设计，不恢复大 wrapper
 - `cli_id` 是 parser dispatch key；v1 不额外引入 declarative parser schema
 
 ## Stop Path

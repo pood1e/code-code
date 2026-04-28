@@ -6,6 +6,7 @@
 /node_modules/
 /deploy/.release-tmp.*/
 /deploy/.release-partial.*/
+/deploy/tmp/
 /tmp/
 /.local-bin/
 /deploy/secrets.env
@@ -44,7 +45,13 @@ tmp-sidecar-go.*
 packages/console-api/console-api
 packages/console-api/platform-chat-service
 packages/platform-k8s/platform-service
+packages/platform-k8s/platform-model-service
+packages/platform-k8s/platform-egress-service
+packages/platform-k8s/platform-*-service
+packages/platform-k8s/notification-dispatcher
+packages/platform-k8s/wecom-callback-adapter
 packages/platform-k8s/envoy-auth-processor
+packages/platform-k8s/platform-egress-*-test
 
 # Rust/WASM local build outputs
 packages/platform-k8s/control-plane-egress-auth-wasm/target/

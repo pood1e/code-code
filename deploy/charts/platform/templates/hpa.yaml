@@ -1,0 +1,30 @@
+{{- range $key := keys .Values.components | sortAlpha }}
+{{- $component := index $.Values.components $key }}
+{{- $hpaDefaults := $.Values.defaults.hpa }}
+{{- $hpa := mergeOverwrite (deepCopy $hpaDefaults) (default (dict) $component.hpa) }}
+{{- if and $component.enabled $hpa.enabled }}
+{{- $componentNamespace := include "platform.componentNamespace" (dict "root" $ "component" $component) | trim }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $component.name }}
+  namespace: {{ $componentNamespace }}
+  labels:
+{{ include "platform.labels" (dict "root" $ "name" $component.name "componentLabel" $component.componentLabel) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $component.name }}
+  minReplicas: {{ int $hpa.minReplicas }}
+  maxReplicas: {{ int $hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ int $hpa.targetCPUUtilizationPercentage }}
+---
+{{- end }}
+{{- end }}

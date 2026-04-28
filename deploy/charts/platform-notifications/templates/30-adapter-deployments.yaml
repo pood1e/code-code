@@ -1,0 +1,6 @@
+{{- if .Values.notificationDispatcher.enabled }}
+{{- $values := .Values.notificationDispatcher }}
+{{ include "platform.wecomAdapterDeployment" (dict "root" . "component" $values.wecomCallbackAdapter "secretName" $values.secretNames.wecomCallback "subject" "platform.wecom.messages.received" "path" "/wecom/callback") }}
+---
+{{ include "platform.wecomAdapterDeployment" (dict "root" . "component" $values.wecomRobotDefaultCallbackAdapter "secretName" $values.secretNames.wecomRobotDefaultCallback "subject" "platform.wecom.robots.default.messages.received" "path" "/wecom/robots/default/callback") }}
+{{- end }}

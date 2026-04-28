@@ -1,0 +1,53 @@
+{{ .Chart.Name }} {{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }}) installed in namespace `{{ .Release.Namespace }}`.
+
+Release: {{ .Release.Name }}
+Image registry: {{ .Values.global.imageRegistry | default "(none — pulling from local cluster cache)" | quote }}
+Image tag:      {{ .Values.global.imageTag | quote }}
+
+Components rendered:
+{{- range $key, $component := .Values.components }}
+{{- if $component.enabled }}
+  - {{ $component.name }}
+{{- end }}
+{{- end }}
+
+Required external resources (must exist in `{{ .Release.Namespace }}` before pods become ready):
+  - Secret    `{{ .Values.global.databaseSecretName }}`        (key: {{ .Values.global.databaseSecretKey }})
+  - ConfigMap `{{ .Values.global.trustBundleConfigMapName }}`  (egress trust bundle)
+
+Optional secrets (only required when the matching feature is enabled):
+  - Secret `{{ .Values.global.registryAuthSecretName }}`       (CLI runtime image registry auth)
+  - Secret `platform-{auth,model,provider,agent-runtime,cli-runtime}-service-internal-action` (internal action bearer tokens)
+
+Verify rollout:
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/platform-auth-service --timeout=5m
+  kubectl -n {{ .Values.global.consoleNamespace }} rollout status deployment/console-web --timeout=5m
+  kubectl -n {{ .Values.global.consoleNamespace }} rollout status deployment/console-api --timeout=5m
+  kubectl -n {{ .Values.global.showcaseNamespace }} rollout status deployment/showcase-web --timeout=5m
+  kubectl -n {{ .Values.global.showcaseNamespace }} rollout status deployment/showcase-api --timeout=5m
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/part-of={{ .Values.global.partOf }}
+
+Run smoke tests:
+  helm test {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+  make -C deploy smoke-ingress
+  make -C deploy smoke-egress
+
+{{- if .Values.consoleRoute.enabled }}
+
+Console available at:
+  {{ .Values.global.consoleBaseUrl }}
+{{- range $extra := .Values.consoleRoute.extraHosts }}
+  http://{{ $extra }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.showcaseRoute.enabled }}
+
+Showcase available at:
+  {{ .Values.global.showcaseBaseUrl }}
+{{- range $extra := .Values.showcaseRoute.extraHosts }}
+  http://{{ $extra }}
+{{- end }}
+{{- end }}
+
+For full values reference see deploy/charts/platform/README.md.

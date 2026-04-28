@@ -7,7 +7,7 @@ one implementation detail for sensitive material storage.
 
 ### Owner
 
-`packages/platform-k8s/authservice/oauth` owns session Secret encoding and decoding.
+`packages/platform-k8s/internal/authservice/oauth` owns session Secret encoding and decoding.
 `OAuthAuthorizationSession` controller owns lifecycle cleanup of session
 Secrets.
 
@@ -32,7 +32,7 @@ Secrets.
 
 The store remains a Secret-backed persistence adapter only. OAuth protocol
 state, authorization flow control, and credential import continue to belong to
-`packages/platform-k8s/authservice/oauth` services and controllers above this layer.
+`packages/platform-k8s/internal/authservice/oauth` services and controllers above this layer.
 
 ### Labels
 

@@ -28,9 +28,6 @@ describe("ModelsTable", () => {
         <ModelsTable
           models={models}
           vendorsById={{}}
-          proxyGroups={{}}
-          proxyLoading={false}
-          proxyTruncated={false}
           selectedSourceIds={["github-models"]}
         />
       </Theme>

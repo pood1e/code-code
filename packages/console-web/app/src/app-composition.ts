@@ -1,3 +1,4 @@
+import { type ReactElement } from "react";
 import {
   AGENT_PROFILE_ROUTES,
   AGENT_PROFILE_SECTIONS,
@@ -27,6 +28,10 @@ export type SectionKey =
   | NetworkSectionKey
   | GrafanaSectionKey;
 
+export type AppRoute = { path: string; element: ReactElement };
+
+// --- Console: all sections and routes ---
+
 const CORE_APP_SECTIONS: Section[] = [
   ...OVERVIEW_SECTIONS,
   ...CHAT_SECTIONS,
@@ -37,7 +42,7 @@ const CORE_APP_SECTIONS: Section[] = [
 
 export const APP_SECTIONS: Section[] = [...CORE_APP_SECTIONS, GRAFANA_SECTION];
 
-export const APP_ROUTES = [
+export const APP_ROUTES: AppRoute[] = [
   ...OVERVIEW_ROUTES,
   ...CHAT_ROUTES,
   ...AGENT_PROFILE_ROUTES,
@@ -64,9 +69,9 @@ export const NAV_ITEMS: NavItem[] = buildNavItems(
 
 const SECTION_BY_KEY = new Map<string, Section>(APP_SECTIONS.map((s) => [s.key, s]));
 
-export function resolveSection(pathname: string) {
+export function resolveSection(pathname: string, fallback: Section = OVERVIEW_SECTION) {
   const key = normalizeSectionKey(pathname.replace(/^\//, "").split("/", 1)[0]);
-  const section = SECTION_BY_KEY.get(key) ?? OVERVIEW_SECTION;
+  const section = SECTION_BY_KEY.get(key) ?? fallback;
   return { activeKey: section.key, section };
 }
 
